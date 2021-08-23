@@ -1,9 +1,16 @@
 [package]
-name = "rust-template-project"
+name = "twitch-irc-RO"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-
+anyhow = "1.0.42"
+tui = "0.15"
+termion = "1.5"
+rand = "0.8.4"
+unicode-width = "0.1.5"
+chrono = "0.4"
+irc = "0.15.0"
+futures = "0.3.16"
+tokio = { version = "1.9.0", features = ["full"] }
+dotenv = "0.15.0"
