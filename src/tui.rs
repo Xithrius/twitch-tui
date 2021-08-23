@@ -1,8 +1,4 @@
-use std::{
-    io,
-    sync::mpsc::Receiver,
-    time::Duration,
-};
+use std::{io, sync::mpsc::Receiver, time::Duration};
 
 use anyhow::Result;
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
@@ -10,10 +6,9 @@ use tui::{
     backend::TermionBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
+    widgets::{Block, Borders, Row, Table},
     Terminal,
-    widgets::{Block, Borders, Paragraph, Row, Table},
 };
-use unicode_width::UnicodeWidthStr;
 
 use crate::utils::{app::App, event};
 
@@ -38,12 +33,7 @@ pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(1)
-                .constraints(
-                    [
-                        Constraint::Min(1),
-                    ]
-                        .as_ref(),
-                )
+                .constraints([Constraint::Min(1)].as_ref())
                 .split(f.size());
 
             let all_messages = app
