@@ -1,9 +1,7 @@
 use std::sync::mpsc::Sender;
 
-use dotenv;
 use futures::prelude::*;
 use irc::client::prelude::*;
-use tokio;
 
 #[tokio::main]
 pub async fn twitch_irc(tx: &Sender<Vec<String>>) {
