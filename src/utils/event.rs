@@ -1,11 +1,13 @@
-use std::io;
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    io,
+    sync::mpsc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread,
+    time::Duration,
 };
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
 
 use termion::event::Key;
 use termion::input::TermRead;

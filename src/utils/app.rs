@@ -1,6 +1,5 @@
 use chrono::Utc;
 
-#[derive(Debug, Clone)]
 pub struct App {
     /// Current value of the input box
     pub input: String,
