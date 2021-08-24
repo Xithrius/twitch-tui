@@ -1,6 +1,7 @@
 use std::{io, sync::mpsc::Receiver, time::Duration};
 
 use anyhow::Result;
+use chrono::offset::Local;
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::TermionBackend,
@@ -26,7 +27,11 @@ pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
 
     loop {
         if let Ok(info) = rx.try_recv() {
-            app.insert_message(info[0].to_string(), info[1].to_string())
+            app.messages.push(vec![
+                format!("{}", Local::now().format("%a %b %e %T %Y")),
+                info[0].to_string(),
+                info[1].to_string(),
+            ]);
         }
 
         terminal.draw(|f| {
@@ -42,7 +47,16 @@ pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
                 .map(|m| Row::new(m.clone()))
                 .collect::<Vec<Row>>();
 
-            let table = Table::new(all_messages)
+            let chunk_height = chunks[0].height as usize - 4;
+            let message_amount = all_messages.len();
+
+            let mut rendered_messages = all_messages;
+
+            if rendered_messages.len() >= chunk_height {
+                rendered_messages = rendered_messages[message_amount - chunk_height..].to_owned();
+            }
+
+            let table = Table::new(rendered_messages)
                 .style(Style::default().fg(Color::White))
                 .header(
                     Row::new(vec!["Time", "User", "Message content"])
