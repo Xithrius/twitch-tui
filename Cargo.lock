@@ -749,6 +749,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "terminal-twitch-chat"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dotenv",
+ "futures",
+ "irc",
+ "rand",
+ "termion",
+ "tokio",
+ "tui",
+ "unicode-width",
+]
+
+[[package]]
 name = "termion"
 version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -875,22 +891,6 @@ dependencies = [
  "cassowary",
  "termion",
  "unicode-segmentation",
- "unicode-width",
-]
-
-[[package]]
-name = "twitch-irc-RO"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "dotenv",
- "futures",
- "irc",
- "rand",
- "termion",
- "tokio",
- "tui",
  "unicode-width",
 ]
 

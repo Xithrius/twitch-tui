@@ -1,5 +1,5 @@
 [package]
-name = "twitch-irc-RO"
+name = "terminal-twitch-chat"
 version = "0.1.0"
 edition = "2018"
 
