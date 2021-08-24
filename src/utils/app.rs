@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::offset::Local;
 
 pub struct App {
     /// Current value of the input box
@@ -19,7 +19,7 @@ impl Default for App {
 impl App {
     pub fn insert_message(&mut self, user: String, message: String) {
         self.messages.push(vec![
-            format!("{}", Utc::now().format("%a %b %e %T %Y")),
+            format!("{}", Local::now().format("%a %b %e %T %Y")),
             user,
             message,
         ]);
