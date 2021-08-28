@@ -16,7 +16,7 @@ use crate::utils::{app::App, event};
 pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
     let events = event::Events::with_config(event::Config {
         exit_key: Key::Esc,
-        tick_rate: Duration::from_millis(250),
+        tick_rate: Duration::from_millis(30),
     });
 
     let stdout = io::stdout().into_raw_mode()?;
