@@ -1,0 +1,19 @@
+[twitch]
+# Your username on Twitch.
+username = ""
+# The streamer's name.
+channel = ""
+# The IRC channel you'd like to connect to.
+server = "irc.chat.twitch.tv"
+# Wondering where to set your token?
+# Create an `.env` file and then set a TOKEN variable to it.
+
+[terminal]
+# The delay in milliseconds between terminal updates.
+tick_delay = 30
+
+[frontend]
+# The format of the date and time outputs, https://strftime.org/ has formats.
+date_format = "%a %b %e %T %Y"
+# The longest a username can be.
+maximum_username_length = 26

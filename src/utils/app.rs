@@ -1,10 +1,10 @@
-use chrono::offset::Local;
+use crate::handlers::data::Data;
 
 pub struct App {
     /// Current value of the input box
     pub input: String,
     /// History of recorded messages (time, username, message)
-    pub messages: Vec<Vec<String>>,
+    pub messages: Vec<Data>,
 }
 
 impl Default for App {
@@ -13,15 +13,5 @@ impl Default for App {
             input: String::new(),
             messages: Vec::new(),
         }
-    }
-}
-
-impl App {
-    pub fn insert_message(&mut self, user: String, message: String) {
-        self.messages.push(vec![
-            format!("{}", Local::now().format("%a %b %e %T %Y")),
-            user,
-            message,
-        ]);
     }
 }

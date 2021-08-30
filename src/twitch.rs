@@ -1,21 +1,24 @@
 use std::sync::mpsc::Sender;
 
+use chrono::offset::Local;
 use futures::prelude::*;
 use irc::client::prelude::*;
 
+use crate::handlers::{config::CompleteConfig, data::Data};
+
 #[tokio::main]
-pub async fn twitch_irc(tx: &Sender<Vec<String>>) {
-    let config = Config {
-        nickname: Some(dotenv::var("NICKNAME").unwrap().to_owned()),
-        server: Some(dotenv::var("SERVER").unwrap().to_owned()),
-        channels: vec![format!("#{}", dotenv::var("CHANNEL").unwrap().to_owned())],
+pub async fn twitch_irc(config: &CompleteConfig, tx: &Sender<Data>) {
+    let irc_config = Config {
+        nickname: Some(config.twitch.username.to_owned()),
+        server: Some(config.twitch.server.to_owned()),
+        channels: vec![format!("#{}", config.twitch.channel)],
         password: Some(dotenv::var("TOKEN").unwrap().to_owned()),
         port: Some(6667),
         use_tls: Some(false),
         ..Default::default()
     };
 
-    let mut client = Client::from_config(config).await.unwrap();
+    let mut client = Client::from_config(irc_config).await.unwrap();
     client.identify().unwrap();
     let mut stream = client.stream().unwrap();
 
@@ -25,7 +28,16 @@ pub async fn twitch_irc(tx: &Sender<Vec<String>>) {
                 Some(username) => username.to_string(),
                 None => "Undefined username".to_string(),
             };
-            tx.send(vec![user, msg.to_string()]).unwrap();
+            if let Err(e) = tx.send(Data {
+                time_sent: format!(
+                    "{}",
+                    Local::now().format(config.frontend.date_format.as_str())
+                ),
+                author: user,
+                message: msg.to_string(),
+            }) {
+                println!("{}", e);
+            }
         }
     }
 }

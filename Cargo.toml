@@ -14,3 +14,5 @@ irc = "0.15.0"
 futures = "0.3.16"
 tokio = { version = "1.10.1", features = ["full"] }
 dotenv = "0.15.0"
+toml = "0.5.8"
+serde = "1.0.130"
