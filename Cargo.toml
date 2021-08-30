@@ -5,7 +5,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.42"
-tui = "0.16"
+tui = "0.15"
 termion = "1.5"
 rand = "0.8.4"
 unicode-width = "0.1.5"
