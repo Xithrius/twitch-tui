@@ -1,5 +1,5 @@
 [package]
-name = "twitch-irc-RO"
+name = "terminal-twitch-chat"
 version = "0.1.0"
 edition = "2018"
 
@@ -14,3 +14,5 @@ irc = "0.15.0"
 futures = "0.3.16"
 tokio = { version = "1.9.0", features = ["full"] }
 dotenv = "0.15.0"
+toml = "0.5.8"
+serde = "1.0.130"
