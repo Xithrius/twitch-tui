@@ -1,8 +1,10 @@
+use crate::handlers::data::Data;
+
 pub struct App {
-    /// Current value of the input box.
+    /// Current value of the input box
     pub input: String,
-    /// History of recorded messages (time, username, message).
-    pub messages: Vec<Vec<String>>,
+    /// History of recorded messages (time, username, message)
+    pub messages: Vec<Data>,
 }
 
 impl Default for App {
