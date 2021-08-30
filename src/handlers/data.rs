@@ -7,6 +7,10 @@ pub struct Data {
 
 impl Data {
     pub fn to_vec(&self) -> Vec<String> {
-        return vec![self.time_sent.to_string(), self.author.to_string(), self.message.to_string()]
+        return vec![
+            self.time_sent.to_string(),
+            self.author.to_string(),
+            self.message.to_string(),
+        ];
     }
 }
