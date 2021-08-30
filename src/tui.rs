@@ -11,12 +11,15 @@ use tui::{
     Terminal,
 };
 
-use crate::utils::{app::App, event};
+use crate::{
+    handlers::{config::CompleteConfig, data::Data},
+    utils::{app::App, event},
+};
 
-pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
+pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
     let events = event::Events::with_config(event::Config {
         exit_key: Key::Esc,
-        tick_rate: Duration::from_millis(30),
+        tick_rate: Duration::from_millis(config.terminal.tick_delay),
     });
 
     let stdout = io::stdout().into_raw_mode()?;
@@ -25,13 +28,20 @@ pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
     let backend = TermionBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    let date_format_length = Local::now()
+        .format(config.frontend.date_format.as_str())
+        .to_string()
+        .len() as u16;
+
+    let table_width = &[
+        Constraint::Length(date_format_length),
+        Constraint::Length(config.frontend.maximum_username_length),
+        Constraint::Min(1),
+    ];
+
     loop {
         if let Ok(info) = rx.try_recv() {
-            app.messages.push(vec![
-                format!("{}", Local::now().format("%a %b %e %T %Y")),
-                info[0].to_string(),
-                info[1].to_string(),
-            ]);
+            app.messages.push(info);
         }
 
         terminal.draw(|f| {
@@ -44,7 +54,7 @@ pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
             let all_messages = app
                 .messages
                 .iter()
-                .map(|m| Row::new(m.clone()))
+                .map(|m| Row::new(m.to_vec()))
                 .collect::<Vec<Row>>();
 
             let chunk_height = chunks[0].height as usize - 4;
@@ -68,11 +78,7 @@ pub fn tui(mut app: App, rx: Receiver<Vec<String>>) -> Result<()> {
                         .borders(Borders::ALL)
                         .title("[ Table of messages ]"),
                 )
-                .widths(&[
-                    Constraint::Length(26),
-                    Constraint::Length(26),
-                    Constraint::Min(1),
-                ])
+                .widths(table_width)
                 .column_spacing(1);
 
             f.render_widget(table, chunks[0]);
