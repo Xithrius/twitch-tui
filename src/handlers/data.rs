@@ -14,3 +14,29 @@ impl Data {
         ];
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Local;
+
+    use super::*;
+
+    #[test]
+    fn test_data() {
+        let some_time = Local::now().format("%c");
+
+        let var = Data {
+            time_sent: some_time.to_string(),
+            author: "A human".to_string(),
+            message: "beep boop".to_string(),
+        };
+
+        let var_vector_test = vec![
+            some_time.to_string(),
+            "A human".to_string(),
+            "beep boop".to_string(),
+        ];
+
+        assert_eq!(var.to_vec(), var_vector_test);
+    }
+}
