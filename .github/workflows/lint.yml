@@ -1,6 +1,10 @@
-name: Linters
+name: Linting
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   rustfmt:
