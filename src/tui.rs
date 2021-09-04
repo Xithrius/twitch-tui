@@ -45,19 +45,23 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
         }
 
         terminal.draw(|f| {
-            let chunks = Layout::default()
+            let vertical_chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(1)
                 .constraints([Constraint::Min(1)].as_ref())
                 .split(f.size());
 
-            let all_messages = app
-                .messages
-                .iter()
-                .map(|m| Row::new(m.to_vec()))
-                .collect::<Vec<Row>>();
+            let horizontal_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .margin(1)
+                .constraints(table_width.as_ref())
+                .split(f.size());
 
-            let chunk_height = chunks[0].height as usize - 4;
+            let all_messages = app.messages.clone();
+
+            let chunk_height = vertical_chunks[0].height as usize - 4;
+            let chunk_width = horizontal_chunks[2].width as usize - 4;
+
             let message_amount = all_messages.len();
 
             let mut rendered_messages = all_messages;
@@ -66,22 +70,36 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
                 rendered_messages = rendered_messages[message_amount - chunk_height..].to_owned();
             }
 
-            let table = Table::new(rendered_messages)
-                .style(Style::default().fg(Color::White))
-                .header(
-                    Row::new(vec!["Time", "User", "Message content"])
-                        .style(Style::default().fg(Color::Yellow))
-                        .bottom_margin(1),
-                )
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title("[ Table of messages ]"),
-                )
-                .widths(table_width)
-                .column_spacing(1);
+            let mut final_rendered_messages: Vec<Data> = Vec::new();
 
-            f.render_widget(table, chunks[0]);
+            for msg_data in rendered_messages {
+                let new_data = msg_data.wrap_message(chunk_width);
+                for some_data in new_data {
+                    final_rendered_messages.push(some_data);
+                }
+            }
+
+            let table = Table::new(
+                final_rendered_messages
+                    .iter()
+                    .map(|m| Row::new(m.to_vec()))
+                    .collect::<Vec<Row>>(),
+            )
+            .style(Style::default().fg(Color::White))
+            .header(
+                Row::new(vec!["Time", "User", "Message content"])
+                    .style(Style::default().fg(Color::Yellow))
+                    .bottom_margin(1),
+            )
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("[ Table of messages ]"),
+            )
+            .widths(table_width)
+            .column_spacing(1);
+
+            f.render_widget(table, vertical_chunks[0]);
         })?;
 
         if let event::Event::Input(input) = events.next()? {
