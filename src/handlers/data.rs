@@ -50,3 +50,45 @@ impl Data {
         data_vec
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Local;
+
+    use super::*;
+
+    fn generate_time() -> String {
+        Local::now().format("%c").to_string()
+    }
+
+    #[test]
+    fn test_data_vec() {
+        let some_time = generate_time();
+
+        let var = Data {
+            time_sent: some_time.to_string(),
+            author: "A human".to_string(),
+            message: "beep boop".to_string(),
+        };
+
+        let var_vector_test = vec![
+            some_time.to_string(),
+            "A human".to_string(),
+            "beep boop".to_string(),
+        ];
+
+        assert_eq!(var.to_vec(), var_vector_test);
+    }
+
+    #[test]
+    fn test_data_message_wrapping() {
+        let some_data = Data {
+            time_sent: generate_time(),
+            author: "A human".to_string(),
+            message: "asdf ".repeat(10),
+        };
+
+        let some_vec = some_data.wrap_message(5);
+        assert_eq!(some_vec.len(), 10);
+    }
+}
