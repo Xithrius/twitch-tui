@@ -28,14 +28,13 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: &Sender<Data>) {
                 Some(username) => username.to_string(),
                 None => "Undefined username".to_string(),
             };
-            if let Err(e) = tx.send(Data {
-                time_sent: format!(
-                    "{}",
-                    Local::now().format(config.frontend.date_format.as_str())
-                ),
-                author: user,
-                message: msg.to_string(),
-            }) {
+            if let Err(e) = tx.send(Data::new(
+                Local::now()
+                    .format(config.frontend.date_format.as_str())
+                    .to_string(),
+                user,
+                msg.to_string(),
+            )) {
                 println!("{}", e);
             }
         }
