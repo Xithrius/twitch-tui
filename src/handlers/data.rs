@@ -1,4 +1,3 @@
-use textwrap;
 use tui::style::{Color, Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
 
@@ -21,9 +20,16 @@ impl Data {
     }
 
     pub fn hash_username(&self) -> Color {
-        let user_bytes = self.author.as_bytes();
+        let hue = self
+            .author
+            .as_bytes()
+            .iter()
+            .map(|&b| b as u32)
+            .sum::<u32>() as f64
+            % 360.;
+        let rgb = hsl_to_rgb(hue, 0.5, 0.75);
 
-        Rgb(user_bytes[0] * 2, user_bytes[1] * 2, user_bytes[2] * 2)
+        Rgb(rgb[0], rgb[1], rgb[2])
     }
 
     pub fn to_row(&self) -> Row {
@@ -73,6 +79,38 @@ impl Data {
 
         data_vec
     }
+}
+
+// https://css-tricks.com/converting-color-spaces-in-javascript/#hsl-to-rgb
+fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> [u8; 3] {
+    // Color intensity
+    let chroma = (1. - (2. * lightness - 1.).abs()) * saturation;
+
+    // Second largest component
+    let x = chroma * (1. - ((hue / 60.) % 2. - 1.).abs());
+
+    // Amount to match lightness
+    let m = lightness - chroma / 2.;
+
+    // Convert to rgb based on color wheel section
+    let (mut red, mut green, mut blue) = match hue.round() as i32 {
+        0..=60 => (chroma, x, 0.),
+        61..=120 => (x, chroma, 0.),
+        121..=180 => (0., chroma, x),
+        181..=240 => (0., x, chroma),
+        241..=300 => (x, 0., chroma),
+        301..=360 => (chroma, 0., x),
+        _ => {
+            panic!("Invalid hue!");
+        }
+    };
+
+    // Add amount to each channel to match lightness
+    red = (red + m) * 255.;
+    green = (green + m) * 255.;
+    blue = (blue + m) * 255.;
+
+    [red as u8, green as u8, blue as u8]
 }
 
 #[cfg(test)]
