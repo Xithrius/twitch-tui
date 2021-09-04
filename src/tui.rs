@@ -82,10 +82,10 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
             let table = Table::new(
                 final_rendered_messages
                     .iter()
-                    .map(|m| Row::new(m.to_vec()))
+                    .map(|m| m.to_row())
                     .collect::<Vec<Row>>(),
             )
-            .style(Style::default().fg(Color::White))
+            // .style(Style::default().fg(Color::White))
             .header(
                 Row::new(vec!["Time", "User", "Message content"])
                     .style(Style::default().fg(Color::Yellow))
