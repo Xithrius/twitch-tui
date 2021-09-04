@@ -70,11 +70,10 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
                 rendered_messages = rendered_messages[message_amount - chunk_height..].to_owned();
             }
 
-            let mut final_rendered_messages: Vec<Data> = Vec::new();
+            let mut final_rendered_messages = Vec::new();
 
             for msg_data in rendered_messages {
-                let new_data = msg_data.wrap_message(chunk_width);
-                for some_data in new_data {
+                for some_data in msg_data.wrap_message(chunk_width) {
                     final_rendered_messages.push(some_data);
                 }
             }
@@ -85,7 +84,6 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
                     .map(|m| m.to_row())
                     .collect::<Vec<Row>>(),
             )
-            // .style(Style::default().fg(Color::White))
             .header(
                 Row::new(vec!["Time", "User", "Message content"])
                     .style(Style::default().fg(Color::Yellow))

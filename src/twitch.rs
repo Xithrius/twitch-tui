@@ -34,6 +34,7 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: &Sender<Data>) {
                     .to_string(),
                 user,
                 msg.to_string(),
+                false,
             )) {
                 println!("{}", e);
             }
