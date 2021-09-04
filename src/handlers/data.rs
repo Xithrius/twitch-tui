@@ -1,4 +1,6 @@
 use textwrap;
+use tui::style::{Color::Rgb, Style};
+use tui::widgets::{Cell, Row};
 
 #[derive(Debug, Clone)]
 pub struct Data {
@@ -8,12 +10,15 @@ pub struct Data {
 }
 
 impl Data {
-    pub fn to_vec(&self) -> Vec<String> {
-        return vec![
-            self.time_sent.to_string(),
-            self.author.to_string(),
-            self.message.to_string(),
-        ];
+    pub fn to_row(&self) -> Row {
+        let user_bytes = self.author.as_bytes();
+        let user_color = Rgb(user_bytes[0] * 2, user_bytes[1] * 2, user_bytes[2] * 2);
+
+        Row::new(vec![
+            Cell::from(self.time_sent.to_string()),
+            Cell::from(self.author.to_string()).style(Style::default().fg(user_color)),
+            Cell::from(self.message.to_string()),
+        ])
     }
 
     pub fn wrap_message(self, limit: usize) -> Vec<Data> {
