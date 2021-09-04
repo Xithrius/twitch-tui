@@ -1,5 +1,5 @@
 use textwrap;
-use tui::style::{Color::Rgb, Modifier, Style};
+use tui::style::{Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
 
 #[derive(Debug, Clone)]
