@@ -1,3 +1,4 @@
+use crate::handlers::config::Palette;
 use tui::style::{Color, Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
 
@@ -19,20 +20,27 @@ impl Data {
         }
     }
 
-    pub fn hash_username(&self) -> Color {
-        let hue = self
+    pub fn hash_username(&self, palette: &Palette) -> Color {
+        let hash = self
             .author
             .as_bytes()
             .iter()
             .map(|&b| b as u32)
-            .sum::<u32>() as f64
-            % 360.;
-        let rgb = hsl_to_rgb(hue, 0.5, 0.75);
+            .sum::<u32>() as f64;
+
+        let (hue, saturation, lightness) = match palette {
+            Palette::Pastel => (hash % 360. + 1., 0.5, 0.75),
+            Palette::Vibrant => (hash % 360. + 1., 1., 0.6),
+            Palette::Warm => ((hash % 100. + 1.) * 1.2, 0.8, 0.7),
+            Palette::Cool => ((hash % 100. + 1.) * 1.2 + 180., 0.6, 0.7),
+        };
+
+        let rgb = hsl_to_rgb(hue, saturation, lightness);
 
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row(&self) -> Row {
+    pub fn to_row(&self, palette: &Palette) -> Row {
         return if self.empty {
             Row::new(vec![
                 Cell::from("".to_string()),
@@ -43,7 +51,7 @@ impl Data {
             Row::new(vec![
                 Cell::from(self.time_sent.to_string()),
                 Cell::from(self.author.to_string())
-                    .style(Style::default().fg(self.hash_username())),
+                    .style(Style::default().fg(self.hash_username(palette))),
                 Cell::from(self.message.to_string()),
             ])
         };

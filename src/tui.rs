@@ -81,7 +81,7 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
             let table = Table::new(
                 final_rendered_messages
                     .iter()
-                    .map(|m| m.to_row())
+                    .map(|m| m.to_row(&config.frontend.palette))
                     .collect::<Vec<Row>>(),
             )
             .header(

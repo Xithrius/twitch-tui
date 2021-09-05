@@ -1,6 +1,21 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum Palette {
+    Pastel,
+    Vibrant,
+    Warm,
+    Cool,
+}
+
+impl Default for Palette {
+    fn default() -> Self {
+        Palette::Pastel
+    }
+}
+
+#[derive(Deserialize, Clone)]
 pub struct CompleteConfig {
     /// Connecting to Twitch.
     pub twitch: TwitchConfig,
@@ -32,4 +47,7 @@ pub struct FrontendConfig {
     pub date_format: String,
     /// The maximum length of a Twitch username.
     pub maximum_username_length: u16,
+    /// The color palette
+    #[serde(default)]
+    pub palette: Palette,
 }
