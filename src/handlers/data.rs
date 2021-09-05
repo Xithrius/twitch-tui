@@ -140,8 +140,8 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            create_data().hash_username(),
-            Rgb(104 * 2, 117 * 2, 109 * 2)
+            create_data().hash_username(&Palette::Pastel),
+            Rgb(159, 223, 221)
         );
     }
 
