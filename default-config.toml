@@ -17,3 +17,6 @@ tick_delay = 30
 date_format = "%a %b %e %T %Y"
 # The longest a username can be.
 maximum_username_length = 26
+# Optional: The color palette for the username column (Default: pastel)
+# One of: pastel, vibrant, warm, cool
+palette = "vibrant"
