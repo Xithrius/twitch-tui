@@ -57,45 +57,46 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
                 .constraints(table_width.as_ref())
                 .split(f.size());
 
-            let all_messages = app.messages.clone();
-
             let chunk_height = vertical_chunks[0].height as usize - 4;
             let chunk_width = horizontal_chunks[2].width as usize - 4;
 
-            let message_amount = all_messages.len();
+            let all_messages = &app
+                .messages
+                .iter()
+                .map(|m| m.to_row(&config.frontend.palette, chunk_width))
+                .collect::<Vec<(u16, Row)>>();
 
-            let mut rendered_messages = all_messages;
+            let total_row_height: usize = all_messages.iter().map(|r| r.0 as usize).sum();
 
-            if rendered_messages.len() >= chunk_height {
-                rendered_messages = rendered_messages[message_amount - chunk_height..].to_owned();
-            }
+            let mut all_rows = all_messages.iter().map(|r| r.1.clone()).collect::<Vec<_>>();
 
-            let mut final_rendered_messages = Vec::new();
-
-            for msg_data in rendered_messages {
-                for some_data in msg_data.wrap_message(chunk_width) {
-                    final_rendered_messages.push(some_data);
+            if total_row_height >= chunk_height {
+                let mut row_sum = 0;
+                let mut final_index = 0;
+                for (index, (row_height, _row)) in all_messages.iter().rev().enumerate() {
+                    if row_sum >= chunk_height {
+                        final_index = index;
+                        break;
+                    }
+                    row_sum += *row_height as usize;
                 }
+
+                all_rows = all_rows[all_rows.len() - final_index..].to_owned();
             }
 
-            let table = Table::new(
-                final_rendered_messages
-                    .iter()
-                    .map(|m| m.to_row(&config.frontend.palette))
-                    .collect::<Vec<Row>>(),
-            )
-            .header(
-                Row::new(vec!["Time", "User", "Message content"])
-                    .style(Style::default().fg(Color::Yellow))
-                    .bottom_margin(1),
-            )
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("[ Table of messages ]"),
-            )
-            .widths(table_width)
-            .column_spacing(1);
+            let table = Table::new(all_rows)
+                .header(
+                    Row::new(vec!["Time", "User", "Message content"])
+                        .style(Style::default().fg(Color::Yellow))
+                        .bottom_margin(1),
+                )
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("[ Table of messages ]"),
+                )
+                .widths(table_width)
+                .column_spacing(1);
 
             f.render_widget(table, vertical_chunks[0]);
         })?;

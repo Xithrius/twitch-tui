@@ -1,6 +1,7 @@
-use crate::handlers::config::Palette;
 use tui::style::{Color, Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
+
+use crate::handlers::config::Palette;
 
 #[derive(Debug, Clone)]
 pub struct Data {
@@ -20,7 +21,7 @@ impl Data {
         }
     }
 
-    pub fn hash_username(&self, palette: &Palette) -> Color {
+    fn hash_username(&self, palette: &Palette) -> Color {
         let hash = self
             .author
             .as_bytes()
@@ -40,52 +41,23 @@ impl Data {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row(&self, palette: &Palette) -> Row {
-        return if self.empty {
-            Row::new(vec![
-                Cell::from("".to_string()),
-                Cell::from("".to_string()),
-                Cell::from(self.message.to_string()),
-            ])
-        } else {
-            Row::new(vec![
-                Cell::from(self.time_sent.to_string()),
-                Cell::from(self.author.to_string())
-                    .style(Style::default().fg(self.hash_username(palette))),
-                Cell::from(self.message.to_string()),
-            ])
-        };
-    }
+    pub fn to_row(&self, palette: &Palette, limit: usize) -> (u16, Row) {
+        let message = textwrap::fill(self.message.as_str(), limit);
 
-    pub fn wrap_message(self, limit: usize) -> Vec<Data> {
-        let mut data_vec = Vec::new();
+        let mut row = Row::new(vec![
+            Cell::from(self.time_sent.to_string()),
+            Cell::from(self.author.to_string())
+                .style(Style::default().fg(self.hash_username(palette))),
+            Cell::from(message.to_string()),
+        ]);
 
-        let split_message = textwrap::fill(self.message.as_str(), limit)
-            .split("\n")
-            .map(|m| m.to_string())
-            .collect::<Vec<String>>();
+        let msg_height = message.split("\n").collect::<Vec<&str>>().len() as u16;
 
-        if split_message.len() == 1 {
-            data_vec.push(self);
-        } else if split_message.len() > 1 {
-            data_vec.push(Data::new(
-                self.time_sent,
-                self.author,
-                split_message[0].to_string(),
-                false,
-            ));
-
-            for index in 1..split_message.len() {
-                data_vec.push(Data::new(
-                    "".to_string(),
-                    "".to_string(),
-                    split_message[index].to_string(),
-                    true,
-                ));
-            }
+        if msg_height > 1 {
+            row = row.height(msg_height);
         }
 
-        data_vec
+        (msg_height, row)
     }
 }
 
@@ -145,13 +117,13 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_data_message_wrapping() {
-        let mut some_data = create_data();
-        some_data.message = "asdf ".repeat(39);
-        assert_eq!(some_data.message.len(), 195);
-
-        let some_vec = some_data.wrap_message(157);
-        assert_eq!(some_vec.len(), 2);
-    }
+    // #[test]
+    // fn test_data_message_wrapping() {
+    //     let mut some_data = create_data();
+    //     some_data.message = "asdf ".repeat(39);
+    //     assert_eq!(some_data.message.len(), 195);
+    //
+    //     let some_vec = some_data.wrap_message(157);
+    //     assert_eq!(some_vec.len(), 2);
+    // }
 }
