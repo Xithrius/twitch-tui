@@ -1,7 +1,7 @@
 use tui::style::{Color, Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
 
-use crate::handlers::config::Palette;
+use crate::handlers::config::{FrontendConfig, Palette};
 
 #[derive(Debug, Clone)]
 pub struct Data {
@@ -41,13 +41,24 @@ impl Data {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row(&self, palette: &Palette, limit: usize) -> (u16, Row) {
+    pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
+        let mut username = &self.author;
+        if frontend_config.username_alignment == "right" {
+            username = &format!(
+                "{}{}",
+                " ".repeat(
+                    (frontend_config.maximum_username_length - username.len() as u16) as usize
+                ),
+                username
+            );
+        }
+
         let message = textwrap::fill(self.message.as_str(), limit);
 
         let mut row = Row::new(vec![
             Cell::from(self.time_sent.to_string()),
-            Cell::from(self.author.to_string())
-                .style(Style::default().fg(self.hash_username(palette))),
+            Cell::from(username.to_string())
+                .style(Style::default().fg(self.hash_username(&frontend_config.palette))),
             Cell::from(message.to_string()),
         ]);
 

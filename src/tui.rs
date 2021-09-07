@@ -63,7 +63,7 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
             let all_messages = &app
                 .messages
                 .iter()
-                .map(|m| m.to_row(&config.frontend.palette, chunk_width))
+                .map(|m| m.to_row(&config.frontend, &chunk_width))
                 .collect::<Vec<(u16, Row)>>();
 
             let total_row_height: usize = all_messages.iter().map(|r| r.0 as usize).sum();
