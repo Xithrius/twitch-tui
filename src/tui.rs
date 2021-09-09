@@ -44,7 +44,7 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
     let table_width = &[
         Constraint::Length(date_format_length),
         Constraint::Length(config.frontend.maximum_username_length),
-        Constraint::Min(1),
+        Constraint::Percentage(100),
     ];
 
     loop {
