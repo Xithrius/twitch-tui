@@ -57,7 +57,7 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
 
     loop {
         if let Ok(info) = rx.try_recv() {
-            app.messages.push(info);
+            app.messages.push_front(info);
         }
 
         terminal.draw(|f| {
@@ -79,12 +79,17 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
             // The chunk furthest to the right is the messages, that's the one we want.
             let message_chunk_width = horizontal_chunks[table_width.len() - 1].width as usize - 4;
 
+            // Making sure that messages do have a limit and don't eat up all the RAM.
+            &app.messages
+                .truncate(config.terminal.maximum_messages as usize);
+
             // A vector of tuples which contain the length of some message content.
             // This message is contained within the 3rd cell of the row within the tuples.
             // Color and alignment of the username along with message text wrapping is done here.
             let all_messages = &app
                 .messages
                 .iter()
+                .rev()
                 .map(|m| m.to_row(&config.frontend, &message_chunk_width))
                 .collect::<Vec<(u16, Row)>>();
 
