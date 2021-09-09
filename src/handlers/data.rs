@@ -1,23 +1,24 @@
 use tui::style::{Color, Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
 
-use crate::handlers::config::{FrontendConfig, Palette};
+use crate::{
+    handlers::config::{FrontendConfig, Palette},
+    utils::text::align_text,
+};
 
 #[derive(Debug, Clone)]
 pub struct Data {
     pub time_sent: String,
     pub author: String,
     pub message: String,
-    pub empty: bool,
 }
 
 impl Data {
-    pub fn new(time_sent: String, author: String, message: String, empty: bool) -> Self {
+    pub fn new(time_sent: String, author: String, message: String) -> Self {
         Data {
             time_sent,
             author,
             message,
-            empty,
         }
     }
 
@@ -42,23 +43,16 @@ impl Data {
     }
 
     pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
-        let mut username = &self.author;
-        if frontend_config.username_alignment == "right" {
-            username = &format!(
-                "{}{}",
-                " ".repeat(
-                    (frontend_config.maximum_username_length - username.len() as u16) as usize
-                ),
-                username
-            );
-        }
-
-        let message = textwrap::fill(self.message.as_str(), limit);
+        let message = textwrap::fill(self.message.as_str(), *limit);
 
         let mut row = Row::new(vec![
             Cell::from(self.time_sent.to_string()),
-            Cell::from(username.to_string())
-                .style(Style::default().fg(self.hash_username(&frontend_config.palette))),
+            Cell::from(align_text(
+                &self.author,
+                frontend_config.username_alignment.as_str(),
+                &frontend_config.maximum_username_length,
+            ))
+            .style(Style::default().fg(self.hash_username(&frontend_config.palette))),
             Cell::from(message.to_string()),
         ]);
 
@@ -116,7 +110,6 @@ mod tests {
             Local::now().format("%c").to_string(),
             "human".to_string(),
             "beep boop".to_string(),
-            false,
         )
     }
 
@@ -127,14 +120,4 @@ mod tests {
             Rgb(159, 223, 221)
         );
     }
-
-    // #[test]
-    // fn test_data_message_wrapping() {
-    //     let mut some_data = create_data();
-    //     some_data.message = "asdf ".repeat(39);
-    //     assert_eq!(some_data.message.len(), 195);
-    //
-    //     let some_vec = some_data.wrap_message(157);
-    //     assert_eq!(some_vec.len(), 2);
-    // }
 }

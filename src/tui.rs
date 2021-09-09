@@ -13,7 +13,7 @@ use tui::{
 
 use crate::{
     handlers::{config::CompleteConfig, data::Data},
-    utils::{app::App, event},
+    utils::{app::App, event, text::align_text},
 };
 
 pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
@@ -32,6 +32,14 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
         .format(config.frontend.date_format.as_str())
         .to_string()
         .len() as u16;
+
+    let username_column_title = align_text(
+        "Username",
+        &config.frontend.username_alignment,
+        &config.frontend.maximum_username_length,
+    );
+
+    let column_titles = vec!["Time", &username_column_title, "Message content"];
 
     let table_width = &[
         Constraint::Length(date_format_length),
@@ -86,7 +94,7 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
 
             let table = Table::new(all_rows)
                 .header(
-                    Row::new(vec!["Time", "User", "Message content"])
+                    Row::new(column_titles.to_owned())
                         .style(Style::default().fg(Color::Yellow))
                         .bottom_margin(1),
                 )
