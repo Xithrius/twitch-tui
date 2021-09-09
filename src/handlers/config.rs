@@ -45,6 +45,8 @@ pub struct TerminalConfig {
 
 #[derive(Deserialize, Clone)]
 pub struct FrontendConfig {
+    // If the time and date is to be shown.
+    pub date_shown: bool,
     /// The format of string that will show up in the terminal.
     pub date_format: String,
     /// The maximum length of a Twitch username.

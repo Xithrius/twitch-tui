@@ -45,8 +45,7 @@ impl Data {
     pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
         let message = textwrap::fill(self.message.as_str(), *limit);
 
-        let mut row = Row::new(vec![
-            Cell::from(self.time_sent.to_string()),
+        let mut row_vector = vec![
             Cell::from(align_text(
                 &self.author,
                 frontend_config.username_alignment.as_str(),
@@ -54,9 +53,15 @@ impl Data {
             ))
             .style(Style::default().fg(self.hash_username(&frontend_config.palette))),
             Cell::from(message.to_string()),
-        ]);
+        ];
+
+        if frontend_config.date_shown {
+            row_vector.insert(0, Cell::from(self.time_sent.to_string()));
+        }
 
         let msg_height = message.split("\n").collect::<Vec<&str>>().len() as u16;
+
+        let mut row = Row::new(row_vector);
 
         if msg_height > 1 {
             row = row.height(msg_height);

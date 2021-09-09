@@ -15,6 +15,8 @@ tick_delay = 30
 maximum_messages = 1000
 
 [frontend]
+# If the time and date is to be shown.
+date_shown = true
 # The format of the date and time outputs, https://strftime.org/ has formats.
 date_format = "%a %b %e %T %Y"
 # The longest a username can be.
