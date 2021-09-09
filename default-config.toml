@@ -11,12 +11,17 @@ server = "irc.chat.twitch.tv"
 [terminal]
 # The delay in milliseconds between terminal updates.
 tick_delay = 30
+# The maximum amount of messages to be stored.
+maximum_messages = 1000
 
 [frontend]
+# If the time and date is to be shown.
+date_shown = true
 # The format of the date and time outputs, https://strftime.org/ has formats.
 date_format = "%a %b %e %T %Y"
 # The longest a username can be.
 maximum_username_length = 26
-# Optional: The color palette for the username column (Default: pastel)
-# One of: pastel, vibrant, warm, cool
-palette = "vibrant"
+# Which side the username should be aligned to.
+username_alignment = "right"
+# The color palette for the username column: pastel (default), vibrant, warm, cool.
+palette = "pastel"

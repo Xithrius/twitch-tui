@@ -18,7 +18,7 @@ fn main() -> Result<()> {
     if let Ok(config_contents) = fs::read_to_string(CONFIG_PATH) {
         let config: CompleteConfig = toml::from_str(config_contents.as_str())?;
 
-        let app = App::default();
+        let app = App::new(config.terminal.maximum_messages as usize);
 
         let (tx, rx) = std::sync::mpsc::channel();
         let cloned_config = config.clone();

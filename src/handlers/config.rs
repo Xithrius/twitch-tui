@@ -39,14 +39,20 @@ pub struct TwitchConfig {
 pub struct TerminalConfig {
     /// The delay between updates, in milliseconds.
     pub tick_delay: u64,
+    /// The maximum amount of messages to be stored.
+    pub maximum_messages: u64,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct FrontendConfig {
+    // If the time and date is to be shown.
+    pub date_shown: bool,
     /// The format of string that will show up in the terminal.
     pub date_format: String,
     /// The maximum length of a Twitch username.
     pub maximum_username_length: u16,
+    /// Which side the username should be aligned to.
+    pub username_alignment: String,
     /// The color palette
     #[serde(default)]
     pub palette: Palette,

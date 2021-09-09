@@ -13,7 +13,7 @@ use tui::{
 
 use crate::{
     handlers::{config::CompleteConfig, data::Data},
-    utils::{app::App, event},
+    utils::{app::App, event, text::align_text},
 };
 
 pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
@@ -28,20 +28,36 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
     let backend = TermionBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let date_format_length = Local::now()
-        .format(config.frontend.date_format.as_str())
-        .to_string()
-        .len() as u16;
+    let username_column_title = align_text(
+        "Username",
+        &config.frontend.username_alignment,
+        &config.frontend.maximum_username_length,
+    );
 
-    let table_width = &[
-        Constraint::Length(date_format_length),
+    let mut column_titles = vec![username_column_title.as_str(), "Message content"];
+
+    let mut table_width = vec![
         Constraint::Length(config.frontend.maximum_username_length),
-        Constraint::Min(1),
+        Constraint::Percentage(100),
     ];
+
+    if config.frontend.date_shown {
+        column_titles.insert(0, "Time");
+
+        table_width.insert(
+            0,
+            Constraint::Length(
+                Local::now()
+                    .format(config.frontend.date_format.as_str())
+                    .to_string()
+                    .len() as u16,
+            ),
+        );
+    }
 
     loop {
         if let Ok(info) = rx.try_recv() {
-            app.messages.push(info);
+            app.messages.push_front(info);
         }
 
         terminal.draw(|f| {
@@ -57,24 +73,37 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
                 .constraints(table_width.as_ref())
                 .split(f.size());
 
-            let chunk_height = vertical_chunks[0].height as usize - 4;
-            let chunk_width = horizontal_chunks[2].width as usize - 4;
+            // 0'th index because no matter what index is obtained, they're the same height.
+            let general_chunk_height = vertical_chunks[0].height as usize - 4;
 
+            // The chunk furthest to the right is the messages, that's the one we want.
+            let message_chunk_width = horizontal_chunks[table_width.len() - 1].width as usize - 4;
+
+            // Making sure that messages do have a limit and don't eat up all the RAM.
+            &app.messages
+                .truncate(config.terminal.maximum_messages as usize);
+
+            // A vector of tuples which contain the length of some message content.
+            // This message is contained within the 3rd cell of the row within the tuples.
+            // Color and alignment of the username along with message text wrapping is done here.
             let all_messages = &app
                 .messages
                 .iter()
-                .map(|m| m.to_row(&config.frontend.palette, chunk_width))
+                .rev()
+                .map(|m| m.to_row(&config.frontend, &message_chunk_width))
                 .collect::<Vec<(u16, Row)>>();
 
             let total_row_height: usize = all_messages.iter().map(|r| r.0 as usize).sum();
 
             let mut all_rows = all_messages.iter().map(|r| r.1.clone()).collect::<Vec<_>>();
 
-            if total_row_height >= chunk_height {
+            // Accounting for not all heights of rows to be the same due to text wrapping,
+            // so extra space needs to be used in order to scroll correctly.
+            if total_row_height >= general_chunk_height {
                 let mut row_sum = 0;
                 let mut final_index = 0;
-                for (index, (row_height, _row)) in all_messages.iter().rev().enumerate() {
-                    if row_sum >= chunk_height {
+                for (index, (row_height, _)) in all_messages.iter().rev().enumerate() {
+                    if row_sum >= general_chunk_height {
                         final_index = index;
                         break;
                     }
@@ -86,16 +115,16 @@ pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<(
 
             let table = Table::new(all_rows)
                 .header(
-                    Row::new(vec!["Time", "User", "Message content"])
+                    Row::new(column_titles.to_owned())
                         .style(Style::default().fg(Color::Yellow))
                         .bottom_margin(1),
                 )
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title("[ Table of messages ]"),
+                        .title(format!("[ {}'s chat stream ]", &config.twitch.channel)),
                 )
-                .widths(table_width)
+                .widths(table_width.as_ref())
                 .column_spacing(1);
 
             f.render_widget(table, vertical_chunks[0]);
