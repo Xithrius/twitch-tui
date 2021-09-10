@@ -25,3 +25,13 @@ maximum_username_length = 26
 username_alignment = "right"
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
+
+[keybinds]
+# Chat table.
+chat = "c"
+# Keybinds table.
+keybinds = "?"
+# Users in chat.
+users = "u"
+# Quit application (the ESC key will always be enabled).
+quit = "q"
