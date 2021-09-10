@@ -9,6 +9,7 @@ use crate::utils::app::App;
 mod handlers;
 mod tui;
 mod twitch;
+mod ui;
 mod utils;
 
 const CONFIG_PATH: &str = "config.toml";

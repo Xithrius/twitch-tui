@@ -1,3 +1,3 @@
-pub(crate) mod app;
-pub(crate) mod event;
-pub(crate) mod text;
+pub mod app;
+pub mod event;
+pub mod text;
