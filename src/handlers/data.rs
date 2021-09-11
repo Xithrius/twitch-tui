@@ -1,9 +1,10 @@
 use tui::style::{Color, Color::Rgb, Style};
 use tui::widgets::{Cell, Row};
 
+use crate::utils::colors::WindowStyles;
 use crate::{
     handlers::config::{FrontendConfig, Palette},
-    utils::text::align_text,
+    utils::{colors::hsl_to_rgb, text::align_text},
 };
 
 #[derive(Debug, Clone)]
@@ -11,14 +12,16 @@ pub struct Data {
     pub time_sent: String,
     pub author: String,
     pub message: String,
+    pub system: bool,
 }
 
 impl Data {
-    pub fn new(time_sent: String, author: String, message: String) -> Self {
+    pub fn new(time_sent: String, author: String, message: String, system: bool) -> Self {
         Data {
             time_sent,
             author,
             message,
+            system,
         }
     }
 
@@ -45,13 +48,20 @@ impl Data {
     pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
         let message = textwrap::fill(self.message.as_str(), *limit);
 
+        let style;
+        if self.system {
+            style = WindowStyles::new(WindowStyles::SystemChat);
+        } else {
+            style = Style::default().fg(self.hash_username(&frontend_config.palette));
+        }
+
         let mut row_vector = vec![
             Cell::from(align_text(
                 &self.author,
                 frontend_config.username_alignment.as_str(),
                 &frontend_config.maximum_username_length,
             ))
-            .style(Style::default().fg(self.hash_username(&frontend_config.palette))),
+            .style(style),
             Cell::from(message.to_string()),
         ];
 
@@ -61,7 +71,7 @@ impl Data {
 
         let msg_height = message.split("\n").collect::<Vec<&str>>().len() as u16;
 
-        let mut row = Row::new(row_vector);
+        let mut row = Row::new(row_vector).style(WindowStyles::new(WindowStyles::Chat));
 
         if msg_height > 1 {
             row = row.height(msg_height);
@@ -69,38 +79,6 @@ impl Data {
 
         (msg_height, row)
     }
-}
-
-// https://css-tricks.com/converting-color-spaces-in-javascript/#hsl-to-rgb
-fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> [u8; 3] {
-    // Color intensity
-    let chroma = (1. - (2. * lightness - 1.).abs()) * saturation;
-
-    // Second largest component
-    let x = chroma * (1. - ((hue / 60.) % 2. - 1.).abs());
-
-    // Amount to match lightness
-    let m = lightness - chroma / 2.;
-
-    // Convert to rgb based on color wheel section
-    let (mut red, mut green, mut blue) = match hue.round() as i32 {
-        0..=60 => (chroma, x, 0.),
-        61..=120 => (x, chroma, 0.),
-        121..=180 => (0., chroma, x),
-        181..=240 => (0., x, chroma),
-        241..=300 => (x, 0., chroma),
-        301..=360 => (chroma, 0., x),
-        _ => {
-            panic!("Invalid hue!");
-        }
-    };
-
-    // Add amount to each channel to match lightness
-    red = (red + m) * 255.;
-    green = (green + m) * 255.;
-    blue = (blue + m) * 255.;
-
-    [red as u8, green as u8, blue as u8]
 }
 
 #[cfg(test)]
@@ -115,6 +93,7 @@ mod tests {
             Local::now().format("%c").to_string(),
             "human".to_string(),
             "beep boop".to_string(),
+            false,
         )
     }
 

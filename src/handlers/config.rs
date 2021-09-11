@@ -63,11 +63,11 @@ pub struct FrontendConfig {
 #[derive(Deserialize, Clone)]
 pub struct KeybindsConfig {
     /// Chat table.
-    pub chat: char,
+    pub chat: String,
     /// Keybinds table.
-    pub keybinds: char,
+    pub keybinds: String,
     /// Users in chat.
-    pub users: char,
+    pub users: String,
     /// Quit application (the ESC key will always be enabled).
-    pub quit: char,
+    pub quit: String,
 }
