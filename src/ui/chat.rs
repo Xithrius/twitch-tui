@@ -3,12 +3,12 @@ use tui::backend::Backend;
 use tui::terminal::Frame;
 use tui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
     widgets::{Block, Borders, Row, Table},
 };
 
 use crate::handlers::config::CompleteConfig;
 use crate::utils::app::App;
+use crate::utils::colors::WindowStyles;
 
 pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: CompleteConfig) -> Result<()>
 where
@@ -71,12 +71,13 @@ where
     let table = Table::new(all_rows)
         .header(
             Row::new(app.column_titles.as_ref().unwrap().to_owned())
-                .style(Style::default().fg(Color::Yellow)),
+                .style(WindowStyles::new(WindowStyles::ColumnTitle)),
         )
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("[ {}'s chat stream ]", &config.twitch.channel)),
+                .title(format!("[ {}'s chat stream ]", &config.twitch.channel))
+                .style(WindowStyles::new(WindowStyles::BoarderName)),
         )
         .widths(table_widths.as_ref())
         .column_spacing(1);
