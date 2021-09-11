@@ -1,14 +1,15 @@
 use anyhow::Result;
-use tui::backend::Backend;
-use tui::terminal::Frame;
 use tui::{
+    backend::Backend,
     layout::{Constraint, Direction, Layout},
+    terminal::Frame,
     widgets::{Block, Borders, Row, Table},
 };
 
-use crate::handlers::config::CompleteConfig;
-use crate::utils::app::App;
-use crate::utils::colors::WindowStyles;
+use crate::{
+    handlers::config::CompleteConfig,
+    utils::{app::App, colors::WindowStyles},
+};
 
 pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: CompleteConfig) -> Result<()>
 where

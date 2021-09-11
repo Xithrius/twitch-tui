@@ -6,9 +6,10 @@ use tui::{
     widgets::{Block, Borders, Row, Table},
 };
 
-use crate::handlers::config::CompleteConfig;
-use crate::utils::colors::WindowStyles;
-use crate::utils::text::vector2_col_sums;
+use crate::{
+    handlers::config::CompleteConfig,
+    utils::{colors::WindowStyles, text::vector2_col_sums},
+};
 
 pub fn draw_keybinds_ui<T>(frame: &mut Frame<T>, config: CompleteConfig) -> Result<()>
 where

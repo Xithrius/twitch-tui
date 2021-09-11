@@ -1,10 +1,11 @@
-use tui::style::{Color, Color::Rgb, Style};
-use tui::widgets::{Cell, Row};
+use tui::{
+    style::{Color, Color::Rgb, Style},
+    widgets::{Cell, Row},
+};
 
-use crate::utils::colors::WindowStyles;
 use crate::{
     handlers::config::{FrontendConfig, Palette},
-    utils::{colors::hsl_to_rgb, text::align_text},
+    utils::{colors::hsl_to_rgb, colors::WindowStyles, text::align_text},
 };
 
 #[derive(Debug, Clone)]

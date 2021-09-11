@@ -5,9 +5,9 @@ use chrono::offset::Local;
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{backend::TermionBackend, layout::Constraint, Terminal};
 
-use crate::ui::{chat::draw_chat_ui, keybinds::draw_keybinds_ui};
 use crate::{
     handlers::{config::CompleteConfig, data::Data},
+    ui::{chat::draw_chat_ui, keybinds::draw_keybinds_ui},
     utils::{
         app::{App, State},
         event,
