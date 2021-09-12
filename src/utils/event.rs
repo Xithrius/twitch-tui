@@ -9,8 +9,7 @@ use std::{
     time::Duration,
 };
 
-use termion::event::Key;
-use termion::input::TermRead;
+use termion::{event::Key, input::TermRead};
 
 pub enum Event<I> {
     Input(I),
