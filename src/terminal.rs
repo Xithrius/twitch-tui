@@ -76,7 +76,7 @@ pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Re
             match input {
                 Key::Char('c') => app.state = State::Chat,
                 Key::Char('?') => app.state = State::KeybindHelp,
-                Key::Esc => break,
+                Key::Char('q') | Key::Esc => break,
                 _ => {}
             }
         }

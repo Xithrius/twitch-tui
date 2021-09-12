@@ -65,9 +65,7 @@ pub struct KeybindsConfig {
     /// Chat table.
     pub chat: String,
     /// Keybinds table.
-    pub keybinds: String,
-    /// Users in chat.
-    pub users: String,
+    pub help: String,
     /// Quit application (the ESC key will always be enabled).
     pub quit: String,
 }

@@ -26,12 +26,11 @@ username_alignment = "right"
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
 
+# Changing this currently doesn't do anything.
 [keybinds]
 # Chat table.
 chat = "c"
 # Keybinds table.
-keybinds = "?"
-# Users in chat.
-users = "u"
+help = "?"
 # Quit application (the ESC key will always be enabled).
 quit = "q"
