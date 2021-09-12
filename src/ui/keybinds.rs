@@ -24,8 +24,7 @@ where
     let mut keybinds = vec![
         vec!["Description", "Keybind"],
         vec!["Bring up the chat window", config.keybinds.chat.as_str()],
-        vec!["Keybinds help", config.keybinds.keybinds.as_str()],
-        vec!["See all the users in chat", config.keybinds.users.as_str()],
+        vec!["Keybinds help", config.keybinds.help.as_str()],
         vec!["Quit this application", config.keybinds.quit.as_str()],
     ];
 
