@@ -7,7 +7,7 @@ use handlers::config::CompleteConfig;
 use crate::utils::app::App;
 
 mod handlers;
-mod tui;
+mod terminal;
 mod twitch;
 mod ui;
 mod utils;
@@ -28,7 +28,7 @@ fn main() -> Result<()> {
             twitch::twitch_irc(&config, &tx);
         });
 
-        tui::tui(cloned_config, app, rx).unwrap();
+        terminal::ui_driver(cloned_config, app, rx).unwrap();
     } else {
         println!(
             "Error: configuration not found. Please create a config file at '{}', and see '{}' for an example configuration.",

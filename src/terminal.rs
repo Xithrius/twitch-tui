@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-pub fn tui(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
+pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
     let events = event::Events::with_config(event::Config {
         exit_key: Key::Esc,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
