@@ -30,7 +30,7 @@ where
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = vertical_chunks[0].height as usize - 4;
+    let general_chunk_height = vertical_chunks[0].height as usize - 3;
 
     // The chunk furthest to the right is the messages, that's the one we want.
     let message_chunk_width = horizontal_chunks[table_widths.len() - 1].width as usize - 4;
