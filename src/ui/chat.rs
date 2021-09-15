@@ -2,13 +2,18 @@ use anyhow::Result;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
     terminal::Frame,
-    widgets::{Block, Borders, Row, Table},
+    widgets::{Block, Borders, Paragraph, Row, Table},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handlers::config::CompleteConfig,
-    utils::{app::App, colors::WindowStyles},
+    utils::{
+        app::{App, State},
+        colors::WindowStyles,
+    },
 };
 
 pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: CompleteConfig) -> Result<()>
@@ -90,6 +95,25 @@ where
         .column_spacing(1);
 
     frame.render_widget(table, vertical_chunks[0]);
+
+    if config.frontend.input {
+        let paragraph = Paragraph::new(app.input_text.as_ref())
+            .style(match app.state {
+                State::Input => Style::default().fg(Color::Yellow),
+                _ => Style::default(),
+            })
+            .block(Block::default().borders(Borders::ALL).title("[ Input ]"));
+
+        frame.render_widget(paragraph, vertical_chunks[1]);
+
+        // Setting the cursor while in insert mode so it looks correct.
+        if let State::Input = app.state {
+            frame.set_cursor(
+                vertical_chunks[1].x + app.input_text.width() as u16 + 1,
+                vertical_chunks[1].y + 1,
+            )
+        }
+    }
 
     Ok(())
 }

@@ -1,8 +1,13 @@
-use std::{io, sync::mpsc::Receiver, time::Duration};
+use std::{io, time::Duration};
 
 use anyhow::Result;
 use chrono::offset::Local;
+use futures::FutureExt;
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
+use tokio::{
+    sync::mpsc::{Receiver, Sender},
+    task::unconstrained,
+};
 use tui::{backend::TermionBackend, layout::Constraint, Terminal};
 
 use crate::{
@@ -15,7 +20,12 @@ use crate::{
     },
 };
 
-pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
+pub async fn ui_driver(
+    config: CompleteConfig,
+    mut app: App,
+    tx: Sender<String>,
+    mut rx: Receiver<Data>,
+) -> Result<()> {
     let events = event::Events::with_config(event::Config {
         exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
@@ -62,26 +72,61 @@ pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Re
 
     let chat_config = config.clone();
 
+    terminal.clear().unwrap();
+
     'outer: loop {
-        if let Ok(info) = rx.try_recv() {
+        if let Some(Some(info)) = unconstrained(rx.recv()).now_or_never() {
             app.messages.push_front(info);
         }
 
         terminal.draw(|mut frame| match app.state {
-            State::Normal => draw_chat_ui(&mut frame, &mut app, chat_config.to_owned()).unwrap(),
+            State::Normal | State::Input => {
+                draw_chat_ui(&mut frame, &mut app, chat_config.to_owned()).unwrap()
+            }
             State::KeybindHelp => draw_keybinds_ui(&mut frame, chat_config.to_owned()).unwrap(),
-            _ => {}
         })?;
 
-        if let event::Event::Input(input) = events.next()? {
-            match input {
-                Key::Char('c') => app.state = State::Normal,
-                Key::Char('?') => app.state = State::KeybindHelp,
-                Key::Char('q') | Key::Esc => match app.state {
-                    State::Normal => break 'outer,
-                    State::KeybindHelp | State::Input => app.state = State::Normal,
+        if let event::Event::Input(input_event) = events.next().unwrap() {
+            match app.state {
+                State::Input => match input_event {
+                    Key::Char('\n') => {
+                        let input_message: String = app.input_text.drain(..).collect();
+                        app.messages.push_front(Data::new(
+                            Local::now()
+                                .format(config.frontend.date_format.as_str())
+                                .to_string(),
+                            config.twitch.username.to_string(),
+                            input_message.clone(),
+                            false,
+                        ));
+
+                        tx.send(input_message).await.unwrap();
+                    }
+                    Key::Char(c) => {
+                        app.input_text.push(c);
+                    }
+                    Key::Backspace => {
+                        app.input_text.pop();
+                    }
+                    Key::Esc => {
+                        app.state = State::Normal;
+                    }
+                    _ => {}
                 },
-                _ => {}
+                _ => match input_event {
+                    Key::Char('c') => app.state = State::Normal,
+                    Key::Char('?') => app.state = State::KeybindHelp,
+                    Key::Char('i') => {
+                        if config.frontend.input {
+                            app.state = State::Input
+                        }
+                    }
+                    Key::Esc => match app.state {
+                        State::Normal => break 'outer,
+                        State::KeybindHelp | State::Input => app.state = State::Normal,
+                    },
+                    _ => {}
+                },
             }
         }
     }
