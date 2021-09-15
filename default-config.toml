@@ -12,7 +12,7 @@ server = "irc.chat.twitch.tv"
 # The delay in milliseconds between terminal updates.
 tick_delay = 30
 # The maximum amount of messages to be stored.
-maximum_messages = 1000
+maximum_messages = 150
 
 [frontend]
 # If the time and date is to be shown.
