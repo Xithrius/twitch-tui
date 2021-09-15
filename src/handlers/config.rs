@@ -55,9 +55,11 @@ pub struct FrontendConfig {
     pub maximum_username_length: u16,
     /// Which side the username should be aligned to.
     pub username_alignment: String,
-    /// The color palette
+    /// The color palette.
     #[serde(default)]
     pub palette: Palette,
+    /// If input to Twitch chat is wanted as well.
+    pub input: bool,
 }
 
 #[derive(Deserialize, Clone)]

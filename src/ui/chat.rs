@@ -17,10 +17,16 @@ where
 {
     let table_widths = app.table_constraints.as_ref().unwrap();
 
+    let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
+
+    if config.frontend.input {
+        vertical_chunk_constraints.push(Constraint::Length(3));
+    }
+
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
-        .constraints([Constraint::Min(1)].as_ref())
+        .constraints(vertical_chunk_constraints.as_ref())
         .split(frame.size());
 
     let horizontal_chunks = Layout::default()

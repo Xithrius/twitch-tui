@@ -5,8 +5,9 @@ use tui::layout::Constraint;
 use crate::handlers::data::Data;
 
 pub enum State {
-    Chat,
+    Normal,
     KeybindHelp,
+    Input,
 }
 
 pub struct App {
@@ -27,7 +28,7 @@ impl App {
         App {
             input: String::new(),
             messages: VecDeque::with_capacity(data_limit),
-            state: State::Chat,
+            state: State::Normal,
             table_constraints: None,
             column_titles: None,
         }
