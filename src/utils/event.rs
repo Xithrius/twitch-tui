@@ -30,15 +30,6 @@ pub struct Config {
     pub tick_rate: Duration,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            exit_key: Key::Esc,
-            tick_rate: Duration::from_millis(250),
-        }
-    }
-}
-
 impl Events {
     pub fn with_config(config: Config) -> Events {
         let (tx, rx) = mpsc::channel();

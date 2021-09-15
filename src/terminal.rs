@@ -17,7 +17,7 @@ use crate::{
 
 pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Result<()> {
     let events = event::Events::with_config(event::Config {
-        exit_key: Key::Esc,
+        exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
     });
 
@@ -62,7 +62,7 @@ pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Re
 
     let chat_config = config.clone();
 
-    loop {
+    'outer: loop {
         if let Ok(info) = rx.try_recv() {
             app.messages.push_front(info);
         }
@@ -70,13 +70,17 @@ pub fn ui_driver(config: CompleteConfig, mut app: App, rx: Receiver<Data>) -> Re
         terminal.draw(|mut frame| match app.state {
             State::Normal => draw_chat_ui(&mut frame, &mut app, chat_config.to_owned()).unwrap(),
             State::KeybindHelp => draw_keybinds_ui(&mut frame, chat_config.to_owned()).unwrap(),
+            _ => {}
         })?;
 
         if let event::Event::Input(input) = events.next()? {
             match input {
                 Key::Char('c') => app.state = State::Normal,
                 Key::Char('?') => app.state = State::KeybindHelp,
-                Key::Char('q') | Key::Esc => break,
+                Key::Char('q') | Key::Esc => match app.state {
+                    State::Normal => break 'outer,
+                    State::KeybindHelp | State::Input => app.state = State::Normal,
+                },
                 _ => {}
             }
         }
