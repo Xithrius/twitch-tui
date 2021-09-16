@@ -1,6 +1,7 @@
 use std::fs;
 
 use anyhow::Result;
+use tokio::sync::mpsc;
 
 use handlers::config::CompleteConfig;
 
@@ -15,20 +16,25 @@ mod utils;
 const CONFIG_PATH: &str = "config.toml";
 const DEFAULT_CONFIG_PATH: &str = "default-config.toml";
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     if let Ok(config_contents) = fs::read_to_string(CONFIG_PATH) {
         let config: CompleteConfig = toml::from_str(config_contents.as_str())?;
 
         let app = App::new(config.terminal.maximum_messages as usize);
 
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (twitch_tx, terminal_rx) = mpsc::channel(1);
+        let (terminal_tx, twitch_rx) = mpsc::channel(1);
         let cloned_config = config.clone();
 
-        std::thread::spawn(move || {
-            twitch::twitch_irc(&config, &tx);
+        tokio::task::spawn(async move {
+            twitch::twitch_irc(&config, twitch_tx, twitch_rx).await;
         });
 
-        terminal::ui_driver(cloned_config, app, rx).unwrap();
+        terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx)
+            .await
+            .unwrap();
+        std::process::exit(0);
     } else {
         println!(
             "Error: configuration not found. Please create a config file at '{}', and see '{}' for an example configuration.",
