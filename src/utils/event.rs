@@ -1,15 +1,16 @@
 use std::{
     io,
-    sync::mpsc,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    thread,
     time::Duration,
 };
 
 use termion::{event::Key, input::TermRead};
+use tokio::{sync::mpsc, task::unconstrained, task::JoinHandle};
+
+use futures::FutureExt;
 
 pub enum Event<I> {
     Input(I),
@@ -19,9 +20,9 @@ pub enum Event<I> {
 #[allow(dead_code)]
 pub struct Events {
     rx: mpsc::Receiver<Event<Key>>,
-    input_handle: thread::JoinHandle<()>,
+    input_handle: JoinHandle<()>,
     ignore_exit_key: Arc<AtomicBool>,
-    tick_handle: thread::JoinHandle<()>,
+    tick_handle: JoinHandle<()>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -31,33 +32,33 @@ pub struct Config {
 }
 
 impl Events {
-    pub fn with_config(config: Config) -> Events {
-        let (tx, rx) = mpsc::channel();
+    pub async fn with_config(config: Config) -> Events {
+        let (tx, rx) = mpsc::channel(1);
         let ignore_exit_key = Arc::new(AtomicBool::new(false));
         let input_handle = {
             let tx = tx.clone();
             let ignore_exit_key = ignore_exit_key.clone();
-            thread::spawn(move || {
+            tokio::spawn(async move {
                 let stdin = io::stdin();
-                for evt in stdin.keys() {
-                    if let Ok(key) = evt {
-                        if let Err(err) = tx.send(Event::Input(key)) {
-                            eprintln!("{}", err);
-                            return;
-                        }
-                        if !ignore_exit_key.load(Ordering::Relaxed) && key == config.exit_key {
-                            return;
-                        }
+                for key in stdin.keys().flatten() {
+                    if let Err(err) = tx.send(Event::Input(key)).await {
+                        eprintln!("{}", err);
+                        return;
+                    }
+                    if !ignore_exit_key.load(Ordering::Relaxed) && key == config.exit_key {
+                        return;
                     }
                 }
             })
         };
         let tick_handle = {
-            thread::spawn(move || loop {
-                if tx.send(Event::Tick).is_err() {
-                    break;
+            tokio::spawn(async move {
+                loop {
+                    if tx.send(Event::Tick).await.is_err() {
+                        break;
+                    }
+                    tokio::time::sleep(config.tick_rate).await;
                 }
-                thread::sleep(config.tick_rate);
             })
         };
         Events {
@@ -68,7 +69,7 @@ impl Events {
         }
     }
 
-    pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
-        self.rx.recv()
+    pub async fn next(&mut self) -> Option<Event<Key>> {
+        unconstrained(self.rx.recv()).now_or_never().and_then(|f| f)
     }
 }

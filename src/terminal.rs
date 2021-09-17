@@ -26,10 +26,11 @@ pub async fn ui_driver(
     tx: Sender<String>,
     mut rx: Receiver<Data>,
 ) -> Result<()> {
-    let events = event::Events::with_config(event::Config {
+    let mut events = event::Events::with_config(event::Config {
         exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
-    });
+    })
+    .await;
 
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -86,7 +87,7 @@ pub async fn ui_driver(
             State::KeybindHelp => draw_keybinds_ui(&mut frame, chat_config.to_owned()).unwrap(),
         })?;
 
-        if let event::Event::Input(input_event) = events.next().unwrap() {
+        if let Some(event::Event::Input(input_event)) = &events.next().await {
             match app.state {
                 State::Input => match input_event {
                     Key::Char('\n') => {
@@ -103,7 +104,7 @@ pub async fn ui_driver(
                         tx.send(input_message).await.unwrap();
                     }
                     Key::Char(c) => {
-                        app.input_text.push(c);
+                        app.input_text.push(c.to_string().parse().unwrap());
                     }
                     Key::Backspace => {
                         app.input_text.pop();
