@@ -19,7 +19,8 @@ const DEFAULT_CONFIG_PATH: &str = "default-config.toml";
 #[tokio::main]
 async fn main() -> Result<()> {
     if let Ok(config_contents) = fs::read_to_string(CONFIG_PATH) {
-        let config: CompleteConfig = toml::from_str(config_contents.as_str())?;
+        let config: CompleteConfig = toml::from_str(config_contents.as_str())
+            .expect("Could not read toml configuration file.");
 
         let app = App::new(config.terminal.maximum_messages as usize);
 
@@ -33,7 +34,7 @@ async fn main() -> Result<()> {
 
         terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx)
             .await
-            .unwrap();
+            .expect("Could not start user interface driver.");
         std::process::exit(0);
     } else {
         println!(

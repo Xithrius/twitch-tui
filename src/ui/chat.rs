@@ -82,8 +82,13 @@ where
 
     let table = Table::new(all_rows)
         .header(
-            Row::new(app.column_titles.as_ref().unwrap().to_owned())
-                .style(WindowStyles::new(WindowStyles::ColumnTitle)),
+            Row::new(
+                app.column_titles
+                    .as_ref()
+                    .expect("Could not build table column titles due to vector being empty.")
+                    .to_owned(),
+            )
+            .style(WindowStyles::new(WindowStyles::ColumnTitle)),
         )
         .block(
             Block::default()

@@ -72,21 +72,25 @@ pub async fn ui_driver(
 
     let chat_config = config.clone();
 
-    terminal.clear().unwrap();
+    terminal.clear().expect("Could not clear terminal.");
 
     'outer: loop {
-        if let Some(Some(info)) = unconstrained(rx.recv()).now_or_never() {
+        if let Some(Some(mut info)) = unconstrained(rx.recv()).now_or_never() {
+            info.message = format!("{} - {}", info.message, app.messages.len());
+
             app.messages.push_front(info);
         }
 
         terminal.draw(|mut frame| match app.state {
             State::Normal | State::Input => {
-                draw_chat_ui(&mut frame, &mut app, chat_config.to_owned()).unwrap()
+                draw_chat_ui(&mut frame, &mut app, chat_config.to_owned())
+                    .expect("Failed to draw chat user interface.")
             }
-            State::KeybindHelp => draw_keybinds_ui(&mut frame, chat_config.to_owned()).unwrap(),
+            State::KeybindHelp => draw_keybinds_ui(&mut frame, chat_config.to_owned())
+                .expect("Failed to draw keybinds help user interface."),
         })?;
 
-        if let event::Event::Input(input_event) = events.next().unwrap() {
+        if let event::Event::Input(input_event) = events.next().expect("Could not find keybind.") {
             match app.state {
                 State::Input => match input_event {
                     Key::Char('\n') => {
@@ -100,7 +104,9 @@ pub async fn ui_driver(
                             false,
                         ));
 
-                        tx.send(input_message).await.unwrap();
+                        tx.send(input_message)
+                            .await
+                            .expect("Failed to send from terminal to Twitch.");
                     }
                     Key::Char(c) => {
                         app.input_text.push(c);
