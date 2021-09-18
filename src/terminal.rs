@@ -84,7 +84,7 @@ pub async fn ui_driver(
             State::Normal | State::Input => {
                 draw_chat_ui(&mut frame, &mut app, chat_config.to_owned()).unwrap()
             }
-            State::KeybindHelp => draw_keybinds_ui(&mut frame, chat_config.to_owned()).unwrap(),
+            State::KeybindHelp => draw_keybinds_ui(&mut frame).unwrap(),
         })?;
 
         if let Some(event::Event::Input(input_event)) = &events.next().await {
@@ -118,6 +118,7 @@ pub async fn ui_driver(
                     Key::Char('c') => app.state = State::Normal,
                     Key::Char('?') => app.state = State::KeybindHelp,
                     Key::Char('i') => app.state = State::Input,
+                    Key::Char('q') => break 'outer,
                     Key::Esc => match app.state {
                         State::Normal => break 'outer,
                         State::KeybindHelp | State::Input => app.state = State::Normal,

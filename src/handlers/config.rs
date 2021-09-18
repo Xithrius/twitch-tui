@@ -23,8 +23,6 @@ pub struct CompleteConfig {
     pub terminal: TerminalConfig,
     /// How everything looks to the user.
     pub frontend: FrontendConfig,
-    /// All the keybinds on the keyboard.
-    pub keybinds: KeybindsConfig,
 }
 
 #[derive(Deserialize, Clone)]
@@ -58,14 +56,4 @@ pub struct FrontendConfig {
     /// The color palette.
     #[serde(default)]
     pub palette: Palette,
-}
-
-#[derive(Deserialize, Clone)]
-pub struct KeybindsConfig {
-    /// Chat table.
-    pub chat: String,
-    /// Keybinds table.
-    pub help: String,
-    /// Quit application (the ESC key will always be enabled).
-    pub quit: String,
 }

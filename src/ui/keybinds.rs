@@ -6,12 +6,9 @@ use tui::{
     widgets::{Block, Borders, Row, Table},
 };
 
-use crate::{
-    handlers::config::CompleteConfig,
-    utils::{colors::WindowStyles, text::vector2_col_max},
-};
+use crate::utils::{colors::WindowStyles, text::vector2_col_max};
 
-pub fn draw_keybinds_ui<T>(frame: &mut Frame<T>, config: CompleteConfig) -> Result<()>
+pub fn draw_keybinds_ui<T>(frame: &mut Frame<T>) -> Result<()>
 where
     T: Backend,
 {
@@ -23,9 +20,13 @@ where
 
     let mut keybinds = vec![
         vec!["Description", "Keybind"],
-        vec!["Bring up the chat window", config.keybinds.chat.as_str()],
-        vec!["Keybinds help", config.keybinds.help.as_str()],
-        vec!["Quit this application", config.keybinds.quit.as_str()],
+        vec!["Bring up the chat window", "c"],
+        vec!["Keybinds help (this window)", "?"],
+        vec![
+            "Exit out layer window/entire app when in normal mode",
+            "Esc",
+        ],
+        vec!["Quit this application", "q"],
     ];
 
     let (maximum_description_width, maximum_keybind_width) = vector2_col_max(keybinds.clone());
