@@ -24,7 +24,7 @@ where
 
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
-    if config.frontend.input {
+    if let State::Input = app.state {
         vertical_chunk_constraints.push(Constraint::Length(3));
     }
 
@@ -96,23 +96,18 @@ where
 
     frame.render_widget(table, vertical_chunks[0]);
 
-    if config.frontend.input {
+    if let State::Input = app.state {
         let paragraph = Paragraph::new(app.input_text.as_ref())
-            .style(match app.state {
-                State::Input => Style::default().fg(Color::Yellow),
-                _ => Style::default(),
-            })
+            .style(Style::default().fg(Color::Yellow))
             .block(Block::default().borders(Borders::ALL).title("[ Input ]"));
 
         frame.render_widget(paragraph, vertical_chunks[1]);
 
         // Setting the cursor while in insert mode so it looks correct.
-        if let State::Input = app.state {
-            frame.set_cursor(
-                vertical_chunks[1].x + app.input_text.width() as u16 + 1,
-                vertical_chunks[1].y + 1,
-            )
-        }
+        frame.set_cursor(
+            vertical_chunks[1].x + app.input_text.width() as u16 + 1,
+            vertical_chunks[1].y + 1,
+        )
     }
 
     Ok(())
