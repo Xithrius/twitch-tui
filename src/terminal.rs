@@ -41,7 +41,7 @@ pub async fn ui_driver(
     let username_column_title = align_text(
         "Username",
         &config.frontend.username_alignment,
-        &config.frontend.maximum_username_length,
+        config.frontend.maximum_username_length,
     );
 
     let mut column_titles = vec![
@@ -134,3 +134,49 @@ pub async fn ui_driver(
 
     Ok(())
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     use crate::{terminal, App};
+//     use std::fs;
+//
+//     fn setup() -> (CompleteConfig, App) {
+//         let config: CompleteConfig =
+//             toml::from_str(fs::read_to_string("default-config.toml").unwrap().as_str()).unwrap();
+//
+//         let app = App::new(config.terminal.maximum_messages as usize);
+//
+//         (config, app)
+//     }
+//
+//     // This test can only be ran in full-fledged terminals,
+//     // built-in terminals ones similar to Visual Studio Code and anything that
+//     // JetBrains has made will not work.
+//     // If the TUI detects that it cannot run because of terminal type, it will pass.
+//     // This test is still in the progress of being made.
+//     #[test]
+//     fn test_chunk_height_limit() {
+//         let (config, app) = setup();
+//
+//         let (tx, rx) = std::sync::mpsc::channel();
+//         let cloned_config = config.clone();
+//
+//         std::thread::spawn(move || {
+//             for i in 1..100 {
+//                 tx.send(Data::new(
+//                     Local::now()
+//                         .format(&config.frontend.date_format.as_str())
+//                         .to_string(),
+//                     i.to_string(),
+//                     i.to_string(),
+//                     false,
+//                 ))
+//                 .unwrap();
+//             }
+//         });
+//
+//         terminal::ui_driver(cloned_config, app, rx).unwrap();
+//     }
+// }

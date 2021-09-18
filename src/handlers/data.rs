@@ -60,7 +60,7 @@ impl Data {
             Cell::from(align_text(
                 &self.author,
                 frontend_config.username_alignment.as_str(),
-                &frontend_config.maximum_username_length,
+                frontend_config.maximum_username_length,
             ))
             .style(style),
             Cell::from(message.to_string()),

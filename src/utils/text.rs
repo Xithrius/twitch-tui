@@ -1,4 +1,8 @@
-pub fn align_text(text: &str, alignment: &str, maximum_length: &u16) -> String {
+pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
+    if maximum_length < 1 {
+        panic!("Parameter of 'maximum_length' cannot be below 1.");
+    }
+
     match alignment {
         "left" => text.to_string(),
         "right" => format!(
@@ -30,6 +34,36 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
+    fn test_maximum_length() {
+        align_text("", "left", 0);
+    }
+
+    #[test]
+    fn test_text_align_left() {
+        assert_eq!(align_text("a", "left", 10), "a".to_string());
+        assert_eq!(align_text("a", "left", 1), "a".to_string());
+    }
+
+    #[test]
+    fn test_text_align_right() {
+        assert_eq!(
+            align_text("a", "right", 10),
+            format!("{}{}", " ".repeat(9), "a")
+        );
+        assert_eq!(align_text("a", "right", 1), "a".to_string());
+    }
+
+    #[test]
+    fn test_text_align_center() {
+        assert_eq!(
+            align_text("a", "center", 10),
+            format!("{}{}{}", " ".repeat(5), "a", " ".repeat(5))
+        );
+        assert_eq!(align_text("a", "center", 1), "a".to_string());
+    }
 
     #[test]
     fn test_reference_string_vec2() {
