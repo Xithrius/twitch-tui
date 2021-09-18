@@ -16,7 +16,7 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
         nickname: Some(config.twitch.username.to_owned()),
         server: Some(config.twitch.server.to_owned()),
         channels: vec![format!("#{}", config.twitch.channel)],
-        password: Some(dotenv::var("TOKEN").unwrap().to_owned()),
+        password: Some(dotenv::var("TOKEN").unwrap()),
         port: Some(6667),
         use_tls: Some(false),
         ..Default::default()
@@ -27,7 +27,7 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
     let mut stream = client.stream().unwrap();
 
     loop {
-        if let Some(Some(Ok(message))) = stream.next().now_or_never() {
+        if let Some(Some(Ok(message))) = unconstrained(stream.next()).now_or_never() {
             if let Command::PRIVMSG(ref _target, ref msg) = message.command {
                 let user = match message.source_nickname() {
                     Some(username) => username.to_string(),
