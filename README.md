@@ -2,7 +2,7 @@
 
 ### What it looks like:
 
-![preview](./images/preview.png)
+![image](https://user-images.githubusercontent.com/15021300/133889088-7ec17848-b6c2-4e80-8dea-47f4b5b9553a.png)
 
 ### Setup:
 
