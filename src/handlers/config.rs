@@ -58,8 +58,6 @@ pub struct FrontendConfig {
     /// The color palette.
     #[serde(default)]
     pub palette: Palette,
-    /// If input to Twitch chat is wanted as well.
-    pub input: bool,
 }
 
 #[derive(Deserialize, Clone)]

@@ -117,11 +117,7 @@ pub async fn ui_driver(
                 _ => match input_event {
                     Key::Char('c') => app.state = State::Normal,
                     Key::Char('?') => app.state = State::KeybindHelp,
-                    Key::Char('i') => {
-                        if config.frontend.input {
-                            app.state = State::Input
-                        }
-                    }
+                    Key::Char('i') => app.state = State::Input,
                     Key::Esc => match app.state {
                         State::Normal => break 'outer,
                         State::KeybindHelp | State::Input => app.state = State::Normal,
