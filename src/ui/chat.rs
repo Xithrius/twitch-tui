@@ -13,8 +13,10 @@ use crate::{
     utils::{
         app::{App, State},
         colors::WindowStyles,
+        text::horizontal_text_scroll,
     },
 };
+use std::cmp::Ordering;
 
 pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: CompleteConfig) -> Result<()>
 where
@@ -24,7 +26,7 @@ where
 
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
-    if config.frontend.input {
+    if let State::Input = app.state {
         vertical_chunk_constraints.push(Constraint::Length(3));
     }
 
@@ -96,23 +98,32 @@ where
 
     frame.render_widget(table, vertical_chunks[0]);
 
-    if config.frontend.input {
-        let paragraph = Paragraph::new(app.input_text.as_ref())
-            .style(match app.state {
-                State::Input => Style::default().fg(Color::Yellow),
-                _ => Style::default(),
-            })
+    if let State::Input = app.state {
+        let mut input_text_render = app.input_text.clone();
+
+        let input_text_width = vertical_chunks[1].x + input_text_render.width() as u16;
+
+        let y = vertical_chunks[1].y + 1;
+
+        match input_text_width.cmp(&(vertical_chunks[1].width - 3)) {
+            Ordering::Greater => {
+                input_text_render = horizontal_text_scroll(
+                    input_text_render.as_str(),
+                    vertical_chunks[1].width as usize - 3,
+                );
+                frame.set_cursor(input_text_render.width() as u16 + 2, y);
+            }
+            Ordering::Less => frame.set_cursor(input_text_width + 1, y),
+            Ordering::Equal => {
+                frame.set_cursor(vertical_chunks[1].width - 2, y);
+            }
+        }
+
+        let paragraph = Paragraph::new(input_text_render.as_ref())
+            .style(Style::default().fg(Color::Yellow))
             .block(Block::default().borders(Borders::ALL).title("[ Input ]"));
 
         frame.render_widget(paragraph, vertical_chunks[1]);
-
-        // Setting the cursor while in insert mode so it looks correct.
-        if let State::Input = app.state {
-            frame.set_cursor(
-                vertical_chunks[1].x + app.input_text.width() as u16 + 1,
-                vertical_chunks[1].y + 1,
-            )
-        }
     }
 
     Ok(())

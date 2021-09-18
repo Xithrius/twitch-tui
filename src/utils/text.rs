@@ -21,6 +21,10 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     }
 }
 
+pub fn horizontal_text_scroll(s: &str, max_length: usize) -> String {
+    s[s.len() - max_length..].to_string()
+}
+
 pub fn vector2_col_max<T>(vec2: Vec<Vec<T>>) -> (u16, u16)
 where
     T: AsRef<str>,

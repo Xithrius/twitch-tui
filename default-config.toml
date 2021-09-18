@@ -25,14 +25,3 @@ maximum_username_length = 26
 username_alignment = "right"
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
-# if you want to be able to send messages to Twitch chat from the terminal.
-input = false
-
-# Changing this currently doesn't do anything.
-[keybinds]
-# Chat table.
-chat = "c"
-# Keybinds table.
-help = "?"
-# Quit application (the ESC key will always be enabled).
-quit = "q"
