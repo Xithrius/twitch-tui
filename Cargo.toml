@@ -1,11 +1,20 @@
 [package]
 name = "terminal-twitch-chat"
-version = "0.1.0"
+version = "1.0.0"
+authors = ["Xithrius <xithrius@gmail.com>"]
 edition = "2018"
+description = "Twitch chat in the terminal."
+documentation = "https://github.com/Xithrius/terminal-twitch-chat"
+homepage = "https://github.com/Xithrius/terminal-twitch-chat"
+repository = "https://github.com/Xithrius/terminal-twitch-chat"
+license = "MIT OR Apache-2.0"
+keywords = ["tui", "twitch"]
+categories = ["command-line-utilities"]
 
 [dependencies]
+crossterm = "0.20"
+tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
 anyhow = "1.0.44"
-tui = "0.16.0"
 termion = "1.5"
 rand = "0.8.4"
 unicode-width = "0.1.9"
@@ -17,3 +26,8 @@ dotenv = "0.15.0"
 toml = "0.5.8"
 serde = "1.0.130"
 textwrap = "0.14.2"
+
+[[bin]]
+bench = false
+path = "src/main.rs"
+name = "ttc"

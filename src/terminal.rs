@@ -8,7 +8,7 @@ use tokio::{
     sync::mpsc::{Receiver, Sender},
     task::unconstrained,
 };
-use tui::{backend::TermionBackend, layout::Constraint, Terminal};
+use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
 use crate::{
     handlers::{config::CompleteConfig, data::Data},
@@ -35,7 +35,7 @@ pub async fn ui_driver(
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
     let stdout = AlternateScreen::from(stdout);
-    let backend = TermionBackend::new(stdout);
+    let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
     let username_column_title = align_text(
