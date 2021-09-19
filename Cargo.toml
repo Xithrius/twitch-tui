@@ -22,10 +22,10 @@ chrono = "0.4"
 irc = "0.15.0"
 futures = "0.3.17"
 tokio = { version = "1.11.0", features = ["full"] }
-dotenv = "0.15.0"
 toml = "0.5.8"
 serde = "1.0.130"
 textwrap = "0.14.2"
+dirs = "4.0.0"
 
 [[bin]]
 bench = false
