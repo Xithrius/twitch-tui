@@ -1,7 +1,7 @@
 use chrono::offset::Local;
 use futures::{FutureExt, StreamExt};
 use irc::{
-    client::{data::Config, Client},
+    client::{data, Client},
     proto::Command,
 };
 use tokio::{
@@ -12,11 +12,11 @@ use tokio::{
 use crate::handlers::{config::CompleteConfig, data::Data};
 
 pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Receiver<String>) {
-    let irc_config = Config {
+    let irc_config = data::Config {
         nickname: Some(config.twitch.username.to_owned()),
         server: Some(config.twitch.server.to_owned()),
         channels: vec![format!("#{}", config.twitch.channel)],
-        password: Some(dotenv::var("TOKEN").unwrap()),
+        password: Some(config.twitch.token.to_owned()),
         port: Some(6667),
         use_tls: Some(false),
         ..Default::default()

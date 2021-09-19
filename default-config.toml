@@ -5,8 +5,8 @@ username = ""
 channel = ""
 # The IRC channel you'd like to connect to.
 server = "irc.chat.twitch.tv"
-# Wondering where to set your token?
-# Create an `.env` file and then set a TOKEN variable to it.
+# OAuth token that authenticates you into Twitch. I suggest you don't share this password.
+token = ""
 
 [terminal]
 # The delay in milliseconds between terminal updates.

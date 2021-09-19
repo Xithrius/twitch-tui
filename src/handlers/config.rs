@@ -33,6 +33,8 @@ pub struct TwitchConfig {
     pub channel: String,
     /// The IRC channel that they'd like to connect to.
     pub server: String,
+    /// The OAuth token.
+    pub token: String,
 }
 
 #[derive(Deserialize, Clone)]
