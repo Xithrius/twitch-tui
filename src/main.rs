@@ -13,12 +13,20 @@ mod twitch;
 mod ui;
 mod utils;
 
-const CONFIG_PATH: &str = "config.toml";
-const DEFAULT_CONFIG_PATH: &str = "default-config.toml";
+const CONF: &str = "https://github.com/Xithrius/terminal-twitch-chat/blob/main/default-config.toml";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if let Ok(config_contents) = fs::read_to_string(CONFIG_PATH) {
+    let path = match std::env::consts::OS {
+        "linux" => ".config/ttc/config.toml",
+        _ => unimplemented!(),
+    };
+
+    let home_path = dirs::home_dir().unwrap();
+
+    if let Ok(config_contents) =
+        fs::read_to_string(format!("{}/{}", home_path.to_str().unwrap(), path).as_str())
+    {
         let config: CompleteConfig = toml::from_str(config_contents.as_str())?;
 
         let app = App::new(config.terminal.maximum_messages as usize);
@@ -37,9 +45,9 @@ async fn main() -> Result<()> {
         std::process::exit(0);
     } else {
         println!(
-            "Error: configuration not found. Please create a config file at '{}', and see '{}' for an example configuration.",
-            CONFIG_PATH,
-            DEFAULT_CONFIG_PATH,
+            "Configuration not found. Create a config file at '{}', and see '{}' for an example configuration.",
+            path,
+            CONF,
         );
     }
 
