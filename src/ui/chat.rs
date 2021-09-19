@@ -18,7 +18,7 @@ use crate::{
 };
 use std::cmp::Ordering;
 
-pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: CompleteConfig) -> Result<()>
+pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) -> Result<()>
 where
     T: Backend,
 {
@@ -52,37 +52,23 @@ where
     app.messages
         .truncate(config.terminal.maximum_messages as usize);
 
-    // A vector of tuples which contain the length of some message content.
-    // This message is contained within the 3rd cell of the row within the tuples.
-    // Color and alignment of the username along with message text wrapping is done here.
-    let all_messages = &app
-        .messages
-        .iter()
-        .rev()
-        .map(|m| m.to_row(&config.frontend, &message_chunk_width))
-        .collect::<Vec<(u16, Row)>>();
-
-    let total_row_height: usize = all_messages.iter().map(|r| r.0 as usize).sum();
-
-    let mut all_rows = all_messages.iter().map(|r| r.1.clone()).collect::<Vec<_>>();
-
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
-    if total_row_height >= general_chunk_height {
-        let mut row_sum = 0;
-        let mut final_index = 0;
-        for (index, (row_height, _)) in all_messages.iter().rev().enumerate() {
-            if row_sum >= general_chunk_height {
-                final_index = index;
-                break;
-            }
-            row_sum += *row_height as usize;
-        }
+    let mut total_row_height: usize = 0;
+    let mut display_rows = std::collections::VecDeque::new();
 
-        all_rows = all_rows[all_rows.len() - final_index..].to_owned();
+    for data in app.messages.iter() {
+        let (msg_height, row) = data.to_row(&config.frontend, &message_chunk_width);
+        let row_height = total_row_height + msg_height as usize;
+
+        if row_height > general_chunk_height {
+            break;
+        }
+        total_row_height = row_height;
+        display_rows.push_front(row);
     }
 
-    let table = Table::new(all_rows)
+    let table = Table::new(display_rows)
         .header(
             Row::new(app.column_titles.as_ref().unwrap().to_owned())
                 .style(WindowStyles::new(WindowStyles::ColumnTitle)),

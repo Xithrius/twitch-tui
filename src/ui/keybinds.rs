@@ -29,26 +29,24 @@ where
         vec!["Quit this application", "q"],
     ];
 
-    let (maximum_description_width, maximum_keybind_width) = vector2_col_max(keybinds.clone());
+    let (maximum_description_width, maximum_keybind_width) = vector2_col_max(&keybinds);
 
     let column_names = keybinds.remove(0);
 
     let table_widths = vec![
-        Constraint::Min(maximum_description_width.clone()),
-        Constraint::Min(maximum_keybind_width.clone()),
+        Constraint::Min(maximum_description_width),
+        Constraint::Min(maximum_keybind_width),
     ];
 
-    let table = Table::new(
-        keybinds
-            .iter()
-            .map(|k| Row::new(k.clone()))
-            .collect::<Vec<Row>>(),
-    )
-    .header(Row::new(column_names.clone()).style(WindowStyles::new(WindowStyles::ColumnTitle)))
-    .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
-    .widths(&table_widths)
-    .column_spacing(2)
-    .style(WindowStyles::new(WindowStyles::BoarderName));
+    let table = Table::new(keybinds.iter().map(|k| Row::new(k.iter().copied())))
+        .header(
+            Row::new(column_names.iter().copied())
+                .style(WindowStyles::new(WindowStyles::ColumnTitle)),
+        )
+        .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
+        .widths(&table_widths)
+        .column_spacing(2)
+        .style(WindowStyles::new(WindowStyles::BoarderName));
 
     frame.render_widget(table, vertical_chunks[0]);
 

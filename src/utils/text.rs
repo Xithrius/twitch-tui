@@ -25,7 +25,7 @@ pub fn horizontal_text_scroll(s: &str, max_length: usize) -> String {
     s[s.len() - max_length..].to_string()
 }
 
-pub fn vector2_col_max<T>(vec2: Vec<Vec<T>>) -> (u16, u16)
+pub fn vector2_col_max<T>(vec2: &Vec<Vec<T>>) -> (u16, u16)
 where
     T: AsRef<str>,
 {
@@ -73,7 +73,7 @@ mod tests {
     fn test_reference_string_vec2() {
         let vec2 = vec![vec!["", "s"], vec!["longer string", "lll"]];
 
-        let (col0, col1) = vector2_col_max(vec2);
+        let (col0, col1) = vector2_col_max(&vec2);
 
         assert_eq!(col0, 13);
         assert_eq!(col1, 3);
@@ -86,7 +86,7 @@ mod tests {
             vec!["".to_string(), "the last string".to_string()],
         ];
 
-        let (col0, col1) = vector2_col_max(vec2);
+        let (col0, col1) = vector2_col_max(&vec2);
 
         assert_eq!(col0, 0);
         assert_eq!(col1, 15);
