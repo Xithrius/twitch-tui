@@ -11,12 +11,26 @@ env:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
 
-    runs-on: ubuntu-latest
+      matrix:
+        os:
+          - { prettyname: Windows, fullname: windows-latest }
+          - { prettyname: macOS, fullname: macos-latest }
+          - { prettyname: Linux, fullname: ubuntu-latest }
+
+        threadingMode: [ 'SingleThread', 'MultiThreaded' ]
+
+    timeout-minutes: 60
+
+    runs-on: ${{matrix.os.fullname}}
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Build
         run: cargo build --verbose
+
       - name: Run tests
         run: cargo test --verbose
