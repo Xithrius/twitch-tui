@@ -13,7 +13,7 @@
 
 ### Setup:
 
-##### Linux:
+##### Linux or MacOS:
 1. Make sure you have both Cargo and installed from the [rust-lang website](https://www.rust-lang.org/learn/get-started).
 2. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and have it ready to put into the `token` variable in the `config.toml` file that you create.
 3. Run `cargo install twitch-terminal-chat` and follow the instructions that it prints.
@@ -21,11 +21,6 @@
 5. You should now be able to run `ttc` from anywhere now. Have fun!
 
 ##### Windows:
-```rust
-unimplemented!();
-```
-
-##### MacOs:
 ```rust
 unimplemented!();
 ```
