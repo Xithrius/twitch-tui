@@ -18,7 +18,7 @@ const CONF: &str = "https://github.com/Xithrius/terminal-twitch-chat/blob/main/d
 #[tokio::main]
 async fn main() -> Result<()> {
     let path = match std::env::consts::OS {
-        "linux" => ".config/ttc/config.toml",
+        "linux" | "macos" => ".config/ttc/config.toml",
         _ => unimplemented!(),
     };
 
