@@ -12,7 +12,7 @@ keywords = ["tui", "twitch"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-crossterm = "0.20"
+crossterm = "0.21"
 tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
 anyhow = "1.0.44"
 rand = "0.8.4"
