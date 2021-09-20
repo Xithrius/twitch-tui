@@ -15,7 +15,6 @@ categories = ["command-line-utilities"]
 crossterm = "0.20"
 tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
 anyhow = "1.0.44"
-termion = "1.5"
 rand = "0.8.4"
 unicode-width = "0.1.9"
 chrono = "0.4"
