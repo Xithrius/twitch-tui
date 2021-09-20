@@ -1,4 +1,4 @@
-name: Building & Testing
+name: CI
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-test:
     strategy:
       fail-fast: false
 
@@ -34,3 +34,22 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose
+
+  lint:
+    name: Formatter
+
+    needs: build-test
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup component add rustfmt
+
+      - name: Check Formatting
+        run: cargo fmt --all -- --check
