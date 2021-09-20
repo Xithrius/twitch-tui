@@ -1,17 +1,13 @@
 use std::panic::panic_any;
 
 pub fn config_path() -> String {
-    match std::env::var("HOME") {
-        Ok(env_home_path) => {
-            return match std::env::consts::OS {
-                "linux" | "macos" => {
-                    format!("{}/.config/ttc/config.toml", env_home_path)
-                }
-                "windows" => "%AppData%\\ttc\\config.toml".to_string(),
-                _ => unimplemented!(),
-            }
-        }
-        Err(err) => panic_any(err),
+    match std::env::consts::OS {
+        "linux" | "macos" => match std::env::var("HOME") {
+            Ok(env_home_path) => format!("{}/.config/ttc/config.toml", env_home_path),
+            Err(err) => panic_any(err),
+        },
+        "windows" => "%AppData%\\ttc\\config.toml".to_string(),
+        _ => unimplemented!(),
     }
 }
 
