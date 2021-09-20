@@ -6,7 +6,10 @@ pub fn config_path() -> String {
             Ok(env_home_path) => format!("{}/.config/ttc/config.toml", env_home_path),
             Err(err) => panic_any(err),
         },
-        "windows" => "%AppData%\\ttc\\config.toml".to_string(),
+        "windows" => match std::env::var("APPDATA") {
+            Ok(appdata_path) => format!("{}\\{}", appdata_path, "ttc\\config.toml"),
+            Err(err) => std::panic::panic_any(err),
+        },
         _ => unimplemented!(),
     }
 }
