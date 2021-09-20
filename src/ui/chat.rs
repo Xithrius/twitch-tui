@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -16,7 +18,6 @@ use crate::{
         text::horizontal_text_scroll,
     },
 };
-use std::cmp::Ordering;
 
 pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) -> Result<()>
 where

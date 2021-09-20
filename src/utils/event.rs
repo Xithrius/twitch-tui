@@ -1,16 +1,8 @@
-use std::{
-    io,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    time::Duration,
-};
+use std::time::Duration;
 
-use termion::{event::Key, input::TermRead};
-use tokio::{sync::mpsc, task::unconstrained, task::JoinHandle};
-
+use crossterm::event::{self, Event as CEvent, KeyCode, KeyEvent};
 use futures::FutureExt;
+use tokio::{sync::mpsc, task::unconstrained, task::JoinHandle, time::Instant};
 
 pub enum Event<I> {
     Input(I),
@@ -19,38 +11,52 @@ pub enum Event<I> {
 
 #[allow(dead_code)]
 pub struct Events {
-    rx: mpsc::Receiver<Event<Key>>,
+    rx: mpsc::Receiver<Event<KeyEvent>>,
     input_handle: JoinHandle<()>,
-    ignore_exit_key: Arc<AtomicBool>,
     tick_handle: JoinHandle<()>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
-    pub exit_key: Key,
+    pub exit_key: KeyCode,
     pub tick_rate: Duration,
 }
 
 impl Events {
     pub async fn with_config(config: Config) -> Events {
         let (tx, rx) = mpsc::channel(1);
-        let ignore_exit_key = Arc::new(AtomicBool::new(false));
+
         let input_handle = {
             let tx = tx.clone();
-            let ignore_exit_key = ignore_exit_key.clone();
             tokio::spawn(async move {
-                let stdin = io::stdin();
-                for key in stdin.keys().flatten() {
-                    if let Err(err) = tx.send(Event::Input(key)).await {
-                        eprintln!("{}", err);
-                        return;
+                let mut last_tick = Instant::now();
+
+                loop {
+                    let timeout = config
+                        .tick_rate
+                        .checked_sub(last_tick.elapsed())
+                        .unwrap_or_else(|| Duration::from_secs(0));
+
+                    if event::poll(timeout).unwrap() {
+                        if let Ok(CEvent::Key(key)) = event::read() {
+                            if let Err(err) = tx.send(Event::Input(key)).await {
+                                eprintln!("{}", err);
+                                return;
+                            }
+                        }
                     }
-                    if !ignore_exit_key.load(Ordering::Relaxed) && key == config.exit_key {
-                        return;
+
+                    if last_tick.elapsed() >= config.tick_rate {
+                        if let Err(err) = tx.send(Event::Tick).await {
+                            eprintln!("{}", err);
+                            return;
+                        }
+                        last_tick = Instant::now();
                     }
                 }
             })
         };
+
         let tick_handle = {
             tokio::spawn(async move {
                 loop {
@@ -63,13 +69,12 @@ impl Events {
         };
         Events {
             rx,
-            ignore_exit_key,
             input_handle,
             tick_handle,
         }
     }
 
-    pub async fn next(&mut self) -> Option<Event<Key>> {
+    pub async fn next(&mut self) -> Option<Event<KeyEvent>> {
         unconstrained(self.rx.recv()).now_or_never().and_then(|f| f)
     }
 }
