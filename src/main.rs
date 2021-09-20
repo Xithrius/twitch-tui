@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 
 use handlers::config::CompleteConfig;
 
-use crate::utils::app::App;
+use crate::utils::{app::App, pathing::config_path};
 
 mod handlers;
 mod terminal;
@@ -17,16 +17,7 @@ const CONF: &str = "https://github.com/Xithrius/terminal-twitch-chat/blob/main/d
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let path = match std::env::consts::OS {
-        "linux" | "macos" => ".config/ttc/config.toml",
-        _ => unimplemented!(),
-    };
-
-    let home_path = dirs::home_dir().unwrap();
-
-    if let Ok(config_contents) =
-        fs::read_to_string(format!("{}/{}", home_path.to_str().unwrap(), path).as_str())
-    {
+    if let Ok(config_contents) = fs::read_to_string(config_path()) {
         let config: CompleteConfig = toml::from_str(config_contents.as_str())?;
 
         let app = App::new(config.terminal.maximum_messages as usize);
@@ -46,7 +37,7 @@ async fn main() -> Result<()> {
     } else {
         println!(
             "Configuration not found. Create a config file at '{}', and see '{}' for an example configuration.",
-            path,
+            config_path(),
             CONF,
         );
     }
