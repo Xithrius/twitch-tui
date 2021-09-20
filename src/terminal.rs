@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub async fn ui_driver(
-    config: CompleteConfig,
+    config: &CompleteConfig,
     mut app: App,
     tx: Sender<String>,
     mut rx: Receiver<Data>,
@@ -71,8 +71,6 @@ pub async fn ui_driver(
     app.column_titles = Option::Some(column_titles);
     app.table_constraints = Option::Some(table_constraints);
 
-    let chat_config = config.clone();
-
     terminal.clear().unwrap();
 
     'outer: loop {
@@ -81,9 +79,7 @@ pub async fn ui_driver(
         }
 
         terminal.draw(|mut frame| match app.state {
-            State::Normal | State::Input => {
-                draw_chat_ui(&mut frame, &mut app, chat_config.to_owned()).unwrap()
-            }
+            State::Normal | State::Input => draw_chat_ui(&mut frame, &mut app, config).unwrap(),
             State::KeybindHelp => draw_keybinds_ui(&mut frame).unwrap(),
         })?;
 

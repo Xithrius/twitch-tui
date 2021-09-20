@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
             twitch::twitch_irc(&config, twitch_tx, twitch_rx).await;
         });
 
-        terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx)
+        terminal::ui_driver(&cloned_config, app, terminal_tx, terminal_rx)
             .await
             .unwrap();
         std::process::exit(0);
