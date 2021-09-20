@@ -7,7 +7,7 @@ pub fn config_path() -> String {
                 "linux" | "macos" => {
                     format!("{}/.config/ttc/config.toml", env_home_path)
                 }
-                "windows" => "%appdata%\\ttc\\config.toml".to_string(),
+                "windows" => "%AppData%\\ttc\\config.toml".to_string(),
                 _ => unimplemented!(),
             }
         }
@@ -22,7 +22,13 @@ mod tests {
     #[test]
     #[cfg(target_os = "windows")]
     fn test_windows_config_path() {
-        assert_eq!(config_path(), "%appdata%\\ttc\\config.toml");
+        match std::env::var("APPDATA") {
+            Ok(appdata_path) => assert_eq!(
+                config_path(),
+                format!("{}\\{}", appdata_path, "ttc\\config.toml")
+            ),
+            Err(err) => std::panic::panic_any(err),
+        }
     }
 
     #[test]
