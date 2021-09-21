@@ -1,3 +1,6 @@
+use std::panic::panic_any;
+
+use anyhow::Result;
 use chrono::offset::Local;
 use futures::{FutureExt, StreamExt};
 use irc::{
@@ -22,9 +25,13 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
         ..Default::default()
     };
 
-    let mut client = Client::from_config(irc_config.clone()).await.unwrap();
-    client.identify().unwrap();
-    let mut stream = client.stream().unwrap();
+    let mut client = Client::from_config(irc_config)
+        .await
+        .unwrap_or_else(|err| panic_any(err));
+
+    client.identify().unwrap_or_else(|err| panic_any(err));
+
+    let mut stream = client.stream().unwrap_or_else(|err| panic_any(err));
 
     loop {
         if let Some(Some(Ok(message))) = unconstrained(stream.next()).now_or_never() {
