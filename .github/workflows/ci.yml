@@ -50,6 +50,10 @@ jobs:
           rustup update stable
           rustup default stable
           rustup component add rustfmt
+          rustup component add clippy
 
-      - name: Check Formatting
+      - name: Check formatting
         run: cargo fmt --all -- --check
+
+      - name: Check code for possible improvements
+        run: cargo clippy -- -D warnings
