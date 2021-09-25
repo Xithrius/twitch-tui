@@ -70,7 +70,7 @@ impl Data {
             row_vector.insert(0, Cell::from(self.time_sent.to_string()));
         }
 
-        let msg_height = message.split("\n").collect::<Vec<&str>>().len() as u16;
+        let msg_height = message.split('\n').count() as u16;
 
         let mut row = Row::new(row_vector).style(WindowStyles::new(WindowStyles::Chat));
 
