@@ -16,6 +16,3 @@
 
 # Visual Studio Code config folder.
 .vscode
-
-# Config
-config.toml
