@@ -25,7 +25,7 @@ pub fn horizontal_text_scroll(s: &str, max_length: usize) -> String {
     s[s.len() - max_length..].to_string()
 }
 
-pub fn vector2_col_max<T>(vec2: &Vec<Vec<T>>) -> (u16, u16)
+pub fn vector2_col_max<T>(vec2: &[Vec<T>]) -> (u16, u16)
 where
     T: AsRef<str>,
 {
