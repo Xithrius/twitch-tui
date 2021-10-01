@@ -28,21 +28,36 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
 
     loop {
         if let Some(Some(Ok(message))) = unconstrained(stream.next()).now_or_never() {
-            if let Command::PRIVMSG(ref _target, ref msg) = message.command {
-                let user = match message.source_nickname() {
-                    Some(username) => username.to_string(),
-                    None => "Undefined username".to_string(),
-                };
-                tx.send(Data::new(
-                    Local::now()
-                        .format(config.frontend.date_format.as_str())
-                        .to_string(),
-                    user,
-                    msg.to_string(),
-                    false,
-                ))
-                .await
-                .unwrap();
+            match message.command {
+                Command::PRIVMSG(ref _target, ref msg) => {
+                    let user = match message.source_nickname() {
+                        Some(username) => username.to_string(),
+                        None => "Undefined username".to_string(),
+                    };
+                    tx.send(Data::new(
+                        Local::now()
+                            .format(config.frontend.date_format.as_str())
+                            .to_string(),
+                        user,
+                        msg.to_string(),
+                        false,
+                    ))
+                    .await
+                    .unwrap();
+                }
+                Command::NOTICE(ref _target, ref msg) => {
+                    tx.send(Data::new(
+                        Local::now()
+                            .format(config.frontend.date_format.as_str())
+                            .to_string(),
+                        "twitch".to_string(),
+                        format!("NOTICE: {}", msg),
+                        true,
+                    ))
+                    .await
+                    .unwrap();
+                }
+                _ => (),
             }
         }
 
