@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use chrono::offset::Local;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -108,30 +108,57 @@ pub async fn ui_driver(
 
         if let Some(utils::event::Event::Input(input_event)) = &events.next().await {
             match app.state {
-                State::Input => match input_event.code {
-                    KeyCode::Enter => {
-                        let input_message: String = app.input_text.drain(..).collect();
-                        app.messages.push_front(Data::new(
-                            Local::now()
-                                .format(config.frontend.date_format.as_str())
-                                .to_string(),
-                            config.twitch.username.to_string(),
-                            input_message.clone(),
-                            false,
-                        ));
+                State::Input => match input_event.modifiers {
+                    KeyModifiers::CONTROL => match input_event.code {
+                        KeyCode::Char('u') => {
+                            app.input_text.truncate(0);
+                        }
+                        KeyCode::Char('w') => {
+                            // If the last character is whitespace, truncate to the whitespace
+                            // before the last non-whitespace character
+                            // Else, truncate to the last whitespace character
+                            let mut text: &str = &app.input_text;
 
-                        tx.send(input_message).await.unwrap();
-                    }
-                    KeyCode::Char(c) => {
-                        app.input_text.push(c);
-                    }
-                    KeyCode::Backspace | KeyCode::Delete => {
-                        app.input_text.pop();
-                    }
-                    KeyCode::Esc => {
-                        app.state = State::Normal;
-                    }
-                    _ => {}
+                            // Get to the last non-whitespace character
+                            if text.ends_with(char::is_whitespace) {
+                                if let Some(n) = text.rfind(|c: char| !c.is_whitespace()) {
+                                    text = &text[..n];
+                                }
+                            }
+                            // Truncate to the last whitespace character
+                            let truncate_location = match text.rfind(char::is_whitespace) {
+                                Some(n) => n + 1,
+                                None => 0,
+                            };
+                            app.input_text.truncate(truncate_location);
+                        }
+                        _ => (),
+                    },
+                    _ => match input_event.code {
+                        KeyCode::Enter => {
+                            let input_message: String = app.input_text.drain(..).collect();
+                            app.messages.push_front(Data::new(
+                                Local::now()
+                                    .format(config.frontend.date_format.as_str())
+                                    .to_string(),
+                                config.twitch.username.to_string(),
+                                input_message.clone(),
+                                false,
+                            ));
+
+                            tx.send(input_message).await.unwrap();
+                        }
+                        KeyCode::Char(c) => {
+                            app.input_text.push(c);
+                        }
+                        KeyCode::Backspace | KeyCode::Delete => {
+                            app.input_text.pop();
+                        }
+                        KeyCode::Esc => {
+                            app.state = State::Normal;
+                        }
+                        _ => {}
+                    },
                 },
                 _ => match input_event.code {
                     KeyCode::Char('c') => app.state = State::Normal,
