@@ -6,7 +6,7 @@ use tui::{
     widgets::{Block, Borders, Row, Table},
 };
 
-use crate::utils::{colors::WindowStyles, text::vector2_col_max};
+use crate::utils::{styles, text::vector2_col_max};
 
 pub fn draw_keybinds_ui<T>(frame: &mut Frame<T>) -> Result<()>
 where
@@ -39,14 +39,11 @@ where
     ];
 
     let table = Table::new(keybinds.iter().map(|k| Row::new(k.iter().copied())))
-        .header(
-            Row::new(column_names.iter().copied())
-                .style(WindowStyles::new(WindowStyles::ColumnTitle)),
-        )
+        .header(Row::new(column_names.iter().copied()).style(styles::COLUMN_TITLE))
         .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
         .widths(&table_widths)
         .column_spacing(2)
-        .style(WindowStyles::new(WindowStyles::BoarderName));
+        .style(styles::BORDER_NAME);
 
     frame.render_widget(table, vertical_chunks[0]);
 

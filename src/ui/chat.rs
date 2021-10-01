@@ -14,7 +14,7 @@ use crate::{
     handlers::config::CompleteConfig,
     utils::{
         app::{App, State},
-        colors::WindowStyles,
+        styles,
         text::horizontal_text_scroll,
     },
 };
@@ -71,14 +71,13 @@ where
 
     let table = Table::new(display_rows)
         .header(
-            Row::new(app.column_titles.as_ref().unwrap().to_owned())
-                .style(WindowStyles::new(WindowStyles::ColumnTitle)),
+            Row::new(app.column_titles.as_ref().unwrap().to_owned()).style(styles::COLUMN_TITLE),
         )
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .title(format!("[ {}'s chat stream ]", &config.twitch.channel))
-                .style(WindowStyles::new(WindowStyles::BoarderName)),
+                .style(styles::BORDER_NAME),
         )
         .widths(table_widths.as_ref())
         .column_spacing(1);

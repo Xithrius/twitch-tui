@@ -5,7 +5,7 @@ use tui::{
 
 use crate::{
     handlers::config::{FrontendConfig, Palette},
-    utils::{colors::hsl_to_rgb, colors::WindowStyles, text::align_text},
+    utils::{colors::hsl_to_rgb, styles, text::align_text},
 };
 
 #[derive(Debug, Clone)]
@@ -51,7 +51,7 @@ impl Data {
 
         let style;
         if self.system {
-            style = WindowStyles::new(WindowStyles::SystemChat);
+            style = styles::SYSTEM_CHAT;
         } else {
             style = Style::default().fg(self.hash_username(&frontend_config.palette));
         }
@@ -72,7 +72,7 @@ impl Data {
 
         let msg_height = message.split('\n').count() as u16;
 
-        let mut row = Row::new(row_vector).style(WindowStyles::new(WindowStyles::Chat));
+        let mut row = Row::new(row_vector).style(styles::CHAT);
 
         if msg_height > 1 {
             row = row.height(msg_height);
