@@ -56,7 +56,7 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
                             Local::now()
                                 .format(config.frontend.date_format.as_str())
                                 .to_string(),
-                            "twitch".to_string(),
+                            "Twitch".to_string(),
                             format!("NOTICE: {}", msg),
                             true,
                         ))
