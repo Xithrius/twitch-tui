@@ -1,8 +1,7 @@
 use std::time::Duration;
 
 use crossterm::event::{self, Event as CEvent, KeyCode, KeyEvent};
-use futures::FutureExt;
-use tokio::{sync::mpsc, task::unconstrained, task::JoinHandle, time::Instant};
+use tokio::{sync::mpsc, task::JoinHandle, time::Instant};
 
 pub enum Event<I> {
     Input(I),
@@ -58,6 +57,6 @@ impl Events {
     }
 
     pub async fn next(&mut self) -> Option<Event<KeyEvent>> {
-        unconstrained(self.rx.recv()).now_or_never().and_then(|f| f)
+        self.rx.recv().await
     }
 }
