@@ -1,13 +1,10 @@
 use chrono::offset::Local;
-use futures::{FutureExt, StreamExt};
+use futures::StreamExt;
 use irc::{
     client::{data, Client},
     proto::Command,
 };
-use tokio::{
-    sync::mpsc::{Receiver, Sender},
-    task::unconstrained,
-};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::handlers::{config::CompleteConfig, data::Data};
 
@@ -27,44 +24,48 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
     let mut stream = client.stream().unwrap();
 
     loop {
-        if let Some(Some(Ok(message))) = unconstrained(stream.next()).now_or_never() {
-            match message.command {
-                Command::PRIVMSG(ref _target, ref msg) => {
-                    let user = match message.source_nickname() {
-                        Some(username) => username.to_string(),
-                        None => "Undefined username".to_string(),
-                    };
-                    tx.send(Data::new(
-                        Local::now()
-                            .format(config.frontend.date_format.as_str())
-                            .to_string(),
-                        user,
-                        msg.to_string(),
-                        false,
-                    ))
-                    .await
-                    .unwrap();
-                }
-                Command::NOTICE(ref _target, ref msg) => {
-                    tx.send(Data::new(
-                        Local::now()
-                            .format(config.frontend.date_format.as_str())
-                            .to_string(),
-                        "twitch".to_string(),
-                        format!("NOTICE: {}", msg),
-                        true,
-                    ))
-                    .await
-                    .unwrap();
-                }
-                _ => (),
-            }
-        }
+        tokio::select! {
+            biased;
 
-        if let Some(Some(message)) = unconstrained(rx.recv()).now_or_never() {
-            client
+            Some(message) = rx.recv() => {
+                client
                 .send_privmsg(format!("#{}", config.twitch.channel), message)
                 .unwrap();
-        }
+            }
+            Some(_message) = stream.next() => {
+                let message = _message.unwrap();
+                match message.command {
+                    Command::PRIVMSG(ref _target, ref msg) => {
+                        let user = match message.source_nickname() {
+                            Some(username) => username.to_string(),
+                            None => "Undefined username".to_string(),
+                        };
+                        tx.send(Data::new(
+                            Local::now()
+                                .format(config.frontend.date_format.as_str())
+                                .to_string(),
+                            user,
+                            msg.to_string(),
+                            false,
+                        ))
+                        .await
+                        .unwrap();
+                    }
+                    Command::NOTICE(ref _target, ref msg) => {
+                        tx.send(Data::new(
+                            Local::now()
+                                .format(config.frontend.date_format.as_str())
+                                .to_string(),
+                            "twitch".to_string(),
+                            format!("NOTICE: {}", msg),
+                            true,
+                        ))
+                        .await
+                        .unwrap();
+                    }
+                    _ => ()
+                }
+            }
+        };
     }
 }
