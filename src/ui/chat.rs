@@ -15,7 +15,6 @@ use crate::{
     utils::{
         app::{App, State},
         styles,
-        text::horizontal_text_scroll,
     },
 };
 
@@ -85,19 +84,17 @@ where
     frame.render_widget(table, vertical_chunks[0]);
 
     if let State::Input = app.state {
-        let mut input_text_render = app.input_text.clone();
+        let mut rendered_text = app.input_text.as_str();
 
-        let input_text_width = vertical_chunks[1].x + input_text_render.width() as u16;
+        let input_text_width = vertical_chunks[1].x + rendered_text.width() as u16;
 
         let y = vertical_chunks[1].y + 1;
 
         match input_text_width.cmp(&(vertical_chunks[1].width - 3)) {
             Ordering::Greater => {
-                input_text_render = horizontal_text_scroll(
-                    input_text_render.as_str(),
-                    vertical_chunks[1].width as usize - 3,
-                );
-                frame.set_cursor(input_text_render.width() as u16 + 2, y);
+                rendered_text =
+                    &rendered_text[rendered_text.len() - vertical_chunks[1].width as usize - 3..];
+                frame.set_cursor(rendered_text.width() as u16 + 2, y);
             }
             Ordering::Less => frame.set_cursor(input_text_width + 1, y),
             Ordering::Equal => {
@@ -105,7 +102,7 @@ where
             }
         }
 
-        let paragraph = Paragraph::new(input_text_render.as_ref())
+        let paragraph = Paragraph::new(rendered_text)
             .style(Style::default().fg(Color::Yellow))
             .block(Block::default().borders(Borders::ALL).title("[ Input ]"));
 

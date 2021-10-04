@@ -10,6 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use rustyline::Word;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
@@ -107,48 +108,32 @@ pub async fn ui_driver(
                 State::Input => match input_event.modifiers {
                     KeyModifiers::CONTROL => match input_event.code {
                         KeyCode::Char('u') => {
-                            app.input_text.truncate(0);
+                            app.input_text.discard_line();
                         }
                         KeyCode::Char('w') => {
-                            // If the last character is whitespace, truncate to the whitespace
-                            // before the last non-whitespace character
-                            // Else, truncate to the last whitespace character
-                            let mut text: &str = &app.input_text;
-
-                            // Get to the last non-whitespace character
-                            if text.ends_with(char::is_whitespace) {
-                                if let Some(n) = text.rfind(|c: char| !c.is_whitespace()) {
-                                    text = &text[..n];
-                                }
-                            }
-                            // Truncate to the last whitespace character
-                            let truncate_location = match text.rfind(char::is_whitespace) {
-                                Some(n) => n + 1,
-                                None => 0,
-                            };
-                            app.input_text.truncate(truncate_location);
+                            app.input_text.delete_prev_word(Word::Emacs, 1);
                         }
                         _ => (),
                     },
                     _ => match input_event.code {
                         KeyCode::Enter => {
-                            let input_message: String = app.input_text.drain(..).collect();
+                            let input_message = app.input_text.as_str();
                             app.messages.push_front(Data::new(
                                 Local::now()
                                     .format(config.frontend.date_format.as_str())
                                     .to_string(),
                                 config.twitch.username.to_string(),
-                                input_message.clone(),
+                                input_message.to_string(),
                                 false,
                             ));
 
-                            tx.send(input_message).await.unwrap();
+                            tx.send(input_message.to_string()).await.unwrap();
                         }
                         KeyCode::Char(c) => {
-                            app.input_text.push(c);
+                            app.input_text.insert(c, 1);
                         }
                         KeyCode::Backspace | KeyCode::Delete => {
-                            app.input_text.pop();
+                            app.input_text.delete(1);
                         }
                         KeyCode::Esc => {
                             app.state = State::Normal;

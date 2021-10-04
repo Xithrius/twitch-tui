@@ -25,6 +25,7 @@ toml = "0.5.8"
 serde = { version = "1.0.130", features = ["derive"] }
 textwrap = "0.14.2"
 dirs = "4.0.0"
+rustyline = "9.0.0"
 
 [[bin]]
 bench = false
