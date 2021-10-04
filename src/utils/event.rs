@@ -24,7 +24,7 @@ pub struct Config {
 
 impl Events {
     pub async fn with_config(config: Config) -> Events {
-        let (tx, rx) = mpsc::channel(1);
+        let (tx, rx) = mpsc::channel(100);
 
         let input_handle = {
             let tx = tx.clone();
