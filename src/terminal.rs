@@ -10,11 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use futures::FutureExt;
-use tokio::{
-    sync::mpsc::{Receiver, Sender},
-    task::unconstrained,
-};
+use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
 use crate::{
@@ -95,10 +91,6 @@ pub async fn ui_driver(
     };
 
     'outer: loop {
-        if let Some(Some(info)) = unconstrained(rx.recv()).now_or_never() {
-            app.messages.push_front(info);
-        }
-
         terminal
             .draw(|mut frame| match app.state {
                 State::Normal | State::Input => draw_chat_ui(&mut frame, &mut app, config).unwrap(),
@@ -106,7 +98,11 @@ pub async fn ui_driver(
             })
             .unwrap();
 
-        if let Some(utils::event::Event::Input(input_event)) = &events.next().await {
+        if let Ok(info) = rx.try_recv() {
+            app.messages.push_front(info);
+        }
+
+        if let Some(utils::event::Event::Input(input_event)) = events.next().await {
             match app.state {
                 State::Input => match input_event.modifiers {
                     KeyModifiers::CONTROL => match input_event.code {

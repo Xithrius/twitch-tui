@@ -1,8 +1,7 @@
 use std::time::Duration;
 
 use crossterm::event::{self, Event as CEvent, KeyCode, KeyEvent};
-use futures::FutureExt;
-use tokio::{sync::mpsc, task::unconstrained, task::JoinHandle, time::Instant};
+use tokio::{sync::mpsc, task::JoinHandle, time::Instant};
 
 pub enum Event<I> {
     Input(I),
@@ -13,7 +12,6 @@ pub enum Event<I> {
 pub struct Events {
     rx: mpsc::Receiver<Event<KeyEvent>>,
     input_handle: JoinHandle<()>,
-    tick_handle: JoinHandle<()>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -24,10 +22,9 @@ pub struct Config {
 
 impl Events {
     pub async fn with_config(config: Config) -> Events {
-        let (tx, rx) = mpsc::channel(1);
+        let (tx, rx) = mpsc::channel(100);
 
         let input_handle = {
-            let tx = tx.clone();
             tokio::spawn(async move {
                 let mut last_tick = Instant::now();
 
@@ -56,25 +53,10 @@ impl Events {
                 }
             })
         };
-
-        let tick_handle = {
-            tokio::spawn(async move {
-                loop {
-                    if tx.send(Event::Tick).await.is_err() {
-                        break;
-                    }
-                    tokio::time::sleep(config.tick_rate).await;
-                }
-            })
-        };
-        Events {
-            rx,
-            input_handle,
-            tick_handle,
-        }
+        Events { rx, input_handle }
     }
 
     pub async fn next(&mut self) -> Option<Event<KeyEvent>> {
-        unconstrained(self.rx.recv()).now_or_never().and_then(|f| f)
+        self.rx.recv().await
     }
 }
