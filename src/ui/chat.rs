@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -8,14 +6,13 @@ use tui::{
     terminal::Frame,
     widgets::{Block, Borders, Paragraph, Row, Table},
 };
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handlers::config::CompleteConfig,
     utils::{
         app::{App, State},
         styles,
-        text::horizontal_text_scroll,
+        text::get_cursor_position,
     },
 };
 
@@ -85,29 +82,23 @@ where
     frame.render_widget(table, vertical_chunks[0]);
 
     if let State::Input = app.state {
-        let mut input_text_render = app.input_text.clone();
+        let text = app.input_text.as_str();
+        let cursor_pos = get_cursor_position(&app.input_text);
+        let input_rect = vertical_chunks[1];
 
-        let input_text_width = vertical_chunks[1].x + input_text_render.width() as u16;
+        frame.set_cursor(
+            (input_rect.x + cursor_pos as u16 + 1)
+                .min(input_rect.x + input_rect.width.saturating_sub(2)),
+            input_rect.y + 1,
+        );
 
-        let y = vertical_chunks[1].y + 1;
-
-        match input_text_width.cmp(&(vertical_chunks[1].width - 3)) {
-            Ordering::Greater => {
-                input_text_render = horizontal_text_scroll(
-                    input_text_render.as_str(),
-                    vertical_chunks[1].width as usize - 3,
-                );
-                frame.set_cursor(input_text_render.width() as u16 + 2, y);
-            }
-            Ordering::Less => frame.set_cursor(input_text_width + 1, y),
-            Ordering::Equal => {
-                frame.set_cursor(vertical_chunks[1].width - 2, y);
-            }
-        }
-
-        let paragraph = Paragraph::new(input_text_render.as_ref())
+        let paragraph = Paragraph::new(text)
             .style(Style::default().fg(Color::Yellow))
-            .block(Block::default().borders(Borders::ALL).title("[ Input ]"));
+            .block(Block::default().borders(Borders::ALL).title("[ Input ]"))
+            .scroll((
+                0,
+                ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
+            ));
 
         frame.render_widget(paragraph, vertical_chunks[1]);
     }

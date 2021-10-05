@@ -6,10 +6,11 @@ use std::{
 use anyhow::Result;
 use chrono::offset::Local;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyModifiers},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use rustyline::{At, Word};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
@@ -19,6 +20,7 @@ use crate::{
     utils::{
         self,
         app::{App, State},
+        event::Key,
         text::align_text,
     },
 };
@@ -30,7 +32,7 @@ pub async fn ui_driver(
     mut rx: Receiver<Data>,
 ) -> Result<()> {
     let mut events = utils::event::Events::with_config(utils::event::Config {
-        exit_key: KeyCode::Null,
+        exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
     })
     .await;
@@ -102,69 +104,81 @@ pub async fn ui_driver(
             app.messages.push_front(info);
         }
 
-        if let Some(utils::event::Event::Input(input_event)) = events.next().await {
+        if let Some(utils::event::Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input => match input_event.modifiers {
-                    KeyModifiers::CONTROL => match input_event.code {
-                        KeyCode::Char('u') => {
-                            app.input_text.truncate(0);
-                        }
-                        KeyCode::Char('w') => {
-                            // If the last character is whitespace, truncate to the whitespace
-                            // before the last non-whitespace character
-                            // Else, truncate to the last whitespace character
-                            let mut text: &str = &app.input_text;
+                State::Input => match key {
+                    Key::Ctrl('f') | Key::Right => {
+                        app.input_text.move_forward(1);
+                    }
+                    Key::Ctrl('b') | Key::Left => {
+                        app.input_text.move_backward(1);
+                    }
+                    Key::Ctrl('a') | Key::Home => {
+                        app.input_text.move_home();
+                    }
+                    Key::Ctrl('e') | Key::End => {
+                        app.input_text.move_end();
+                    }
+                    Key::Alt('f') => {
+                        app.input_text
+                            .move_to_next_word(At::AfterEnd, Word::Emacs, 1);
+                    }
+                    Key::Alt('b') => {
+                        app.input_text.move_to_prev_word(Word::Emacs, 1);
+                    }
+                    Key::Ctrl('t') => {
+                        app.input_text.transpose_chars();
+                    }
+                    Key::Alt('t') => {
+                        app.input_text.transpose_words(1);
+                    }
+                    Key::Ctrl('u') => {
+                        app.input_text.discard_line();
+                    }
+                    Key::Ctrl('k') => {
+                        app.input_text.kill_line();
+                    }
+                    Key::Ctrl('w') => {
+                        app.input_text.delete_prev_word(Word::Emacs, 1);
+                    }
+                    Key::Ctrl('d') => {
+                        app.input_text.delete(1);
+                    }
+                    Key::Backspace | Key::Delete => {
+                        app.input_text.backspace(1);
+                    }
+                    Key::Enter => {
+                        let input_message = app.input_text.as_str();
+                        app.messages.push_front(Data::new(
+                            Local::now()
+                                .format(config.frontend.date_format.as_str())
+                                .to_string(),
+                            config.twitch.username.to_string(),
+                            input_message.to_string(),
+                            false,
+                        ));
 
-                            // Get to the last non-whitespace character
-                            if text.ends_with(char::is_whitespace) {
-                                if let Some(n) = text.rfind(|c: char| !c.is_whitespace()) {
-                                    text = &text[..n];
-                                }
-                            }
-                            // Truncate to the last whitespace character
-                            let truncate_location = match text.rfind(char::is_whitespace) {
-                                Some(n) => n + 1,
-                                None => 0,
-                            };
-                            app.input_text.truncate(truncate_location);
-                        }
-                        _ => (),
-                    },
-                    _ => match input_event.code {
-                        KeyCode::Enter => {
-                            let input_message: String = app.input_text.drain(..).collect();
-                            app.messages.push_front(Data::new(
-                                Local::now()
-                                    .format(config.frontend.date_format.as_str())
-                                    .to_string(),
-                                config.twitch.username.to_string(),
-                                input_message.clone(),
-                                false,
-                            ));
-
-                            tx.send(input_message).await.unwrap();
-                        }
-                        KeyCode::Char(c) => {
-                            app.input_text.push(c);
-                        }
-                        KeyCode::Backspace | KeyCode::Delete => {
-                            app.input_text.pop();
-                        }
-                        KeyCode::Esc => {
-                            app.state = State::Normal;
-                        }
-                        _ => {}
-                    },
+                        tx.send(input_message.to_string()).await.unwrap();
+                        app.input_text.update("", 0);
+                    }
+                    Key::Char(c) => {
+                        app.input_text.insert(c, 1);
+                    }
+                    Key::Esc => {
+                        app.input_text.update("", 0);
+                        app.state = State::Normal;
+                    }
+                    _ => {}
                 },
-                _ => match input_event.code {
-                    KeyCode::Char('c') => app.state = State::Normal,
-                    KeyCode::Char('?') => app.state = State::KeybindHelp,
-                    KeyCode::Char('i') => app.state = State::Input,
-                    KeyCode::Char('q') => {
+                _ => match key {
+                    Key::Char('c') => app.state = State::Normal,
+                    Key::Char('?') => app.state = State::KeybindHelp,
+                    Key::Char('i') => app.state = State::Input,
+                    Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;
                     }
-                    KeyCode::Esc => match app.state {
+                    Key::Esc => match app.state {
                         State::Normal => {
                             quitting(terminal);
                             break 'outer;
