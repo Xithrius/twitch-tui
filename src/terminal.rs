@@ -15,7 +15,10 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
 use crate::{
-    handlers::{config::CompleteConfig, data::Data},
+    handlers::{
+        config::CompleteConfig,
+        data::{Data, DataBuilder},
+    },
     ui::{chat::draw_chat_ui, keybinds::draw_keybinds_ui},
     utils::{
         self,
@@ -80,6 +83,8 @@ pub async fn ui_driver(
     app.table_constraints = Option::Some(table_constraints);
 
     terminal.clear().unwrap();
+
+    let data_builder = DataBuilder::new(&config.frontend.date_format);
 
     let quitting = |mut terminal: Terminal<CrosstermBackend<Stdout>>| {
         disable_raw_mode().unwrap();
@@ -149,13 +154,9 @@ pub async fn ui_driver(
                     }
                     Key::Enter => {
                         let input_message = app.input_text.as_str();
-                        app.messages.push_front(Data::new(
-                            Local::now()
-                                .format(config.frontend.date_format.as_str())
-                                .to_string(),
+                        app.messages.push_front(data_builder.user(
                             config.twitch.username.to_string(),
                             input_message.to_string(),
-                            false,
                         ));
 
                         tx.send(input_message.to_string()).await.unwrap();
