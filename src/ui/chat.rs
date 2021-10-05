@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -8,13 +6,13 @@ use tui::{
     terminal::Frame,
     widgets::{Block, Borders, Paragraph, Row, Table},
 };
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
     handlers::config::CompleteConfig,
     utils::{
         app::{App, State},
         styles,
+        text::get_cursor_position,
     },
 };
 
@@ -85,7 +83,7 @@ where
 
     if let State::Input = app.state {
         let text = app.input_text.as_str();
-        let cursor_pos = app.input_text.pos();
+        let cursor_pos = get_cursor_position(&app.input_text);
         let input_rect = vertical_chunks[1];
 
         frame.set_cursor(

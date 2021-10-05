@@ -1,3 +1,7 @@
+use rustyline::line_buffer::LineBuffer;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
+
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     if maximum_length < 1 {
         panic!("Parameter of 'maximum_length' cannot be below 1.");
@@ -29,6 +33,15 @@ where
     let col1 = vec2.iter().map(|v| v[1].as_ref().len()).max().unwrap();
 
     (col0 as u16, col1 as u16)
+}
+
+pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
+    line_buffer
+        .as_str()
+        .grapheme_indices(true)
+        .take_while(|(offset, _)| *offset != line_buffer.pos())
+        .map(|(_, cluster)| cluster.width())
+        .sum()
 }
 
 #[cfg(test)]

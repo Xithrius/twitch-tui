@@ -22,6 +22,7 @@ pub enum Key {
     Enter,
     Char(char),
     Ctrl(char),
+    Alt(char),
     F(u8),
     Null,
 }
@@ -78,10 +79,9 @@ impl Events {
                                 KeyCode::Null => Key::Null,
                                 KeyCode::F(k) => Key::F(k),
                                 KeyCode::Char(c) => match key.modifiers {
-                                    KeyModifiers::NONE
-                                    | KeyModifiers::SHIFT
-                                    | KeyModifiers::ALT => Key::Char(c),
+                                    KeyModifiers::NONE | KeyModifiers::SHIFT => Key::Char(c),
                                     KeyModifiers::CONTROL => Key::Ctrl(c),
+                                    KeyModifiers::ALT => Key::Alt(c),
                                     _ => Key::Null,
                                 },
                             };

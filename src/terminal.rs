@@ -10,7 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rustyline::Word;
+use rustyline::{At, Word};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
@@ -107,6 +107,31 @@ pub async fn ui_driver(
         if let Some(utils::event::Event::Input(key)) = events.next().await {
             match app.state {
                 State::Input => match key {
+                    Key::Ctrl('f') | Key::Right => {
+                        app.input_text.move_forward(1);
+                    }
+                    Key::Ctrl('b') | Key::Left => {
+                        app.input_text.move_backward(1);
+                    }
+                    Key::Ctrl('a') | Key::Home => {
+                        app.input_text.move_home();
+                    }
+                    Key::Ctrl('e') | Key::End => {
+                        app.input_text.move_end();
+                    }
+                    Key::Alt('f') => {
+                        app.input_text
+                            .move_to_next_word(At::AfterEnd, Word::Emacs, 1);
+                    }
+                    Key::Alt('b') => {
+                        app.input_text.move_to_prev_word(Word::Emacs, 1);
+                    }
+                    Key::Ctrl('t') => {
+                        app.input_text.transpose_chars();
+                    }
+                    Key::Alt('t') => {
+                        app.input_text.transpose_words(1);
+                    }
                     Key::Ctrl('u') => {
                         app.input_text.discard_line();
                     }
@@ -115,6 +140,12 @@ pub async fn ui_driver(
                     }
                     Key::Ctrl('w') => {
                         app.input_text.delete_prev_word(Word::Emacs, 1);
+                    }
+                    Key::Ctrl('d') => {
+                        app.input_text.delete(1);
+                    }
+                    Key::Backspace | Key::Delete => {
+                        app.input_text.backspace(1);
                     }
                     Key::Enter => {
                         let input_message = app.input_text.as_str();
@@ -128,14 +159,13 @@ pub async fn ui_driver(
                         ));
 
                         tx.send(input_message.to_string()).await.unwrap();
+                        app.input_text.update("", 0);
                     }
                     Key::Char(c) => {
                         app.input_text.insert(c, 1);
                     }
-                    Key::Backspace | Key::Delete => {
-                        app.input_text.delete(1);
-                    }
                     Key::Esc => {
+                        app.input_text.update("", 0);
                         app.state = State::Normal;
                     }
                     _ => {}
