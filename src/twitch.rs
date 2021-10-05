@@ -1,8 +1,9 @@
 use futures::StreamExt;
 use irc::{
     client::{data, prelude::*, Client},
-    proto::{message::Tag, Command},
+    proto::Command,
 };
+use std::collections::HashMap;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::handlers::{
@@ -55,6 +56,15 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
             }
             Some(_message) = stream.next() => {
                 let message = _message.unwrap();
+                let mut tags: HashMap<&str, &str> = std::collections::HashMap::new();
+                if let Some(ref _tags) = message.tags {
+                    for tag in _tags {
+                        if let Some(ref tag_value) = tag.1 {
+                            tags.insert(&tag.0, tag_value);
+                        }
+                    }
+                }
+
                 match message.command {
                     Command::PRIVMSG(ref _target, ref msg) => {
                         let user = match message.source_nickname() {
@@ -73,12 +83,10 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
                     Command::Raw(ref cmd, ref _items) => {
                         match cmd.as_ref() {
                             "ROOMSTATE" => {
-                                if let Some(tags) = message.tags {
-                                    handle_roomstate(&tx, data_builder, tags).await;
-                                }
+                                handle_roomstate(&tx, data_builder, &tags).await;
                             }
                             "USERNOTICE" => {
-                                if let Some(Some(value)) = message.tags.iter().flatten().find(|t| t.0 == "system-msg").map(|t| t.1.as_ref()) {
+                                if let Some(value) = tags.get("system-msg") {
                                     tx.send(data_builder.twitch(value.to_string()))
                                     .await
                                     .unwrap();
@@ -94,21 +102,24 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
     }
 }
 
-pub async fn handle_roomstate(tx: &Sender<Data>, builder: DataBuilder<'_>, tags: Vec<Tag>) {
+pub async fn handle_roomstate(
+    tx: &Sender<Data>,
+    builder: DataBuilder<'_>,
+    tags: &HashMap<&str, &str>,
+) {
     let mut room_state = String::new();
-    for tag in tags {
-        let value = tag.1.as_deref().unwrap_or("0");
-        match tag.0.as_ref() {
-            "emote-only" if value == "1" => {
+    for (name, value) in tags.iter() {
+        match *name {
+            "emote-only" if *value == "1" => {
                 room_state.push_str("The channel is emote-only.\n");
             }
-            "followers-only" if value != "-1" => {
+            "followers-only" if *value != "-1" => {
                 room_state.push_str("The channel is followers-only.\n");
             }
-            "subs-only" if value == "1" => {
+            "subs-only" if *value == "1" => {
                 room_state.push_str("The channel is subscribers-only.\n");
             }
-            "slow" if value != "0" => {
+            "slow" if *value != "0" => {
                 room_state.push_str("The channel has a ");
                 room_state.push_str(value);
                 room_state.push_str("s slowmode.\n");
