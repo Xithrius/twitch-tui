@@ -1,4 +1,3 @@
-use chrono::offset::Local;
 use futures::StreamExt;
 use irc::{
     client::{data, Client},
@@ -6,7 +5,10 @@ use irc::{
 };
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::handlers::{config::CompleteConfig, data::Data};
+use crate::handlers::{
+    config::CompleteConfig,
+    data::{Data, DataBuilder},
+};
 
 pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Receiver<String>) {
     let irc_config = data::Config {
@@ -22,6 +24,7 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
     let mut client = Client::from_config(irc_config.clone()).await.unwrap();
     client.identify().unwrap();
     let mut stream = client.stream().unwrap();
+    let data_builder = DataBuilder::new(&config.frontend.date_format);
 
     loop {
         tokio::select! {
@@ -40,26 +43,12 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
                             Some(username) => username.to_string(),
                             None => "Undefined username".to_string(),
                         };
-                        tx.send(Data::new(
-                            Local::now()
-                                .format(config.frontend.date_format.as_str())
-                                .to_string(),
-                            user,
-                            msg.to_string(),
-                            false,
-                        ))
+                        tx.send(data_builder.user(user, msg.to_string()))
                         .await
                         .unwrap();
                     }
                     Command::NOTICE(ref _target, ref msg) => {
-                        tx.send(Data::new(
-                            Local::now()
-                                .format(config.frontend.date_format.as_str())
-                                .to_string(),
-                            "Twitch".to_string(),
-                            format!("NOTICE: {}", msg),
-                            true,
-                        ))
+                        tx.send(data_builder.twitch(format!("NOTICE: {}", msg)))
                         .await
                         .unwrap();
                     }

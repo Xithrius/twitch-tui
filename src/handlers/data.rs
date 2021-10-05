@@ -1,3 +1,4 @@
+use chrono::offset::Local;
 use tui::{
     style::{Color, Color::Rgb, Style},
     widgets::{Cell, Row},
@@ -8,6 +9,35 @@ use crate::{
     utils::{colors::hsl_to_rgb, styles, text::align_text},
 };
 
+#[derive(Debug, Copy, Clone)]
+pub struct DataBuilder<'conf> {
+    pub date_format: &'conf str,
+}
+
+impl<'conf> DataBuilder<'conf> {
+    pub fn new(date_format: &'conf str) -> Self {
+        DataBuilder { date_format }
+    }
+
+    pub fn user(self, user: String, message: String) -> Data {
+        Data {
+            time_sent: Local::now().format(self.date_format).to_string(),
+            author: user,
+            system: false,
+            message,
+        }
+    }
+
+    pub fn twitch(self, message: String) -> Data {
+        Data {
+            time_sent: Local::now().format(self.date_format).to_string(),
+            author: "Twitch".to_string(),
+            system: true,
+            message,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Data {
     pub time_sent: String,
@@ -17,15 +47,6 @@ pub struct Data {
 }
 
 impl Data {
-    pub fn new(time_sent: String, author: String, message: String, system: bool) -> Self {
-        Data {
-            time_sent,
-            author,
-            message,
-            system,
-        }
-    }
-
     fn hash_username(&self, palette: &Palette) -> Color {
         let hash = self
             .author
