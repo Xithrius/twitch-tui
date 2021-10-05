@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use chrono::offset::Local;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, KeyCode, KeyModifiers},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -20,6 +20,7 @@ use crate::{
     utils::{
         self,
         app::{App, State},
+        event::Key,
         text::align_text,
     },
 };
@@ -31,7 +32,7 @@ pub async fn ui_driver(
     mut rx: Receiver<Data>,
 ) -> Result<()> {
     let mut events = utils::event::Events::with_config(utils::event::Config {
-        exit_key: KeyCode::Null,
+        exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
     })
     .await;
@@ -103,53 +104,51 @@ pub async fn ui_driver(
             app.messages.push_front(info);
         }
 
-        if let Some(utils::event::Event::Input(input_event)) = events.next().await {
+        if let Some(utils::event::Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input => match input_event.modifiers {
-                    KeyModifiers::CONTROL => match input_event.code {
-                        KeyCode::Char('u') => {
-                            app.input_text.discard_line();
-                        }
-                        KeyCode::Char('w') => {
-                            app.input_text.delete_prev_word(Word::Emacs, 1);
-                        }
-                        _ => (),
-                    },
-                    _ => match input_event.code {
-                        KeyCode::Enter => {
-                            let input_message = app.input_text.as_str();
-                            app.messages.push_front(Data::new(
-                                Local::now()
-                                    .format(config.frontend.date_format.as_str())
-                                    .to_string(),
-                                config.twitch.username.to_string(),
-                                input_message.to_string(),
-                                false,
-                            ));
+                State::Input => match key {
+                    Key::Ctrl('u') => {
+                        app.input_text.discard_line();
+                    }
+                    Key::Ctrl('k') => {
+                        app.input_text.kill_line();
+                    }
+                    Key::Ctrl('w') => {
+                        app.input_text.delete_prev_word(Word::Emacs, 1);
+                    }
+                    Key::Enter => {
+                        let input_message = app.input_text.as_str();
+                        app.messages.push_front(Data::new(
+                            Local::now()
+                                .format(config.frontend.date_format.as_str())
+                                .to_string(),
+                            config.twitch.username.to_string(),
+                            input_message.to_string(),
+                            false,
+                        ));
 
-                            tx.send(input_message.to_string()).await.unwrap();
-                        }
-                        KeyCode::Char(c) => {
-                            app.input_text.insert(c, 1);
-                        }
-                        KeyCode::Backspace | KeyCode::Delete => {
-                            app.input_text.delete(1);
-                        }
-                        KeyCode::Esc => {
-                            app.state = State::Normal;
-                        }
-                        _ => {}
-                    },
+                        tx.send(input_message.to_string()).await.unwrap();
+                    }
+                    Key::Char(c) => {
+                        app.input_text.insert(c, 1);
+                    }
+                    Key::Backspace | Key::Delete => {
+                        app.input_text.delete(1);
+                    }
+                    Key::Esc => {
+                        app.state = State::Normal;
+                    }
+                    _ => {}
                 },
-                _ => match input_event.code {
-                    KeyCode::Char('c') => app.state = State::Normal,
-                    KeyCode::Char('?') => app.state = State::KeybindHelp,
-                    KeyCode::Char('i') => app.state = State::Input,
-                    KeyCode::Char('q') => {
+                _ => match key {
+                    Key::Char('c') => app.state = State::Normal,
+                    Key::Char('?') => app.state = State::KeybindHelp,
+                    Key::Char('i') => app.state = State::Input,
+                    Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;
                     }
-                    KeyCode::Esc => match app.state {
+                    Key::Esc => match app.state {
                         State::Normal => {
                             quitting(terminal);
                             break 'outer;
