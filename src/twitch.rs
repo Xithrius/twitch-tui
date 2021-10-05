@@ -26,6 +26,7 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
     client.identify().unwrap();
     let mut stream = client.stream().unwrap();
     let data_builder = DataBuilder::new(&config.frontend.date_format);
+    let mut room_state_startup = false;
 
     // Request commands capabilities
     if client
@@ -83,7 +84,12 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
                     Command::Raw(ref cmd, ref _items) => {
                         match cmd.as_ref() {
                             "ROOMSTATE" => {
-                                handle_roomstate(&tx, data_builder, &tags).await;
+                                // Only display roomstate on startup, since twitch
+                                // sends a NOTICE whenever roomstate changes.
+                                if !room_state_startup {
+                                    handle_roomstate(&tx, data_builder, &tags).await;
+                                }
+                                room_state_startup = true;
                             }
                             "USERNOTICE" => {
                                 if let Some(value) = tags.get("system-msg") {
