@@ -28,6 +28,15 @@ impl<'conf> DataBuilder<'conf> {
         }
     }
 
+    pub fn system(self, message: String) -> Data {
+        Data {
+            time_sent: Local::now().format(self.date_format).to_string(),
+            author: "System".to_string(),
+            system: true,
+            message,
+        }
+    }
+
     pub fn twitch(self, message: String) -> Data {
         Data {
             time_sent: Local::now().format(self.date_format).to_string(),
@@ -111,12 +120,12 @@ mod tests {
     use super::*;
 
     fn create_data() -> Data {
-        Data::new(
-            Local::now().format("%c").to_string(),
-            "human".to_string(),
-            "beep boop".to_string(),
-            false,
-        )
+        Data {
+            time_sent: Local::now().format("%c").to_string(),
+            author: "human".to_string(),
+            message: "beep boop".to_string(),
+            system: false,
+        }
     }
 
     #[test]
