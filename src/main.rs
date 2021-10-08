@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 
 use handlers::config::CompleteConfig;
 
-use crate::utils::{app::App, pathing::config_path};
+use crate::{handlers::app::App, utils::pathing::config_path};
 
 mod handlers;
 mod terminal;
