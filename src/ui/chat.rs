@@ -8,12 +8,11 @@ use tui::{
 };
 
 use crate::{
-    handlers::config::CompleteConfig,
-    utils::{
+    handlers::{
         app::{App, State},
-        styles,
-        text::get_cursor_position,
+        config::CompleteConfig,
     },
+    utils::{styles, text::get_cursor_position},
 };
 
 pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) -> Result<()>

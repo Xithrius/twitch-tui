@@ -16,16 +16,13 @@ use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
 use crate::{
     handlers::{
+        app::{App, State},
         config::CompleteConfig,
         data::{Data, DataBuilder},
+        event::{Config, Event, Events, Key},
     },
-    ui::{chat::draw_chat_ui, keybinds::draw_keybinds_ui},
-    utils::{
-        self,
-        app::{App, State},
-        event::Key,
-        text::align_text,
-    },
+    ui::{chat::draw_chat_ui, help::draw_keybinds_ui},
+    utils::text::align_text,
 };
 
 pub async fn ui_driver(
@@ -34,7 +31,7 @@ pub async fn ui_driver(
     tx: Sender<String>,
     mut rx: Receiver<Data>,
 ) -> Result<()> {
-    let mut events = utils::event::Events::with_config(utils::event::Config {
+    let mut events = Events::with_config(Config {
         exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
     })
@@ -109,7 +106,7 @@ pub async fn ui_driver(
             app.messages.push_front(info);
         }
 
-        if let Some(utils::event::Event::Input(key)) = events.next().await {
+        if let Some(Event::Input(key)) = events.next().await {
             match app.state {
                 State::Input => match key {
                     Key::Ctrl('f') | Key::Right => {
