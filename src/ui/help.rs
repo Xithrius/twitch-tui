@@ -6,7 +6,10 @@ use tui::{
     widgets::{Block, Borders, Row, Table},
 };
 
-use crate::utils::{styles, text::vector2_col_max};
+use crate::{
+    ui::keys::{COLUMN_TITLES, INSERT_MODE, NORMAL_MODE},
+    utils::{styles, text::vector_column_max},
+};
 
 pub fn draw_keybinds_ui<T>(frame: &mut Frame<T>) -> Result<()>
 where
@@ -15,37 +18,46 @@ where
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(5)
-        .constraints([Constraint::Percentage(100)].as_ref())
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(frame.size());
 
-    let mut keybinds = vec![
-        vec!["Description", "Keybind"],
-        vec!["Bring up the chat window", "c"],
-        vec!["Keybinds help (this window)", "?"],
-        vec![
-            "Exit out layer window/entire app when in normal mode",
-            "Esc",
-        ],
-        vec!["Quit this application", "q"],
-    ];
+    // Normal mode keybinds
+    let normal_table_widths = vector_column_max(&INSERT_MODE, None)
+        .into_iter()
+        .map(|w| Constraint::Min(w))
+        .collect::<Vec<Constraint>>();
 
-    let (maximum_description_width, maximum_keybind_width) = vector2_col_max(&keybinds);
-
-    let column_names = keybinds.remove(0);
-
-    let table_widths = vec![
-        Constraint::Min(maximum_description_width),
-        Constraint::Min(maximum_keybind_width),
-    ];
-
-    let table = Table::new(keybinds.iter().map(|k| Row::new(k.iter().copied())))
-        .header(Row::new(column_names.iter().copied()).style(styles::COLUMN_TITLE))
-        .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
-        .widths(&table_widths)
+    let normal_mode_table = Table::new(NORMAL_MODE.iter().map(|k| Row::new(k.iter().copied())))
+        .header(Row::new(COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("[ Normal Mode Keybinds ]"),
+        )
+        .widths(&normal_table_widths)
         .column_spacing(2)
         .style(styles::BORDER_NAME);
 
-    frame.render_widget(table, vertical_chunks[0]);
+    frame.render_widget(normal_mode_table, vertical_chunks[0]);
+
+    // Insert mode keybinds
+    let insert_table_widths = vector_column_max(&INSERT_MODE, None)
+        .into_iter()
+        .map(|w| Constraint::Min(w))
+        .collect::<Vec<Constraint>>();
+
+    let insert_mode_table = Table::new(INSERT_MODE.iter().map(|k| Row::new(k.iter().copied())))
+        .header(Row::new(COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("[ Insert Mode Keybinds ]"),
+        )
+        .widths(&insert_table_widths)
+        .column_spacing(2)
+        .style(styles::BORDER_NAME);
+
+    frame.render_widget(insert_mode_table, vertical_chunks[1]);
 
     Ok(())
 }

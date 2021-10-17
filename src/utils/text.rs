@@ -1,3 +1,5 @@
+use std::vec::IntoIter;
+
 use rustyline::line_buffer::LineBuffer;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -25,14 +27,49 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     }
 }
 
-pub fn vector2_col_max<T>(vec2: &[Vec<T>]) -> (u16, u16)
+pub enum VectorColumnMax<T> {
+    One(T),
+    All(Vec<T>),
+}
+
+impl<T> IntoIterator for VectorColumnMax<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            VectorColumnMax::All(item) => item.into_iter(),
+            VectorColumnMax::One(item) => vec![item].into_iter(),
+        }
+    }
+}
+
+pub fn vector_column_max<T>(vec: &[Vec<T>], indexer: Option<usize>) -> IntoIter<u16>
 where
     T: AsRef<str>,
 {
-    let col0 = vec2.iter().map(|v| v[0].as_ref().len()).max().unwrap();
-    let col1 = vec2.iter().map(|v| v[1].as_ref().len()).max().unwrap();
+    if vec.len() == 0 {
+        panic!("Vector length should be greater than or equal to 1.")
+    }
 
-    (col0 as u16, col1 as u16)
+    let column_max = |vec: &[Vec<T>], index: usize| -> u16 {
+        vec.iter().map(|v| v[index].as_ref().len()).max().unwrap() as u16
+    };
+
+    match indexer {
+        Some(index) => VectorColumnMax::One(column_max(&vec, index)).into_iter(),
+        None => {
+            let column_amount = vec[0].len();
+
+            let mut column_max_lengths: Vec<u16> = vec![];
+
+            for i in 0..column_amount {
+                column_max_lengths.push(column_max(&vec, i));
+            }
+
+            VectorColumnMax::All(column_max_lengths).into_iter()
+        }
+    }
 }
 
 pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
@@ -50,7 +87,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
-    fn test_maximum_length() {
+    fn test_text_align_maximum_length() {
         align_text("", "left", 0);
     }
 
@@ -79,26 +116,42 @@ mod tests {
     }
 
     #[test]
-    fn test_reference_string_vec2() {
-        let vec2 = vec![vec!["", "s"], vec!["longer string", "lll"]];
+    #[should_panic(expected = "Vector length should be greater than or equal to 1.")]
+    fn test_vector_column_max_empty_vector() {
+        let vec: Vec<Vec<String>> = vec![];
 
-        let (col0, col1) = vector2_col_max(&vec2);
-
-        assert_eq!(col0, 13);
-        assert_eq!(col1, 3);
+        vector_column_max(&vec, None);
     }
 
     #[test]
-    fn test_string_vec2() {
-        let vec2 = vec![
+    fn test_vector_column_max_reference_strings() {
+        let vec = vec![vec!["", "s"], vec!["longer string", "lll"]];
+
+        let mut output_vec_all = vector_column_max(&vec, None);
+
+        assert_eq!(output_vec_all.next(), Some(13));
+        assert_eq!(output_vec_all.next(), Some(3));
+
+        let mut output_vec_one = vector_column_max(&vec, Some(0));
+
+        assert_eq!(output_vec_one.next(), Some(13));
+    }
+
+    #[test]
+    fn test_vector_column_max_strings() {
+        let vec = vec![
             vec!["".to_string(), "another".to_string()],
             vec!["".to_string(), "the last string".to_string()],
         ];
 
-        let (col0, col1) = vector2_col_max(&vec2);
+        let mut output_vec_all = vector_column_max(&vec, None);
 
-        assert_eq!(col0, 0);
-        assert_eq!(col1, 15);
+        assert_eq!(output_vec_all.next(), Some(0));
+        assert_eq!(output_vec_all.next(), Some(15));
+
+        let mut output_vec_one = vector_column_max(&vec, Some(0));
+
+        assert_eq!(output_vec_one.next(), Some(0));
     }
 
     #[test]
