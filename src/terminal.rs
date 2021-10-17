@@ -151,13 +151,16 @@ pub async fn ui_driver(
                     }
                     Key::Enter => {
                         let input_message = app.input_text.as_str();
-                        app.messages.push_front(data_builder.user(
-                            config.twitch.username.to_string(),
-                            input_message.to_string(),
-                        ));
 
-                        tx.send(input_message.to_string()).await.unwrap();
-                        app.input_text.update("", 0);
+                        if input_message.len() > 0 {
+                            app.messages.push_front(data_builder.user(
+                                config.twitch.username.to_string(),
+                                input_message.to_string(),
+                            ));
+
+                            tx.send(input_message.to_string()).await.unwrap();
+                            app.input_text.update("", 0);
+                        }
                     }
                     Key::Char(c) => {
                         app.input_text.insert(c, 1);
