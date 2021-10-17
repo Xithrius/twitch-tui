@@ -10,11 +10,11 @@
 
   | Key   | Description                                                                                          |
   |-------|------------------------------------------------------------------------------------------------------|
-  | `?`   | Have the keybinds window appear.                                                                     |
-  | `i`   | Enter insert mode for sending messages. Exit this mode with `Esc`.                                   |
-  | `Esc` | Exits out of layered windows, such as going from insert mode, to normal, to exiting the application. |
   | `c`   | Go to the chat window chat.                                                                          |
+  | `i`   | Enter insert mode for sending messages. Exit this mode with `Esc`.                                   |
+  | `?`   | Have the keybinds window appear.                                                                     |
   | `q`   | Quit out of the entire application.                                                                  |
+  | `Esc` | Exits out of layered windows, such as going from insert mode, to normal, to exiting the application. |
 
 
 </details>
@@ -26,6 +26,19 @@
   |------------|-------------------------------------------------------------|
   | `Ctrl + w` | Cuts a single word (from the cursor to the next whitespace) |
   | `Ctrl + u` | Cuts the entire line                                        |
+  | `Ctrl + f` | Move cursor to the right                                    |
+  | `Ctrl + b` | Move cursor to the left                                     |
+  | `Ctrl + a` | Move cursor to the start                                    |
+  | `Ctrl + e` | Move cursor to the end                                      |
+  | `Alt + f`  | Move to the end of the next word                            |
+  | `Alt + b`  | Move to the start of the previous word                      |
+  | `Ctrl + t` | Swap previous item with current item                        |
+  | `Alt + t`  | Swap previous word with current word                        |
+  | `Ctrl + u` | Remove everything before the cursor                         |
+  | `Ctrl + k` | Remove everything after the cursor                          |
+  | `Ctrl + w` | Remove the previous word                                    |
+  | `Ctrl + d` | Remove item to the right                                    |
+  | `Esc`      | Drop back to previous window layer                          |
 
 </details>
 

@@ -4,6 +4,7 @@ lazy_static! {
     pub static ref COLUMN_TITLES: Vec<&'static str> = vec!["Keybind", "Description"];
     pub static ref NORMAL_MODE: Vec<Vec<&'static str>> = vec![
         vec!["c", "Chat window"],
+        vec!["i", "Insert mode"],
         vec!["?", "Bring up this window"],
         vec!["q", "Quit this application"],
         vec!["Esc", "Drop back to previous window layer"],
