@@ -48,7 +48,7 @@ pub fn vector_column_max<T>(vec: &[Vec<T>], indexer: Option<usize>) -> IntoIter<
 where
     T: AsRef<str>,
 {
-    if vec.len() == 0 {
+    if vec.is_empty() {
         panic!("Vector length should be greater than or equal to 1.")
     }
 
@@ -57,14 +57,14 @@ where
     };
 
     match indexer {
-        Some(index) => VectorColumnMax::One(column_max(&vec, index)).into_iter(),
+        Some(index) => VectorColumnMax::One(column_max(vec, index)).into_iter(),
         None => {
             let column_amount = vec[0].len();
 
             let mut column_max_lengths: Vec<u16> = vec![];
 
             for i in 0..column_amount {
-                column_max_lengths.push(column_max(&vec, i));
+                column_max_lengths.push(column_max(vec, i));
             }
 
             VectorColumnMax::All(column_max_lengths).into_iter()

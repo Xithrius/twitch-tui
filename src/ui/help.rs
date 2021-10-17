@@ -24,7 +24,7 @@ where
     // Normal mode keybinds
     let normal_table_widths = vector_column_max(&INSERT_MODE, None)
         .into_iter()
-        .map(|w| Constraint::Min(w))
+        .map(Constraint::Min)
         .collect::<Vec<Constraint>>();
 
     let normal_mode_table = Table::new(NORMAL_MODE.iter().map(|k| Row::new(k.iter().copied())))
@@ -43,7 +43,7 @@ where
     // Insert mode keybinds
     let insert_table_widths = vector_column_max(&INSERT_MODE, None)
         .into_iter()
-        .map(|w| Constraint::Min(w))
+        .map(Constraint::Min)
         .collect::<Vec<Constraint>>();
 
     let insert_mode_table = Table::new(INSERT_MODE.iter().map(|k| Row::new(k.iter().copied())))

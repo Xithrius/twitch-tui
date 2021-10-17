@@ -152,7 +152,7 @@ pub async fn ui_driver(
                     Key::Enter => {
                         let input_message = app.input_text.as_str();
 
-                        if input_message.len() > 0 {
+                        if !input_message.is_empty() {
                             app.messages.push_front(data_builder.user(
                                 config.twitch.username.to_string(),
                                 input_message.to_string(),
