@@ -991,6 +991,7 @@ dependencies = [
  "dirs",
  "futures",
  "irc",
+ "lazy_static",
  "rand",
  "rustyline",
  "serde",
