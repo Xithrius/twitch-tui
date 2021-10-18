@@ -171,6 +171,21 @@ pub async fn ui_driver(
                     }
                     _ => {}
                 },
+                State::Normal if app.allow_scrolling => match key {
+                    Key::Up | Key::PageUp => {
+                        if let Some(chat_chunk_height) = app.chat_chunk_height {
+                            if app.scroll_offset < chat_chunk_height {
+                                app.scroll_offset += 1;
+                            }
+                        }
+                    }
+                    Key::Down | Key::PageDown => {
+                        if app.scroll_offset > 0 {
+                            app.scroll_offset -= 1;
+                        }
+                    }
+                    _ => {}
+                },
                 _ => match key {
                     Key::Char('c') => app.state = State::Normal,
                     Key::Char('?') => app.state = State::KeybindHelp,

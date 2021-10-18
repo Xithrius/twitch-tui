@@ -22,6 +22,12 @@ pub struct App {
     pub table_constraints: Option<Vec<Constraint>>,
     /// The titles of the columns within the table of the terminal
     pub column_titles: Option<Vec<String>>,
+    /// How many lines have been scrolled up/down
+    pub scroll_offset: usize,
+    /// If the amount of messages is 1 more than the window height for chat.
+    pub allow_scrolling: bool,
+    /// How large the chat window is.
+    pub chat_chunk_height: Option<usize>,
 }
 
 impl App {
@@ -32,6 +38,9 @@ impl App {
             input_text: LineBuffer::with_capacity(4096),
             table_constraints: None,
             column_titles: None,
+            scroll_offset: 0,
+            allow_scrolling: false,
+            chat_chunk_height: None,
         }
     }
 }

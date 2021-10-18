@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::cmp::Ordering;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
@@ -40,7 +41,7 @@ where
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = vertical_chunks[0].height as usize - 3;
+    let general_chunk_height = vertical_chunks[0].height as usize - 4;
 
     // The chunk furthest to the right is the messages, that's the one we want.
     let message_chunk_width = horizontal_chunks[table_widths.len() - 1].width as usize - 4;
@@ -49,13 +50,24 @@ where
     app.messages
         .truncate(config.terminal.maximum_messages as usize);
 
+    if app.messages.len() > general_chunk_height {
+        app.allow_scrolling = true;
+        app.chat_chunk_height = Some(general_chunk_height);
+    }
+
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
     let mut total_row_height: usize = 0;
     let mut display_rows = std::collections::VecDeque::new();
 
-    for data in app.messages.iter() {
-        let (msg_height, row) = data.to_row(&config.frontend, &message_chunk_width);
+    for (index, data) in app.messages.iter().enumerate() {
+        let (msg_height, row) = match app.scroll_offset.cmp(&0) {
+            Ordering::Equal => data.to_row(&config.frontend, &message_chunk_width),
+            Ordering::Greater => app.messages[index + app.scroll_offset]
+                .to_row(&config.frontend, &message_chunk_width),
+            Ordering::Less => panic!("Scroll offset should not be able to drop below 0."),
+        };
+
         let row_height = total_row_height + msg_height as usize;
 
         if row_height > general_chunk_height {
