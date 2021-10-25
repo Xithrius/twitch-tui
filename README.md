@@ -1,4 +1,4 @@
-# Twitch Chat IRC, in the terminal.
+# Twitch chat in the terminal.
 
 ### What it looks like:
 
@@ -47,5 +47,5 @@
 
 1. Make sure you have both Cargo and installed from the [rust-lang website](https://www.rust-lang.org/learn/get-started). Make sure the Cargo binary folder is appended to your `$PATH` environment variable.
 2. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and have it ready to put into the `token` variable in the `config.toml` file that you create. This `config.toml` file should be created in `~/.config/ttc/config.toml` if you're on Linux or MacOS. If on Windows, place it in `%appdata%/ttc/config.toml` instead.
-3. Run `cargo install terminal-twitch-chat` and follow the instructions that it prints.
-5. You should now be able to run `ttc` from anywhere now. Have fun!
+3. Run `cargo install twitch-tui` and follow the instructions that it prints.
+5. You should now be able to run `twt` from anywhere now. Have fun!
