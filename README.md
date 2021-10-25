@@ -46,6 +46,10 @@
 ### Setup:
 
 1. Make sure you have both Cargo and installed from the [rust-lang website](https://www.rust-lang.org/learn/get-started). Make sure the Cargo binary folder is appended to your `$PATH` environment variable.
-2. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and have it ready to put into the `token` variable in the `config.toml` file that you create. This `config.toml` file should be created in `~/.config/ttc/config.toml` if you're on Linux or MacOS. If on Windows, place it in `%appdata%/ttc/config.toml` instead.
+2. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and have it ready to put into the `token` variable in the `config.toml` file that you create. This `config.toml` file should be created in `~/.config/twt/config.toml` if you're on Linux or MacOS. If on Windows, place it in `%appdata%/twt/config.toml` instead.
 3. Run `cargo install twitch-tui` and follow the instructions that it prints.
-5. You should now be able to run `twt` from anywhere now. Have fun!
+5. You should now be able to run `twt` from anywhere now. To update in the future, run `cargo install twitch-tui`. Have fun!
+
+### More information:
+
+- This project used to be named `terminal-twitch-chat`, but was renamed to `twitch-tui` in version [1.2.2](https://github.com/Xithrius/twitch-tui/releases/tag/v1.2.2).
