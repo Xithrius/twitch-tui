@@ -68,11 +68,23 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
 
                 match message.command {
                     Command::PRIVMSG(ref _target, ref msg) => {
-                        let user = match message.source_nickname() {
+                        // lowercase username from message
+                        let mut name = match message.source_nickname() {
                             Some(username) => username.to_string(),
                             None => "Undefined username".to_string(),
                         };
-                        tx.send(data_builder.user(user, msg.to_string()))
+                        // try to get username from message tags
+                        if let Some(ref tags) = message.tags {
+                            for tag in tags {
+                                if tag.0 == *"display-name" {
+                                    if let Some(ref value) = tag.1 {
+                                        name = value.to_string();
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        tx.send(data_builder.user(name, msg.to_string()))
                         .await
                         .unwrap();
                     }
