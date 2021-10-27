@@ -26,7 +26,7 @@ where
 
     if let State::Input = app.state {
         if app.input_text.starts_with('/') {
-            vertical_chunk_constraints.push(Constraint::Length(7));
+            vertical_chunk_constraints.push(Constraint::Length(9));
         }
 
         vertical_chunk_constraints.push(Constraint::Length(3));
