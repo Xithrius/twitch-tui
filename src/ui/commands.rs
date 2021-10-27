@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 
 lazy_static! {
     pub static ref COMMANDS: Vec<&'static str> = vec![
+        "ban",
         "unban",
         "clear",
         "color",
