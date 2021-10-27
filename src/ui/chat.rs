@@ -12,6 +12,7 @@ use crate::{
         app::{App, State},
         config::CompleteConfig,
     },
+    ui::commands::COMMANDS,
     utils::{styles, text::get_cursor_position},
 };
 
@@ -24,6 +25,10 @@ where
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
     if let State::Input = app.state {
+        if app.input_text.starts_with('/') {
+            vertical_chunk_constraints.push(Constraint::Length(7));
+        }
+
         vertical_chunk_constraints.push(Constraint::Length(3));
     }
 
@@ -81,9 +86,28 @@ where
     frame.render_widget(table, vertical_chunks[0]);
 
     if let State::Input = app.state {
+        if app.input_text.starts_with('/') {
+            let suggested_commands = COMMANDS
+                .iter()
+                .map(|f| format!("/{}", f))
+                .filter(|f| f.starts_with(app.input_text.as_str()))
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            let suggestions_paragraph = Paragraph::new(suggested_commands)
+                .style(Style::default().fg(Color::Blue))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("[ Command suggestions ]"),
+                );
+
+            frame.render_widget(suggestions_paragraph, vertical_chunks[1]);
+        }
+
         let text = app.input_text.as_str();
         let cursor_pos = get_cursor_position(&app.input_text);
-        let input_rect = vertical_chunks[1];
+        let input_rect = vertical_chunks[vertical_chunk_constraints.len() - 1];
 
         frame.set_cursor(
             (input_rect.x + cursor_pos as u16 + 1)
@@ -99,7 +123,10 @@ where
                 ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
             ));
 
-        frame.render_widget(paragraph, vertical_chunks[1]);
+        frame.render_widget(
+            paragraph,
+            vertical_chunks[vertical_chunk_constraints.len() - 1],
+        );
     }
 
     Ok(())
