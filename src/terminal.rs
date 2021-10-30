@@ -98,7 +98,7 @@ pub async fn ui_driver(
         terminal
             .draw(|mut frame| match app.state {
                 State::Normal | State::Input => draw_chat_ui(&mut frame, &mut app, config).unwrap(),
-                State::KeybindHelp => draw_keybinds_ui(&mut frame).unwrap(),
+                State::Help => draw_keybinds_ui(&mut frame).unwrap(),
             })
             .unwrap();
 
@@ -173,7 +173,7 @@ pub async fn ui_driver(
                 },
                 _ => match key {
                     Key::Char('c') => app.state = State::Normal,
-                    Key::Char('?') => app.state = State::KeybindHelp,
+                    Key::Char('?') => app.state = State::Help,
                     Key::Char('i') => app.state = State::Input,
                     Key::Char('q') => {
                         quitting(terminal);
@@ -184,7 +184,7 @@ pub async fn ui_driver(
                             quitting(terminal);
                             break 'outer;
                         }
-                        State::KeybindHelp | State::Input => app.state = State::Normal,
+                        State::Help | State::Input => app.state = State::Normal,
                     },
                     _ => {}
                 },

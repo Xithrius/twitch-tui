@@ -7,8 +7,8 @@ use crate::handlers::data::Data;
 
 pub enum State {
     Normal,
-    KeybindHelp,
     Input,
+    Help,
 }
 
 pub struct App {
