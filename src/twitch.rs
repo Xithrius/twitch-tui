@@ -56,64 +56,65 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
                 .unwrap();
             }
             Some(_message) = stream.next() => {
-                let message = _message.unwrap();
-                let mut tags: HashMap<&str, &str> = std::collections::HashMap::new();
-                if let Some(ref _tags) = message.tags {
-                    for tag in _tags {
-                        if let Some(ref tag_value) = tag.1 {
-                            tags.insert(&tag.0, tag_value);
+                if let Ok(message) = _message {
+                    let mut tags: HashMap<&str, &str> = std::collections::HashMap::new();
+                    if let Some(ref _tags) = message.tags {
+                        for tag in _tags {
+                            if let Some(ref tag_value) = tag.1 {
+                                tags.insert(&tag.0, tag_value);
+                            }
                         }
                     }
-                }
 
-                match message.command {
-                    Command::PRIVMSG(ref _target, ref msg) => {
-                        // lowercase username from message
-                        let mut name = match message.source_nickname() {
-                            Some(username) => username.to_string(),
-                            None => "Undefined username".to_string(),
-                        };
-                        // try to get username from message tags
-                        if let Some(ref tags) = message.tags {
-                            for tag in tags {
-                                if tag.0 == *"display-name" {
-                                    if let Some(ref value) = tag.1 {
-                                        name = value.to_string();
+                    match message.command {
+                        Command::PRIVMSG(ref _target, ref msg) => {
+                            // lowercase username from message
+                            let mut name = match message.source_nickname() {
+                                Some(username) => username.to_string(),
+                                None => "Undefined username".to_string(),
+                            };
+                            // try to get username from message tags
+                            if let Some(ref tags) = message.tags {
+                                for tag in tags {
+                                    if tag.0 == *"display-name" {
+                                        if let Some(ref value) = tag.1 {
+                                            name = value.to_string();
+                                        }
+                                        break;
                                     }
-                                    break;
                                 }
+                            }
+                            tx.send(data_builder.user(name, msg.to_string()))
+                            .await
+                            .unwrap();
+                        }
+                        Command::NOTICE(ref _target, ref msg) => {
+                            tx.send(data_builder.twitch(msg.to_string()))
+                            .await
+                            .unwrap();
+                        }
+                        Command::Raw(ref cmd, ref _items) => {
+                            match cmd.as_ref() {
+                                "ROOMSTATE" => {
+                                    // Only display roomstate on startup, since twitch
+                                    // sends a NOTICE whenever roomstate changes.
+                                    if !room_state_startup {
+                                        handle_roomstate(&tx, data_builder, &tags).await;
+                                    }
+                                    room_state_startup = true;
+                                }
+                                "USERNOTICE" => {
+                                    if let Some(value) = tags.get("system-msg") {
+                                        tx.send(data_builder.twitch(value.to_string()))
+                                        .await
+                                        .unwrap();
+                                    }
+                                }
+                                _ => ()
                             }
                         }
-                        tx.send(data_builder.user(name, msg.to_string()))
-                        .await
-                        .unwrap();
+                        _ => ()
                     }
-                    Command::NOTICE(ref _target, ref msg) => {
-                        tx.send(data_builder.twitch(msg.to_string()))
-                        .await
-                        .unwrap();
-                    }
-                    Command::Raw(ref cmd, ref _items) => {
-                        match cmd.as_ref() {
-                            "ROOMSTATE" => {
-                                // Only display roomstate on startup, since twitch
-                                // sends a NOTICE whenever roomstate changes.
-                                if !room_state_startup {
-                                    handle_roomstate(&tx, data_builder, &tags).await;
-                                }
-                                room_state_startup = true;
-                            }
-                            "USERNOTICE" => {
-                                if let Some(value) = tags.get("system-msg") {
-                                    tx.send(data_builder.twitch(value.to_string()))
-                                    .await
-                                    .unwrap();
-                                }
-                            }
-                            _ => ()
-                        }
-                    }
-                    _ => ()
                 }
             }
         };
