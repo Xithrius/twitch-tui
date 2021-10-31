@@ -28,6 +28,7 @@ textwrap = "0.14.2"
 dirs = "4.0.0"
 rustyline = "9.0.0"
 lazy_static = "1.4.0"
+maplit = "1.0.2"
 
 [[bin]]
 bench = false
