@@ -45,7 +45,7 @@ pub struct TerminalConfig {
     /// The delay between updates, in milliseconds.
     pub tick_delay: u64,
     /// The maximum amount of messages to be stored.
-    pub maximum_messages: u64,
+    pub maximum_messages: usize,
 }
 
 #[derive(Deserialize, Clone)]
