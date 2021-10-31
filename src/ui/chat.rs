@@ -20,12 +20,14 @@ pub fn draw_chat_ui<T>(frame: &mut Frame<T>, app: &mut App, config: &CompleteCon
 where
     T: Backend,
 {
+    let chat_input_text = app.input_boxes.get_mut("chat").unwrap();
+
     let table_widths = app.table_constraints.as_ref().unwrap();
 
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
     if let State::Input = app.state {
-        if app.input_text.starts_with('/') {
+        if chat_input_text.starts_with('/') {
             vertical_chunk_constraints.push(Constraint::Length(9));
         }
 
@@ -51,8 +53,7 @@ where
     let message_chunk_width = horizontal_chunks[table_widths.len() - 1].width as usize - 4;
 
     // Making sure that messages do have a limit and don't eat up all the RAM.
-    app.messages
-        .truncate(config.terminal.maximum_messages as usize);
+    app.messages.truncate(config.terminal.maximum_messages);
 
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
@@ -86,11 +87,11 @@ where
     frame.render_widget(table, vertical_chunks[0]);
 
     if let State::Input = app.state {
-        if app.input_text.starts_with('/') {
+        if chat_input_text.starts_with('/') {
             let suggested_commands = COMMANDS
                 .iter()
                 .map(|f| format!("/{}", f))
-                .filter(|f| f.starts_with(app.input_text.as_str()))
+                .filter(|f| f.starts_with(chat_input_text.as_str()))
                 .collect::<Vec<String>>()
                 .join("\n");
 
@@ -105,8 +106,7 @@ where
             frame.render_widget(suggestions_paragraph, vertical_chunks[1]);
         }
 
-        let text = app.input_text.as_str();
-        let cursor_pos = get_cursor_position(&app.input_text);
+        let cursor_pos = get_cursor_position(chat_input_text);
         let input_rect = vertical_chunks[vertical_chunk_constraints.len() - 1];
 
         frame.set_cursor(
@@ -115,7 +115,7 @@ where
             input_rect.y + 1,
         );
 
-        let paragraph = Paragraph::new(text)
+        let paragraph = Paragraph::new(chat_input_text.as_str())
             .style(Style::default().fg(Color::Yellow))
             .block(Block::default().borders(Borders::ALL).title("[ Input ]"))
             .scroll((
