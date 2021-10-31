@@ -76,8 +76,8 @@ pub async fn ui_driver(
         );
     }
 
-    app.column_titles = Option::Some(column_titles);
-    app.table_constraints = Option::Some(table_constraints);
+    app.column_titles = Some(column_titles);
+    app.table_constraints = Some(table_constraints);
 
     terminal.clear().unwrap();
 
