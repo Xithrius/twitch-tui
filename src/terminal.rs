@@ -10,7 +10,6 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use rustyline::{At, Word};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
@@ -21,7 +20,7 @@ use crate::{
         data::{Data, DataBuilder},
         event::{Config, Event, Events, Key},
     },
-    ui::{chat::draw_chat_ui, help::draw_keybinds_ui},
+    ui::{chat::draw_chat_ui, help::draw_keybinds_ui, input::draw_input_ui},
     utils::text::align_text,
 };
 
@@ -37,14 +36,14 @@ pub async fn ui_driver(
     })
     .await;
 
-    enable_raw_mode()?;
+    enable_raw_mode().unwrap();
 
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
 
     let backend = CrosstermBackend::new(stdout);
 
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal = Terminal::new(backend).unwrap();
 
     let username_column_title = align_text(
         "Username",
@@ -108,69 +107,30 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input => match key {
-                    Key::Ctrl('f') | Key::Right => {
-                        app.input_text.move_forward(1);
-                    }
-                    Key::Ctrl('b') | Key::Left => {
-                        app.input_text.move_backward(1);
-                    }
-                    Key::Ctrl('a') | Key::Home => {
-                        app.input_text.move_home();
-                    }
-                    Key::Ctrl('e') | Key::End => {
-                        app.input_text.move_end();
-                    }
-                    Key::Alt('f') => {
-                        app.input_text
-                            .move_to_next_word(At::AfterEnd, Word::Emacs, 1);
-                    }
-                    Key::Alt('b') => {
-                        app.input_text.move_to_prev_word(Word::Emacs, 1);
-                    }
-                    Key::Ctrl('t') => {
-                        app.input_text.transpose_chars();
-                    }
-                    Key::Alt('t') => {
-                        app.input_text.transpose_words(1);
-                    }
-                    Key::Ctrl('u') => {
-                        app.input_text.discard_line();
-                    }
-                    Key::Ctrl('k') => {
-                        app.input_text.kill_line();
-                    }
-                    Key::Ctrl('w') => {
-                        app.input_text.delete_prev_word(Word::Emacs, 1);
-                    }
-                    Key::Ctrl('d') => {
-                        app.input_text.delete(1);
-                    }
-                    Key::Backspace | Key::Delete => {
-                        app.input_text.backspace(1);
-                    }
-                    Key::Enter => {
-                        let input_message = app.input_text.as_str();
+                State::Input => {
+                    let input_buffer = app.input_boxes.get_mut("chat").unwrap();
 
-                        if !input_message.is_empty() {
-                            app.messages.push_front(data_builder.user(
-                                config.twitch.username.to_string(),
-                                input_message.to_string(),
-                            ));
-
-                            tx.send(input_message.to_string()).await.unwrap();
-                            app.input_text.update("", 0);
+                    match key {
+                        Key::Esc => {
+                            input_buffer.update("", 0);
+                            app.state = State::Normal;
                         }
+                        Key::Enter => {
+                            let input_message = input_buffer.as_str();
+
+                            if !input_message.is_empty() {
+                                app.messages.push_front(data_builder.user(
+                                    config.twitch.username.to_string(),
+                                    input_message.to_string(),
+                                ));
+
+                                tx.send(input_message.to_string()).await.unwrap();
+                                input_buffer.update("", 0);
+                            }
+                        }
+                        _ => draw_input_ui(&mut app, "chat", key).await,
                     }
-                    Key::Char(c) => {
-                        app.input_text.insert(c, 1);
-                    }
-                    Key::Esc => {
-                        app.input_text.update("", 0);
-                        app.state = State::Normal;
-                    }
-                    _ => {}
-                },
+                }
                 _ => match key {
                     Key::Char('c') => app.state = State::Normal,
                     Key::Char('?') => app.state = State::Help,
