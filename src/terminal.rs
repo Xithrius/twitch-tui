@@ -195,7 +195,11 @@ pub async fn ui_driver(
                             app.tab_offset = (app.tab_offset + 1) % INPUT_TAB_TITLES.len();
                         }
                         Key::BackTab => {
-                            app.tab_offset = (app.tab_offset - 1) % INPUT_TAB_TITLES.len();
+                            if app.tab_offset == 0 {
+                                app.tab_offset = INPUT_TAB_TITLES.len() - 1;
+                            } else {
+                                app.tab_offset = (app.tab_offset - 1) % INPUT_TAB_TITLES.len();
+                            }
                         }
                         _ => {}
                     }
