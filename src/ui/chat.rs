@@ -79,7 +79,7 @@ where
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("[ {}'s chat stream ]", &config.twitch.channel))
+                .title("[ Stream chat ]")
                 .style(styles::BORDER_NAME),
         )
         .widths(table_widths.as_ref())

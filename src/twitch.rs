@@ -70,7 +70,7 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                         if let Err(err) = client.send_part(format!("#{}", config.twitch.channel)) {
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap()
                         } else {
-                            tx.send(data_builder.twitch(format!("Joined #{}", channel_list))).await.unwrap();
+                            tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
                         }
 
                         // Join specified channel
