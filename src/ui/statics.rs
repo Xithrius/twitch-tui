@@ -1,15 +1,15 @@
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref COLUMN_TITLES: Vec<&'static str> = vec!["Keybind", "Description"];
-    pub static ref NORMAL_MODE: Vec<Vec<&'static str>> = vec![
+    pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["Keybind", "Description"];
+    pub static ref HELP_NORMAL_MODE: Vec<Vec<&'static str>> = vec![
         vec!["c", "Chat window"],
         vec!["i", "Insert mode"],
         vec!["?", "Bring up this window"],
         vec!["q", "Quit this application"],
         vec!["Esc", "Drop back to previous window layer"],
     ];
-    pub static ref INSERT_MODE: Vec<Vec<&'static str>> = vec![
+    pub static ref HELP_INSERT_MODE: Vec<Vec<&'static str>> = vec![
         vec!["Ctrl + f", "Move cursor to the right"],
         vec!["Ctrl + b", "Move cursor to the left"],
         vec!["Ctrl + a", "Move cursor to the start"],
@@ -23,5 +23,40 @@ lazy_static! {
         vec!["Ctrl + w", "Remove the previous word"],
         vec!["Ctrl + d", "Remove item to the right"],
         vec!["Esc", "Drop back to previous window layer"],
+    ];
+    pub static ref COMMANDS: Vec<&'static str> = vec![
+        "ban",
+        "unban",
+        "clear",
+        "color",
+        "commercial",
+        "delete",
+        "disconnect",
+        "emoteonly",
+        "emoteonlyoff",
+        "followers",
+        "followersoff",
+        "help",
+        "host",
+        "unhost",
+        "marker",
+        "me",
+        "mod",
+        "unmod",
+        "mods",
+        "r9kbeta",
+        "r9kbetaoff",
+        "raid",
+        "unraid",
+        "slow",
+        "slowoff",
+        "subscribers",
+        "subscribersoff",
+        "timeout",
+        "untimeout",
+        "vip",
+        "unvip",
+        "vips",
+        "w",
     ];
 }

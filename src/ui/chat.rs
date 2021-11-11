@@ -12,7 +12,7 @@ use crate::{
         app::{App, State},
         config::CompleteConfig,
     },
-    ui::commands::COMMANDS,
+    ui::statics::COMMANDS,
     utils::{styles, text::get_cursor_position},
 };
 
