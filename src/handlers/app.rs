@@ -17,7 +17,7 @@ pub struct App {
     /// Which window the terminal is currently showing
     pub state: State,
     /// Current value of the input box
-    pub input_text: LineBuffer,
+    pub input_buffer: LineBuffer,
     /// The constraints that are set on the table
     pub table_constraints: Option<Vec<Constraint>>,
     /// The titles of the columns within the table of the terminal
@@ -29,7 +29,7 @@ impl App {
         App {
             messages: VecDeque::with_capacity(data_limit),
             state: State::Normal,
-            input_text: LineBuffer::with_capacity(4096),
+            input_buffer: LineBuffer::with_capacity(4096),
             table_constraints: None,
             column_titles: None,
         }

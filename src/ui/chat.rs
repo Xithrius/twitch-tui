@@ -25,7 +25,7 @@ where
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
     if let State::Input = app.state {
-        if app.input_text.starts_with('/') {
+        if app.input_buffer.starts_with('/') {
             vertical_chunk_constraints.push(Constraint::Length(9));
         }
 
@@ -86,11 +86,11 @@ where
     frame.render_widget(table, vertical_chunks[0]);
 
     if let State::Input = app.state {
-        if app.input_text.starts_with('/') {
+        if app.input_buffer.starts_with('/') {
             let suggested_commands = COMMANDS
                 .iter()
                 .map(|f| format!("/{}", f))
-                .filter(|f| f.starts_with(app.input_text.as_str()))
+                .filter(|f| f.starts_with(app.input_buffer.as_str()))
                 .collect::<Vec<String>>()
                 .join("\n");
 
@@ -105,8 +105,8 @@ where
             frame.render_widget(suggestions_paragraph, vertical_chunks[1]);
         }
 
-        let text = app.input_text.as_str();
-        let cursor_pos = get_cursor_position(&app.input_text);
+        let text = app.input_buffer.as_str();
+        let cursor_pos = get_cursor_position(&app.input_buffer);
         let input_rect = vertical_chunks[vertical_chunk_constraints.len() - 1];
 
         frame.set_cursor(
