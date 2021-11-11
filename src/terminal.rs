@@ -164,14 +164,17 @@ pub async fn ui_driver(
                                     ));
 
                                     tx.send(Action::Privmsg(input_message.to_string()))
-                                        .await.unwrap();
+                                        .await
+                                        .unwrap();
                                     input_buffer.update("", 0);
                                 }
                             }
                             "Channel" => {
                                 app.messages.clear();
 
-                                tx.send(Action::Join(input_buffer.to_string())).await.unwrap();
+                                tx.send(Action::Join(input_buffer.to_string()))
+                                    .await
+                                    .unwrap();
                             }
                             "Username" => {
                                 config.twitch.username = input_buffer.to_string();

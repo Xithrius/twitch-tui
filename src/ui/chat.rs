@@ -68,7 +68,7 @@ where
             break;
         }
         total_row_height = row_height;
-        
+
         display_rows.push_front(row);
     }
 
@@ -137,7 +137,11 @@ where
         );
 
         let tabs = Tabs::new(INPUT_TAB_TITLES.iter().cloned().map(Spans::from).collect())
-            .block(Block::default().title("[ Input tabs ]").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title("[ Input tabs ]")
+                    .borders(Borders::ALL),
+            )
             .style(Style::default().fg(Color::White))
             .highlight_style(Style::default().fg(Color::Red))
             .divider(DOT)
