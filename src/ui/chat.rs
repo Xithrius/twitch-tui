@@ -3,8 +3,10 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
+    symbols::DOT,
     terminal::Frame,
-    widgets::{Block, Borders, Paragraph, Row, Table},
+    text::Spans,
+    widgets::{Block, Borders, Paragraph, Row, Table, Tabs},
 };
 
 use crate::{
@@ -12,7 +14,7 @@ use crate::{
         app::{App, State},
         config::CompleteConfig,
     },
-    ui::statics::COMMANDS,
+    ui::statics::{COMMANDS, INPUT_TAB_TITLES},
     utils::{styles, text::get_cursor_position},
 };
 
@@ -25,11 +27,11 @@ where
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
     if let State::Input = app.state {
-        if app.input_buffer.starts_with('/') {
+        if app.input_buffers.get("Chat").unwrap().starts_with('/') {
             vertical_chunk_constraints.push(Constraint::Length(9));
         }
 
-        vertical_chunk_constraints.push(Constraint::Length(3));
+        vertical_chunk_constraints.extend(vec![Constraint::Length(3), Constraint::Length(3)])
     }
 
     let vertical_chunks = Layout::default()
@@ -51,8 +53,7 @@ where
     let message_chunk_width = horizontal_chunks[table_widths.len() - 1].width as usize - 4;
 
     // Making sure that messages do have a limit and don't eat up all the RAM.
-    app.messages
-        .truncate(config.terminal.maximum_messages as usize);
+    app.messages.truncate(config.terminal.maximum_messages);
 
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
@@ -67,6 +68,7 @@ where
             break;
         }
         total_row_height = row_height;
+        
         display_rows.push_front(row);
     }
 
@@ -86,27 +88,33 @@ where
     frame.render_widget(table, vertical_chunks[0]);
 
     if let State::Input = app.state {
-        if app.input_buffer.starts_with('/') {
-            let suggested_commands = COMMANDS
-                .iter()
-                .map(|f| format!("/{}", f))
-                .filter(|f| f.starts_with(app.input_buffer.as_str()))
-                .collect::<Vec<String>>()
-                .join("\n");
+        let input_buffer = match app.input_buffers.get_index(app.tab_offset).unwrap() {
+            (&"Chat", input_buffer) => {
+                if input_buffer.as_str().starts_with('/') {
+                    let suggested_commands = COMMANDS
+                        .iter()
+                        .map(|f| format!("/{}", f))
+                        .filter(|f| f.starts_with(input_buffer.as_str()))
+                        .collect::<Vec<String>>()
+                        .join("\n");
 
-            let suggestions_paragraph = Paragraph::new(suggested_commands)
-                .style(Style::default().fg(Color::Blue))
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title("[ Command suggestions ]"),
-                );
+                    let suggestions_paragraph = Paragraph::new(suggested_commands)
+                        .style(Style::default().fg(Color::Blue))
+                        .block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .title("[ Command suggestions ]"),
+                        );
 
-            frame.render_widget(suggestions_paragraph, vertical_chunks[1]);
-        }
+                    frame.render_widget(suggestions_paragraph, vertical_chunks[1]);
+                }
 
-        let text = app.input_buffer.as_str();
-        let cursor_pos = get_cursor_position(&app.input_buffer);
+                input_buffer
+            }
+            (_, input_buffer) => input_buffer,
+        };
+
+        let cursor_pos = get_cursor_position(input_buffer);
         let input_rect = vertical_chunks[vertical_chunk_constraints.len() - 1];
 
         frame.set_cursor(
@@ -115,7 +123,7 @@ where
             input_rect.y + 1,
         );
 
-        let paragraph = Paragraph::new(text)
+        let paragraph = Paragraph::new(input_buffer.as_str())
             .style(Style::default().fg(Color::Yellow))
             .block(Block::default().borders(Borders::ALL).title("[ Input ]"))
             .scroll((
@@ -127,6 +135,15 @@ where
             paragraph,
             vertical_chunks[vertical_chunk_constraints.len() - 1],
         );
+
+        let tabs = Tabs::new(INPUT_TAB_TITLES.iter().cloned().map(Spans::from).collect())
+            .block(Block::default().title("[ Input tabs ]").borders(Borders::ALL))
+            .style(Style::default().fg(Color::White))
+            .highlight_style(Style::default().fg(Color::Red))
+            .divider(DOT)
+            .select(app.tab_offset);
+
+        frame.render_widget(tabs, vertical_chunks[vertical_chunk_constraints.len() - 2]);
     }
 
     Ok(())

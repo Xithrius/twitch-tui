@@ -21,12 +21,12 @@ use crate::{
         data::{Data, DataBuilder},
         event::{Config, Event, Events, Key},
     },
-    ui::{chat::draw_chat_ui, help::draw_keybinds_ui},
+    ui::{chat::draw_chat_ui, help::draw_keybinds_ui, statics::INPUT_TAB_TITLES},
     utils::text::align_text,
 };
 
 pub async fn ui_driver(
-    config: &CompleteConfig,
+    mut config: CompleteConfig,
     mut app: App,
     tx: Sender<String>,
     mut rx: Receiver<Data>,
@@ -97,8 +97,8 @@ pub async fn ui_driver(
     'outer: loop {
         terminal
             .draw(|mut frame| match app.state {
-                State::Normal | State::Input => draw_chat_ui(&mut frame, &mut app, config).unwrap(),
                 State::Help => draw_keybinds_ui(&mut frame).unwrap(),
+                _ => draw_chat_ui(&mut frame, &mut app, &config).unwrap(),
             })
             .unwrap();
 
@@ -108,69 +108,92 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input => match key {
-                    Key::Ctrl('f') | Key::Right => {
-                        app.input_buffer.move_forward(1);
-                    }
-                    Key::Ctrl('b') | Key::Left => {
-                        app.input_buffer.move_backward(1);
-                    }
-                    Key::Ctrl('a') | Key::Home => {
-                        app.input_buffer.move_home();
-                    }
-                    Key::Ctrl('e') | Key::End => {
-                        app.input_buffer.move_end();
-                    }
-                    Key::Alt('f') => {
-                        app.input_buffer
-                            .move_to_next_word(At::AfterEnd, Word::Emacs, 1);
-                    }
-                    Key::Alt('b') => {
-                        app.input_buffer.move_to_prev_word(Word::Emacs, 1);
-                    }
-                    Key::Ctrl('t') => {
-                        app.input_buffer.transpose_chars();
-                    }
-                    Key::Alt('t') => {
-                        app.input_buffer.transpose_words(1);
-                    }
-                    Key::Ctrl('u') => {
-                        app.input_buffer.discard_line();
-                    }
-                    Key::Ctrl('k') => {
-                        app.input_buffer.kill_line();
-                    }
-                    Key::Ctrl('w') => {
-                        app.input_buffer.delete_prev_word(Word::Emacs, 1);
-                    }
-                    Key::Ctrl('d') => {
-                        app.input_buffer.delete(1);
-                    }
-                    Key::Backspace | Key::Delete => {
-                        app.input_buffer.backspace(1);
-                    }
-                    Key::Enter => {
-                        let input_message = app.input_buffer.as_str();
+                State::Input => {
+                    let (tab_name, input_buffer) =
+                        app.input_buffers.get_index_mut(app.tab_offset).unwrap();
 
-                        if !input_message.is_empty() {
-                            app.messages.push_front(data_builder.user(
-                                config.twitch.username.to_string(),
-                                input_message.to_string(),
-                            ));
-
-                            tx.send(input_message.to_string()).await.unwrap();
-                            app.input_buffer.update("", 0);
+                    match key {
+                        Key::Ctrl('f') | Key::Right => {
+                            input_buffer.move_forward(1);
                         }
+                        Key::Ctrl('b') | Key::Left => {
+                            input_buffer.move_backward(1);
+                        }
+                        Key::Ctrl('a') | Key::Home => {
+                            input_buffer.move_home();
+                        }
+                        Key::Ctrl('e') | Key::End => {
+                            input_buffer.move_end();
+                        }
+                        Key::Alt('f') => {
+                            input_buffer.move_to_next_word(At::AfterEnd, Word::Emacs, 1);
+                        }
+                        Key::Alt('b') => {
+                            input_buffer.move_to_prev_word(Word::Emacs, 1);
+                        }
+                        Key::Ctrl('t') => {
+                            input_buffer.transpose_chars();
+                        }
+                        Key::Alt('t') => {
+                            input_buffer.transpose_words(1);
+                        }
+                        Key::Ctrl('u') => {
+                            input_buffer.discard_line();
+                        }
+                        Key::Ctrl('k') => {
+                            input_buffer.kill_line();
+                        }
+                        Key::Ctrl('w') => {
+                            input_buffer.delete_prev_word(Word::Emacs, 1);
+                        }
+                        Key::Ctrl('d') => {
+                            input_buffer.delete(1);
+                        }
+                        Key::Backspace | Key::Delete => {
+                            input_buffer.backspace(1);
+                        }
+                        Key::Enter => match *tab_name {
+                            "Chat" => {
+                                let input_message = input_buffer.as_str();
+
+                                if !input_message.is_empty() {
+                                    app.messages.push_front(data_builder.user(
+                                        config.twitch.username.to_string(),
+                                        input_message.to_string(),
+                                    ));
+
+                                    tx.send(input_message.to_string()).await.unwrap();
+                                    input_buffer.update("", 0);
+                                }
+                            }
+                            "Channel" => {
+                                app.messages.clear();
+                                config.twitch.channel = input_buffer.to_string();
+                            }
+                            "Username" => {
+                                config.twitch.username = input_buffer.to_string();
+                            }
+                            "Server" => {
+                                config.twitch.server = input_buffer.to_string();
+                            }
+                            _ => {}
+                        },
+                        Key::Char(c) => {
+                            input_buffer.insert(c, 1);
+                        }
+                        Key::Esc => {
+                            input_buffer.update("", 0);
+                            app.state = State::Normal;
+                        }
+                        Key::Tab => {
+                            app.tab_offset = (app.tab_offset + 1) % INPUT_TAB_TITLES.len();
+                        }
+                        Key::BackTab => {
+                            app.tab_offset = (app.tab_offset - 1) % INPUT_TAB_TITLES.len();
+                        }
+                        _ => {}
                     }
-                    Key::Char(c) => {
-                        app.input_buffer.insert(c, 1);
-                    }
-                    Key::Esc => {
-                        app.input_buffer.update("", 0);
-                        app.state = State::Normal;
-                    }
-                    _ => {}
-                },
+                }
                 _ => match key {
                     Key::Char('c') => app.state = State::Normal,
                     Key::Char('?') => app.state = State::Help,
