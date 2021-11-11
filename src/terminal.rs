@@ -21,6 +21,7 @@ use crate::{
         data::{Data, DataBuilder},
         event::{Config, Event, Events, Key},
     },
+    twitch::Action,
     ui::{chat::draw_chat_ui, help::draw_keybinds_ui, statics::INPUT_TAB_TITLES},
     utils::text::align_text,
 };
@@ -28,7 +29,7 @@ use crate::{
 pub async fn ui_driver(
     mut config: CompleteConfig,
     mut app: App,
-    tx: Sender<String>,
+    tx: Sender<Action>,
     mut rx: Receiver<Data>,
 ) -> Result<()> {
     let mut events = Events::with_config(Config {
@@ -162,13 +163,15 @@ pub async fn ui_driver(
                                         input_message.to_string(),
                                     ));
 
-                                    tx.send(input_message.to_string()).await.unwrap();
+                                    tx.send(Action::Privmsg(input_message.to_string()))
+                                        .await.unwrap();
                                     input_buffer.update("", 0);
                                 }
                             }
                             "Channel" => {
                                 app.messages.clear();
-                                config.twitch.channel = input_buffer.to_string();
+
+                                tx.send(Action::Join(input_buffer.to_string())).await.unwrap();
                             }
                             "Username" => {
                                 config.twitch.username = input_buffer.to_string();
