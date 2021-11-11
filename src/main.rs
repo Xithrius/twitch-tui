@@ -15,17 +15,18 @@ mod utils;
 async fn main() -> Result<()> {
     match CompleteConfig::new() {
         Ok(config) => {
-            let app = App::new(config.terminal.maximum_messages as usize);
+            let app = App::new(config.clone());
 
             let (twitch_tx, terminal_rx) = mpsc::channel(100);
             let (terminal_tx, twitch_rx) = mpsc::channel(100);
+
             let cloned_config = config.clone();
 
             tokio::task::spawn(async move {
-                twitch::twitch_irc(&config, twitch_tx, twitch_rx).await;
+                twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
             });
 
-            terminal::ui_driver(&cloned_config, app, terminal_tx, terminal_rx)
+            terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx)
                 .await
                 .unwrap();
 

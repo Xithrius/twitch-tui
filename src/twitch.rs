@@ -11,7 +11,13 @@ use crate::handlers::{
     data::{Data, DataBuilder},
 };
 
-pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Receiver<String>) {
+#[derive(Debug)]
+pub enum Action {
+    Privmsg(String),
+    Join(String),
+}
+
+pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
     let irc_config = data::Config {
         nickname: Some(config.twitch.username.to_owned()),
         server: Some(config.twitch.server.to_owned()),
@@ -50,10 +56,32 @@ pub async fn twitch_irc(config: &CompleteConfig, tx: Sender<Data>, mut rx: Recei
         tokio::select! {
             biased;
 
-            Some(message) = rx.recv() => {
-                client
-                .send_privmsg(format!("#{}", config.twitch.channel), message)
-                .unwrap();
+            Some(action) = rx.recv() => {
+                match action {
+                    Action::Privmsg(message) => {
+                        client
+                            .send_privmsg(format!("#{}", config.twitch.channel), message)
+                            .unwrap();
+                    }
+                    Action::Join(channel) => {
+                        let channel_list = format!("#{}", channel);
+
+                        // Leave previous channel
+                        if let Err(err) = client.send_part(format!("#{}", config.twitch.channel)) {
+                            tx.send(data_builder.twitch(err.to_string())).await.unwrap()
+                        } else {
+                            tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
+                        }
+
+                        // Join specified channel
+                        if let Err(err) = client.send_join(&channel_list) {
+                            tx.send(data_builder.twitch(err.to_string())).await.unwrap()
+                        }
+
+                        // Set old channel to new channel
+                        config.twitch.channel = channel;
+                    }
+                }
             }
             Some(_message) = stream.next() => {
                 if let Ok(message) = _message {

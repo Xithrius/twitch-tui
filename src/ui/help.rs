@@ -7,7 +7,7 @@ use tui::{
 };
 
 use crate::{
-    ui::keys::{COLUMN_TITLES, INSERT_MODE, NORMAL_MODE},
+    ui::statics::{HELP_COLUMN_TITLES, HELP_INSERT_MODE, HELP_NORMAL_MODE},
     utils::{styles, text::vector_column_max},
 };
 
@@ -22,40 +22,42 @@ where
         .split(frame.size());
 
     // Normal mode keybinds
-    let normal_table_widths = vector_column_max(&INSERT_MODE, None)
+    let normal_table_widths = vector_column_max(&HELP_INSERT_MODE, None)
         .into_iter()
         .map(Constraint::Min)
         .collect::<Vec<Constraint>>();
 
-    let normal_mode_table = Table::new(NORMAL_MODE.iter().map(|k| Row::new(k.iter().copied())))
-        .header(Row::new(COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("[ Normal Mode Keybinds ]"),
-        )
-        .widths(&normal_table_widths)
-        .column_spacing(2)
-        .style(styles::BORDER_NAME);
+    let normal_mode_table =
+        Table::new(HELP_NORMAL_MODE.iter().map(|k| Row::new(k.iter().copied())))
+            .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("[ Normal Mode Keybinds ]"),
+            )
+            .widths(&normal_table_widths)
+            .column_spacing(2)
+            .style(styles::BORDER_NAME);
 
     frame.render_widget(normal_mode_table, vertical_chunks[0]);
 
     // Insert mode keybinds
-    let insert_table_widths = vector_column_max(&INSERT_MODE, None)
+    let insert_table_widths = vector_column_max(&HELP_INSERT_MODE, None)
         .into_iter()
         .map(Constraint::Min)
         .collect::<Vec<Constraint>>();
 
-    let insert_mode_table = Table::new(INSERT_MODE.iter().map(|k| Row::new(k.iter().copied())))
-        .header(Row::new(COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("[ Insert Mode Keybinds ]"),
-        )
-        .widths(&insert_table_widths)
-        .column_spacing(2)
-        .style(styles::BORDER_NAME);
+    let insert_mode_table =
+        Table::new(HELP_INSERT_MODE.iter().map(|k| Row::new(k.iter().copied())))
+            .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("[ Insert Mode Keybinds ]"),
+            )
+            .widths(&insert_table_widths)
+            .column_spacing(2)
+            .style(styles::BORDER_NAME);
 
     frame.render_widget(insert_mode_table, vertical_chunks[1]);
 
