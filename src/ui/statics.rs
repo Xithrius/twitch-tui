@@ -1,6 +1,8 @@
 use lazy_static::lazy_static;
 
 lazy_static! {
+    pub static ref INPUT_TAB_TITLES: Vec<&'static str> =
+        vec!["Chat", "Channel", "Username", "Server"];
     pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["Keybind", "Description"];
     pub static ref HELP_NORMAL_MODE: Vec<Vec<&'static str>> = vec![
         vec!["c", "Chat window"],
