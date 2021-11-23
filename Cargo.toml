@@ -20,7 +20,7 @@ unicode-width = "0.1.9"
 unicode-segmentation = "1.8.0"
 chrono = "0.4"
 irc = "0.15.0"
-futures = "0.3.17"
+futures = "0.3.18"
 tokio = { version = "1.14.0", features = ["full"] }
 toml = "0.5.8"
 serde = { version = "1.0.130", features = ["derive"] }
