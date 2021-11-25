@@ -671,6 +671,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pico-args"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"
+
+[[package]]
 name = "pin-project"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1130,6 +1136,7 @@ dependencies = [
  "indexmap",
  "irc",
  "lazy_static",
+ "pico-args",
  "rand",
  "rustyline",
  "serde",

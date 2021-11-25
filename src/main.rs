@@ -11,10 +11,38 @@ mod twitch;
 mod ui;
 mod utils;
 
+const HELP: &str = "\
+twitch-tui
+
+USAGE:
+  app [OPTIONS]
+FLAGS:
+  -h, --help            Prints help information
+OPTIONS:
+  --channel CHANNEL     Sets a channel(the streamer's name)
+";
+
+#[derive(Debug)]
+struct AppArgs {
+    channel: Option<String>,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = match parse_args() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Error: {}.", e);
+            std::process::exit(1);
+        }
+    };
+
     match CompleteConfig::new() {
-        Ok(config) => {
+        Ok(mut config) => {
+            if let Some(c) = args.channel {
+                config.twitch.channel = c;
+            }
+
             let app = App::new(config.clone());
 
             let (twitch_tx, terminal_rx) = mpsc::channel(100);
@@ -38,4 +66,21 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn parse_args() -> Result<AppArgs, pico_args::Error> {
+    let mut pargs = pico_args::Arguments::from_env();
+
+    if pargs.contains(["-h", "--help"]) {
+        print!("{}", HELP);
+        std::process::exit(0);
+    }
+
+    let args = AppArgs {
+        channel: pargs.opt_value_from_str("--channel")?,
+    };
+
+    pargs.finish();
+
+    Ok(args)
 }
