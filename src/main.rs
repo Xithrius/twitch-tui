@@ -1,5 +1,3 @@
-extern crate clap;
-
 use anyhow::Result;
 use tokio::sync::mpsc;
 
@@ -22,26 +20,26 @@ async fn main() -> Result<()> {
         .args_from_usage("-c, --channel=[CHANNEL] 'The streamer's name'
                           -t, --tick-delay=[DELAY] 'The delay in milliseconds between terminal updates'
                           -m, --max-messages=[MESSAGES] 'The maximum amount of messages to be stored'
-                          -s, --date-shown=[true/false] 'If the time and date is to be shown'
-                          -u, --maximum-username-length=[LENGTH] 'The longest a username can be'
+                          -s, --date-shown=[true/false] 'If the time and date is to be shown (defaults to true)'
+                          -u, --maximum-username-length=[LENGTH] 'Maximum length for Twitch usernames'
                           -a, --username-alignment=[left/center/right] 'Side the username should be aligned to'
                           -p, --palette=[PALETTE] 'The color palette for the username column: pastel (default), vibrant, warm, cool'")
         .get_matches();
 
     match CompleteConfig::new() {
         Ok(mut config) => {
-            // twitch section of config
+            // Twitch section of the config
             if let Some(ch) = arg_matches.value_of("channel") {
                 config.twitch.channel = ch.to_string();
             }
-            // terminal section of config
+            // Terminal section of the config
             if let Some(tick_delay) = arg_matches.value_of("tick-delay") {
                 config.terminal.tick_delay = tick_delay.parse().unwrap();
             }
             if let Some(max_messages) = arg_matches.value_of("maximum-messages") {
                 config.terminal.maximum_messages = max_messages.parse().unwrap();
             }
-            // frontend section of config
+            // Frontend section of the config
             if let Some(date_shown) = arg_matches.value_of("date-shown") {
                 config.frontend.date_shown = date_shown.parse().unwrap();
             }
