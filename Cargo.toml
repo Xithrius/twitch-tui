@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 [dependencies]
 crossterm = "0.20.0"
 tui = { version = "0.16.0", default-features = false, features = ["crossterm"] }
-anyhow = "1.0.50"
+anyhow = "1.0.51"
 unicode-width = "0.1.9"
 unicode-segmentation = "1.8.0"
 chrono = "0.4"
