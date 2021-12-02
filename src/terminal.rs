@@ -97,9 +97,9 @@ pub async fn ui_driver(
 
     'outer: loop {
         terminal
-            .draw(|mut frame| match app.state {
-                State::Help => draw_keybinds_ui(&mut frame).unwrap(),
-                _ => draw_chat_ui(&mut frame, &mut app, &config).unwrap(),
+            .draw(|frame| match app.state {
+                State::Help => draw_keybinds_ui(frame).unwrap(),
+                _ => draw_chat_ui(frame, &mut app, &config).unwrap(),
             })
             .unwrap();
 
