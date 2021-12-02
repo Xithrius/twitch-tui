@@ -27,6 +27,7 @@ textwrap = "0.14.2"
 rustyline = "9.0.0"
 lazy_static = "1.4.0"
 indexmap = "1.7.0"
+clap = "2.33.3"
 
 [[bin]]
 bench = false
