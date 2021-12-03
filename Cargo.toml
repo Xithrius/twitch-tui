@@ -27,7 +27,7 @@ textwrap = "0.14.2"
 rustyline = "9.0.0"
 lazy_static = "1.4.0"
 indexmap = "1.7.0"
-clap = { version = "2.33.3", features = ["yaml"] }
+clap = { version = "2.34.0", features = ["yaml"] }
 
 [[bin]]
 bench = false
