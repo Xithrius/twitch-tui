@@ -1,0 +1,51 @@
+name: twitch-tui
+version: "1.4.0"
+author: Xithrius <xithrius@gmail.com>
+about: Twitch chat in the terminal
+
+args:
+  - channel:
+      help: The streamer's name
+      short: c
+      long: channel
+      takes_value: true
+
+  - tick-delay:
+      help: The delay in milliseconds between terminal updates
+      short: t
+      long: tick-delay
+      takes_value: true
+
+  - max-messages:
+      help: The maximum amount of messages to be stored
+      short: m
+      long: max-messages
+      takes_value: true
+
+  - date-shown:
+      help: Show the date/time
+      short: d
+      long: date-shown
+      possible_values: [ "true", "false" ]
+      takes_value: true
+
+  - max-username-length:
+      help: Maximum length for Twitch usernames
+      short: u
+      long: max-username-length
+      takes_value: true
+
+  - username-alignment:
+      help: Username column alignment
+      short: a
+      long: username-alignment
+      possible_values: [ left, center, right ]
+      takes_value: true
+
+  - palette:
+      help: Username color palette
+      short: p
+      long: palette
+      possible_values: [ pastel, vibrant, warm, cool ]
+      default_value: pastel
+      takes_value: true

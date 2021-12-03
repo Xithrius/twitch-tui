@@ -13,18 +13,8 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let arg_matches = clap::App::new("twitch-tui")
-        .version("1.4.1")
-        .author("Xithrius")
-        .about("Twitch chat in the terminal.")
-        .args_from_usage("-c, --channel=[CHANNEL] 'The streamer's name'
-                          -t, --tick-delay=[DELAY] 'The delay in milliseconds between terminal updates'
-                          -m, --max-messages=[MESSAGES] 'The maximum amount of messages to be stored'
-                          -s, --date-shown=[true/false] 'If the time and date is to be shown (defaults to true)'
-                          -u, --max-username-length=[LENGTH] 'Maximum length for Twitch usernames'
-                          -a, --username-alignment=[left/center/right] 'Side the username should be aligned to'
-                          -p, --palette=[PALETTE] 'The color palette for the username column: pastel (default), vibrant, warm, cool'")
-        .get_matches();
+    let yaml = clap::load_yaml!("../cli.yml");
+    let arg_matches = clap::App::from_yaml(yaml).get_matches();
 
     match CompleteConfig::new() {
         Ok(mut config) => {
