@@ -4,12 +4,12 @@ use tui::layout::{Constraint, Direction, Layout, Rect};
 
 pub enum Centering {
     Input(u16, u16),
-    Box(u16, u16),
+    Window(u16, u16),
 }
 
 pub fn centered_popup(c: Centering, size: Rect) -> Rect {
     match c {
-        Centering::Box(percent_x, percent_y) => {
+        Centering::Window(percent_x, percent_y) => {
             let popup_layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(
