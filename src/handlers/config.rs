@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Palette {
     Pastel,
@@ -18,7 +18,7 @@ impl Default for Palette {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct CompleteConfig {
     /// Connecting to Twitch.
     pub twitch: TwitchConfig,
@@ -28,7 +28,7 @@ pub struct CompleteConfig {
     pub frontend: FrontendConfig,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct TwitchConfig {
     /// The username that this user has on Twitch.
     pub username: String,
@@ -40,7 +40,7 @@ pub struct TwitchConfig {
     pub token: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct TerminalConfig {
     /// The delay between updates, in milliseconds.
     pub tick_delay: u64,
@@ -48,7 +48,7 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct FrontendConfig {
     // If the time and date is to be shown.
     pub date_shown: bool,
