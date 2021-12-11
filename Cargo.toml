@@ -26,8 +26,8 @@ serde = { version = "1.0.131", features = ["derive"] }
 textwrap = "0.14.2"
 rustyline = "9.1.0"
 lazy_static = "1.4.0"
-indexmap = "1.7.0"
 clap = { version = "2.34.0", features = ["yaml"] }
+enum-iterator = "0.7.0"
 
 [[bin]]
 bench = false

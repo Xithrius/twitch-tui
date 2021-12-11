@@ -16,18 +16,18 @@ use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
 
 use crate::{
     handlers::{
-        app::{App, State},
+        app::{App, BufferName, State},
         config::CompleteConfig,
         data::{Data, DataBuilder},
         event::{Config, Event, Events, Key},
     },
     twitch::Action,
-    ui::{chat::draw_chat_ui, help::draw_keybinds_ui, statics::INPUT_TAB_TITLES},
+    ui::draw_ui,
     utils::text::align_text,
 };
 
 pub async fn ui_driver(
-    mut config: CompleteConfig,
+    config: CompleteConfig,
     mut app: App,
     tx: Sender<Action>,
     mut rx: Receiver<Data>,
@@ -97,10 +97,7 @@ pub async fn ui_driver(
 
     'outer: loop {
         terminal
-            .draw(|frame| match app.state {
-                State::Help => draw_keybinds_ui(frame).unwrap(),
-                _ => draw_chat_ui(frame, &mut app, &config).unwrap(),
-            })
+            .draw(|frame| draw_ui(frame, &mut app, &config))
             .unwrap();
 
         if let Ok(info) = rx.try_recv() {
@@ -109,9 +106,8 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input => {
-                    let (tab_name, input_buffer) =
-                        app.input_buffers.get_index_mut(app.tab_offset).unwrap();
+                State::Input | State::ChannelSwitch => {
+                    let input_buffer = app.get_buffer();
 
                     match key {
                         Key::Ctrl('f') | Key::Right => {
@@ -153,9 +149,10 @@ pub async fn ui_driver(
                         Key::Backspace | Key::Delete => {
                             input_buffer.backspace(1);
                         }
-                        Key::Enter => match *tab_name {
-                            "Chat" => {
-                                let input_message = input_buffer.as_str();
+                        Key::Enter => match app.selected_buffer {
+                            BufferName::Chat => {
+                                let input_message =
+                                    app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
                                 if !input_message.is_empty() {
                                     app.messages.push_front(data_builder.user(
@@ -166,23 +163,25 @@ pub async fn ui_driver(
                                     tx.send(Action::Privmsg(input_message.to_string()))
                                         .await
                                         .unwrap();
-                                    input_buffer.update("", 0);
                                 }
+                                input_message.update("", 0);
                             }
-                            "Channel" => {
-                                app.messages.clear();
+                            BufferName::Channel => {
+                                let input_message =
+                                    app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
-                                tx.send(Action::Join(input_buffer.to_string()))
-                                    .await
-                                    .unwrap();
+                                if !input_message.is_empty() {
+                                    app.messages.clear();
+
+                                    tx.send(Action::Join(input_message.to_string()))
+                                        .await
+                                        .unwrap();
+                                }
+                                input_message.update("", 0);
+
+                                app.selected_buffer = BufferName::Chat;
+                                app.state = State::Normal;
                             }
-                            "Username" => {
-                                config.twitch.username = input_buffer.to_string();
-                            }
-                            "Server" => {
-                                config.twitch.server = input_buffer.to_string();
-                            }
-                            _ => {}
                         },
                         Key::Char(c) => {
                             input_buffer.insert(c, 1);
@@ -191,23 +190,20 @@ pub async fn ui_driver(
                             input_buffer.update("", 0);
                             app.state = State::Normal;
                         }
-                        Key::Tab => {
-                            app.tab_offset = (app.tab_offset + 1) % INPUT_TAB_TITLES.len();
-                        }
-                        Key::BackTab => {
-                            if app.tab_offset == 0 {
-                                app.tab_offset = INPUT_TAB_TITLES.len() - 1;
-                            } else {
-                                app.tab_offset = (app.tab_offset - 1) % INPUT_TAB_TITLES.len();
-                            }
-                        }
                         _ => {}
                     }
                 }
                 _ => match key {
-                    Key::Char('c') => app.state = State::Normal,
+                    Key::Char('c') => {
+                        app.state = State::Normal;
+                        app.selected_buffer = BufferName::Chat;
+                    }
                     Key::Char('?') => app.state = State::Help,
                     Key::Char('i') => app.state = State::Input,
+                    Key::Char('C') => {
+                        app.state = State::ChannelSwitch;
+                        app.selected_buffer = BufferName::Channel;
+                    }
                     Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;
@@ -217,7 +213,11 @@ pub async fn ui_driver(
                             quitting(terminal);
                             break 'outer;
                         }
-                        State::Help | State::Input => app.state = State::Normal,
+                        State::ChannelSwitch => {
+                            app.selected_buffer = BufferName::Chat;
+                            app.state = State::Normal;
+                        }
+                        _ => app.state = State::Normal,
                     },
                     _ => {}
                 },
