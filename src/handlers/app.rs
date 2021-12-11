@@ -1,18 +1,22 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
-use indexmap::IndexMap;
+use enum_iterator::IntoEnumIterator;
 use rustyline::line_buffer::LineBuffer;
 use tui::layout::Constraint;
 
-use crate::{
-    handlers::{config::CompleteConfig, data::Data},
-    ui::statics::INPUT_TAB_TITLES,
-};
+use crate::handlers::{config::CompleteConfig, data::Data};
 
 pub enum State {
     Normal,
     Input,
     Help,
+    ChannelSwitch,
+}
+
+#[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]
+pub enum BufferName {
+    Chat,
+    Channel,
 }
 
 pub struct App {
@@ -20,10 +24,10 @@ pub struct App {
     pub messages: VecDeque<Data>,
     /// Which window the terminal is currently showing
     pub state: State,
+    /// Which input buffer is currently selected
+    pub selected_buffer: BufferName,
     /// Current value of the input box
-    pub input_buffers: IndexMap<&'static str, LineBuffer>,
-    /// The offset index for tabs
-    pub tab_offset: usize,
+    pub input_buffers: HashMap<BufferName, LineBuffer>,
     /// The constraints that are set on the table
     pub table_constraints: Option<Vec<Constraint>>,
     /// The titles of the columns within the table of the terminal
@@ -31,31 +35,24 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig) -> App {
-        let mut input_map = IndexMap::new();
+    pub fn new(config: CompleteConfig) -> Self {
+        let mut input_buffers_map = HashMap::new();
 
-        let config_values = vec![
-            "".to_string(),
-            config.twitch.channel,
-            config.twitch.username,
-            config.twitch.server,
-        ];
-
-        for (&k, v) in INPUT_TAB_TITLES.iter().zip(config_values) {
-            let mut buffer = LineBuffer::with_capacity(4096);
-
-            buffer.update(&v, v.len());
-
-            input_map.insert(k, buffer);
+        for name in BufferName::into_enum_iter() {
+            input_buffers_map.insert(name, LineBuffer::with_capacity(4096));
         }
 
-        App {
+        Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
             state: State::Normal,
-            input_buffers: input_map,
-            tab_offset: 0,
+            selected_buffer: BufferName::Chat,
+            input_buffers: input_buffers_map,
             table_constraints: None,
             column_titles: None,
         }
+    }
+
+    pub fn get_buffer(&mut self) -> &mut LineBuffer {
+        return self.input_buffers.get_mut(&self.selected_buffer).unwrap();
     }
 }
