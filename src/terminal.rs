@@ -110,6 +110,11 @@ pub async fn ui_driver(
                     let input_buffer = app.get_buffer();
 
                     match key {
+                        Key::Up => {
+                            if let State::Input = app.state {
+                                app.state = State::Normal;
+                            }
+                        }
                         Key::Ctrl('f') | Key::Right => {
                             input_buffer.move_forward(1);
                         }
