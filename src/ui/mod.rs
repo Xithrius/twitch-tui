@@ -7,7 +7,7 @@ use tui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::{Span, Text, Spans},
+    text::{Span, Spans},
     widgets::{Block, Borders, Clear, Paragraph, Row, Table},
 };
 
@@ -97,7 +97,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 "Channel",
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ),
-            Span::raw(format!(": {} ]", config.twitch.channel))
+            Span::raw(format!(": {} ]", config.twitch.channel)),
         ])
     };
 
