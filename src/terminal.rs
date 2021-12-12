@@ -27,7 +27,7 @@ use crate::{
 };
 
 pub async fn ui_driver(
-    config: CompleteConfig,
+    mut config: CompleteConfig,
     mut app: App,
     tx: Sender<Action>,
     mut rx: Receiver<Data>,
@@ -176,6 +176,8 @@ pub async fn ui_driver(
                                     tx.send(Action::Join(input_message.to_string()))
                                         .await
                                         .unwrap();
+
+                                    config.twitch.channel = input_message.to_string();
                                 }
                                 input_message.update("", 0);
 

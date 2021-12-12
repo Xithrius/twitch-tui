@@ -1,11 +1,13 @@
 pub mod popups;
 pub mod statics;
 
+use chrono::offset::Local;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     terminal::Frame,
+    text::{Span, Text, Spans},
     widgets::{Block, Borders, Clear, Paragraph, Row, Table},
 };
 
@@ -78,6 +80,27 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         display_rows.push_front(row);
     }
 
+    let chat_title_format = || -> Spans {
+        Spans::from(vec![
+            Span::raw("[ "),
+            Span::styled(
+                "Time",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(format!(
+                ": {} ] [ ",
+                Local::now()
+                    .format(config.frontend.date_format.as_str())
+                    .to_string(),
+            )),
+            Span::styled(
+                "Channel",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(format!(": {} ]", config.twitch.channel))
+        ])
+    };
+
     let table = Table::new(display_rows)
         .header(
             Row::new(app.column_titles.as_ref().unwrap().to_owned()).style(styles::COLUMN_TITLE),
@@ -85,7 +108,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("[ Stream chat ]")
+                .title(chat_title_format())
                 .style(styles::BORDER_NAME),
         )
         .widths(table_widths.as_ref())
