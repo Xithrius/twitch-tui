@@ -26,7 +26,7 @@ pub fn keybinds<T: Backend>(frame: &mut Frame<T>) {
         .column_spacing(2)
         .style(styles::BORDER_NAME);
 
-    let area = centered_popup(Centering::Window(50, 50), frame.size());
+    let area = centered_popup(Centering::Window(60, 50), frame.size());
 
     frame.render_widget(Clear, area);
     frame.render_widget(help_table, area);
