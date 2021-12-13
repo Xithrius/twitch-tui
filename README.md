@@ -12,8 +12,9 @@
   |-------|-----------------------------------------------------------------------------------------------------|
   | `c`   | Go to the chat window chat.                                                                         |
   | `i`   | Enter input mode for sending messages. Exit this mode with `Esc`.                                   |
-  | `?`   | Have the keybinds window appear.                                                                    |
+  | `?`   | Have the keybinds popup window appear.                                                              |
   | `q`   | Quit out of the entire application.                                                                 |
+  | `C`   | Open popup window to switch channels.                                                               |
   | `Esc` | Exits out of layered windows, such as going from input mode, to normal, to exiting the application. |
 
 
@@ -38,8 +39,6 @@
   | `Ctrl + k`    | Remove everything after the cursor                          |
   | `Ctrl + w`    | Remove the previous word                                    |
   | `Ctrl + d`    | Remove item to the right                                    |
-  | `Tab`         | Cycle right through the input tabs                          |
-  | `Shift + Tab` | Cycle left through the input tabs                           |
   | `Enter`       | Confirm the input text to go through                        |
   | `Esc`         | Drop back to previous window layer                          |
 
@@ -50,8 +49,8 @@
 
 1. Make sure you have Cargo installed from [rust-lang website](https://www.rust-lang.org/learn/get-started). Make sure the Cargo binary folder is appended to your `$PATH` environment variable.
 2. Copy [`default-config.toml`](https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml) to a `config.toml` file. Based on your OS, place the config file in the following directories:
-  - Windows: `%appdata%\twt\config.toml`
-  - Linux/MacOs: `~/.config/twt/config.toml`
+    - Windows: `%appdata%\twt\config.toml`
+    - Linux/MacOs: `~/.config/twt/config.toml`
 3. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and have it ready to put into the `token` variable in the `config.toml` file that you created.
 4. Run `cargo install twitch-tui` and follow the instructions that it prints.
 5. You should now be able to run `twt` from anywhere now. For CLI options/arguments, run `twt --help` for information. Any arguments/options passed through the command line will overwrite `config.toml`. To update in the future, run `cargo install twitch-tui`. Have fun!
