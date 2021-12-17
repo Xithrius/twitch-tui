@@ -12,9 +12,11 @@ use crate::handlers::{
 };
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Action {
     Privmsg(String),
     Join(String),
+    Users
 }
 
 pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
@@ -29,7 +31,10 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
     };
 
     let mut client = Client::from_config(irc_config.clone()).await.unwrap();
+
+    client.send_cap_req(&[Capability::MultiPrefix]).unwrap();
     client.identify().unwrap();
+
     let mut stream = client.stream().unwrap();
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
@@ -80,6 +85,9 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
 
                         // Set old channel to new channel
                         config.twitch.channel = channel;
+                    }
+                    Action::Users => {
+                        let _users = client.list_users(format!("#{}", config.twitch.channel).as_str()).unwrap();
                     }
                 }
             }

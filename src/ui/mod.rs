@@ -118,7 +118,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     match app.state {
         State::Input => {
-            let input_buffer = app.get_buffer();
+            let input_buffer = app.current_buffer();
 
             if input_buffer.starts_with('/') {
                 let suggested_commands = COMMANDS
@@ -161,11 +161,11 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 vertical_chunks[vertical_chunk_constraints.len() - 1],
             );
         }
-        State::Help => popups::help::keybinds(frame),
+        State::Help => popups::help::show_keybinds(frame),
         State::ChannelSwitch => {
             let input_rect = centered_popup(Centering::Input(30, 10), frame.size());
 
-            let input_buffer = app.get_buffer();
+            let input_buffer = app.current_buffer();
 
             let cursor_pos = get_cursor_position(input_buffer);
 
@@ -186,6 +186,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             frame.render_widget(Clear, input_rect);
             frame.render_widget(paragraph, input_rect);
         }
+        State::UserList => {},
         _ => (),
     }
 }

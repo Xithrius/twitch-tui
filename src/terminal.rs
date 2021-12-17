@@ -107,7 +107,7 @@ pub async fn ui_driver(
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
                 State::Input | State::ChannelSwitch => {
-                    let input_buffer = app.get_buffer();
+                    let input_buffer = app.current_buffer();
 
                     match key {
                         Key::Up => {
@@ -205,12 +205,16 @@ pub async fn ui_driver(
                         app.state = State::Normal;
                         app.selected_buffer = BufferName::Chat;
                     }
-                    Key::Char('?') => app.state = State::Help,
-                    Key::Char('i') => app.state = State::Input,
                     Key::Char('C') => {
                         app.state = State::ChannelSwitch;
                         app.selected_buffer = BufferName::Channel;
                     }
+                    Key::Char('?') => app.state = State::Help,
+                    Key::Char('i') => app.state = State::Input,
+                    Key::Char('u') => {
+                        app.state = State::UserList;
+
+                    },
                     Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;
