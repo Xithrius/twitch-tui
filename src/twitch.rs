@@ -16,7 +16,7 @@ use crate::handlers::{
 pub enum Action {
     Privmsg(String),
     Join(String),
-    Users
+    Users,
 }
 
 pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {

@@ -213,8 +213,7 @@ pub async fn ui_driver(
                     Key::Char('i') => app.state = State::Input,
                     Key::Char('u') => {
                         app.state = State::UserList;
-
-                    },
+                    }
                     Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;

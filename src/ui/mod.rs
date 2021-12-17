@@ -186,7 +186,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             frame.render_widget(Clear, input_rect);
             frame.render_widget(paragraph, input_rect);
         }
-        State::UserList => {},
+        State::UserList => {}
         _ => (),
     }
 }
