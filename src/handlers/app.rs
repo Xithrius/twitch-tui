@@ -11,6 +11,7 @@ pub enum State {
     Input,
     Help,
     ChannelSwitch,
+    UserList,
 }
 
 #[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]
@@ -52,7 +53,7 @@ impl App {
         }
     }
 
-    pub fn get_buffer(&mut self) -> &mut LineBuffer {
+    pub fn current_buffer(&mut self) -> &mut LineBuffer {
         return self.input_buffers.get_mut(&self.selected_buffer).unwrap();
     }
 }
