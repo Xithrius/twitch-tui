@@ -24,7 +24,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: user,
             system: false,
-            message,
+            payload: message,
         }
     }
 
@@ -33,7 +33,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: "System".to_string(),
             system: true,
-            message,
+            payload: message,
         }
     }
 
@@ -42,7 +42,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: "Twitch".to_string(),
             system: true,
-            message,
+            payload: message,
         }
     }
 }
@@ -51,8 +51,8 @@ impl<'conf> DataBuilder<'conf> {
 pub struct Data {
     pub time_sent: String,
     pub author: String,
-    pub message: String,
     pub system: bool,
+    pub payload: String,
 }
 
 impl Data {
@@ -77,7 +77,7 @@ impl Data {
     }
 
     pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
-        let message = textwrap::fill(self.message.as_str(), *limit);
+        let message = textwrap::fill(self.payload.as_str(), *limit);
 
         let style;
         if self.system {
@@ -123,8 +123,8 @@ mod tests {
         Data {
             time_sent: Local::now().format("%c").to_string(),
             author: "human".to_string(),
-            message: "beep boop".to_string(),
             system: false,
+            payload: "beep boop".to_string(),
         }
     }
 
