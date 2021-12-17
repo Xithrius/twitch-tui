@@ -13,7 +13,7 @@ use crate::{
     utils::{styles, text::vector_column_max},
 };
 
-pub fn keybinds<T: Backend>(frame: &mut Frame<T>) {
+pub fn show_keybinds<T: Backend>(frame: &mut Frame<T>) {
     let table_widths = vector_column_max(&HELP_KEYBINDS, None)
         .into_iter()
         .map(Constraint::Min)
