@@ -87,13 +87,18 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                         config.twitch.channel = channel;
                     }
                     Action::Users => {
-                        let _users = client.list_users(format!("#{}", config.twitch.channel).as_str()).unwrap();
+                        let users = client.list_users(format!("#{}", config.twitch.channel).as_str())
+                        .unwrap()
+                        .iter()
+                        .map(|f| f.get_username().unwrap().to_string()).collect::<Vec<String>>();
+
+                        tx.send(data_builder.key_press(users)).await.unwrap();
                     }
                 }
             }
             Some(_message) = stream.next() => {
                 if let Ok(message) = _message {
-                    let mut tags: HashMap<&str, &str> = std::collections::HashMap::new();
+                    let mut tags: HashMap<&str, &str> = HashMap::new();
                     if let Some(ref _tags) = message.tags {
                         for tag in _tags {
                             if let Some(ref tag_value) = tag.1 {

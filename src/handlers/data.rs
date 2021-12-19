@@ -24,7 +24,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: user,
             system: false,
-            payload: message,
+            payload: vec![message],
         }
     }
 
@@ -33,7 +33,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: "System".to_string(),
             system: true,
-            payload: message,
+            payload: vec![message],
         }
     }
 
@@ -42,7 +42,16 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: "Twitch".to_string(),
             system: true,
-            payload: message,
+            payload: vec![message],
+        }
+    }
+
+    pub fn key_press(self, data: Vec<String>) -> Data {
+        Data {
+            time_sent: Local::now().format(self.date_format).to_string(),
+            author: "Terminal".to_string(),
+            system: true,
+            payload: data,
         }
     }
 }
@@ -52,7 +61,7 @@ pub struct Data {
     pub time_sent: String,
     pub author: String,
     pub system: bool,
-    pub payload: String,
+    pub payload: Vec<String>,
 }
 
 impl Data {
@@ -77,7 +86,7 @@ impl Data {
     }
 
     pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
-        let message = textwrap::fill(self.payload.as_str(), *limit);
+        let message = textwrap::fill(self.payload[0].as_str(), *limit);
 
         let style;
         if self.system {
@@ -124,7 +133,7 @@ mod tests {
             time_sent: Local::now().format("%c").to_string(),
             author: "human".to_string(),
             system: false,
-            payload: "beep boop".to_string(),
+            payload: vec!["beep boop".to_string()],
         }
     }
 
