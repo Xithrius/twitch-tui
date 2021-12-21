@@ -11,7 +11,6 @@ pub enum State {
     Input,
     Help,
     ChannelSwitch,
-    UserList,
 }
 
 #[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]

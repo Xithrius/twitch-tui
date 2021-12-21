@@ -12,11 +12,9 @@ use crate::handlers::{
 };
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum Action {
     Privmsg(String),
     Join(String),
-    Users,
 }
 
 pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
@@ -32,7 +30,6 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
 
     let mut client = Client::from_config(irc_config.clone()).await.unwrap();
 
-    client.send_cap_req(&[Capability::MultiPrefix]).unwrap();
     client.identify().unwrap();
 
     let mut stream = client.stream().unwrap();
@@ -62,17 +59,19 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
             biased;
 
             Some(action) = rx.recv() => {
+                let current_channel = format!("#{}", config.twitch.channel);
+
                 match action {
                     Action::Privmsg(message) => {
                         client
-                            .send_privmsg(format!("#{}", config.twitch.channel), message)
+                            .send_privmsg(current_channel, message)
                             .unwrap();
                     }
                     Action::Join(channel) => {
                         let channel_list = format!("#{}", channel);
 
                         // Leave previous channel
-                        if let Err(err) = client.send_part(format!("#{}", config.twitch.channel)) {
+                        if let Err(err) = client.send_part(current_channel) {
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap()
                         } else {
                             tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
@@ -85,14 +84,6 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
 
                         // Set old channel to new channel
                         config.twitch.channel = channel;
-                    }
-                    Action::Users => {
-                        let users = client.list_users(format!("#{}", config.twitch.channel).as_str())
-                        .unwrap()
-                        .iter()
-                        .map(|f| f.get_username().unwrap().to_string()).collect::<Vec<String>>();
-
-                        tx.send(data_builder.key_press(users)).await.unwrap();
                     }
                 }
             }

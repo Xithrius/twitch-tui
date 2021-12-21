@@ -18,7 +18,7 @@ use crate::{
     handlers::{
         app::{App, BufferName, State},
         config::CompleteConfig,
-        data::{Data, DataBuilder},
+        data::{Data, DataBuilder, PayLoad},
         event::{Config, Event, Events, Key},
     },
     twitch::Action,
@@ -96,13 +96,23 @@ pub async fn ui_driver(
     };
 
     'outer: loop {
+        if let Ok(info) = rx.try_recv() {
+            match info.payload {
+                PayLoad::Message(_) => app.messages.push_front(info),
+
+                // If something such as a keypress failed, fallback to the normal state of the application.
+                PayLoad::Err(err) => {
+                    app.state = State::Normal;
+                    app.selected_buffer = BufferName::Chat;
+
+                    app.messages.push_front(data_builder.twitch(err));
+                }
+            }
+        }
+
         terminal
             .draw(|frame| draw_ui(frame, &mut app, &config))
             .unwrap();
-
-        if let Ok(info) = rx.try_recv() {
-            app.messages.push_front(info);
-        }
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
@@ -211,9 +221,6 @@ pub async fn ui_driver(
                     }
                     Key::Char('?') => app.state = State::Help,
                     Key::Char('i') => app.state = State::Input,
-                    Key::Char('u') => {
-                        app.state = State::UserList;
-                    }
                     Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;
