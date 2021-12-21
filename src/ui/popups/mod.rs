@@ -1,3 +1,4 @@
+pub mod channels;
 pub mod help;
 
 use std::collections::VecDeque;
