@@ -163,7 +163,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         }
         State::Help => popups::help::show_keybinds(frame),
         State::ChannelSwitch => {
-            let input_rect = centered_popup(Centering::Input(30, 10), frame.size());
+            let input_rect = centered_popup(Centering::Input(None), frame.size());
 
             let input_buffer = app.current_buffer();
 
@@ -186,7 +186,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             frame.render_widget(Clear, input_rect);
             frame.render_widget(paragraph, input_rect);
         }
-        State::UserList => {}
-        _ => (),
+        _ => {}
     }
 }

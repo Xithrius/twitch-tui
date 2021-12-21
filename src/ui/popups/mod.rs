@@ -4,46 +4,54 @@ use std::collections::VecDeque;
 
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
+const V_WINDOW_PERCENTAGE: u16 = 60;
+const H_WINDOW_PERCENTAGE: u16 = 75;
+
 pub enum Centering {
-    Input(u16, u16),
-    Window(u16, u16),
+    /// An input box, where the optional u16 determins how far below the input box must be.
+    Input(Option<u16>),
+    /// A window for showing items, the integer is how many vertical items are to be stored.
+    Window(u16),
 }
 
 pub fn centered_popup(c: Centering, size: Rect) -> Rect {
+    let v_constraint = Constraint::Percentage((100 - V_WINDOW_PERCENTAGE) / 2);
+    let h_constraint = Constraint::Percentage((100 - H_WINDOW_PERCENTAGE) / 2);
+
     match c {
-        Centering::Window(percent_x, percent_y) => {
+        Centering::Input(w) => {
+            let modified_v_constraint = if let Some(i) = w {
+                Constraint::Length(size.y - i - 3)
+            } else {
+                v_constraint
+            };
+
             let popup_layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(
-                    [
-                        Constraint::Percentage((100 - percent_y) / 2),
-                        Constraint::Percentage(percent_y),
-                        Constraint::Percentage((100 - percent_y) / 2),
-                    ]
-                    .as_ref(),
-                )
+                .constraints([modified_v_constraint, Constraint::Length(3), v_constraint].as_ref())
                 .split(size);
 
             Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints(
                     [
-                        Constraint::Percentage((100 - percent_x) / 2),
-                        Constraint::Percentage(percent_x),
-                        Constraint::Percentage((100 - percent_x) / 2),
+                        h_constraint,
+                        Constraint::Percentage(H_WINDOW_PERCENTAGE),
+                        h_constraint,
                     ]
                     .as_ref(),
                 )
                 .split(popup_layout[1])[1]
         }
-        Centering::Input(percent_x, percent_y) => {
+        Centering::Window(i) => {
             let popup_layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(
                     [
-                        Constraint::Percentage((100 - percent_y) / 2),
-                        Constraint::Length(3),
-                        Constraint::Percentage((100 - percent_y) / 2),
+                        v_constraint,
+                        // An addition of 4 is made for boarders.
+                        Constraint::Length(i + 4),
+                        v_constraint,
                     ]
                     .as_ref(),
                 )
@@ -53,9 +61,9 @@ pub fn centered_popup(c: Centering, size: Rect) -> Rect {
                 .direction(Direction::Horizontal)
                 .constraints(
                     [
-                        Constraint::Percentage((100 - percent_x) / 2),
-                        Constraint::Percentage(percent_x),
-                        Constraint::Percentage((100 - percent_x) / 2),
+                        h_constraint,
+                        Constraint::Percentage(H_WINDOW_PERCENTAGE),
+                        h_constraint,
                     ]
                     .as_ref(),
                 )
