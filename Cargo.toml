@@ -28,6 +28,7 @@ rustyline = "9.1.0"
 lazy_static = "1.4.0"
 clap = { version = "2.34.0", features = ["yaml"] }
 enum-iterator = "0.7.0"
+fuzzy-matcher = "0.3.7"
 
 [[bin]]
 bench = false
