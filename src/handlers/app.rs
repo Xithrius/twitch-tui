@@ -11,12 +11,14 @@ pub enum State {
     Input,
     Help,
     ChannelSwitch,
+    Search,
 }
 
 #[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]
 pub enum BufferName {
     Chat,
     Channel,
+    MessageSearch,
 }
 
 pub struct App {
@@ -32,6 +34,8 @@ pub struct App {
     pub table_constraints: Option<Vec<Constraint>>,
     /// The titles of the columns within the table of the terminal
     pub column_titles: Option<Vec<String>>,
+    /// Scrolling offset for windows
+    pub scroll_offset: usize,
 }
 
 impl App {
@@ -49,6 +53,7 @@ impl App {
             input_buffers: input_buffers_map,
             table_constraints: None,
             column_titles: None,
+            scroll_offset: 0,
         }
     }
 

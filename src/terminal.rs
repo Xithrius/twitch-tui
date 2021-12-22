@@ -116,7 +116,7 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input | State::ChannelSwitch => {
+                State::Input | State::ChannelSwitch | State::Search => {
                     let input_buffer = app.current_buffer();
 
                     match key {
@@ -179,6 +179,7 @@ pub async fn ui_driver(
                                         .await
                                         .unwrap();
                                 }
+
                                 input_message.update("", 0);
                             }
                             BufferName::Channel => {
@@ -194,11 +195,13 @@ pub async fn ui_driver(
 
                                     config.twitch.channel = input_message.to_string();
                                 }
+
                                 input_message.update("", 0);
 
                                 app.selected_buffer = BufferName::Chat;
                                 app.state = State::Normal;
                             }
+                            BufferName::MessageSearch => {}
                         },
                         Key::Char(c) => {
                             input_buffer.insert(c, 1);
@@ -220,7 +223,14 @@ pub async fn ui_driver(
                         app.selected_buffer = BufferName::Channel;
                     }
                     Key::Char('?') => app.state = State::Help,
-                    Key::Char('i') => app.state = State::Input,
+                    Key::Char('i') => {
+                        app.state = State::Input;
+                        app.selected_buffer = BufferName::Chat;
+                    }
+                    Key::Char('s') => {
+                        app.state = State::Search;
+                        app.selected_buffer = BufferName::MessageSearch;
+                    }
                     Key::Char('q') => {
                         quitting(terminal);
                         break 'outer;
@@ -230,11 +240,10 @@ pub async fn ui_driver(
                             quitting(terminal);
                             break 'outer;
                         }
-                        State::ChannelSwitch => {
-                            app.selected_buffer = BufferName::Chat;
+                        _ => {
                             app.state = State::Normal;
+                            app.selected_buffer = BufferName::Chat;
                         }
-                        _ => app.state = State::Normal,
                     },
                     _ => {}
                 },

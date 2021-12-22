@@ -8,7 +8,7 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans},
-    widgets::{Block, Borders, Clear, Paragraph, Row, Table},
+    widgets::{Block, Borders, Paragraph, Row, Table},
 };
 
 use crate::{
@@ -16,10 +16,7 @@ use crate::{
         app::{App, State},
         config::CompleteConfig,
     },
-    ui::{
-        popups::{centered_popup, Centering},
-        statics::COMMANDS,
-    },
+    ui::statics::COMMANDS,
     utils::{styles, text::get_cursor_position},
 };
 
@@ -163,6 +160,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         }
         State::Help => popups::help::show_keybinds(frame),
         State::ChannelSwitch => popups::channels::switch_channels(frame, app),
+        State::Search => popups::messages::search_messages(frame, app),
         _ => {}
     }
 }
