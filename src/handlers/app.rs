@@ -57,7 +57,11 @@ impl App {
         }
     }
 
-    pub fn current_buffer(&mut self) -> &mut LineBuffer {
+    pub fn current_buffer(&self) -> &LineBuffer {
+        return self.input_buffers.get(&self.selected_buffer).unwrap();
+    }
+
+    pub fn current_buffer_mut(&mut self) -> &mut LineBuffer {
         return self.input_buffers.get_mut(&self.selected_buffer).unwrap();
     }
 }

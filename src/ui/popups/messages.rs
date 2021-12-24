@@ -14,12 +14,10 @@ use lazy_static::lazy_static;
 
 use crate::{
     handlers::{app::App, data::PayLoad},
-    ui::popups::{centered_popup, Centering},
+    ui::popups::{centered_popup, scroll_view, Centering},
     utils::{styles, text::get_cursor_position},
 };
 use fuzzy_matcher::FuzzyMatcher;
-
-use super::scroll_view;
 
 const MAX_MESSAGE_SEARCH: u16 = 10;
 
@@ -67,6 +65,31 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
         })
         .collect::<VecDeque<&str>>();
 
+    if all_messages.is_empty() {
+        let window_paragraph = Table::new(vec![])
+            .block(Block::default().borders(Borders::ALL).title("[ Results ]"))
+            .column_spacing(2)
+            .style(styles::BORDER_NAME);
+
+        frame.render_widget(Clear, window_rect);
+        frame.render_widget(window_paragraph, window_rect);
+
+        return;
+    }
+
+    let maximum_message_length = *all_messages
+        .iter()
+        .map(|v| v.len())
+        .collect::<Vec<usize>>()
+        .iter()
+        .max()
+        .unwrap() as u16;
+
+    let table_widths = all_messages
+        .iter()
+        .map(|_| Constraint::Min(maximum_message_length))
+        .collect::<Vec<Constraint>>();
+
     let render_messages = scroll_view(
         all_messages,
         app.scroll_offset,
@@ -74,21 +97,20 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
     )
     .iter()
     .flat_map(|&f| {
-        let chars = f.chars().map(|c| c.to_string()).collect::<Vec<String>>();
+        let chars = f.chars();
 
         if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(f, input_text) {
             Some(Row::new(vec![Spans::from(
                 chars
-                    .iter()
                     .enumerate()
-                    .map(|(i, &s)| {
+                    .map(|(i, s)| {
                         if indices.contains(&i) {
                             Span::styled(
-                                s,
+                                s.to_string(),
                                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                             )
                         } else {
-                            Span::raw(s)
+                            Span::raw(s.to_string())
                         }
                     })
                     .collect::<Vec<Span>>(),
@@ -102,6 +124,7 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
     let window_paragraph = Table::new(render_messages)
         .block(Block::default().borders(Borders::ALL).title("[ Results ]"))
         .column_spacing(2)
+        .widths(&table_widths)
         .style(styles::BORDER_NAME);
 
     frame.render_widget(Clear, window_rect);

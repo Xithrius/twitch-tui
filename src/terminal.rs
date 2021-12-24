@@ -117,7 +117,7 @@ pub async fn ui_driver(
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
                 State::Input | State::ChannelSwitch | State::Search => {
-                    let input_buffer = app.current_buffer();
+                    let input_buffer = app.current_buffer_mut();
 
                     match key {
                         Key::Up => {
