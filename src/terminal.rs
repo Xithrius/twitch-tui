@@ -105,7 +105,7 @@ pub async fn ui_driver(
                     app.state = State::Normal;
                     app.selected_buffer = BufferName::Chat;
 
-                    app.messages.push_front(data_builder.twitch(err));
+                    app.messages.push_front(data_builder.system(err));
                 }
             }
         }
@@ -120,9 +120,20 @@ pub async fn ui_driver(
                     let input_buffer = app.current_buffer_mut();
 
                     match key {
-                        Key::Up => {
-                            if let State::Input = app.state {
+                        Key::Up => match app.state {
+                            State::Input => {
                                 app.state = State::Normal;
+                            }
+                            State::Search => {
+                                if app.scroll_offset > 1 {
+                                    app.scroll_offset -= 1;
+                                }
+                            }
+                            _ => {}
+                        },
+                        Key::Down => {
+                            if let State::Search = app.state {
+                                app.scroll_offset += 1;
                             }
                         }
                         Key::Ctrl('f') | Key::Right => {
