@@ -57,7 +57,7 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
     frame.render_widget(input_paragraph, input_rect);
 
     let all_messages = app
-        .messages
+        .messages_snapshot
         .iter()
         .flat_map(|f| match &f.payload {
             PayLoad::Message(m) => Some(m.as_str()),

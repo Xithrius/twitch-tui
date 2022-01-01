@@ -241,6 +241,7 @@ pub async fn ui_driver(
                     Key::Char('s') => {
                         app.state = State::Search;
                         app.selected_buffer = BufferName::MessageSearch;
+                        app.messages_snapshot = app.messages.clone();
                     }
                     Key::Char('q') => {
                         quitting(terminal);
