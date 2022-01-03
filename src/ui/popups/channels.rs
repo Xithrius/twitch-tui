@@ -7,12 +7,12 @@ use tui::{
 
 use crate::{
     handlers::app::App,
-    ui::popups::{centered_popup, Centering},
+    ui::popups::{centered_popup, WindowType},
     utils::text::get_cursor_position,
 };
 
 pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
-    let input_rect = centered_popup(Centering::Input(None), frame.size());
+    let input_rect = centered_popup(WindowType::Input(frame.size().height), frame.size());
 
     let input_buffer = app.current_buffer();
 

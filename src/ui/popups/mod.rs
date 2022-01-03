@@ -6,61 +6,66 @@ use std::collections::VecDeque;
 
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
-const V_WINDOW_PERCENTAGE: u16 = 60;
-const H_WINDOW_PERCENTAGE: u16 = 75;
+const HORIZONTAL_CONSTRAINTS: [Constraint; 3] = [
+    Constraint::Percentage(15),
+    Constraint::Percentage(70),
+    Constraint::Percentage(15),
+];
 
 pub enum Centering {
-    /// An input box, where the optional u16 determins how far below the input box must be.
-    Input(Option<u16>),
-    /// A window for showing items, the integer is how many vertical items are to be stored.
-    Window(u16),
+    Height(u16),
+    Middle(u16),
 }
 
-pub fn centered_popup(c: Centering, size: Rect) -> Rect {
-    let v_constraint = Constraint::Percentage((100 - V_WINDOW_PERCENTAGE) / 2);
-    let h_constraint = Constraint::Percentage((100 - H_WINDOW_PERCENTAGE) / 2);
+pub enum WindowType {
+    /// An input window, with the integer representing the height of the terminal
+    Input(u16),
+    /// A window containing either some specified terminal height, or in the middle,
+    /// with an integer describing the amount of vertically stored items
+    Window(Centering, u16),
+}
 
+pub fn centered_popup(c: WindowType, size: Rect) -> Rect {
     match c {
-        Centering::Input(w) => {
-            let modified_v_constraint = if let Some(i) = w {
-                Constraint::Length(i - 3)
-            } else {
-                v_constraint
-            };
-
+        WindowType::Input(v) => {
             let popup_layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([modified_v_constraint, Constraint::Length(3), v_constraint].as_ref())
+                .constraints(
+                    [
+                        Constraint::Length((v / 2) as u16 - 6),
+                        Constraint::Length(3),
+                        Constraint::Min(0),
+                    ]
+                    .as_ref(),
+                )
                 .split(size);
 
             Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints(
-                    [
-                        h_constraint,
-                        Constraint::Percentage(H_WINDOW_PERCENTAGE),
-                        h_constraint,
-                    ]
-                    .as_ref(),
-                )
+                .constraints(HORIZONTAL_CONSTRAINTS.as_ref())
                 .split(popup_layout[1])[1]
         }
-        Centering::Window(i) => {
+        WindowType::Window(v, i) => {
             let popup_layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([v_constraint, Constraint::Length(i + 4), v_constraint].as_ref())
+                .constraints([
+                    Constraint::Length(match v {
+                        Centering::Height(terminal_height) => (terminal_height / 2) as u16 - 3,
+                        Centering::Middle(terminal_height) => ((terminal_height - i) / 2) as u16,
+                    }),
+                    Constraint::Length(i),
+                    match v {
+                        Centering::Height(_) => Constraint::Min(0),
+                        Centering::Middle(terminal_height) => {
+                            Constraint::Length(((terminal_height - i) / 2) as u16 - 3)
+                        }
+                    },
+                ])
                 .split(size);
 
             Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints(
-                    [
-                        h_constraint,
-                        Constraint::Percentage(H_WINDOW_PERCENTAGE),
-                        h_constraint,
-                    ]
-                    .as_ref(),
-                )
+                .constraints(HORIZONTAL_CONSTRAINTS.as_ref())
                 .split(popup_layout[1])[1]
         }
     }
