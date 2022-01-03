@@ -14,7 +14,7 @@ use lazy_static::lazy_static;
 
 use crate::{
     handlers::{app::App, data::PayLoad},
-    ui::popups::{centered_popup, scroll_view, Centering},
+    ui::popups::{centered_popup, scroll_view, Centering, WindowType},
     utils::{styles, text::get_cursor_position},
 };
 use fuzzy_matcher::FuzzyMatcher;
@@ -26,8 +26,11 @@ lazy_static! {
 }
 
 pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
-    let input_rect = centered_popup(Centering::Input(Some(MAX_MESSAGE_SEARCH)), frame.size());
-    let window_rect = centered_popup(Centering::Window(MAX_MESSAGE_SEARCH), frame.size());
+    let input_rect = centered_popup(WindowType::Input(frame.size().height), frame.size());
+    let window_rect = centered_popup(
+        WindowType::Window(Centering::Height(frame.size().height), MAX_MESSAGE_SEARCH),
+        frame.size(),
+    );
 
     let input_buffer = app.current_buffer();
 
@@ -90,38 +93,45 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
         .map(|_| Constraint::Min(maximum_message_length))
         .collect::<Vec<Constraint>>();
 
-    let render_messages = scroll_view(
-        all_messages,
-        app.scroll_offset,
-        MAX_MESSAGE_SEARCH as usize + 2,
-    )
-    .iter()
-    .flat_map(|&f| {
-        let chars = f.chars();
+    let render_messages = scroll_view(all_messages, app.scroll_offset, MAX_MESSAGE_SEARCH as usize);
 
-        if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(f, input_text) {
-            Some(Row::new(vec![Spans::from(
-                chars
-                    .enumerate()
-                    .map(|(i, s)| {
-                        if indices.contains(&i) {
-                            Span::styled(
-                                s.to_string(),
-                                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                            )
-                        } else {
-                            Span::raw(s.to_string())
-                        }
-                    })
-                    .collect::<Vec<Span>>(),
-            )]))
-        } else {
-            None
-        }
-    })
-    .collect::<Vec<Row>>();
+    let rows = if input_text.is_empty() {
+        render_messages
+            .iter()
+            .map(|&v| Row::new(vec![v]))
+            .collect::<Vec<Row>>()
+    } else {
+        render_messages
+            .iter()
+            .flat_map(|&f| {
+                let chars = f.chars();
 
-    let window_paragraph = Table::new(render_messages)
+                if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(f, input_text) {
+                    Some(Row::new(vec![Spans::from(
+                        chars
+                            .enumerate()
+                            .map(|(i, s)| {
+                                if indices.contains(&i) {
+                                    Span::styled(
+                                        s.to_string(),
+                                        Style::default()
+                                            .fg(Color::Red)
+                                            .add_modifier(Modifier::BOLD),
+                                    )
+                                } else {
+                                    Span::raw(s.to_string())
+                                }
+                            })
+                            .collect::<Vec<Span>>(),
+                    )]))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<Row>>()
+    };
+
+    let window_paragraph = Table::new(rows)
         .block(Block::default().borders(Borders::ALL).title("[ Results ]"))
         .column_spacing(2)
         .widths(&table_widths)
