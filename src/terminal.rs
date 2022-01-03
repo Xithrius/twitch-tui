@@ -133,7 +133,9 @@ pub async fn ui_driver(
                         },
                         Key::Down => {
                             if let State::Search = app.state {
-                                app.scroll_offset += 1;
+                                if app.scroll_offset < app.messages_snapshot.len() {
+                                    app.scroll_offset += 1;
+                                }
                             }
                         }
                         Key::Ctrl('f') | Key::Right => {
