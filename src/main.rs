@@ -1,15 +1,15 @@
+mod handlers;
+mod terminal;
+mod twitch;
+mod ui;
+mod utils;
+
 use anyhow::Result;
 use tokio::sync::mpsc;
 
 use handlers::config::{CompleteConfig, Palette};
 
 use crate::handlers::app::App;
-
-mod handlers;
-mod terminal;
-mod twitch;
-mod ui;
-mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
