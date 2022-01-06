@@ -1,6 +1,7 @@
 use std::vec::IntoIter;
 
 use rustyline::line_buffer::LineBuffer;
+use textwrap::core::display_width;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -9,18 +10,18 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
         panic!("Parameter of 'maximum_length' cannot be below 1.");
     }
 
+    // Compute the display width of `text` with support of emojis and CJK characters
+    let mut dw = display_width(text);
+    if dw > maximum_length as usize {
+        dw = maximum_length as usize;
+    }
     match alignment {
-        "left" => text.to_string(),
-        "right" => format!(
-            "{text:>width$}",
-            text = text,
-            width = std::cmp::max(maximum_length, text.len() as u16) as usize
-        ),
-        "center" => format!(
-            "{text:^width$}",
-            text = text,
-            width = std::cmp::max(maximum_length, text.len() as u16) as usize
-        ),
+        "right" => format!("{}{}", " ".repeat(maximum_length as usize - dw), text),
+        "center" => {
+            let side_spaces =
+                " ".repeat(((maximum_length / 2) - (((dw / 2) as f32).floor() as u16)) as usize);
+            format!("{}{}{}", side_spaces, text, side_spaces)
+        }
         _ => text.to_string(),
     }
 }
@@ -102,6 +103,8 @@ mod tests {
             format!("{}{}", " ".repeat(9), "a")
         );
         assert_eq!(align_text("a", "right", 1), "a".to_string());
+        assert_eq!(align_text("你好", "right", 5), " 你好");
+        assert_eq!(align_text("👑123", "right", 6), " 👑123");
     }
 
     #[test]
@@ -111,6 +114,8 @@ mod tests {
             format!("{}{}{}", " ".repeat(5), "a", " ".repeat(5))
         );
         assert_eq!(align_text("a", "center", 1), "a".to_string());
+        assert_eq!(align_text("你好", "center", 6), " 你好 ");
+        assert_eq!(align_text("👑123", "center", 7), " 👑123 ");
     }
 
     #[test]

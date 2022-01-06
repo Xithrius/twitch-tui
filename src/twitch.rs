@@ -105,15 +105,57 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                                 Some(username) => username.to_string(),
                                 None => "Undefined username".to_string(),
                             };
-                            // try to get username from message tags
+                            let mut badges = String::new();
                             if let Some(ref tags) = message.tags {
+                                const VIP_BADGE: char = '\u{1F48E}';
+                                const MODERATOR_BADGE: char = '\u{1F528}';
+                                const SUBSCRIBER_BADGE: char = '\u{2B50}';
+                                const PRIME_GAMING_BADGE: char = '\u{1F451}';
+                                let mut vip_badge = None;
+                                let mut moderator_badge = None;
+                                let mut subscriber_badge = None;
+                                let mut prime_badge = None;
+                                let mut display_name = None;
                                 for tag in tags {
                                     if tag.0 == *"display-name" {
                                         if let Some(ref value) = tag.1 {
-                                            name = value.to_string();
+                                            display_name = Some(value.to_string());
                                         }
-                                        break;
                                     }
+                                    if tag.0 == *"badges" {
+                                        if let Some(ref value) = tag.1 {
+                                            if !value.is_empty() && value.contains("vip") {
+                                                vip_badge = Some(VIP_BADGE);
+                                            }
+                                            if !value.is_empty() && value.contains("moderator") {
+                                                moderator_badge = Some(MODERATOR_BADGE);
+                                            }
+                                            if !value.is_empty() && value.contains("subscriber") {
+                                                subscriber_badge = Some(SUBSCRIBER_BADGE);
+                                            }
+                                            if !value.is_empty() && value.contains("premium") {
+                                                prime_badge = Some(PRIME_GAMING_BADGE);
+                                            }
+                                        }
+                                    }
+                                }
+                                if let Some(display_name) = display_name {
+                                    name = display_name;
+                                }
+                                if let Some(badge) = vip_badge {
+                                    badges.push(badge);
+                                }
+                                if let Some(badge) = moderator_badge {
+                                    badges.push(badge);
+                                }
+                                if let Some(badge) = subscriber_badge {
+                                    badges.push(badge);
+                                }
+                                if let Some(badge) = prime_badge {
+                                    badges.push(badge);
+                                }
+                                if !badges.is_empty() {
+                                    name = badges.clone() + &name;
                                 }
                             }
                             tx.send(data_builder.user(name, msg.to_string()))
