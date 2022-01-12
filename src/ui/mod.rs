@@ -42,15 +42,17 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         vertical_chunk_constraints.extend(vec![Constraint::Length(3)])
     }
 
+    let margin = if config.frontend.padding { 1 } else { 0 };
+
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(1)
+        .margin(margin)
         .constraints(vertical_chunk_constraints.as_ref())
         .split(frame.size());
 
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .margin(1)
+        .margin(margin)
         .constraints(table_widths.as_ref())
         .split(frame.size());
 
