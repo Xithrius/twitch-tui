@@ -80,6 +80,8 @@ pub struct FrontendConfig {
     pub title_shown: bool,
     /// Show padding around chat frame
     pub padding: bool,
+    #[serde(default)]
+    pub emote_mapper: Option<String>,
 }
 
 impl CompleteConfig {

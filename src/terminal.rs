@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     io::{stdout, Stdout},
     time::Duration,
 };
@@ -96,16 +97,22 @@ pub async fn ui_driver(
     };
 
     'outer: loop {
-        if let Ok(info) = rx.try_recv() {
-            match info.payload {
-                PayLoad::Message(_) => app.messages.push_front(info),
+        if let Ok(mut info) = rx.try_recv() {
+            match &mut info.payload {
+                PayLoad::Message(message) => {
+                    if let Cow::Owned(m) = app.emote_mapper.replace_all(message) {
+                        *message = m;
+                    }
+                    app.messages.push_front(info);
+                }
 
                 // If something such as a keypress failed, fallback to the normal state of the application.
                 PayLoad::Err(err) => {
                     app.state = State::Normal;
                     app.selected_buffer = BufferName::Chat;
 
-                    app.messages.push_front(data_builder.system(err));
+                    app.messages
+                        .push_front(data_builder.system(err.to_string()));
                 }
             }
 
@@ -194,7 +201,7 @@ pub async fn ui_driver(
                                 if !input_message.is_empty() {
                                     app.messages.push_front(data_builder.user(
                                         config.twitch.username.to_string(),
-                                        input_message.to_string(),
+                                        app.emote_mapper.replace_all(input_message).to_string(),
                                     ));
 
                                     tx.send(Action::Privmsg(input_message.to_string()))

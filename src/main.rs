@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
         Ok(mut config) => {
             merge_args_into_config(&mut config, Args::from_args());
 
-            let app = App::new(config.clone());
+            let app = App::new(config.clone())?;
 
             let (twitch_tx, terminal_rx) = mpsc::channel(100);
             let (terminal_tx, twitch_rx) = mpsc::channel(100);

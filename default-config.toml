@@ -25,6 +25,8 @@ maximum_username_length = 26
 username_alignment = "right"
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
+# Use emote-mapper and take config from file
+emote_mapper = "~/.config/twt/emote_map.csv"
 # Show title
 title_shown = true
 # Show padding around chat frame
