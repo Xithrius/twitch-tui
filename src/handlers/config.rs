@@ -61,6 +61,8 @@ pub struct FrontendConfig {
     /// The color palette.
     #[serde(default)]
     pub palette: Palette,
+    /// Show padding around chat frame
+    pub padding: bool,
 }
 
 impl CompleteConfig {
