@@ -1158,6 +1158,7 @@ dependencies = [
  "fuzzy-matcher",
  "irc",
  "lazy_static",
+ "regex",
  "rustyline",
  "serde",
  "textwrap 0.14.2",
