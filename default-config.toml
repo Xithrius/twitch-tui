@@ -25,5 +25,7 @@ maximum_username_length = 26
 username_alignment = "right"
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
+# Show title
+title_shown = true
 # Show padding around chat frame
 padding = true

@@ -83,24 +83,28 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     }
 
     let chat_title_format = || -> Spans {
-        Spans::from(vec![
-            Span::raw("[ "),
-            Span::styled(
-                "Time",
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!(
-                ": {} ] [ ",
-                Local::now()
-                    .format(config.frontend.date_format.as_str())
-                    .to_string(),
-            )),
-            Span::styled(
-                "Channel",
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!(": {} ]", config.twitch.channel)),
-        ])
+        if config.frontend.title_shown {
+            Spans::from(vec![
+                Span::raw("[ "),
+                Span::styled(
+                    "Time",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(format!(
+                    ": {} ] [ ",
+                    Local::now()
+                        .format(config.frontend.date_format.as_str())
+                        .to_string(),
+                )),
+                Span::styled(
+                    "Channel",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(format!(": {} ]", config.twitch.channel)),
+            ])
+        } else {
+            Spans::default()
+        }
     };
 
     let table = Table::new(display_rows)

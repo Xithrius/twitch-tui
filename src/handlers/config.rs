@@ -50,7 +50,7 @@ pub struct TerminalConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct FrontendConfig {
-    // If the time and date is to be shown.
+    /// If the time and date is to be shown.
     pub date_shown: bool,
     /// The format of string that will show up in the terminal.
     pub date_format: String,
@@ -61,6 +61,8 @@ pub struct FrontendConfig {
     /// The color palette.
     #[serde(default)]
     pub palette: Palette,
+    /// Show Title with time and channel
+    pub title_shown: bool,
     /// Show padding around chat frame
     pub padding: bool,
 }
