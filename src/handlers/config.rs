@@ -63,6 +63,8 @@ pub struct FrontendConfig {
     pub palette: Palette,
     /// Show Title with time and channel
     pub title_shown: bool,
+    /// Show padding around chat frame
+    pub padding: bool,
 }
 
 impl CompleteConfig {

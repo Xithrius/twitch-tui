@@ -27,3 +27,5 @@ username_alignment = "right"
 palette = "pastel"
 # Show title
 title_shown = true
+# Show padding around chat frame
+padding = true
