@@ -86,9 +86,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             ),
             Span::raw(format!(
                 ": {} ] [ ",
-                Local::now()
-                    .format(config.frontend.date_format.as_str())
-                    .to_string(),
+                Local::now().format(config.frontend.date_format.as_str())
             )),
             Span::styled(
                 "Channel",
@@ -160,7 +158,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         }
         State::Help => popups::help::show_keybinds(frame),
         State::ChannelSwitch => popups::channels::switch_channels(frame, app),
-        State::Search => popups::messages::search_messages(frame, app),
+        State::MessageSearch => popups::messages::search_messages(frame, app),
         _ => {}
     }
 }

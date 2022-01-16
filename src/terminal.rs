@@ -97,8 +97,14 @@ pub async fn ui_driver(
 
     'outer: loop {
         if let Ok(info) = rx.try_recv() {
-            match info.payload {
-                PayLoad::Message(_) => app.messages.push_front(info),
+            match info.payload.clone() {
+                PayLoad::Message(message) => {
+                    if let Some(filter) = &app.filter {
+                        if !filter.contaminated(message) {
+                            app.messages.push_front(info);
+                        }
+                    }
+                }
 
                 // If something such as a keypress failed, fallback to the normal state of the application.
                 PayLoad::Err(err) => {
@@ -116,7 +122,7 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input | State::ChannelSwitch | State::Search => {
+                State::Input | State::ChannelSwitch | State::MessageSearch => {
                     let input_buffer = app.current_buffer_mut();
 
                     match key {
@@ -124,7 +130,7 @@ pub async fn ui_driver(
                             State::Input => {
                                 app.state = State::Normal;
                             }
-                            State::Search => {
+                            State::MessageSearch => {
                                 if app.scroll_offset > 1 {
                                     app.scroll_offset -= 1;
                                 }
@@ -132,7 +138,7 @@ pub async fn ui_driver(
                             _ => {}
                         },
                         Key::Down => {
-                            if let State::Search = app.state {
+                            if let State::MessageSearch = app.state {
                                 if app.scroll_offset < app.messages_snapshot.len() {
                                     app.scroll_offset += 1;
                                 }
@@ -195,7 +201,7 @@ pub async fn ui_driver(
 
                                 input_message.update("", 0);
                             }
-                            BufferName::Channel => {
+                            BufferName::Channels => {
                                 let input_message =
                                     app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
@@ -214,7 +220,8 @@ pub async fn ui_driver(
                                 app.selected_buffer = BufferName::Chat;
                                 app.state = State::Normal;
                             }
-                            BufferName::MessageSearch => {}
+                            BufferName::Messages => {}
+                            BufferName::Filters => {}
                         },
                         Key::Char(c) => {
                             input_buffer.insert(c, 1);
@@ -233,7 +240,7 @@ pub async fn ui_driver(
                     }
                     Key::Char('C') => {
                         app.state = State::ChannelSwitch;
-                        app.selected_buffer = BufferName::Channel;
+                        app.selected_buffer = BufferName::Channels;
                     }
                     Key::Char('?') => app.state = State::Help,
                     Key::Char('i') => {
@@ -241,8 +248,8 @@ pub async fn ui_driver(
                         app.selected_buffer = BufferName::Chat;
                     }
                     Key::Char('s') => {
-                        app.state = State::Search;
-                        app.selected_buffer = BufferName::MessageSearch;
+                        app.state = State::MessageSearch;
+                        app.selected_buffer = BufferName::Messages;
                         app.messages_snapshot = app.messages.clone();
                     }
                     Key::Char('q') => {
