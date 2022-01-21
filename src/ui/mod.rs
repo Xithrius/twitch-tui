@@ -92,9 +92,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 ),
                 Span::raw(format!(
                     ": {} ] [ ",
-                    Local::now()
-                        .format(config.frontend.date_format.as_str())
-                        .to_string(),
+                    Local::now().format(config.frontend.date_format.as_str())
                 )),
                 Span::styled(
                     "Channel",
