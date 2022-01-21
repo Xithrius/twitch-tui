@@ -39,15 +39,17 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         vertical_chunk_constraints.extend(vec![Constraint::Length(3)])
     }
 
+    let margin = if config.frontend.padding { 1 } else { 0 };
+
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(1)
+        .margin(margin)
         .constraints(vertical_chunk_constraints.as_ref())
         .split(frame.size());
 
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .margin(1)
+        .margin(margin)
         .constraints(table_widths.as_ref())
         .split(frame.size());
 
@@ -78,24 +80,26 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     }
 
     let chat_title_format = || -> Spans {
-        Spans::from(vec![
-            Span::raw("[ "),
-            Span::styled(
-                "Time",
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!(
-                ": {} ] [ ",
-                Local::now()
-                    .format(config.frontend.date_format.as_str())
-                    .to_string(),
-            )),
-            Span::styled(
-                "Channel",
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!(": {} ]", config.twitch.channel)),
-        ])
+        if config.frontend.title_shown {
+            Spans::from(vec![
+                Span::raw("[ "),
+                Span::styled(
+                    "Time",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(format!(
+                    ": {} ] [ ",
+                    Local::now().format(config.frontend.date_format.as_str())
+                )),
+                Span::styled(
+                    "Channel",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(format!(": {} ]", config.twitch.channel)),
+            ])
+        } else {
+            Spans::default()
+        }
     };
 
     let table = Table::new(display_rows)

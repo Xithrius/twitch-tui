@@ -22,9 +22,9 @@ irc = "0.15.0"
 futures = "0.3.19"
 tokio = { version = "1.15.0", features = ["full"] }
 toml = "0.5.8"
-serde = { version = "1.0.132", features = ["derive"] }
+serde = { version = "1.0.134", features = ["derive"] }
 textwrap = "0.14.2"
-rustyline = "9.1.1"
+rustyline = "9.1.2"
 lazy_static = "1.4.0"
 clap = { version = "2.34.0", features = ["yaml"] }
 enum-iterator = "0.7.0"
