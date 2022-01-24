@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 crossterm = "0.20.0"
-tui = { version = "0.16.0", default-features = false, features = ["crossterm"] }
+tui = { version = "0.17.0", default-features = false, features = ["crossterm"] }
 anyhow = "1.0.52"
 unicode-width = "0.1.9"
 unicode-segmentation = "1.8.0"
