@@ -1214,7 +1214,6 @@ version = "1.6.0"
 dependencies = [
  "anyhow",
  "chrono",
- "clap",
  "crossterm 0.20.0",
  "enum-iterator",
  "futures",
