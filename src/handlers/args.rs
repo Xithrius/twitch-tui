@@ -1,7 +1,6 @@
 use structopt::StructOpt;
 
-use super::config::CompleteConfig;
-use super::config::Palette;
+use crate::handlers::config::{CompleteConfig, Palette};
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
