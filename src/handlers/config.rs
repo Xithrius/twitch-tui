@@ -1,15 +1,18 @@
 use anyhow::{bail, Error, Result};
+use clap::arg_enum;
 use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
 
-#[derive(Deserialize, Clone, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum Palette {
-    Pastel,
-    Vibrant,
-    Warm,
-    Cool,
+arg_enum! {
+    #[derive(Deserialize, Clone, Debug)]
+    #[serde(rename_all = "lowercase")]
+    pub enum Palette {
+        Pastel,
+        Vibrant,
+        Warm,
+        Cool,
+    }
 }
 
 impl Default for Palette {
