@@ -30,7 +30,7 @@ pub struct Args {
     pub username_alignment: Option<String>,
 
     /// Username color palette
-    #[structopt(short, long, possible_values = &Palette::variants())]
+    #[structopt(short, long, possible_values = &["pastel", "vibrant", "warm", "cool"])]
     pub palette: Option<Palette>,
 }
 
@@ -48,11 +48,7 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Args) {
     }
     // Frontend section of the config
     if let Some(date_shown) = args.date_shown {
-        config.frontend.date_shown = if let "true" = date_shown.as_str() {
-            true
-        } else {
-            false
-        };
+        config.frontend.date_shown = if let "true" = date_shown.as_str() { true } else { false };
     }
     if let Some(maximum_username_length) = args.max_username_length {
         config.frontend.maximum_username_length = maximum_username_length;

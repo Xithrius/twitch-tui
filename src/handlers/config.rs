@@ -1,17 +1,29 @@
+use std::str::FromStr;
+
 use anyhow::{bail, Error, Result};
-use clap::arg_enum;
 use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
 
-arg_enum! {
-    #[derive(Deserialize, Clone, Debug)]
-    #[serde(rename_all = "lowercase")]
-    pub enum Palette {
-        Pastel,
-        Vibrant,
-        Warm,
-        Cool,
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Palette {
+    Pastel,
+    Vibrant,
+    Warm,
+    Cool,
+}
+
+impl FromStr for Palette {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "vibrant" => Ok(Palette::Vibrant),
+            "warm" => Ok(Palette::Warm),
+            "cool" => Ok(Palette::Cool),
+            _ => Ok(Palette::Pastel),
+        }
     }
 }
 
