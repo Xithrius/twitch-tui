@@ -26,7 +26,7 @@ assignees: ''
 <!-- [e.g. Windows 10, Arch Linux w/ kernel 5.16.2] -->
 - Operating System:
 
-<!-- [e.g. Kitty 0.24.1, Alacritty 0.10.0] --> 
+<!-- [e.g. Kitty 0.24.1, Alacritty 0.10.0] -->
 - Terminal:
 
 <!-- [e.g. Bash 5.1.16, Fish 3.3.1] -->
