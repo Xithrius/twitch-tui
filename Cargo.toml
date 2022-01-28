@@ -26,7 +26,7 @@ serde = { version = "1.0.136", features = ["derive"] }
 textwrap = "0.14.2"
 rustyline = "9.1.2"
 lazy_static = "1.4.0"
-clap = { version = "2.34.0", features = ["yaml"] }
+structopt = "0.3.26"
 enum-iterator = "0.7.0"
 
 [[bin]]

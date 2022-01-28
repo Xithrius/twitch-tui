@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anyhow::{bail, Error, Result};
 use serde::Deserialize;
 
@@ -10,6 +12,19 @@ pub enum Palette {
     Vibrant,
     Warm,
     Cool,
+}
+
+impl FromStr for Palette {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "vibrant" => Ok(Palette::Vibrant),
+            "warm" => Ok(Palette::Warm),
+            "cool" => Ok(Palette::Cool),
+            _ => Ok(Palette::Pastel),
+        }
+    }
 }
 
 impl Default for Palette {
