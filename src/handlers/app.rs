@@ -4,7 +4,10 @@ use enum_iterator::IntoEnumIterator;
 use rustyline::line_buffer::LineBuffer;
 use tui::layout::Constraint;
 
-use crate::handlers::{config::CompleteConfig, data::Data, filter::Filter};
+use crate::{
+    handlers::{config::CompleteConfig, data::Data, filter::Filter},
+    utils::pathing::config_path,
+};
 
 #[allow(dead_code)]
 pub enum State {
@@ -42,7 +45,7 @@ pub struct App {
     /// Scrolling offset for windows
     pub scroll_offset: usize,
     /// Filtering messages
-    pub filter: Option<Filter>,
+    pub filter: Filter,
 }
 
 impl App {
@@ -53,6 +56,15 @@ impl App {
             input_buffers_map.insert(name, LineBuffer::with_capacity(4096));
         }
 
+        let filters = if let Ok(filter_file) = std::fs::read_to_string(config_path("filters.txt")) {
+            filter_file
+                .split('\n')
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>()
+        } else {
+            vec![]
+        };
+
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
             messages_snapshot: VecDeque::with_capacity(config.terminal.maximum_messages),
@@ -62,7 +74,7 @@ impl App {
             table_constraints: None,
             column_titles: None,
             scroll_offset: 0,
-            filter: None,
+            filter: Filter::new(filters, true),
         }
     }
 

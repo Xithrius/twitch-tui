@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crossterm::event::{self, Event as CEvent, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event as CEvent, KeyCode, KeyModifiers, MouseEventKind};
 use tokio::{sync::mpsc, time::Instant};
 
 #[derive(Debug, Clone, Copy)]

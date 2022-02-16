@@ -1,7 +1,10 @@
+use std::collections::VecDeque;
+
 use regex::Regex;
 
+#[derive(Debug, Clone)]
 pub struct Filter {
-    pub captures: Vec<Regex>,
+    captures: Vec<Regex>,
     pub enabled: bool,
 }
 
@@ -37,5 +40,17 @@ impl Filter {
 
     pub fn add(&mut self, data: &str) {
         self.captures.push(Regex::new(data).unwrap());
+    }
+
+    pub fn edit(&mut self, data_old: &str, data_new: &str) {
+        self.remove(data_old);
+        self.add(data_new);
+    }
+
+    pub fn filters(self) -> VecDeque<String> {
+        self.captures
+            .iter()
+            .map(|r| r.as_str().to_string())
+            .collect::<VecDeque<String>>()
     }
 }

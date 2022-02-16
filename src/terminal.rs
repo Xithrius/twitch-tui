@@ -99,10 +99,8 @@ pub async fn ui_driver(
         if let Ok(info) = rx.try_recv() {
             match info.payload.clone() {
                 PayLoad::Message(message) => {
-                    if let Some(filter) = &app.filter {
-                        if !filter.contaminated(message) {
-                            app.messages.push_front(info);
-                        }
+                    if !app.filter.contaminated(message) {
+                        app.messages.push_front(info);
                     }
                 }
 
