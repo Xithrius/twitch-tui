@@ -11,12 +11,14 @@ pub enum State {
     Input,
     Help,
     ChannelSwitch,
+    Search,
 }
 
 #[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]
 pub enum BufferName {
     Chat,
     Channel,
+    MessageSearch,
 }
 
 pub struct App {
@@ -32,6 +34,10 @@ pub struct App {
     pub table_constraints: Option<Vec<Constraint>>,
     /// The titles of the columns within the table of the terminal
     pub column_titles: Option<Vec<String>>,
+    /// Scrolling offset for windows
+    pub scroll_offset: usize,
+    /// A temporary snapshot of current messages
+    pub messages_snapshot: VecDeque<Data>,
 }
 
 impl App {
@@ -49,10 +55,16 @@ impl App {
             input_buffers: input_buffers_map,
             table_constraints: None,
             column_titles: None,
+            scroll_offset: 0,
+            messages_snapshot: VecDeque::with_capacity(config.terminal.maximum_messages),
         }
     }
 
-    pub fn get_buffer(&mut self) -> &mut LineBuffer {
+    pub fn current_buffer(&self) -> &LineBuffer {
+        return self.input_buffers.get(&self.selected_buffer).unwrap();
+    }
+
+    pub fn current_buffer_mut(&mut self) -> &mut LineBuffer {
         return self.input_buffers.get_mut(&self.selected_buffer).unwrap();
     }
 }

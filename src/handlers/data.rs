@@ -9,6 +9,13 @@ use crate::{
     utils::{colors::hsl_to_rgb, styles, text::align_text},
 };
 
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum PayLoad {
+    Message(String),
+    Err(String),
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct DataBuilder<'conf> {
     pub date_format: &'conf str,
@@ -24,7 +31,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: user,
             system: false,
-            message,
+            payload: PayLoad::Message(message),
         }
     }
 
@@ -33,7 +40,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: "System".to_string(),
             system: true,
-            message,
+            payload: PayLoad::Message(message),
         }
     }
 
@@ -42,7 +49,7 @@ impl<'conf> DataBuilder<'conf> {
             time_sent: Local::now().format(self.date_format).to_string(),
             author: "Twitch".to_string(),
             system: true,
-            message,
+            payload: PayLoad::Message(message),
         }
     }
 }
@@ -51,8 +58,8 @@ impl<'conf> DataBuilder<'conf> {
 pub struct Data {
     pub time_sent: String,
     pub author: String,
-    pub message: String,
     pub system: bool,
+    pub payload: PayLoad,
 }
 
 impl Data {
@@ -77,38 +84,41 @@ impl Data {
     }
 
     pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
-        let message = textwrap::fill(self.message.as_str(), *limit);
+        if let PayLoad::Message(m) = &self.payload {
+            let message = textwrap::fill(m.as_str(), *limit);
 
-        let style;
-        if self.system {
-            style = styles::SYSTEM_CHAT;
+            let style = if self.system {
+                styles::SYSTEM_CHAT
+            } else {
+                Style::default().fg(self.hash_username(&frontend_config.palette))
+            };
+
+            let mut row_vector = vec![
+                Cell::from(align_text(
+                    &self.author,
+                    frontend_config.username_alignment.as_str(),
+                    frontend_config.maximum_username_length,
+                ))
+                .style(style),
+                Cell::from(message.to_string()),
+            ];
+
+            if frontend_config.date_shown {
+                row_vector.insert(0, Cell::from(self.time_sent.to_string()));
+            }
+
+            let msg_height = message.split('\n').count() as u16;
+
+            let mut row = Row::new(row_vector).style(styles::CHAT);
+
+            if msg_height > 1 {
+                row = row.height(msg_height);
+            }
+
+            (msg_height, row)
         } else {
-            style = Style::default().fg(self.hash_username(&frontend_config.palette));
+            panic!("Data.to_row() can only take message payloads.")
         }
-
-        let mut row_vector = vec![
-            Cell::from(align_text(
-                &self.author,
-                frontend_config.username_alignment.as_str(),
-                frontend_config.maximum_username_length,
-            ))
-            .style(style),
-            Cell::from(message.to_string()),
-        ];
-
-        if frontend_config.date_shown {
-            row_vector.insert(0, Cell::from(self.time_sent.to_string()));
-        }
-
-        let msg_height = message.split('\n').count() as u16;
-
-        let mut row = Row::new(row_vector).style(styles::CHAT);
-
-        if msg_height > 1 {
-            row = row.height(msg_height);
-        }
-
-        (msg_height, row)
     }
 }
 
@@ -123,8 +133,8 @@ mod tests {
         Data {
             time_sent: Local::now().format("%c").to_string(),
             author: "human".to_string(),
-            message: "beep boop".to_string(),
             system: false,
+            payload: PayLoad::Message("beep boop".to_string()),
         }
     }
 

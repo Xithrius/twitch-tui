@@ -18,7 +18,7 @@ use crate::{
     handlers::{
         app::{App, BufferName, State},
         config::CompleteConfig,
-        data::{Data, DataBuilder},
+        data::{Data, DataBuilder, PayLoad},
         event::{Config, Event, Events, Key},
     },
     twitch::Action,
@@ -96,23 +96,46 @@ pub async fn ui_driver(
     };
 
     'outer: loop {
+        if let Ok(info) = rx.try_recv() {
+            match info.payload {
+                PayLoad::Message(_) => app.messages.push_front(info),
+
+                // If something such as a keypress failed, fallback to the normal state of the application.
+                PayLoad::Err(err) => {
+                    app.state = State::Normal;
+                    app.selected_buffer = BufferName::Chat;
+
+                    app.messages.push_front(data_builder.system(err));
+                }
+            }
+        }
+
         terminal
             .draw(|frame| draw_ui(frame, &mut app, &config))
             .unwrap();
 
-        if let Ok(info) = rx.try_recv() {
-            app.messages.push_front(info);
-        }
-
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input | State::ChannelSwitch => {
-                    let input_buffer = app.get_buffer();
+                State::Input | State::ChannelSwitch | State::Search => {
+                    let input_buffer = app.current_buffer_mut();
 
                     match key {
-                        Key::Up => {
-                            if let State::Input = app.state {
+                        Key::Up => match app.state {
+                            State::Input => {
                                 app.state = State::Normal;
+                            }
+                            State::Search => {
+                                if app.scroll_offset > 1 {
+                                    app.scroll_offset -= 1;
+                                }
+                            }
+                            _ => {}
+                        },
+                        Key::Down => {
+                            if let State::Search = app.state {
+                                if app.scroll_offset < app.messages_snapshot.len() {
+                                    app.scroll_offset += 1;
+                                }
                             }
                         }
                         Key::Ctrl('f') | Key::Right => {
@@ -169,6 +192,7 @@ pub async fn ui_driver(
                                         .await
                                         .unwrap();
                                 }
+
                                 input_message.update("", 0);
                             }
                             BufferName::Channel => {
@@ -184,11 +208,13 @@ pub async fn ui_driver(
 
                                     config.twitch.channel = input_message.to_string();
                                 }
+
                                 input_message.update("", 0);
 
                                 app.selected_buffer = BufferName::Chat;
                                 app.state = State::Normal;
                             }
+                            BufferName::MessageSearch => {}
                         },
                         Key::Char(c) => {
                             input_buffer.insert(c, 1);
@@ -205,11 +231,19 @@ pub async fn ui_driver(
                         app.state = State::Normal;
                         app.selected_buffer = BufferName::Chat;
                     }
-                    Key::Char('?') => app.state = State::Help,
-                    Key::Char('i') => app.state = State::Input,
                     Key::Char('C') => {
                         app.state = State::ChannelSwitch;
                         app.selected_buffer = BufferName::Channel;
+                    }
+                    Key::Char('?') => app.state = State::Help,
+                    Key::Char('i') => {
+                        app.state = State::Input;
+                        app.selected_buffer = BufferName::Chat;
+                    }
+                    Key::Char('s') => {
+                        app.state = State::Search;
+                        app.selected_buffer = BufferName::MessageSearch;
+                        app.messages_snapshot = app.messages.clone();
                     }
                     Key::Char('q') => {
                         quitting(terminal);
@@ -220,11 +254,10 @@ pub async fn ui_driver(
                             quitting(terminal);
                             break 'outer;
                         }
-                        State::ChannelSwitch => {
-                            app.selected_buffer = BufferName::Chat;
+                        _ => {
                             app.state = State::Normal;
+                            app.selected_buffer = BufferName::Chat;
                         }
-                        _ => app.state = State::Normal,
                     },
                     _ => {}
                 },

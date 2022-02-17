@@ -28,6 +28,7 @@ rustyline = "9.1.2"
 lazy_static = "1.4.0"
 structopt = "0.3.26"
 enum-iterator = "0.7.0"
+fuzzy-matcher = "0.3.7"
 
 [[bin]]
 bench = false

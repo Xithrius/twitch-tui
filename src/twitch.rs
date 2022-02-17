@@ -29,7 +29,9 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
     };
 
     let mut client = Client::from_config(irc_config.clone()).await.unwrap();
+
     client.identify().unwrap();
+
     let mut stream = client.stream().unwrap();
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
@@ -57,17 +59,19 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
             biased;
 
             Some(action) = rx.recv() => {
+                let current_channel = format!("#{}", config.twitch.channel);
+
                 match action {
                     Action::Privmsg(message) => {
                         client
-                            .send_privmsg(format!("#{}", config.twitch.channel), message)
+                            .send_privmsg(current_channel, message)
                             .unwrap();
                     }
                     Action::Join(channel) => {
                         let channel_list = format!("#{}", channel);
 
                         // Leave previous channel
-                        if let Err(err) = client.send_part(format!("#{}", config.twitch.channel)) {
+                        if let Err(err) = client.send_part(current_channel) {
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap()
                         } else {
                             tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
@@ -85,7 +89,7 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
             }
             Some(_message) = stream.next() => {
                 if let Ok(message) = _message {
-                    let mut tags: HashMap<&str, &str> = std::collections::HashMap::new();
+                    let mut tags: HashMap<&str, &str> = HashMap::new();
                     if let Some(ref _tags) = message.tags {
                         for tag in _tags {
                             if let Some(ref tag_value) = tag.1 {

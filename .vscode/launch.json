@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'twt'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=twt",
+                    "--package=twitch-tui"
+                ],
+                "filter": {
+                    "name": "twt",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'twt'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=twt",
+                    "--package=twitch-tui"
+                ],
+                "filter": {
+                    "name": "twt",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -7,13 +7,13 @@ use tui::{
 
 use crate::{
     ui::{
-        popups::{centered_popup, Centering},
+        popups::{centered_popup, Centering, WindowType},
         statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
     },
     utils::{styles, text::vector_column_max},
 };
 
-pub fn keybinds<T: Backend>(frame: &mut Frame<T>) {
+pub fn show_keybinds<T: Backend>(frame: &mut Frame<T>) {
     let table_widths = vector_column_max(&HELP_KEYBINDS, None)
         .into_iter()
         .map(Constraint::Min)
@@ -26,7 +26,13 @@ pub fn keybinds<T: Backend>(frame: &mut Frame<T>) {
         .column_spacing(2)
         .style(styles::BORDER_NAME);
 
-    let area = centered_popup(Centering::Window(60, 50), frame.size());
+    let area = centered_popup(
+        WindowType::Window(
+            Centering::Middle(frame.size().height),
+            HELP_KEYBINDS.len() as u16,
+        ),
+        frame.size(),
+    );
 
     frame.render_widget(Clear, area);
     frame.render_widget(help_table, area);
