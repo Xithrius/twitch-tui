@@ -25,7 +25,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
-    if let State::Input = app.state {
+    if let State::MessageInput = app.state {
         if app
             .input_buffers
             .get(&app.selected_buffer)
@@ -118,7 +118,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     frame.render_widget(table, vertical_chunks[0]);
 
     match app.state {
-        State::Input => {
+        State::MessageInput => {
             let input_buffer = app.current_buffer();
 
             if input_buffer.starts_with('/') {
@@ -164,7 +164,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         }
         State::Help => popups::help::show_keybinds(frame),
         State::ChannelSwitch => popups::channels::switch_channels(frame, app),
-        State::Search => popups::messages::search_messages(frame, app),
         _ => {}
     }
 }
