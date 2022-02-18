@@ -149,6 +149,11 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                     }
                 }
             }
+            else => {
+                tx.send(data_builder.system("Unable to connect to Twitch. Attempting to reconnect.".to_string())).await.unwrap();
+
+                stream = client.stream().unwrap();
+            }
         };
     }
 }
