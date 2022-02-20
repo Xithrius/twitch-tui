@@ -67,7 +67,15 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let mut total_row_height: usize = 0;
     let mut display_rows = std::collections::VecDeque::new();
 
+    let mut tmp = app.scroll_offset;
+
     for data in app.messages.iter() {
+        if display_rows.len() > general_chunk_height && tmp > 0 {
+            tmp -= 1;
+
+            continue;
+        }
+
         let (msg_height, row) = data.to_row(&config.frontend, &message_chunk_width);
         let row_height = total_row_height + msg_height as usize;
 

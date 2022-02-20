@@ -118,13 +118,13 @@ pub async fn ui_driver(
             match app.state {
                 State::MessageInput | State::MessageSearch | State::Normal => match key {
                     Key::ScrollDown => {
-                        if app.scroll_offset > 1 {
-                            app.scroll_offset -= 1;
+                        if app.scroll_offset < usize::MAX {
+                            app.scroll_offset += 1;
                         }
                     }
                     Key::ScrollUp => {
-                        if app.scroll_offset < usize::MAX {
-                            app.scroll_offset += 1;
+                        if app.scroll_offset > 0 {
+                            app.scroll_offset -= 1;
                         }
                     }
                     _ => {}
