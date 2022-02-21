@@ -8,7 +8,7 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
 use crate::{
@@ -67,24 +67,33 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let mut total_row_height: usize = 0;
     let mut display_rows = std::collections::VecDeque::new();
 
-    let mut tmp = app.scroll_offset;
+    let mut scroll_offset = app.scroll_offset;
 
-    for data in app.messages.iter() {
-        if display_rows.len() > general_chunk_height && tmp > 0 {
-            tmp -= 1;
+    'outer: for data in app.messages.iter() {
+        if scroll_offset > 0 {
+            scroll_offset -= 1;
 
             continue;
         }
 
-        let (msg_height, row) = data.to_row(&config.frontend, &message_chunk_width);
-        let row_height = total_row_height + msg_height as usize;
+        let rows = data.to_row(&config.frontend, &message_chunk_width);
 
-        if row_height > general_chunk_height {
-            break;
+        for row in rows.iter().rev() {
+            if total_row_height < general_chunk_height {
+                display_rows.push_front(row.to_owned());
+
+                total_row_height += 1;
+            } else {
+                break 'outer;
+            }
         }
-        total_row_height = row_height;
+    }
 
-        display_rows.push_front(row);
+    // Padding with empty rows so chat can go from bottom to top.
+    if general_chunk_height > total_row_height {
+        for _ in 0..(general_chunk_height - total_row_height) {
+            display_rows.push_front(Row::new(vec![Cell::from("")]));
+        }
     }
 
     let chat_title_format = || -> Spans {

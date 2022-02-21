@@ -83,7 +83,7 @@ impl Data {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> (u16, Row) {
+    pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> Vec<Row> {
         if let PayLoad::Message(m) = &self.payload {
             let message = textwrap::fill(m.as_str(), *limit);
 
@@ -93,29 +93,40 @@ impl Data {
                 Style::default().fg(self.hash_username(&frontend_config.palette))
             };
 
-            let mut row_vector = vec![
+            let mut msg_split = message
+                .split('\n')
+                .map(|c| c.to_string())
+                .collect::<Vec<String>>();
+
+            let mut initial_row_vector = vec![
                 Cell::from(align_text(
                     &self.author,
                     frontend_config.username_alignment.as_str(),
                     frontend_config.maximum_username_length,
                 ))
                 .style(style),
-                Cell::from(message.to_string()),
+                Cell::from(msg_split[0].to_string()).style(styles::CHAT),
             ];
 
             if frontend_config.date_shown {
-                row_vector.insert(0, Cell::from(self.time_sent.to_string()));
+                initial_row_vector.insert(0, Cell::from(self.time_sent.to_string()));
             }
 
-            let msg_height = message.split('\n').count() as u16;
+            let mut row_vector: Vec<Row> = vec![Row::new(initial_row_vector)];
 
-            let mut row = Row::new(row_vector).style(styles::CHAT);
+            if msg_split.len() > 1 {
+                for msg in msg_split.drain(1..) {
+                    let mut wrapped_msg = vec![Cell::from(""), Cell::from(msg).style(styles::CHAT)];
 
-            if msg_height > 1 {
-                row = row.height(msg_height);
+                    if frontend_config.date_shown {
+                        wrapped_msg.insert(0, Cell::from(""));
+                    }
+
+                    row_vector.push(Row::new(wrapped_msg));
+                }
             }
 
-            (msg_height, row)
+            row_vector
         } else {
             panic!("Data.to_row() can only take message payloads.")
         }
