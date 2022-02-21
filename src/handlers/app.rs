@@ -18,7 +18,7 @@ pub enum State {
 pub enum BufferName {
     Chat,
     Channel,
-    Search,
+    MessageHighlighter,
 }
 
 pub struct App {

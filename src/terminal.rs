@@ -244,9 +244,9 @@ pub async fn ui_driver(
                         app.state = State::ChannelSwitch;
                         app.selected_buffer = BufferName::Channel;
                     }
-                    Key::Char('f') => {
+                    Key::Ctrl('f') => {
                         app.state = State::MessageSearch;
-                        app.selected_buffer = BufferName::Search;
+                        app.selected_buffer = BufferName::MessageHighlighter;
                     }
                     Key::Char('i') | Key::Insert => {
                         app.state = State::MessageInput;

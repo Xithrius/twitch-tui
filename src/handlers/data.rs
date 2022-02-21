@@ -1,13 +1,22 @@
 use chrono::offset::Local;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use tui::{
-    style::{Color, Color::Rgb, Style},
+    style::{Color, Color::Rgb, Modifier, Style},
+    text::{Span, Spans},
     widgets::{Cell, Row},
 };
+
+use fuzzy_matcher::FuzzyMatcher;
+use lazy_static::lazy_static;
 
 use crate::{
     handlers::config::{FrontendConfig, Palette},
     utils::{colors::hsl_to_rgb, styles, text::align_text},
 };
+
+lazy_static! {
+    pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -83,53 +92,90 @@ impl Data {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row(&self, frontend_config: &FrontendConfig, limit: &usize) -> Vec<Row> {
-        if let PayLoad::Message(m) = &self.payload {
-            let message = textwrap::fill(m.as_str(), *limit);
+    pub fn to_row(
+        &self,
+        frontend_config: &FrontendConfig,
+        limit: &usize,
+        highlight: Option<String>,
+    ) -> Vec<Row> {
+        let message = if let PayLoad::Message(m) = &self.payload {
+            textwrap::fill(m.as_str(), *limit)
+        } else {
+            panic!("Data.to_row() can only take an enum of PayLoad::Message.");
+        };
 
-            let style = if self.system {
+        let msg_cells: Vec<Cell> = if let Some(search) = highlight {
+            message
+                .split('\n')
+                .map(|s| {
+                    let chars = s.chars();
+
+                    if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
+                        Cell::from(vec![Spans::from(
+                            chars
+                                .enumerate()
+                                .map(|(i, s)| {
+                                    if indices.contains(&i) {
+                                        Span::styled(
+                                            s.to_string(),
+                                            Style::default()
+                                                .fg(Color::Red)
+                                                .add_modifier(Modifier::BOLD),
+                                        )
+                                    } else {
+                                        Span::raw(s.to_string())
+                                    }
+                                })
+                                .collect::<Vec<Span>>(),
+                        )])
+                    } else {
+                        Cell::from(s)
+                    }
+                })
+                .collect::<Vec<Cell>>()
+        } else {
+            message
+                .split('\n')
+                .map(|c| Cell::from(c.to_string()))
+                .collect::<Vec<Cell>>()
+        };
+
+        let mut cell_vector = vec![
+            Cell::from(align_text(
+                &self.author,
+                frontend_config.username_alignment.as_str(),
+                frontend_config.maximum_username_length,
+            ))
+            .style(if self.system {
                 styles::SYSTEM_CHAT
             } else {
                 Style::default().fg(self.hash_username(&frontend_config.palette))
-            };
+            }),
+            msg_cells[0].clone(),
+        ];
 
-            let mut msg_split = message
-                .split('\n')
-                .map(|c| c.to_string())
-                .collect::<Vec<String>>();
+        if frontend_config.date_shown {
+            cell_vector.insert(0, Cell::from(self.time_sent.to_string()));
+        };
 
-            let mut initial_row_vector = vec![
-                Cell::from(align_text(
-                    &self.author,
-                    frontend_config.username_alignment.as_str(),
-                    frontend_config.maximum_username_length,
-                ))
-                .style(style),
-                Cell::from(msg_split[0].to_string()).style(styles::CHAT),
-            ];
+        let mut row_vector = vec![Row::new(cell_vector)];
 
-            if frontend_config.date_shown {
-                initial_row_vector.insert(0, Cell::from(self.time_sent.to_string()));
-            }
+        if msg_cells.len() > 1 {
+            for i in 1..msg_cells.len() {
+                let mut wrapped_msg = vec![
+                    Cell::from(""),
+                    Cell::from(msg_cells[i].clone()).style(styles::CHAT),
+                ];
 
-            let mut row_vector: Vec<Row> = vec![Row::new(initial_row_vector)];
-
-            if msg_split.len() > 1 {
-                for msg in msg_split.drain(1..) {
-                    let mut wrapped_msg = vec![Cell::from(""), Cell::from(msg).style(styles::CHAT)];
-
-                    if frontend_config.date_shown {
-                        wrapped_msg.insert(0, Cell::from(""));
-                    }
-
-                    row_vector.push(Row::new(wrapped_msg));
+                if frontend_config.date_shown {
+                    wrapped_msg.insert(0, Cell::from(""));
                 }
-            }
 
-            row_vector
-        } else {
-            panic!("Data.to_row() can only take message payloads.")
+                row_vector.push(Row::new(wrapped_msg));
+            }
         }
+
+        row_vector
     }
 }
 
