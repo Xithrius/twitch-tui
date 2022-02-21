@@ -129,7 +129,7 @@ impl Data {
                                 .collect::<Vec<Span>>(),
                         )])
                     } else {
-                        Cell::from(s)
+                        Cell::from(s.to_owned())
                     }
                 })
                 .collect::<Vec<Cell>>()
@@ -161,11 +161,8 @@ impl Data {
         let mut row_vector = vec![Row::new(cell_vector)];
 
         if msg_cells.len() > 1 {
-            for i in 1..msg_cells.len() {
-                let mut wrapped_msg = vec![
-                    Cell::from(""),
-                    Cell::from(msg_cells[i].clone()).style(styles::CHAT),
-                ];
+            for cell in msg_cells.iter().skip(1) {
+                let mut wrapped_msg = vec![Cell::from(""), cell.to_owned().style(styles::CHAT)];
 
                 if frontend_config.date_shown {
                     wrapped_msg.insert(0, Cell::from(""));

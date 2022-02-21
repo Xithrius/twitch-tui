@@ -1,2 +1,2 @@
-pub mod message_search;
 pub mod chatting;
+pub mod message_search;

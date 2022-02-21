@@ -50,8 +50,5 @@ pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals:
             ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
         ));
 
-    frame.render_widget(
-        paragraph,
-        verticals.chunks[verticals.constraints.len() - 1],
-    );
+    frame.render_widget(paragraph, verticals.chunks[verticals.constraints.len() - 1]);
 }
