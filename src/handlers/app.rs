@@ -8,17 +8,17 @@ use crate::handlers::{config::CompleteConfig, data::Data};
 
 pub enum State {
     Normal,
-    Input,
+    MessageInput,
     Help,
     ChannelSwitch,
-    Search,
+    MessageSearch,
 }
 
 #[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]
 pub enum BufferName {
     Chat,
     Channel,
-    MessageSearch,
+    MessageHighlighter,
 }
 
 pub struct App {
@@ -36,8 +36,6 @@ pub struct App {
     pub column_titles: Option<Vec<String>>,
     /// Scrolling offset for windows
     pub scroll_offset: usize,
-    /// A temporary snapshot of current messages
-    pub messages_snapshot: VecDeque<Data>,
 }
 
 impl App {
@@ -56,7 +54,6 @@ impl App {
             table_constraints: None,
             column_titles: None,
             scroll_offset: 0,
-            messages_snapshot: VecDeque::with_capacity(config.terminal.maximum_messages),
         }
     }
 
