@@ -11,6 +11,11 @@ use crate::handlers::{
     data::{Data, DataBuilder},
 };
 
+const VIP_BADGE: char = '\u{1F48E}';
+const MODERATOR_BADGE: char = '\u{1F528}';
+const SUBSCRIBER_BADGE: char = '\u{2B50}';
+const PRIME_GAMING_BADGE: char = '\u{1F451}';
+
 #[derive(Debug)]
 pub enum Action {
     Privmsg(String),
@@ -107,10 +112,6 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                             };
                             let mut badges = String::new();
                             if let Some(ref tags) = message.tags {
-                                const VIP_BADGE: char = '\u{1F48E}';
-                                const MODERATOR_BADGE: char = '\u{1F528}';
-                                const SUBSCRIBER_BADGE: char = '\u{2B50}';
-                                const PRIME_GAMING_BADGE: char = '\u{1F451}';
                                 let mut vip_badge = None;
                                 let mut moderator_badge = None;
                                 let mut subscriber_badge = None;
