@@ -17,7 +17,7 @@ tui = { version = "0.17.0", default-features = false, features = ["crossterm"] }
 tokio = { version = "1.17.0", features = ["full"] }
 serde = { version = "1.0.136", features = ["derive"] }
 clap = { version = "3.1.1", features = ["derive"] }
-anyhow = "1.0.53"
+anyhow = "1.0.54"
 unicode-width = "0.1.9"
 unicode-segmentation = "1.9.0"
 chrono = "0.4"

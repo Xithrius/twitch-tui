@@ -108,6 +108,11 @@ pub async fn ui_driver(
                     app.messages.push_front(data_builder.system(err));
                 }
             }
+
+            // If scrolling is enabled, pad for more messages.
+            if app.scroll_offset > 0 {
+                app.scroll_offset += 1;
+            }
         }
 
         terminal
@@ -116,26 +121,30 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::Input | State::ChannelSwitch | State::Search => {
+                State::MessageInput | State::MessageSearch | State::Normal => match key {
+                    Key::ScrollUp => {
+                        if app.scroll_offset < usize::MAX {
+                            app.scroll_offset += 1;
+                        }
+                    }
+                    Key::ScrollDown => {
+                        if app.scroll_offset > 0 {
+                            app.scroll_offset -= 1;
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+
+            match app.state {
+                State::MessageInput | State::ChannelSwitch | State::MessageSearch => {
                     let input_buffer = app.current_buffer_mut();
 
                     match key {
-                        Key::Up => match app.state {
-                            State::Input => {
+                        Key::Up => {
+                            if let State::MessageInput = app.state {
                                 app.state = State::Normal;
-                            }
-                            State::Search => {
-                                if app.scroll_offset > 1 {
-                                    app.scroll_offset -= 1;
-                                }
-                            }
-                            _ => {}
-                        },
-                        Key::Down => {
-                            if let State::Search = app.state {
-                                if app.scroll_offset < app.messages_snapshot.len() {
-                                    app.scroll_offset += 1;
-                                }
                             }
                         }
                         Key::Ctrl('f') | Key::Right => {
@@ -214,7 +223,7 @@ pub async fn ui_driver(
                                 app.selected_buffer = BufferName::Chat;
                                 app.state = State::Normal;
                             }
-                            BufferName::MessageSearch => {}
+                            _ => {}
                         },
                         Key::Char(c) => {
                             input_buffer.insert(c, 1);
@@ -231,34 +240,30 @@ pub async fn ui_driver(
                         app.state = State::Normal;
                         app.selected_buffer = BufferName::Chat;
                     }
-                    Key::Char('C') => {
+                    Key::Char('s') => {
                         app.state = State::ChannelSwitch;
                         app.selected_buffer = BufferName::Channel;
                     }
-                    Key::Char('?') => app.state = State::Help,
-                    Key::Char('i') => {
-                        app.state = State::Input;
+                    Key::Ctrl('f') => {
+                        app.state = State::MessageSearch;
+                        app.selected_buffer = BufferName::MessageHighlighter;
+                    }
+                    Key::Char('i') | Key::Insert => {
+                        app.state = State::MessageInput;
                         app.selected_buffer = BufferName::Chat;
                     }
-                    Key::Char('s') => {
-                        app.state = State::Search;
-                        app.selected_buffer = BufferName::MessageSearch;
-                        app.messages_snapshot = app.messages.clone();
-                    }
+                    Key::Char('?') => app.state = State::Help,
                     Key::Char('q') => {
-                        quitting(terminal);
-                        break 'outer;
-                    }
-                    Key::Esc => match app.state {
-                        State::Normal => {
+                        if let State::Normal = app.state {
                             quitting(terminal);
                             break 'outer;
                         }
-                        _ => {
-                            app.state = State::Normal;
-                            app.selected_buffer = BufferName::Chat;
-                        }
-                    },
+                    }
+                    Key::Esc => {
+                        app.scroll_offset = 0;
+                        app.state = State::Normal;
+                        app.selected_buffer = BufferName::Chat;
+                    }
                     _ => {}
                 },
             }
