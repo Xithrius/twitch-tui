@@ -96,12 +96,12 @@
 
 ### Setup
 
-1. Make sure you have Cargo installed from [rust-lang website](https://www.rust-lang.org/learn/get-started). Make sure the Cargo binary folder is appended to your `$PATH` environment variable if you get errors when attempting to install the binary with Cargo.
+1. Install Rustup from the [rust-lang website](https://www.rust-lang.org/learn/get-started).
 2. Copy [`default-config.toml`](https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml) to a `config.toml` file. Based on your OS, place the config file in the directories listed below. Any command line options/arguments taken from `twt --help` (when the binary is eventually installed) will overwrite the corresponding value in the config file.
    - Windows: `%appdata%\twt\config.toml`
    - Linux/MacOs: `~/.config/twt/config.toml`
 3. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and place the value in the `token` variable in the `config.toml` file that you created.
-4. Run `cargo install twitch-tui` to install the binary. Run the same command in the future to acquire updates.
+4. Run `cargo install twitch-tui` to install the binary. Run the same command in the future to acquire updates. Installing a specific version of this crate requires the `--version` flag and a version from the [releases page](https://github.com/Xithrius/twitch-tui/releases).
 5. Running `twt` in the terminal will launch the application. For CLI options/arguments, run `twt --help`.
 
 If you have any problems, do not hesitate to [submit an issue](https://github.com/Xithrius/twitch-tui/issues/new/choose).
