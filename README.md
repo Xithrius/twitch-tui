@@ -2,7 +2,7 @@
 
 ### What it looks like
 
-![image](./images/preview.png)
+![image](https://user-images.githubusercontent.com/15021300/155114244-00704633-e852-49bb-9a5a-33c623f775f8.png)
 
 ### Keybinds
 
