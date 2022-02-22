@@ -44,19 +44,27 @@ pub fn centered_popup(c: WindowType, size: Rect) -> Rect {
                 .split(popup_layout[1])[1]
         }
         WindowType::Window(v, i) => {
+            let s = i + 2;
+
             let popup_layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
                     Constraint::Length(match v {
                         Centering::Height(terminal_height) => (terminal_height / 2) as u16 - 3,
-                        Centering::Middle(terminal_height) => ((terminal_height - i) / 2) as u16,
+                        Centering::Middle(terminal_height) => {
+                            ((terminal_height / 2)
+                                - (if terminal_height > (s / 2) { s / 2 } else { 0 }))
+                                as u16
+                        }
                     }),
-                    Constraint::Length(i),
+                    Constraint::Min(i),
                     match v {
                         Centering::Height(_) => Constraint::Min(0),
-                        Centering::Middle(terminal_height) => {
-                            Constraint::Length(((terminal_height - i) / 2) as u16 - 3)
-                        }
+                        Centering::Middle(terminal_height) => Constraint::Length(
+                            ((terminal_height / 2)
+                                - (if terminal_height > (s / 2) { s / 2 } else { 0 }))
+                                as u16,
+                        ),
                     },
                 ])
                 .split(size);
