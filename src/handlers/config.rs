@@ -80,6 +80,8 @@ pub struct FrontendConfig {
     pub title_shown: bool,
     /// Show padding around chat frame
     pub padding: bool,
+    /// Show twitch badges
+    pub badges: bool,
 }
 
 impl CompleteConfig {
