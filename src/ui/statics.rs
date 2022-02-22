@@ -5,6 +5,8 @@ lazy_static! {
     pub static ref HELP_KEYBINDS: Vec<Vec<&'static str>> = vec![
         vec!["c", "Chat window"],
         vec!["i", "Insert mode"],
+        vec!["s", "Swap channels"],
+        vec!["Ctrl + f", "Search messages"],
         vec!["?", "Bring up this window"],
         vec!["q", "Quit this application"],
         vec!["Esc", "Drop back to previous window layer"],
