@@ -1,44 +1,46 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::handlers::config::{CompleteConfig, Palette};
 
-#[derive(StructOpt)]
-#[structopt(rename_all = "kebab-case")]
-pub struct Args {
+#[derive(Parser)]
+#[clap(rename_all = "kebab-case")]
+/// Twitch chat in the terminal
+pub struct Cli {
     /// The streamer's name
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub channel: Option<String>,
 
     /// The delay in milliseconds between terminal updates
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub tick_delay: Option<u64>,
 
     /// The maximum amount of messages to be stored
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub max_messages: Option<usize>,
 
     /// Show the date/time
-    #[structopt(short, long, possible_values = &["true", "false"])]
+    #[clap(short, long, possible_values = &["true", "false"])]
     pub date_shown: Option<String>,
 
     /// Maximum length for Twitch usernames
-    #[structopt(short = "u", long)]
+    #[clap(short = 'u', long)]
     pub max_username_length: Option<u16>,
 
     /// Username column alignment
-    #[structopt(short = "a", long, possible_values = &["left", "center", "right"])]
+    #[clap(short = 'a', long, possible_values = &["left", "center", "right"])]
     pub username_alignment: Option<String>,
 
     /// Username color palette
-    #[structopt(short, long, possible_values = &["pastel", "vibrant", "warm", "cool"])]
+    #[clap(short, long, possible_values = &["pastel", "vibrant", "warm", "cool"])]
     pub palette: Option<Palette>,
 }
 
-pub fn merge_args_into_config(config: &mut CompleteConfig, args: Args) {
+pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     // Twitch section of the config
     if let Some(ch) = args.channel {
         config.twitch.channel = ch;
     }
+
     // Terminal section of the config
     if let Some(tick_delay) = args.tick_delay {
         config.terminal.tick_delay = tick_delay;
@@ -46,6 +48,7 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Args) {
     if let Some(max_messages) = args.max_messages {
         config.terminal.maximum_messages = max_messages;
     }
+
     // Frontend section of the config
     if let Some(date_shown) = args.date_shown {
         config.frontend.date_shown = matches!(date_shown.as_str(), "true");

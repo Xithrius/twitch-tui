@@ -5,13 +5,14 @@ mod ui;
 mod utils;
 
 use anyhow::Result;
-use structopt::StructOpt;
 use tokio::sync::mpsc;
 
 use handlers::{
-    args::{merge_args_into_config, Args},
+    args::{merge_args_into_config, Cli},
     config::CompleteConfig,
 };
+
+use clap::Parser;
 
 use crate::handlers::app::App;
 
@@ -19,7 +20,7 @@ use crate::handlers::app::App;
 async fn main() -> Result<()> {
     match CompleteConfig::new() {
         Ok(mut config) => {
-            merge_args_into_config(&mut config, Args::from_args());
+            merge_args_into_config(&mut config, Cli::parse());
 
             let app = App::new(config.clone());
 
