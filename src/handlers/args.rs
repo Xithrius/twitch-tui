@@ -33,6 +33,10 @@ pub struct Cli {
     /// Username color palette
     #[clap(short, long, possible_values = &["pastel", "vibrant", "warm", "cool"])]
     pub palette: Option<Palette>,
+
+    /// Twitch badges support
+    #[clap(short, long)]
+    pub badges: bool,
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
@@ -62,4 +66,5 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     if let Some(palette) = args.palette {
         config.frontend.palette = palette;
     }
+    config.frontend.badges = args.badges;
 }

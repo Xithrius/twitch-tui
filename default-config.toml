@@ -29,3 +29,5 @@ palette = "pastel"
 title_shown = true
 # Show padding around chat frame
 padding = true
+# Show twitch badges
+badges = true
