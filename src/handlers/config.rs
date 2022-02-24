@@ -1,7 +1,6 @@
-use std::str::FromStr;
-
 use anyhow::{bail, Error, Result};
 use serde::Deserialize;
+use std::str::FromStr;
 
 use crate::utils::pathing::config_path;
 

@@ -14,7 +14,7 @@ use tui::{
 
 use crate::{
     handlers::{
-        app::{App, BufferName::MessageHighlighter, State},
+        app::{App, BufferName, State},
         config::CompleteConfig,
     },
     utils::styles,
@@ -104,7 +104,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 &config.frontend,
                 &message_chunk_width,
                 match app.selected_buffer {
-                    MessageHighlighter => Some(buffer.to_string()),
+                    BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
                 },
             )

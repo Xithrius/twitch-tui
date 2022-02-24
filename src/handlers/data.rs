@@ -1,13 +1,11 @@
 use chrono::offset::Local;
-use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use lazy_static::lazy_static;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
     widgets::{Cell, Row},
 };
-
-use fuzzy_matcher::FuzzyMatcher;
-use lazy_static::lazy_static;
 
 use crate::{
     handlers::config::{FrontendConfig, Palette},

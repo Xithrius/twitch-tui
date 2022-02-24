@@ -1,6 +1,5 @@
-use std::vec::IntoIter;
-
 use rustyline::line_buffer::LineBuffer;
+use std::vec::IntoIter;
 use textwrap::core::display_width;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
