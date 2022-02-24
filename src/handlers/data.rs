@@ -174,27 +174,16 @@ impl Data {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use chrono::Local;
-    use tui::style::Color::Rgb;
-
-    use super::*;
-
-    fn create_data() -> Data {
+#[test]
+fn test_username_hash() {
+    assert_eq!(
         Data {
             time_sent: Local::now().format("%c").to_string(),
             author: "human".to_string(),
             system: false,
             payload: PayLoad::Message("beep boop".to_string()),
         }
-    }
-
-    #[test]
-    fn test_username_hash() {
-        assert_eq!(
-            create_data().hash_username(&Palette::Pastel),
-            Rgb(159, 223, 221)
-        );
-    }
+        .hash_username(&Palette::Pastel),
+        Rgb(159, 223, 221)
+    );
 }
