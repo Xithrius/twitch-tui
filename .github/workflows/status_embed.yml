@@ -39,7 +39,7 @@ jobs:
         uses: SebastiaanZ/github-status-embed-for-discord@v0.2.1
         with:
           # Webhook token
-          webhook_id: '931035992083800174'
+          webhook_id: '948398186119192586'
           webhook_token: ${{ secrets.GHA_WEBHOOK_TOKEN }}
 
           # We need to provide the information of the workflow that
