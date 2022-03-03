@@ -25,8 +25,12 @@ pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
     );
 
     let paragraph = Paragraph::new(input_buffer.as_str())
-        .style(Style::default().fg(Color::Yellow))
-        .block(Block::default().borders(Borders::ALL).title("[ Channel ]"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("[ Channel ]")
+                .border_style(Style::default().fg(Color::Yellow)),
+        )
         .scroll((
             0,
             ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),

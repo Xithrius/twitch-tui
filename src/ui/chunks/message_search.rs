@@ -20,11 +20,11 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App, vertical
     );
 
     let paragraph = Paragraph::new(input_buffer.as_str())
-        .style(Style::default().fg(Color::Yellow))
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("[ Message Search ]"),
+                .title("[ Message Search ]")
+                .border_style(Style::default().fg(Color::Yellow)),
         )
         .scroll((
             0,
