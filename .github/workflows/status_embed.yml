@@ -36,11 +36,11 @@ jobs:
       # more information and we can fine tune when we actually want
       # to send an embed.
       - name: GitHub Actions Status Embed for Discord
-        uses: SebastiaanZ/github-status-embed-for-discord@v0.2.1
+        uses: SebastiaanZ/github-status-embed-for-discord@main
         with:
           # Webhook token
-          webhook_id: '948398186119192586'
-          webhook_token: ${{ secrets.GHA_WEBHOOK_TOKEN }}
+          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
 
           # We need to provide the information of the workflow that
           # triggered this workflow instead of this workflow.
@@ -48,6 +48,9 @@ jobs:
           run_id: ${{ github.event.workflow_run.id }}
           run_number: ${{ github.event.workflow_run.run_number }}
           status: ${{ github.event.workflow_run.conclusion }}
+          actor: ${{ github.actor }}
+          repository:  ${{ github.repository }}
+          ref: ${{ github.ref }}
           sha: ${{ github.event.workflow_run.head_sha }}
 
           # Now we can use the information extracted in the previous step:
