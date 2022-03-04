@@ -5,44 +5,44 @@ mod ui;
 mod utils;
 
 use anyhow::Result;
+use clap::Parser;
+use rusqlite::Connection as SqliteConnection;
 use tokio::sync::mpsc;
 
-use handlers::{
-    args::{merge_args_into_config, Cli},
-    config::CompleteConfig,
+use crate::{
+    handlers::{
+        app::App,
+        args::{merge_args_into_config, Cli},
+        config::CompleteConfig,
+    },
+    utils::pathing::config_path,
 };
-
-use clap::Parser;
-
-use crate::handlers::app::App;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    match CompleteConfig::new() {
-        Ok(mut config) => {
-            merge_args_into_config(&mut config, Cli::parse());
+    let mut config = match CompleteConfig::new() {
+        Ok(c) => c,
+        Err(e) => panic!("Configuration error: {}", e),
+    };
 
-            let app = App::new(config.clone());
+    merge_args_into_config(&mut config, Cli::parse());
 
-            let (twitch_tx, terminal_rx) = mpsc::channel(100);
-            let (terminal_tx, twitch_rx) = mpsc::channel(100);
+    let sqlite_connection = SqliteConnection::open(&config_path("db.sqlite3")).unwrap();
 
-            let cloned_config = config.clone();
+    let app = App::new(config.clone(), sqlite_connection);
 
-            tokio::task::spawn(async move {
-                twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
-            });
+    let (twitch_tx, terminal_rx) = mpsc::channel(100);
+    let (terminal_tx, twitch_rx) = mpsc::channel(100);
 
-            terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx)
-                .await
-                .unwrap();
+    let cloned_config = config.clone();
 
-            std::process::exit(0);
-        }
-        Err(err) => {
-            println!("{}", err);
-        }
-    }
+    tokio::task::spawn(async move {
+        twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
+    });
 
-    Ok(())
+    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx)
+        .await
+        .unwrap();
+
+    std::process::exit(0)
 }

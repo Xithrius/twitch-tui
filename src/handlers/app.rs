@@ -1,10 +1,10 @@
-use std::collections::{HashMap, VecDeque};
-
 use enum_iterator::IntoEnumIterator;
+use rusqlite::Connection as SqliteConnection;
 use rustyline::line_buffer::LineBuffer;
+use std::collections::{HashMap, VecDeque};
 use tui::layout::Constraint;
 
-use crate::handlers::{config::CompleteConfig, data::Data};
+use crate::handlers::{config::CompleteConfig, data::Data, database::Database};
 
 pub enum State {
     Normal,
@@ -24,7 +24,9 @@ pub enum BufferName {
 pub struct App {
     /// History of recorded messages (time, username, message)
     pub messages: VecDeque<Data>,
-    /// Which window the terminal is currently showing
+    /// Connection to the sqlite3 database.
+    pub db: Database,
+    /// Postgres database client
     pub state: State,
     /// Which input buffer is currently selected
     pub selected_buffer: BufferName,
@@ -39,7 +41,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig) -> Self {
+    pub fn new(config: CompleteConfig, database_connection: SqliteConnection) -> Self {
         let mut input_buffers_map = HashMap::new();
 
         for name in BufferName::into_enum_iter() {
@@ -48,6 +50,7 @@ impl App {
 
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
+            db: Database::new(database_connection),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
             input_buffers: input_buffers_map,

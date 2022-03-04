@@ -91,7 +91,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let mut scroll_offset = app.scroll_offset;
 
     'outer: for data in app.messages.iter() {
-        if scroll_offset > 0 {
+        if scroll_offset > 0 && total_row_height > general_chunk_height {
             scroll_offset -= 1;
 
             continue;
