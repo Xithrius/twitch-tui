@@ -102,7 +102,7 @@ dependencies = [
  "os_str_bytes",
  "strsim",
  "termcolor",
- "textwrap 0.14.2",
+ "textwrap",
 ]
 
 [[package]]
@@ -1204,15 +1204,6 @@ dependencies = [
 name = "textwrap"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-<<<<<<< HEAD
-checksum = "0066c8d12af8b5acd21e00547c3797fde4e8677254a7ee429176ccebbe93dd80"
-
-[[package]]
-name = "textwrap"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-=======
->>>>>>> 1ef28eb (winsqlite3 feature now targets only Windows)
 checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 dependencies = [
  "smawk",
@@ -1364,7 +1355,7 @@ dependencies = [
  "rusqlite",
  "rustyline",
  "serde",
- "textwrap 0.15.0",
+ "textwrap",
  "tokio",
  "toml",
  "tui",
