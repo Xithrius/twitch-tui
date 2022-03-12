@@ -10,6 +10,7 @@ graph TD;
     B --> E[Help];
     B --> F[Channel switch];
     B --> G[Message search];
+    C ----> H[Buffer];
     D ----> H[Buffer];
     E ----> H[Buffer];
     F ----> H[Buffer];
