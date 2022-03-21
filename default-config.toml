@@ -25,9 +25,17 @@ maximum_username_length = 26
 username_alignment = "right"
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
-# Show title
+# Show title with time and channel.
 title_shown = true
-# Show padding around chat frame
+# Show padding around chat frame.
 padding = true
-# Show twitch badges
+# Show twitch badges next to usernames.
 badges = true
+
+[database]
+# If filters should be enabled at all.
+filters = true
+# If previous channels switched to should be tracked.
+channels = true
+# If previous username mentions should be tracked.
+mentions = true

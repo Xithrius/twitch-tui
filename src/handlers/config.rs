@@ -1,6 +1,7 @@
+use std::str::FromStr;
+
 use anyhow::{bail, Error, Result};
 use serde::Deserialize;
-use std::str::FromStr;
 
 use crate::utils::pathing::config_path;
 
@@ -40,6 +41,8 @@ pub struct CompleteConfig {
     pub terminal: TerminalConfig,
     /// How everything looks to the user.
     pub frontend: FrontendConfig,
+    /// If anything should be recorded for future use.
+    pub database: DatabaseConfig,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -75,12 +78,23 @@ pub struct FrontendConfig {
     /// The color palette.
     #[serde(default)]
     pub palette: Palette,
-    /// Show Title with time and channel
+    /// Show Title with time and channel.
     pub title_shown: bool,
-    /// Show padding around chat frame
+    /// Show padding around chat frame.
     pub padding: bool,
-    /// Show twitch badges
+    /// Show twitch badges next to usernames.
     pub badges: bool,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Clone, Debug)]
+pub struct DatabaseConfig {
+    /// If filters should be enabled at all.
+    filters: bool,
+    /// If previous channels switched to should be tracked.
+    channels: bool,
+    /// If previous username mentions should be tracked.
+    mentions: bool,
 }
 
 impl CompleteConfig {
