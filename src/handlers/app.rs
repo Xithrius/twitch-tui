@@ -1,7 +1,12 @@
+use std::{
+    cmp::Eq,
+    collections::{HashMap, VecDeque},
+    hash::Hash,
+};
+
 use enum_iterator::IntoEnumIterator;
 use rusqlite::Connection as SqliteConnection;
 use rustyline::line_buffer::LineBuffer;
-use std::collections::{HashMap, VecDeque};
 use tui::layout::Constraint;
 
 use crate::handlers::{config::CompleteConfig, data::Data, database::Database};
@@ -14,7 +19,7 @@ pub enum State {
     MessageSearch,
 }
 
-#[derive(PartialEq, std::cmp::Eq, std::hash::Hash, IntoEnumIterator)]
+#[derive(PartialEq, Eq, Hash, IntoEnumIterator)]
 pub enum BufferName {
     Chat,
     Channel,
@@ -25,7 +30,7 @@ pub struct App {
     /// History of recorded messages (time, username, message)
     pub messages: VecDeque<Data>,
     /// Connection to the sqlite3 database.
-    pub db: Database,
+    pub database: Database,
     /// Postgres database client
     pub state: State,
     /// Which input buffer is currently selected
@@ -50,7 +55,7 @@ impl App {
 
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
-            db: Database::new(database_connection),
+            database: Database::new(database_connection),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
             input_buffers: input_buffers_map,

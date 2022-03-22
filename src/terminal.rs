@@ -216,6 +216,10 @@ pub async fn ui_driver(
                                         .unwrap();
 
                                     config.twitch.channel = input_message.to_string();
+
+                                    app.database
+                                        .add("channels".to_string(), input_message.to_string())
+                                        .unwrap();
                                 }
 
                                 input_message.update("", 0);
