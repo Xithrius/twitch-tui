@@ -14,6 +14,18 @@ tick_delay = 30
 # The maximum amount of messages to be stored.
 maximum_messages = 150
 
+[database]
+# If previous channels switched to should be tracked.
+channels = true
+# If previous username mentions should be tracked.
+mentions = true
+
+[filters]
+# If filters should be enabled at all.
+enabled = true
+# If the regex filters should be reversed
+reversed = true
+
 [frontend]
 # If the time and date is to be shown.
 date_shown = true
@@ -31,11 +43,3 @@ title_shown = true
 padding = true
 # Show twitch badges next to usernames.
 badges = true
-
-[database]
-# If filters should be enabled at all.
-filters = true
-# If previous channels switched to should be tracked.
-channels = true
-# If previous username mentions should be tracked.
-mentions = true

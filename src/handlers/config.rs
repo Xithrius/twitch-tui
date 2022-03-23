@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Palette {
     Pastel,
@@ -37,19 +37,21 @@ impl Default for Palette {
     }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct CompleteConfig {
     /// Connecting to Twitch.
     pub twitch: TwitchConfig,
     /// Internal functionality.
     pub terminal: TerminalConfig,
-    /// How everything looks to the user.
-    pub frontend: FrontendConfig,
     /// If anything should be recorded for future use.
     pub database: DatabaseConfig,
+    /// Filtering out messages.
+    pub filters: FiltersConfig,
+    /// How everything looks to the user.
+    pub frontend: FrontendConfig,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TwitchConfig {
     /// The username that this user has on Twitch.
     pub username: String,
@@ -61,7 +63,7 @@ pub struct TwitchConfig {
     pub token: String,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TerminalConfig {
     /// The delay between updates, in milliseconds.
     pub tick_delay: u64,
@@ -69,7 +71,23 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
+pub struct DatabaseConfig {
+    /// If previous channels switched to should be tracked.
+    pub channels: bool,
+    /// If previous username mentions should be tracked.
+    pub mentions: bool,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct FiltersConfig {
+    /// If filters should be enabled at all.
+    pub enabled: bool,
+    /// If the regex filters should be reversed
+    pub reversed: bool,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct FrontendConfig {
     /// If the time and date is to be shown.
     pub date_shown: bool,
@@ -88,17 +106,6 @@ pub struct FrontendConfig {
     pub padding: bool,
     /// Show twitch badges next to usernames.
     pub badges: bool,
-}
-
-#[allow(dead_code)]
-#[derive(Deserialize, Clone, Debug)]
-pub struct DatabaseConfig {
-    /// If filters should be enabled at all.
-    filters: bool,
-    /// If previous channels switched to should be tracked.
-    channels: bool,
-    /// If previous username mentions should be tracked.
-    mentions: bool,
 }
 
 impl CompleteConfig {
