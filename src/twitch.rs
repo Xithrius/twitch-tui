@@ -1,9 +1,10 @@
+use std::collections::HashMap;
+
 use futures::StreamExt;
 use irc::{
     client::{data, prelude::*, Client},
     proto::Command,
 };
-use std::collections::HashMap;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::handlers::{
