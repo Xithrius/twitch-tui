@@ -79,101 +79,105 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
         .sum()
 }
 
-#[test]
-#[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
-fn test_text_align_maximum_length() {
-    align_text("", "left", 0);
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
+    fn test_text_align_maximum_length() {
+        align_text("", "left", 0);
+    }
 
-#[test]
-fn test_text_align_left() {
-    assert_eq!(align_text("a", "left", 10), "a".to_string());
-    assert_eq!(align_text("a", "left", 1), "a".to_string());
-}
+    #[test]
+    fn test_text_align_left() {
+        assert_eq!(align_text("a", "left", 10), "a".to_string());
+        assert_eq!(align_text("a", "left", 1), "a".to_string());
+    }
 
-#[test]
-fn test_text_align_right() {
-    assert_eq!(
-        align_text("a", "right", 10),
-        format!("{}{}", " ".repeat(9), "a")
-    );
-    assert_eq!(align_text("a", "right", 1), "a".to_string());
-    assert_eq!(align_text("你好", "right", 5), " 你好");
-    assert_eq!(align_text("👑123", "right", 6), " 👑123");
-}
+    #[test]
+    fn test_text_align_right() {
+        assert_eq!(
+            align_text("a", "right", 10),
+            format!("{}{}", " ".repeat(9), "a")
+        );
+        assert_eq!(align_text("a", "right", 1), "a".to_string());
+        assert_eq!(align_text("你好", "right", 5), " 你好");
+        assert_eq!(align_text("👑123", "right", 6), " 👑123");
+    }
 
-#[test]
-fn test_text_align_center() {
-    assert_eq!(
-        align_text("a", "center", 11),
-        format!("{}{}{}", " ".repeat(5), "a", " ".repeat(5))
-    );
-    assert_eq!(align_text("a", "center", 1), "a".to_string());
-    assert_eq!(align_text("你好", "center", 6), " 你好 ");
-    assert_eq!(align_text("👑123", "center", 7), " 👑123 ");
-}
+    #[test]
+    fn test_text_align_center() {
+        assert_eq!(
+            align_text("a", "center", 11),
+            format!("{}{}{}", " ".repeat(5), "a", " ".repeat(5))
+        );
+        assert_eq!(align_text("a", "center", 1), "a".to_string());
+        assert_eq!(align_text("你好", "center", 6), " 你好 ");
+        assert_eq!(align_text("👑123", "center", 7), " 👑123 ");
+    }
 
-#[test]
-#[should_panic(expected = "Vector length should be greater than or equal to 1.")]
-fn test_vector_column_max_empty_vector() {
-    let vec: Vec<Vec<String>> = vec![];
+    #[test]
+    #[should_panic(expected = "Vector length should be greater than or equal to 1.")]
+    fn test_vector_column_max_empty_vector() {
+        let vec: Vec<Vec<String>> = vec![];
 
-    vector_column_max(&vec, None);
-}
+        vector_column_max(&vec, None);
+    }
 
-#[test]
-fn test_vector_column_max_reference_strings() {
-    let vec = vec![vec!["", "s"], vec!["longer string", "lll"]];
+    #[test]
+    fn test_vector_column_max_reference_strings() {
+        let vec = vec![vec!["", "s"], vec!["longer string", "lll"]];
 
-    let mut output_vec_all = vector_column_max(&vec, None);
+        let mut output_vec_all = vector_column_max(&vec, None);
 
-    assert_eq!(output_vec_all.next(), Some(13));
-    assert_eq!(output_vec_all.next(), Some(3));
+        assert_eq!(output_vec_all.next(), Some(13));
+        assert_eq!(output_vec_all.next(), Some(3));
 
-    let mut output_vec_one = vector_column_max(&vec, Some(0));
+        let mut output_vec_one = vector_column_max(&vec, Some(0));
 
-    assert_eq!(output_vec_one.next(), Some(13));
-}
+        assert_eq!(output_vec_one.next(), Some(13));
+    }
 
-#[test]
-fn test_vector_column_max_strings() {
-    let vec = vec![
-        vec!["".to_string(), "another".to_string()],
-        vec!["".to_string(), "the last string".to_string()],
-    ];
+    #[test]
+    fn test_vector_column_max_strings() {
+        let vec = vec![
+            vec!["".to_string(), "another".to_string()],
+            vec!["".to_string(), "the last string".to_string()],
+        ];
 
-    let mut output_vec_all = vector_column_max(&vec, None);
+        let mut output_vec_all = vector_column_max(&vec, None);
 
-    assert_eq!(output_vec_all.next(), Some(0));
-    assert_eq!(output_vec_all.next(), Some(15));
+        assert_eq!(output_vec_all.next(), Some(0));
+        assert_eq!(output_vec_all.next(), Some(15));
 
-    let mut output_vec_one = vector_column_max(&vec, Some(0));
+        let mut output_vec_one = vector_column_max(&vec, Some(0));
 
-    assert_eq!(output_vec_one.next(), Some(0));
-}
+        assert_eq!(output_vec_one.next(), Some(0));
+    }
 
-#[test]
-fn test_get_cursor_position_with_single_byte_graphemes() {
-    let text = "never gonna give you up";
-    let mut line_buffer = LineBuffer::with_capacity(25);
-    line_buffer.insert_str(0, text);
+    #[test]
+    fn test_get_cursor_position_with_single_byte_graphemes() {
+        let text = "never gonna give you up";
+        let mut line_buffer = LineBuffer::with_capacity(25);
+        line_buffer.insert_str(0, text);
 
-    assert_eq!(get_cursor_position(&line_buffer), 0);
-    line_buffer.move_forward(1);
-    assert_eq!(get_cursor_position(&line_buffer), 1);
-    line_buffer.move_forward(2);
-    assert_eq!(get_cursor_position(&line_buffer), 3);
-}
+        assert_eq!(get_cursor_position(&line_buffer), 0);
+        line_buffer.move_forward(1);
+        assert_eq!(get_cursor_position(&line_buffer), 1);
+        line_buffer.move_forward(2);
+        assert_eq!(get_cursor_position(&line_buffer), 3);
+    }
 
-#[test]
-fn test_get_cursor_position_with_three_byte_graphemes() {
-    let text = "绝对不会放弃你";
-    let mut line_buffer = LineBuffer::with_capacity(25);
-    line_buffer.insert_str(0, text);
+    #[test]
+    fn test_get_cursor_position_with_three_byte_graphemes() {
+        let text = "绝对不会放弃你";
+        let mut line_buffer = LineBuffer::with_capacity(25);
+        line_buffer.insert_str(0, text);
 
-    assert_eq!(get_cursor_position(&line_buffer), 0);
-    line_buffer.move_forward(1);
-    assert_eq!(get_cursor_position(&line_buffer), 2);
-    line_buffer.move_forward(2);
-    assert_eq!(get_cursor_position(&line_buffer), 6);
+        assert_eq!(get_cursor_position(&line_buffer), 0);
+        line_buffer.move_forward(1);
+        assert_eq!(get_cursor_position(&line_buffer), 2);
+        line_buffer.move_forward(2);
+        assert_eq!(get_cursor_position(&line_buffer), 6);
+    }
 }

@@ -174,16 +174,21 @@ impl Data {
     }
 }
 
-#[test]
-fn test_username_hash() {
-    assert_eq!(
-        Data {
-            time_sent: Local::now().format("%c").to_string(),
-            author: "human".to_string(),
-            system: false,
-            payload: PayLoad::Message("beep boop".to_string()),
-        }
-        .hash_username(&Palette::Pastel),
-        Rgb(159, 223, 221)
-    );
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_username_hash() {
+        assert_eq!(
+            Data {
+                time_sent: Local::now().format("%c").to_string(),
+                author: "human".to_string(),
+                system: false,
+                payload: PayLoad::Message("beep boop".to_string()),
+            }
+            .hash_username(&Palette::Pastel),
+            Rgb(159, 223, 221)
+        );
+    }
 }
