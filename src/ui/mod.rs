@@ -8,7 +8,7 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::{Span, Spans},
+    text::Spans,
     widgets::{Block, Borders, Cell, Row, Table},
 };
 
@@ -18,7 +18,7 @@ use crate::{
         config::CompleteConfig,
         data::PayLoad,
     },
-    utils::styles,
+    utils::{styles, text::title_spans},
 };
 
 #[derive(Debug, Clone)]
@@ -96,9 +96,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             if app.filters.contaminated(msg) {
                 continue;
             }
-        }
-
-        if scroll_offset > 0 {
+        } else if scroll_offset > 0 {
             scroll_offset -= 1;
 
             continue;
@@ -139,35 +137,26 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let chat_title_format = || -> Spans {
         if config.frontend.title_shown {
-            Spans::from(vec![
-                Span::raw("[ "),
-                Span::styled(
-                    "Time",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(format!(
-                    ": {} ] [ ",
-                    Local::now().format(config.frontend.date_format.as_str())
-                )),
-                Span::styled(
-                    "Channel",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(format!(": {} ]", config.twitch.channel)),
-                Span::raw(" [ "),
-                Span::styled(
-                    "Filters",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(format!(
-                    ": {} ]",
-                    if app.filters.enabled() {
-                        "enabled"
-                    } else {
-                        "disabled"
-                    }
-                )),
-            ])
+            title_spans(
+                vec![
+                    vec![
+                        "Time",
+                        &Local::now()
+                            .format(config.frontend.date_format.as_str())
+                            .to_string(),
+                    ],
+                    vec!["Channel", config.twitch.channel.as_str()],
+                    vec![
+                        "Filters",
+                        if app.filters.enabled() {
+                            "enabled"
+                        } else {
+                            "disabled"
+                        },
+                    ],
+                ],
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            )
         } else {
             Spans::default()
         }
