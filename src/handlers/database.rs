@@ -5,12 +5,15 @@ use lazy_static::lazy_static;
 use rusqlite::{params, Connection as SqliteConnection};
 
 lazy_static! {
-    pub static ref TABLES: Vec<&'static str> = vec!["filters", "channels", "mentions"];
+    pub static ref TABLES: Vec<&'static str> = vec!["channels", "mentions"];
 }
 
 #[derive(Debug)]
 pub struct Database {
+    /// The connection to the sqlite database, held only for the constructor.
+    /// No public functions should be able to access this attribute.
     conn: SqliteConnection,
+    /// The tables pulled from the database, defined from the `TABLES` static string vector.
     tables: HashMap<String, DatabaseTable>,
 }
 
@@ -29,7 +32,7 @@ impl Database {
                 format!(
                     "CREATE TABLE IF NOT EXISTS {} (
                     id INTEGER PRIMARY KEY,
-                    content TEXT NOT NULL,
+                    content TEXT NOT NULL
                 )",
                     table
                 )
