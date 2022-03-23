@@ -9,7 +9,10 @@ use rusqlite::Connection as SqliteConnection;
 use rustyline::line_buffer::LineBuffer;
 use tui::layout::Constraint;
 
-use crate::handlers::{config::CompleteConfig, data::Data, database::Database};
+use crate::{
+    handlers::{config::CompleteConfig, data::Data, database::Database, filters::Filters},
+    utils::pathing::config_path,
+};
 
 pub enum State {
     Normal,
@@ -27,21 +30,23 @@ pub enum BufferName {
 }
 
 pub struct App {
-    /// History of recorded messages (time, username, message)
+    /// History of recorded messages (time, username, message).
     pub messages: VecDeque<Data>,
     /// Connection to the sqlite3 database.
     pub database: Database,
-    /// Postgres database client
+    /// Filtering out messages, no usernames since Twitch does that themselves.
+    pub filters: Filters,
+    /// Which window the terminal is currently showing.
     pub state: State,
-    /// Which input buffer is currently selected
+    /// Which input buffer is currently selected.
     pub selected_buffer: BufferName,
-    /// Current value of the input box
+    /// Current value of the input box.
     pub input_buffers: HashMap<BufferName, LineBuffer>,
-    /// The constraints that are set on the table
+    /// The constraints that are set on the table.
     pub table_constraints: Option<Vec<Constraint>>,
-    /// The titles of the columns within the table of the terminal
+    /// The titles of the columns within the table of the terminal.
     pub column_titles: Option<Vec<String>>,
-    /// Scrolling offset for windows
+    /// Scrolling offset for windows.
     pub scroll_offset: usize,
 }
 
@@ -56,6 +61,7 @@ impl App {
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
             database: Database::new(database_connection),
+            filters: Filters::new(config_path("filters.txt"), config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
             input_buffers: input_buffers_map,

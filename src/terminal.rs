@@ -191,7 +191,7 @@ pub async fn ui_driver(
                                 let input_message =
                                     app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
-                                if !input_message.is_empty() {
+                                if !input_message.is_empty() && !app.filters.contaminated(input_message.to_string()) {
                                     app.messages.push_front(data_builder.user(
                                         config.twitch.username.to_string(),
                                         input_message.to_string(),

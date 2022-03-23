@@ -16,6 +16,7 @@ use crate::{
     handlers::{
         app::{App, BufferName, State},
         config::CompleteConfig,
+        data::PayLoad,
     },
     utils::styles,
 };
@@ -91,7 +92,13 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let mut scroll_offset = app.scroll_offset;
 
     'outer: for data in app.messages.iter() {
-        if scroll_offset > 0 && total_row_height > general_chunk_height {
+        if let PayLoad::Message(msg) = data.payload.clone() {
+            if app.filters.contaminated(msg) {
+                continue;
+            }
+        }
+
+        if scroll_offset > 0 {
             scroll_offset -= 1;
 
             continue;
@@ -147,6 +154,19 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                     Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                 ),
                 Span::raw(format!(": {} ]", config.twitch.channel)),
+                Span::raw(" [ "),
+                Span::styled(
+                    "Filters",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(format!(
+                    ": {} ]",
+                    if app.filters.enabled() {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    }
+                )),
             ])
         } else {
             Spans::default()
