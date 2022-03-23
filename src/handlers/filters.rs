@@ -47,6 +47,10 @@ impl Filters {
         self.enabled = !self.enabled;
     }
 
+    pub fn reversed(&self) -> bool {
+        self.reversed
+    }
+
     pub fn reverse(&mut self) {
         self.reversed = !self.reversed;
     }

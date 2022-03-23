@@ -148,11 +148,20 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                     vec!["Channel", config.twitch.channel.as_str()],
                     vec![
                         "Filters",
-                        if app.filters.enabled() {
-                            "enabled"
-                        } else {
-                            "disabled"
-                        },
+                        format!(
+                            "{} / {}",
+                            if app.filters.enabled() {
+                                "enabled"
+                            } else {
+                                "disabled"
+                            },
+                            if app.filters.reversed() {
+                                "reversed"
+                            } else {
+                                "static"
+                            }
+                        )
+                        .as_str(),
                     ],
                 ],
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),

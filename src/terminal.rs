@@ -254,6 +254,12 @@ pub async fn ui_driver(
                         app.state = State::MessageSearch;
                         app.selected_buffer = BufferName::MessageHighlighter;
                     }
+                    Key::Ctrl('t') => {
+                        app.filters.toggle();
+                    }
+                    Key::Ctrl('r') => {
+                        app.filters.reverse();
+                    }
                     Key::Char('i') | Key::Insert => {
                         app.state = State::MessageInput;
                         app.selected_buffer = BufferName::Chat;
