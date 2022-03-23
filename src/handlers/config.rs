@@ -1,4 +1,8 @@
-use std::str::FromStr;
+use std::{
+    fs::{copy, create_dir_all, read_to_string},
+    path::Path,
+    str::FromStr,
+};
 
 use anyhow::{bail, Error, Result};
 use serde::Deserialize;
@@ -99,14 +103,23 @@ pub struct DatabaseConfig {
 
 impl CompleteConfig {
     pub fn new() -> Result<Self, Error> {
-        if let Ok(config_contents) = std::fs::read_to_string(config_path("config.toml")) {
+        let path_str = config_path("config.toml");
+
+        let p = Path::new(&path_str);
+
+        if !p.exists() {
+            create_dir_all(p.parent().unwrap()).unwrap();
+
+            copy("default-config.toml", Path::new(&path_str)).unwrap();
+
+            bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
+        } else if let Ok(config_contents) = read_to_string(&p) {
             let config: CompleteConfig = toml::from_str(config_contents.as_str()).unwrap();
 
             Ok(config)
         } else {
             bail!(
-                "Configuration not found. Create a config file at '{}', and see '{}' for an example configuration.",
-                config_path("config.toml"),
+                "Configuration could not be read correctly. See the following link for the example config: {}",
                 format!("{}/blob/main/default-config.toml", env!("CARGO_PKG_REPOSITORY"))
             )
         }
