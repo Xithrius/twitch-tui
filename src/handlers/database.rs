@@ -60,16 +60,14 @@ impl Database {
     }
 
     pub fn add(&mut self, table: String, item: String) -> Result<(), Error> {
-        if TABLES.contains(&table.as_str()) {
+        if !TABLES.contains(&table.as_str()) {
             bail!("Table '{table}' does not exist within static vector tables.");
         }
 
         if let Occupied(mut m) = self.tables.entry(table.to_string()) {
             let content = &mut m.get_mut().content;
 
-            if content.contains(&item) {
-                bail!("Table '{table}' already contains item '{item}'.");
-            } else {
+            if !content.contains(&item) {
                 content.push(item.clone());
 
                 self.conn
@@ -78,12 +76,20 @@ impl Database {
                         params![item],
                     )
                     .unwrap();
-
-                Ok(())
             }
+
+            Ok(())
         } else {
             bail!("Table '{table}' for some reason doesn't exist within database tables.");
         }
+    }
+
+    pub fn get_table_content(&self, table: String) -> Result<Vec<String>, Error> {
+        if !TABLES.contains(&table.as_str()) {
+            bail!("Table '{table}' does not exist within static vector tables.");
+        }
+
+        Ok(self.tables.get(&table).unwrap().content.clone())
     }
 }
 

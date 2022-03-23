@@ -2,6 +2,7 @@ use tui::{
     backend::Backend,
     style::{Color, Style},
     terminal::Frame,
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
 };
 
@@ -14,24 +15,45 @@ use crate::{
 pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals: Verticals) {
     let input_buffer = app.current_buffer();
 
-    if input_buffer.starts_with('/') {
-        let suggested_commands = COMMANDS
-            .iter()
-            .map(|f| format!("/{}", f))
-            .filter(|f| f.starts_with(input_buffer.as_str()))
-            .collect::<Vec<String>>()
-            .join("\n");
+    let suggestion = if let Some(start_character) = input_buffer.chars().next() {
+        let first_result = |choices: Vec<String>, choice: String| -> String {
+            if let Some(result) = choices
+                .iter()
+                .filter(|f| f.starts_with(&choice[1..]))
+                .collect::<Vec<&String>>()
+                .first()
+            {
+                result.to_string()
+            } else {
+                "".to_string()
+            }
+        };
 
-        let suggestions_paragraph = Paragraph::new(suggested_commands)
-            .style(Style::default().fg(Color::Blue))
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("[ Command suggestions ]"),
-            );
-
-        frame.render_widget(suggestions_paragraph, verticals.chunks[1]);
-    }
+        match start_character {
+            '/' => format!(
+                "/{}",
+                first_result(
+                    COMMANDS
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect::<Vec<String>>(),
+                    input_buffer.to_string(),
+                )
+            ),
+            '@' => format!(
+                "@{}",
+                first_result(
+                    app.database
+                        .get_table_content("mentions".to_string())
+                        .unwrap(),
+                    input_buffer.to_string(),
+                )
+            ),
+            _ => "".to_string(),
+        }
+    } else {
+        "".to_string()
+    };
 
     let cursor_pos = get_cursor_position(input_buffer);
     let input_rect = verticals.chunks[verticals.constraints.len() - 1];
@@ -42,17 +64,26 @@ pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals:
         input_rect.y + 1,
     );
 
-    let paragraph = Paragraph::new(input_buffer.as_str())
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("[ Input ]")
-                .border_style(Style::default().fg(Color::Yellow)),
-        )
-        .scroll((
-            0,
-            ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
-        ));
+    let input_paragraph = Paragraph::new(Spans::from(vec![
+        Span::raw(input_buffer.as_str()),
+        Span::styled(
+            &suggestion[input_buffer.as_str().len()..],
+            Style::default().fg(Color::LightYellow),
+        ),
+    ]))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("[ Input ]")
+            .border_style(Style::default().fg(Color::Yellow)),
+    )
+    .scroll((
+        0,
+        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
+    ));
 
-    frame.render_widget(paragraph, verticals.chunks[verticals.constraints.len() - 1]);
+    frame.render_widget(
+        input_paragraph,
+        verticals.chunks[verticals.constraints.len() - 1],
+    );
 }

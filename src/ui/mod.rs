@@ -41,19 +41,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
 
-    // A little chunk to show you different commands when in insert mode
-    if let State::MessageInput = app.state {
-        if app
-            .input_buffers
-            .get(&app.selected_buffer)
-            .unwrap()
-            .as_str()
-            .starts_with('/')
-        {
-            vertical_chunk_constraints.push(Constraint::Length(9));
-        }
-    }
-
     // Allowing the input box to exist in different modes
     if let State::MessageInput | State::MessageSearch = app.state {
         vertical_chunk_constraints.extend(vec![Constraint::Length(3)]);
