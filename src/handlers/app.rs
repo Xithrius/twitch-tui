@@ -40,6 +40,8 @@ pub struct App {
     pub state: State,
     /// Which input buffer is currently selected.
     pub selected_buffer: BufferName,
+    /// The current suggestion for a specific buffer.
+    pub buffer_suggestion: String,
     /// Current value of the input box.
     pub input_buffers: HashMap<BufferName, LineBuffer>,
     /// The constraints that are set on the table.
@@ -64,6 +66,7 @@ impl App {
             filters: Filters::new(config_path("filters.txt"), config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
+            buffer_suggestion: "".to_string(),
             input_buffers: input_buffers_map,
             table_constraints: None,
             column_titles: None,

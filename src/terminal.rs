@@ -186,6 +186,16 @@ pub async fn ui_driver(
                         Key::Backspace | Key::Delete => {
                             input_buffer.backspace(1);
                         }
+                        Key::Tab => {
+                            let suggestion = app.buffer_suggestion.as_str();
+
+                            if !suggestion.is_empty() {
+                                app.input_buffers
+                                    .get_mut(&app.selected_buffer)
+                                    .unwrap()
+                                    .update(suggestion, suggestion.len());
+                            }
+                        }
                         Key::Enter => match app.selected_buffer {
                             BufferName::Chat => {
                                 let input_message =

@@ -19,7 +19,7 @@ pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals:
         let first_result = |choices: Vec<String>, choice: String| -> String {
             if let Some(result) = choices
                 .iter()
-                .filter(|f| f.starts_with(&choice[1..]))
+                .filter(|s| s.starts_with(&choice[1..]))
                 .collect::<Vec<&String>>()
                 .first()
             {
@@ -64,10 +64,14 @@ pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals:
         input_rect.y + 1,
     );
 
-    let input_paragraph = Paragraph::new(Spans::from(vec![
+    let paragraph = Paragraph::new(Spans::from(vec![
         Span::raw(input_buffer.as_str()),
         Span::styled(
-            &suggestion[input_buffer.as_str().len()..],
+            if suggestion.len() > input_buffer.as_str().len() {
+                &suggestion[input_buffer.as_str().len()..]
+            } else {
+                ""
+            },
             Style::default().fg(Color::LightYellow),
         ),
     ]))
@@ -83,7 +87,9 @@ pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals:
     ));
 
     frame.render_widget(
-        input_paragraph,
+        paragraph,
         verticals.chunks[verticals.constraints.len() - 1],
     );
+
+    app.buffer_suggestion = suggestion;
 }
