@@ -102,8 +102,8 @@
 1. Install Rustup from the [rust-lang website](https://www.rust-lang.org/learn/get-started).
 2. Install the program through `cargo install twitch-tui`. You can use this same command to update the program in the future. To install a specific version, use a version number from the [releases page](https://github.com/Xithrius/twitch-tui/releases) and the `--version` flag (ex. `cargo install twitch-tui --version "2.0.0-alpha.1"`).
 3. Run the program with `twt` in the terminal to generate the default configuration at the paths below. If the directories don't exist, they will be created for you.
-  - Linux/MacOS: `~/.config/twt/config.toml`
-  - Windows: `%appdata%\twt\config.toml`
+   - Linux/MacOS: `~/.config/twt/config.toml`
+   - Windows: `%appdata%\twt\config.toml`
 4. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and place the value in the `token` variable in the `config.toml` that was previously generated.
 5. Once you're done modifying the config file, run `twt` again, and enjoy! Run `twt --help` if you're looking for more options/arguments.
 
