@@ -32,6 +32,12 @@
     <td> Ctrl + f
     <td> Enter message search mode, which highlights messages in the main window which match the query.
   <tr>
+    <td> Ctrl + t
+    <td> Toggle the filter.
+  <tr>
+    <td> Ctrl + r
+    <td> Reverse the filter.
+  <tr>
     <td> Esc
     <td> Exits out of layered windows, such as going from the help window to normal view.
   </table>

@@ -22,6 +22,8 @@ lazy_static! {
         vec!["Ctrl + k", "Remove everything after the cursor"],
         vec!["Ctrl + w", "Remove the previous word"],
         vec!["Ctrl + d", "Remove item to the right"],
+        vec!["Ctrl + t", "Toggle the filter"],
+        vec!["Ctrl + r", "Reverse the filter"],
         vec!["Tab", "Fill in suggestion, if available"],
         vec!["Enter", "Confirm the input text to go through"],
     ];
