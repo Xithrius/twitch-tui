@@ -2,7 +2,8 @@
 name = "twitch-tui"
 version = "2.0.0-alpha.2"
 authors = ["Xithrius <xithrius@gmail.com>"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.58.1"
 description = "Twitch chat in the terminal."
 documentation = "https://github.com/Xithrius/twitch-tui"
 homepage = "https://github.com/Xithrius/twitch-tui"
@@ -29,6 +30,11 @@ rustyline = "9.1.2"
 lazy_static = "1.4.0"
 enum-iterator = "0.7.0"
 fuzzy-matcher = "0.3.7"
+rusqlite = "0.27.0"
+regex = "1.5.4"
+
+[target.'cfg(windows)'.dependencies]
+rusqlite = { version = "0.27.0", features = ["winsqlite3"] }
 
 [[bin]]
 bench = false

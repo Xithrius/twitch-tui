@@ -1,13 +1,11 @@
 use chrono::offset::Local;
-use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use lazy_static::lazy_static;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
     widgets::{Cell, Row},
 };
-
-use fuzzy_matcher::FuzzyMatcher;
-use lazy_static::lazy_static;
 
 use crate::{
     handlers::config::{FrontendConfig, Palette},
@@ -178,24 +176,18 @@ impl Data {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Local;
-    use tui::style::Color::Rgb;
-
     use super::*;
-
-    fn create_data() -> Data {
-        Data {
-            time_sent: Local::now().format("%c").to_string(),
-            author: "human".to_string(),
-            system: false,
-            payload: PayLoad::Message("beep boop".to_string()),
-        }
-    }
 
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            create_data().hash_username(&Palette::Pastel),
+            Data {
+                time_sent: Local::now().format("%c").to_string(),
+                author: "human".to_string(),
+                system: false,
+                payload: PayLoad::Message("beep boop".to_string()),
+            }
+            .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );
     }

@@ -1,11 +1,15 @@
-use std::str::FromStr;
+use std::{
+    fs::{copy, create_dir_all, read_to_string},
+    path::Path,
+    str::FromStr,
+};
 
 use anyhow::{bail, Error, Result};
 use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Palette {
     Pastel,
@@ -33,17 +37,21 @@ impl Default for Palette {
     }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct CompleteConfig {
     /// Connecting to Twitch.
     pub twitch: TwitchConfig,
     /// Internal functionality.
     pub terminal: TerminalConfig,
+    /// If anything should be recorded for future use.
+    pub database: DatabaseConfig,
+    /// Filtering out messages.
+    pub filters: FiltersConfig,
     /// How everything looks to the user.
     pub frontend: FrontendConfig,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TwitchConfig {
     /// The username that this user has on Twitch.
     pub username: String,
@@ -55,7 +63,7 @@ pub struct TwitchConfig {
     pub token: String,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TerminalConfig {
     /// The delay between updates, in milliseconds.
     pub tick_delay: u64,
@@ -63,7 +71,23 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Debug, Clone)]
+pub struct DatabaseConfig {
+    /// If previous channels switched to should be tracked.
+    pub channels: bool,
+    /// If previous username mentions should be tracked.
+    pub mentions: bool,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct FiltersConfig {
+    /// If filters should be enabled at all.
+    pub enabled: bool,
+    /// If the regex filters should be reversed
+    pub reversed: bool,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct FrontendConfig {
     /// If the time and date is to be shown.
     pub date_shown: bool,
@@ -76,24 +100,33 @@ pub struct FrontendConfig {
     /// The color palette.
     #[serde(default)]
     pub palette: Palette,
-    /// Show Title with time and channel
+    /// Show Title with time and channel.
     pub title_shown: bool,
-    /// Show padding around chat frame
+    /// Show padding around chat frame.
     pub padding: bool,
-    /// Show twitch badges
+    /// Show twitch badges next to usernames.
     pub badges: bool,
 }
 
 impl CompleteConfig {
     pub fn new() -> Result<Self, Error> {
-        if let Ok(config_contents) = std::fs::read_to_string(config_path()) {
+        let path_str = config_path("config.toml");
+
+        let p = Path::new(&path_str);
+
+        if !p.exists() {
+            create_dir_all(p.parent().unwrap()).unwrap();
+
+            copy("default-config.toml", Path::new(&path_str)).unwrap();
+
+            bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
+        } else if let Ok(config_contents) = read_to_string(&p) {
             let config: CompleteConfig = toml::from_str(config_contents.as_str()).unwrap();
 
             Ok(config)
         } else {
             bail!(
-                "Configuration not found. Create a config file at '{}', and see '{}' for an example configuration.",
-                config_path(),
+                "Configuration could not be read correctly. See the following link for the example config: {}",
                 format!("{}/blob/main/default-config.toml", env!("CARGO_PKG_REPOSITORY"))
             )
         }

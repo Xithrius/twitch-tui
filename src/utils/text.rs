@@ -5,6 +5,11 @@ use textwrap::core::display_width;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use tui::{
+    style::Style,
+    text::{Span, Spans},
+};
+
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     if maximum_length < 1 {
         panic!("Parameter of 'maximum_length' cannot be below 1.");
@@ -80,10 +85,25 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
         .sum()
 }
 
+pub fn title_spans<'a>(contents: Vec<Vec<&str>>, style: Style) -> Spans<'a> {
+    let mut complete = Vec::new();
+
+    for (i, item) in contents.iter().enumerate() {
+        complete.extend(vec![
+            Span::raw(format!("{}[ ", if i != 0 { " " } else { "" })),
+            Span::styled(item[0].to_string(), style),
+            Span::raw(format!(": {} ]", item[1])),
+        ]);
+    }
+
+    Spans::from(complete)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use tui::style::{Color, Modifier};
 
+    use super::*;
     #[test]
     #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
     fn test_text_align_maximum_length() {
@@ -181,5 +201,15 @@ mod tests {
         assert_eq!(get_cursor_position(&line_buffer), 2);
         line_buffer.move_forward(2);
         assert_eq!(get_cursor_position(&line_buffer), 6);
+    }
+
+    #[test]
+    fn test_2_dimensional_vector_to_spans() {
+        let s = title_spans(
+            vec![vec!["Time", "Some time"]],
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        );
+
+        assert_eq!(s.width(), "[ Time: Some time ]".len());
     }
 }

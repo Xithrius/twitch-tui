@@ -186,12 +186,24 @@ pub async fn ui_driver(
                         Key::Backspace | Key::Delete => {
                             input_buffer.backspace(1);
                         }
+                        Key::Tab => {
+                            let suggestion = app.buffer_suggestion.as_str();
+
+                            if !suggestion.is_empty() {
+                                app.input_buffers
+                                    .get_mut(&app.selected_buffer)
+                                    .unwrap()
+                                    .update(suggestion, suggestion.len());
+                            }
+                        }
                         Key::Enter => match app.selected_buffer {
                             BufferName::Chat => {
                                 let input_message =
                                     app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
-                                if !input_message.is_empty() {
+                                if !input_message.is_empty()
+                                    && !app.filters.contaminated(input_message.to_string())
+                                {
                                     app.messages.push_front(data_builder.user(
                                         config.twitch.username.to_string(),
                                         input_message.to_string(),
@@ -200,6 +212,12 @@ pub async fn ui_driver(
                                     tx.send(Action::Privmsg(input_message.to_string()))
                                         .await
                                         .unwrap();
+
+                                    if let Some(msg) = input_message.strip_prefix('@') {
+                                        app.database
+                                            .add("mentions".to_string(), msg.to_string())
+                                            .unwrap();
+                                    }
                                 }
 
                                 input_message.update("", 0);
@@ -216,6 +234,10 @@ pub async fn ui_driver(
                                         .unwrap();
 
                                     config.twitch.channel = input_message.to_string();
+
+                                    app.database
+                                        .add("channels".to_string(), input_message.to_string())
+                                        .unwrap();
                                 }
 
                                 input_message.update("", 0);
@@ -247,6 +269,12 @@ pub async fn ui_driver(
                     Key::Ctrl('f') => {
                         app.state = State::MessageSearch;
                         app.selected_buffer = BufferName::MessageHighlighter;
+                    }
+                    Key::Ctrl('t') => {
+                        app.filters.toggle();
+                    }
+                    Key::Ctrl('r') => {
+                        app.filters.reverse();
                     }
                     Key::Char('i') | Key::Insert => {
                         app.state = State::MessageInput;

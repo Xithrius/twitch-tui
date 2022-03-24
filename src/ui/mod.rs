@@ -8,16 +8,17 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::{Span, Spans},
+    text::Spans,
     widgets::{Block, Borders, Cell, Row, Table},
 };
 
 use crate::{
     handlers::{
-        app::{App, BufferName::MessageHighlighter, State},
+        app::{App, BufferName, State},
         config::CompleteConfig,
+        data::PayLoad,
     },
-    utils::styles,
+    utils::{styles, text::title_spans},
 };
 
 #[derive(Debug, Clone)]
@@ -39,19 +40,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let table_widths = app.table_constraints.as_ref().unwrap();
 
     let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
-
-    // A little chunk to show you different commands when in insert mode
-    if let State::MessageInput = app.state {
-        if app
-            .input_buffers
-            .get(&app.selected_buffer)
-            .unwrap()
-            .as_str()
-            .starts_with('/')
-        {
-            vertical_chunk_constraints.push(Constraint::Length(9));
-        }
-    }
 
     // Allowing the input box to exist in different modes
     if let State::MessageInput | State::MessageSearch = app.state {
@@ -91,7 +79,11 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let mut scroll_offset = app.scroll_offset;
 
     'outer: for data in app.messages.iter() {
-        if scroll_offset > 0 {
+        if let PayLoad::Message(msg) = data.payload.clone() {
+            if app.filters.contaminated(msg) {
+                continue;
+            }
+        } else if scroll_offset > 0 {
             scroll_offset -= 1;
 
             continue;
@@ -104,7 +96,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 &config.frontend,
                 &message_chunk_width,
                 match app.selected_buffer {
-                    MessageHighlighter => Some(buffer.to_string()),
+                    BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
                 },
             )
@@ -132,22 +124,35 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let chat_title_format = || -> Spans {
         if config.frontend.title_shown {
-            Spans::from(vec![
-                Span::raw("[ "),
-                Span::styled(
-                    "Time",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(format!(
-                    ": {} ] [ ",
-                    Local::now().format(config.frontend.date_format.as_str())
-                )),
-                Span::styled(
-                    "Channel",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(format!(": {} ]", config.twitch.channel)),
-            ])
+            title_spans(
+                vec![
+                    vec![
+                        "Time",
+                        &Local::now()
+                            .format(config.frontend.date_format.as_str())
+                            .to_string(),
+                    ],
+                    vec!["Channel", config.twitch.channel.as_str()],
+                    vec![
+                        "Filters",
+                        format!(
+                            "{} / {}",
+                            if app.filters.enabled() {
+                                "enabled"
+                            } else {
+                                "disabled"
+                            },
+                            if app.filters.reversed() {
+                                "reversed"
+                            } else {
+                                "static"
+                            }
+                        )
+                        .as_str(),
+                    ],
+                ],
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            )
         } else {
             Spans::default()
         }
