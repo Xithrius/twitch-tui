@@ -12,7 +12,12 @@ use crate::{
     utils::text::get_cursor_position,
 };
 
-pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals: Verticals) {
+pub fn message_input<T: Backend>(
+    frame: &mut Frame<T>,
+    app: &mut App,
+    verticals: Verticals,
+    mention_suggestions: bool,
+) {
     let input_buffer = app.current_buffer();
 
     let suggestion = if let Some(start_character) = input_buffer.chars().next() {
@@ -40,15 +45,21 @@ pub fn message_input<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals:
                     input_buffer.to_string(),
                 )
             ),
-            '@' => format!(
-                "@{}",
-                first_result(
-                    app.database
-                        .get_table_content("mentions".to_string())
-                        .unwrap(),
-                    input_buffer.to_string(),
-                )
-            ),
+            '@' => {
+                if mention_suggestions {
+                    format!(
+                        "@{}",
+                        first_result(
+                            app.database
+                                .get_table_content("mentions".to_string())
+                                .unwrap(),
+                            input_buffer.to_string(),
+                        )
+                    )
+                } else {
+                    "".to_string()
+                }
+            }
             _ => "".to_string(),
         }
     } else {

@@ -12,21 +12,25 @@ use crate::{
     utils::text::get_cursor_position,
 };
 
-pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
+pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App, channel_suggestions: bool) {
     let input_rect = centered_popup(WindowType::Input(frame.size().height), frame.size());
 
     let input_buffer = app.current_buffer();
 
-    let suggestion = if let Some(result) = app
-        .database
-        .get_table_content("channels".to_string())
-        .unwrap()
-        .iter()
-        .filter(|s| s.starts_with(input_buffer.as_str()))
-        .collect::<Vec<&String>>()
-        .first()
-    {
-        result.to_string()
+    let suggestion = if channel_suggestions {
+        if let Some(result) = app
+            .database
+            .get_table_content("channels".to_string())
+            .unwrap()
+            .iter()
+            .filter(|s| s.starts_with(input_buffer.as_str()))
+            .collect::<Vec<&String>>()
+            .first()
+        {
+            result.to_string()
+        } else {
+            "".to_string()
+        }
     } else {
         "".to_string()
     };

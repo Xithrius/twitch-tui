@@ -175,12 +175,12 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     match app.state {
         // States of the application that require a chunk of the main window
-        State::MessageInput => chunks::chatting::message_input(frame, app, verticals),
+        State::MessageInput => chunks::chatting::message_input(frame, app, verticals, config.database.mentions),
         State::MessageSearch => chunks::message_search::search_messages(frame, app, verticals),
 
         // States that require popups
         State::Help => popups::help::show_keybinds(frame),
-        State::ChannelSwitch => popups::channels::switch_channels(frame, app),
+        State::ChannelSwitch => popups::channels::switch_channels(frame, app, config.database.channels),
         _ => {}
     }
 }
