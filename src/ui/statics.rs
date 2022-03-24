@@ -22,6 +22,7 @@ lazy_static! {
         vec!["Ctrl + k", "Remove everything after the cursor"],
         vec!["Ctrl + w", "Remove the previous word"],
         vec!["Ctrl + d", "Remove item to the right"],
+        vec!["Tab", "Fill in suggestion, if available"],
         vec!["Enter", "Confirm the input text to go through"],
     ];
     pub static ref COMMANDS: Vec<&'static str> = vec![

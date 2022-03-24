@@ -88,6 +88,9 @@
     <td> Ctrl + d
     <td> Remove character to the right.
   <tr>
+    <td> Tab
+    <td> Fill in suggestion, if available.
+  <tr>
     <td> Enter
     <td> Confirm the current text to go through (doesn't do anything in message search mode).
   </table>
@@ -97,12 +100,12 @@
 ### Setup
 
 1. Install Rustup from the [rust-lang website](https://www.rust-lang.org/learn/get-started).
-2. Copy [`default-config.toml`](https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml) to a `config.toml` file. Based on your OS, place the config file in the directories listed below. Any command line options/arguments taken from `twt --help` (when the binary is eventually installed) will overwrite the corresponding value in the config file.
-   - Windows: `%appdata%\twt\config.toml`
-   - Linux/MacOs: `~/.config/twt/config.toml`
-3. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and place the value in the `token` variable in the `config.toml` file that you created.
-4. Run `cargo install twitch-tui` to install the binary. Run the same command in the future to acquire updates. Installing a specific version of this crate requires the `--version` flag and a version from the [releases page](https://github.com/Xithrius/twitch-tui/releases).
-5. Running `twt` in the terminal will launch the application. For CLI options/arguments, run `twt --help`.
+2. Install the program through `cargo install twitch-tui`. You can use this same command to update the program in the future. To install a specific version, use a version number from the [releases page](https://github.com/Xithrius/twitch-tui/releases) and the `--version` flag (ex. `cargo install twitch-tui --version "2.0.0-alpha.1"`).
+3. Run the program with `twt` in the terminal to generate the default configuration at the paths below. If the directories don't exist, they will be created for you.
+  - Linux/MacOS: `~/.config/twt/config.toml`
+  - Windows: `%appdata%\twt\config.toml`
+4. Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and place the value in the `token` variable in the `config.toml` that was previously generated.
+5. Once you're done modifying the config file, run `twt` again, and enjoy! Run `twt --help` if you're looking for more options/arguments.
 
 If you have any problems, do not hesitate to [submit an issue](https://github.com/Xithrius/twitch-tui/issues/new/choose).
 
