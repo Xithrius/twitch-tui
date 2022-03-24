@@ -5,7 +5,7 @@ username = ""
 channel = ""
 # The IRC channel you'd like to connect to.
 server = "irc.chat.twitch.tv"
-# OAuth token that authenticates you into Twitch. I suggest you don't share this password.
+# OAuth token that authenticates you into Twitch. Acquired through https://twitchapps.com/tmi/.
 token = ""
 
 [terminal]
@@ -23,13 +23,13 @@ mentions = true
 [filters]
 # If filters should be enabled at all.
 enabled = true
-# If the regex filters should be reversed
+# If the regex filters should be reversed.
 reversed = true
 
 [frontend]
 # If the time and date is to be shown.
 date_shown = true
-# The format of the date and time outputs, https://strftime.org/ has formats.
+# The format of the date and time outputs. Formats can be found at https://strftime.org/.
 date_format = "%a %b %e %T %Y"
 # The longest a username can be.
 maximum_username_length = 26

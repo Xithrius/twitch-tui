@@ -53,21 +53,21 @@ pub struct CompleteConfig {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct TwitchConfig {
-    /// The username that this user has on Twitch.
+    /// The current user's name.
     pub username: String,
     /// The streamer's channel name.
     pub channel: String,
-    /// The IRC channel that they'd like to connect to.
+    /// The IRC channel to connect to.
     pub server: String,
-    /// The OAuth token.
+    /// The authentication token for the IRC.
     pub token: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct TerminalConfig {
-    /// The delay between updates, in milliseconds.
+    /// The delay in milliseconds between terminal updates.
     pub tick_delay: u64,
-    /// The maximum amount of messages to be stored.
+    /// The maximum amount of messages before truncation.
     pub maximum_messages: usize,
 }
 
@@ -83,7 +83,7 @@ pub struct DatabaseConfig {
 pub struct FiltersConfig {
     /// If filters should be enabled at all.
     pub enabled: bool,
-    /// If the regex filters should be reversed
+    /// If the regex filters should be reversed.
     pub reversed: bool,
 }
 
