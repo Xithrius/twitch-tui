@@ -9,18 +9,15 @@ on:
 
 jobs:
   status_embed:
-    # We need to send a status embed whenever the workflow
-    # sequence we're running terminates. There are a number
-    # of situations in which that happens:
-    #
-    # 1. We reach the end of the Deploy workflow, without
-    #    it being skipped.
-    #
-    # 2. A `pull_request` triggered a CI workflow,
-    #    as the sequence always terminates with one run.
-    #
-    # 3. If any workflow ends in failure or was cancelled.
+    # We send the embed in the following situations:
+    # - Always after the `CI` workflow, as it runs at the
+    #   end of our workflow sequence regardless of status.
+    # - Always for the `pull_request` event, as it only
+    #   runs one workflow.
+    # - Always run for non-success workflows, as they
+    #   terminate the workflow sequence.
     if: >-
+      (github.event.workflow_run.name == 'CI' && github.event.workflow_run.conclusion != 'skipped') ||
       github.event.workflow_run.event == 'pull_request' ||
       github.event.workflow_run.conclusion == 'failure' ||
       github.event.workflow_run.conclusion == 'cancelled'
