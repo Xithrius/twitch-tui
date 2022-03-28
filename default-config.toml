@@ -22,9 +22,9 @@ mentions = true
 
 [filters]
 # If filters should be enabled at all.
-enabled = true
+enabled = false
 # If the regex filters should be reversed.
-reversed = true
+reversed = false
 
 [frontend]
 # If the time and date is to be shown.
