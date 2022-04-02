@@ -40,7 +40,34 @@ jobs:
       RA_TARGET: ${{ matrix.target }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          profile: minimal
+          override: true
+
+      - name: Install Rust library source
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          profile: minimal
+          override: true
+          components: rust-src
+
+      - name: Update apt repositories
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update
+
+      - name: Install target toolchain
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get install gcc-aarch64-linux-gnu
 
       - name: Build
         run: cargo build --verbose --target ${{ matrix.target }}
@@ -56,7 +83,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Install Rust
         run: |
