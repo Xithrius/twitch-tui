@@ -36,9 +36,12 @@ regex = "1.5.5"
 [target.'cfg(windows)'.dependencies]
 rusqlite = { version = "0.27.0", features = [ "winsqlite3"] }
 
-[target.'cfg(unix)'.dependencies]
+[target.aarch64-unknown-linux-gnu.dependencies]
 openssl = { version = "0.10.38", features = [ "vendored" ] }
 curl = { version = "0.4.43", features = [ "static-curl", "static-ssl" ] }
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
 
 [[bin]]
 bench = false
