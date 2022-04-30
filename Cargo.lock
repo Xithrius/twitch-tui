@@ -52,6 +52,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
+name = "byteorder"
+version = "1.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
+
+[[package]]
 name = "bytes"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -455,6 +461,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54614a3312934d066701a80f20f15fa3b56d67ac7722b39eea5b4c9dd1d66c94"
 dependencies = [
  "thread_local",
+]
+
+[[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
 ]
 
 [[package]]
@@ -1104,6 +1119,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9def91fd1e018fe007022791f865d0ccc9b3a0d5001e01aabb8b40e46000afb5"
 
 [[package]]
+name = "slog"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8347046d4ebd943127157b94d63abb990fcf729dc4e9978927fdf4ac3c998d06"
+
+[[package]]
 name = "smallvec"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1298,6 +1319,18 @@ dependencies = [
 
 [[package]]
 name = "tui"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23ed0a32c88b039b73f1b6c5acbd0554bfa5b6be94467375fd947c4de3a02271"
+dependencies = [
+ "bitflags",
+ "cassowary",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
+name = "tui"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96fe69244ec2af261bced1d9046a6fee6c8c2a6b0228e59e5ba39bc8ba4ed729"
@@ -1307,6 +1340,21 @@ dependencies = [
  "crossterm",
  "unicode-segmentation",
  "unicode-width",
+]
+
+[[package]]
+name = "tui-logger"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66278ef876c1336aca32cc590598563026dc3caf4cb73a20d47a3d499b913bbb"
+dependencies = [
+ "chrono",
+ "fxhash",
+ "lazy_static",
+ "log",
+ "parking_lot 0.12.0",
+ "slog",
+ "tui 0.17.0",
 ]
 
 [[package]]
@@ -1329,7 +1377,8 @@ dependencies = [
  "textwrap",
  "tokio",
  "toml",
- "tui",
+ "tui 0.18.0",
+ "tui-logger",
  "unicode-segmentation",
  "unicode-width",
 ]
