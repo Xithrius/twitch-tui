@@ -1,10 +1,11 @@
 # Twitch chat in the terminal
 
-### What it looks like
+[![Build Status](https://github.com/Xithrius/twitch-tui/workflows/CI/badge.svg)](https://github.com/Xithrius/tui-rs/actions?query=workflow%3ACI+)
+[![Crate Status](https://img.shields.io/crates/v/twitch-tui.svg)](https://crates.io/crates/twitch-tui)
 
 ![image](https://user-images.githubusercontent.com/15021300/155114244-00704633-e852-49bb-9a5a-33c623f775f8.png)
 
-### Keybinds
+## Keybinds
 
 <details>
   <summary>Normal mode</summary>
@@ -103,7 +104,7 @@
 
 </details>
 
-### Setup
+## Setup
 
 1. Install Rustup from the [rust-lang website](https://www.rust-lang.org/learn/get-started).
 2. Install the program through `cargo install twitch-tui`. You can use this same command to update the program in the future. To install a specific version, use a version number from the [releases page](https://github.com/Xithrius/twitch-tui/releases) and the `--version` flag (ex. `cargo install twitch-tui --version "2.0.0-alpha.1"`).
@@ -115,6 +116,6 @@
 
 If you have any problems, do not hesitate to [submit an issue](https://github.com/Xithrius/twitch-tui/issues/new/choose).
 
-### More information
+## More information
 
 - This project used to be named `terminal-twitch-chat`, but was renamed to `twitch-tui` in version [1.2.2](https://github.com/Xithrius/twitch-tui/releases/tag/v1.2.2).
