@@ -1,6 +1,6 @@
 # Twitch chat in the terminal
 
-[![Build Status](https://github.com/Xithrius/twitch-tui/workflows/CI/badge.svg)](https://github.com/Xithrius/tui-rs/actions?query=workflow%3ACI+)
+[![CI](https://github.com/Xithrius/twitch-tui/actions/workflows/ci.yml/badge.svg)](https://github.com/Xithrius/twitch-tui/actions/workflows/ci.yml)
 [![Crate Status](https://img.shields.io/crates/v/twitch-tui.svg)](https://crates.io/crates/twitch-tui)
 
 ![image](https://user-images.githubusercontent.com/15021300/155114244-00704633-e852-49bb-9a5a-33c623f775f8.png)
