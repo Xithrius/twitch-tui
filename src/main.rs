@@ -20,6 +20,9 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tui_logger::init_logger(log::LevelFilter::Trace).unwrap();
+    tui_logger::set_default_level(log::LevelFilter::Trace);
+
     let mut config = match CompleteConfig::new() {
         Ok(c) => c,
         Err(e) => panic!("Configuration error: {}", e),

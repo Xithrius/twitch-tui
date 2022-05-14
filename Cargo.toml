@@ -33,6 +33,7 @@ fuzzy-matcher = "0.3.7"
 rusqlite = "0.27.0"
 regex = "1.5.5"
 tui-logger = "0.7.1"
+log = "0.4.17"
 
 [target.'cfg(windows)'.dependencies]
 rusqlite = { version = "0.27.0", features = [ "winsqlite3"] }
