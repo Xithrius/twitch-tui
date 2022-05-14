@@ -1,6 +1,6 @@
 [package]
 name = "twitch-tui"
-version = "1.6.0"
+version = "1.6.1"
 authors = ["Xithrius <xithrius@gmail.com>"]
 edition = "2018"
 description = "Twitch chat in the terminal."
@@ -28,6 +28,7 @@ rustyline = "9.1.0"
 lazy_static = "1.4.0"
 clap = { version = "2.34.0", features = ["yaml"] }
 enum-iterator = "0.7.0"
+dirs = "4.0.0"
 
 [[bin]]
 bench = false
