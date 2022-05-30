@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{bail, Error, Result};
+use color_eyre::{eyre::bail, eyre::Error, eyre::Report};
 use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
@@ -109,7 +109,7 @@ pub struct FrontendConfig {
 }
 
 impl CompleteConfig {
-    pub fn new() -> Result<Self, Error> {
+    pub fn new() -> Result<Self, Report> {
         let path_str = config_path("config.toml");
 
         let p = Path::new(&path_str);

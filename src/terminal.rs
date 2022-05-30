@@ -3,8 +3,8 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Result;
 use chrono::offset::Local;
+use color_eyre::eyre::Result;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,

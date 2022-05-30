@@ -4,8 +4,8 @@ mod twitch;
 mod ui;
 mod utils;
 
-use anyhow::Result;
 use clap::Parser;
+use color_eyre::eyre::{Report, Result, WrapErr};
 use rusqlite::Connection as SqliteConnection;
 use tokio::sync::mpsc;
 
@@ -19,11 +19,12 @@ use crate::{
 };
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    let mut config = match CompleteConfig::new() {
-        Ok(c) => c,
-        Err(e) => panic!("Configuration error: {}", e),
-    };
+async fn main() -> Result<(), Report> {
+    color_eyre::install().unwrap();
+
+    let mut config = CompleteConfig::new()
+        .wrap_err("Unable to read configuration file.")
+        .unwrap();
 
     merge_args_into_config(&mut config, Cli::parse());
 

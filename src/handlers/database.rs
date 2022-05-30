@@ -1,6 +1,6 @@
 use std::collections::{hash_map::Entry::Occupied, HashMap};
 
-use anyhow::{bail, Error, Result};
+use color_eyre::eyre::{bail, Error, Result};
 use lazy_static::lazy_static;
 use rusqlite::{params, Connection as SqliteConnection};
 
