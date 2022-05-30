@@ -1,5 +1,6 @@
 use std::{
-    fs::{copy, create_dir_all, read_to_string},
+    fs::{create_dir_all, read_to_string, File},
+    io::Write,
     path::Path,
     str::FromStr,
 };
@@ -8,6 +9,9 @@ use color_eyre::{eyre::bail, eyre::Error, eyre::Report};
 use serde::Deserialize;
 
 use crate::utils::pathing::config_path;
+
+const CONFIG_URL: &str =
+    "https://raw.githubusercontent.com/Xithrius/twitch-tui/main/default-config.toml";
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -108,6 +112,16 @@ pub struct FrontendConfig {
     pub badges: bool,
 }
 
+fn download_file(url_source: &str, destination: &str) -> Result<(), ureq::Error> {
+    let mut file = File::create(destination).unwrap();
+
+    let body = ureq::get(url_source).call().unwrap().into_string().unwrap();
+
+    file.write_all(body.as_bytes()).unwrap();
+
+    Ok(())
+}
+
 impl CompleteConfig {
     pub fn new() -> Result<Self, Report> {
         let path_str = config_path("config.toml");
@@ -117,7 +131,7 @@ impl CompleteConfig {
         if !p.exists() {
             create_dir_all(p.parent().unwrap()).unwrap();
 
-            copy("default-config.toml", Path::new(&path_str)).unwrap();
+            download_file(CONFIG_URL, &path_str).unwrap();
 
             bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
         } else if let Ok(config_contents) = read_to_string(&p) {
