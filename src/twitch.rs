@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use futures::StreamExt;
+use irc::error::Error::PingTimeout;
 use irc::{
-    client::{data, prelude::*, Client},
+    client::{prelude::*, Client},
     proto::Command,
 };
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -24,13 +25,15 @@ pub enum Action {
 }
 
 pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
-    let irc_config = data::Config {
+    let irc_config = Config {
         nickname: Some(config.twitch.username.to_owned()),
         server: Some(config.twitch.server.to_owned()),
         channels: vec![format!("#{}", config.twitch.channel)],
         password: Some(config.twitch.token.to_owned()),
         port: Some(6667),
         use_tls: Some(false),
+        ping_timeout: Some(10),
+        ping_time: Some(10),
         ..Default::default()
     };
 
@@ -94,112 +97,128 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                 }
             }
             Some(_message) = stream.next() => {
-                if let Ok(message) = _message {
-                    let mut tags: HashMap<&str, &str> = HashMap::new();
-                    if let Some(ref _tags) = message.tags {
-                        for tag in _tags {
-                            if let Some(ref tag_value) = tag.1 {
-                                tags.insert(&tag.0, tag_value);
+                match _message {
+                    Ok(message) => {
+                        let mut tags: HashMap<&str, &str> = HashMap::new();
+                        if let Some(ref _tags) = message.tags {
+                            for tag in _tags {
+                                if let Some(ref tag_value) = tag.1 {
+                                    tags.insert(&tag.0, tag_value);
+                                }
                             }
+                        }
+
+                        match message.command {
+                            Command::PRIVMSG(ref _target, ref msg) => {
+                                // lowercase username from message
+                                let mut name = match message.source_nickname() {
+                                    Some(username) => username.to_string(),
+                                    None => "Undefined username".to_string(),
+                                };
+                                if config.frontend.badges {
+                                    let mut badges = String::new();
+                                    if let Some(ref tags) = message.tags {
+                                        let mut vip_badge = None;
+                                        let mut moderator_badge = None;
+                                        let mut subscriber_badge = None;
+                                        let mut prime_badge = None;
+                                        let mut display_name = None;
+                                        for tag in tags {
+                                            if tag.0 == *"display-name" {
+                                                if let Some(ref value) = tag.1 {
+                                                    display_name = Some(value.to_string());
+                                                }
+                                            }
+                                            if tag.0 == *"badges" {
+                                                if let Some(ref value) = tag.1 {
+                                                    if !value.is_empty() && value.contains("vip") {
+                                                        vip_badge = Some(VIP_BADGE);
+                                                    }
+                                                    if !value.is_empty() && value.contains("moderator") {
+                                                        moderator_badge = Some(MODERATOR_BADGE);
+                                                    }
+                                                    if !value.is_empty() && value.contains("subscriber") {
+                                                        subscriber_badge = Some(SUBSCRIBER_BADGE);
+                                                    }
+                                                    if !value.is_empty() && value.contains("premium") {
+                                                        prime_badge = Some(PRIME_GAMING_BADGE);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if let Some(display_name) = display_name {
+                                            name = display_name;
+                                        }
+                                        if let Some(badge) = vip_badge {
+                                            badges.push(badge);
+                                        }
+                                        if let Some(badge) = moderator_badge {
+                                            badges.push(badge);
+                                        }
+                                        if let Some(badge) = subscriber_badge {
+                                            badges.push(badge);
+                                        }
+                                        if let Some(badge) = prime_badge {
+                                            badges.push(badge);
+                                        }
+                                        if !badges.is_empty() {
+                                            name = badges.clone() + &name;
+                                        }
+                                    }
+                                }
+                                tx.send(data_builder.user(name, msg.to_string()))
+                                .await
+                                .unwrap();
+                            }
+                            Command::NOTICE(ref _target, ref msg) => {
+                                tx.send(data_builder.twitch(msg.to_string()))
+                                .await
+                                .unwrap();
+                            }
+                            Command::Raw(ref cmd, ref _items) => {
+                                match cmd.as_ref() {
+                                    "ROOMSTATE" => {
+                                        // Only display roomstate on startup, since twitch
+                                        // sends a NOTICE whenever roomstate changes.
+                                        if !room_state_startup {
+                                            handle_roomstate(&tx, data_builder, &tags).await;
+                                        }
+                                        room_state_startup = true;
+                                    }
+                                    "USERNOTICE" => {
+                                        if let Some(value) = tags.get("system-msg") {
+                                            tx.send(data_builder.twitch(value.to_string()))
+                                            .await
+                                            .unwrap();
+                                        }
+                                    }
+                                    _ => ()
+                                }
+                            }
+                            _ => ()
                         }
                     }
+                    Err(err) => {
+                        match err {
+                            PingTimeout => {
+                                tx.send(data_builder.system("Attempting to reconnect due to Twitch ping timeout.".to_string())).await.unwrap();
+                            }
+                            _ => {
+                                tx.send(data_builder.system(format!("Attempting to reconnect due to fatal error: {:?}", err).to_string())).await.unwrap();
+                            }
+                        }
 
-                    match message.command {
-                        Command::PRIVMSG(ref _target, ref msg) => {
-                            // lowercase username from message
-                            let mut name = match message.source_nickname() {
-                                Some(username) => username.to_string(),
-                                None => "Undefined username".to_string(),
-                            };
-                            if config.frontend.badges {
-                                let mut badges = String::new();
-                                if let Some(ref tags) = message.tags {
-                                    let mut vip_badge = None;
-                                    let mut moderator_badge = None;
-                                    let mut subscriber_badge = None;
-                                    let mut prime_badge = None;
-                                    let mut display_name = None;
-                                    for tag in tags {
-                                        if tag.0 == *"display-name" {
-                                            if let Some(ref value) = tag.1 {
-                                                display_name = Some(value.to_string());
-                                            }
-                                        }
-                                        if tag.0 == *"badges" {
-                                            if let Some(ref value) = tag.1 {
-                                                if !value.is_empty() && value.contains("vip") {
-                                                    vip_badge = Some(VIP_BADGE);
-                                                }
-                                                if !value.is_empty() && value.contains("moderator") {
-                                                    moderator_badge = Some(MODERATOR_BADGE);
-                                                }
-                                                if !value.is_empty() && value.contains("subscriber") {
-                                                    subscriber_badge = Some(SUBSCRIBER_BADGE);
-                                                }
-                                                if !value.is_empty() && value.contains("premium") {
-                                                    prime_badge = Some(PRIME_GAMING_BADGE);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if let Some(display_name) = display_name {
-                                        name = display_name;
-                                    }
-                                    if let Some(badge) = vip_badge {
-                                        badges.push(badge);
-                                    }
-                                    if let Some(badge) = moderator_badge {
-                                        badges.push(badge);
-                                    }
-                                    if let Some(badge) = subscriber_badge {
-                                        badges.push(badge);
-                                    }
-                                    if let Some(badge) = prime_badge {
-                                        badges.push(badge);
-                                    }
-                                    if !badges.is_empty() {
-                                        name = badges.clone() + &name;
-                                    }
-                                }
-                            }
-                            tx.send(data_builder.user(name, msg.to_string()))
-                            .await
-                            .unwrap();
+                        client.send_quit("twitch-tui attempting reconnect").unwrap();
+
+                        if client.send_join(format!("#{}", config.twitch.channel)).is_err() {
+                            tx.send(data_builder.system("Failed to rejoin channel.".to_string())).await.unwrap();
+                        } else {
+                            tx.send(data_builder.system("Successfully rejoined channel.".to_string())).await.unwrap();
                         }
-                        Command::NOTICE(ref _target, ref msg) => {
-                            tx.send(data_builder.twitch(msg.to_string()))
-                            .await
-                            .unwrap();
-                        }
-                        Command::Raw(ref cmd, ref _items) => {
-                            match cmd.as_ref() {
-                                "ROOMSTATE" => {
-                                    // Only display roomstate on startup, since twitch
-                                    // sends a NOTICE whenever roomstate changes.
-                                    if !room_state_startup {
-                                        handle_roomstate(&tx, data_builder, &tags).await;
-                                    }
-                                    room_state_startup = true;
-                                }
-                                "USERNOTICE" => {
-                                    if let Some(value) = tags.get("system-msg") {
-                                        tx.send(data_builder.twitch(value.to_string()))
-                                        .await
-                                        .unwrap();
-                                    }
-                                }
-                                _ => ()
-                            }
-                        }
-                        _ => ()
                     }
                 }
             }
-            else => {
-                tx.send(data_builder.system("Unable to connect to Twitch. Attempting to reconnect.".to_string())).await.unwrap();
-
-                stream = client.stream().unwrap();
-            }
+            else => {}
         };
     }
 }
