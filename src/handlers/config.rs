@@ -48,7 +48,7 @@ pub struct CompleteConfig {
     /// Internal functionality.
     pub terminal: TerminalConfig,
     /// If anything should be recorded for future use.
-    pub database: DatabaseConfig,
+    pub storage: StorageConfig,
     /// Filtering out messages.
     pub filters: FiltersConfig,
     /// How everything looks to the user.
@@ -76,7 +76,7 @@ pub struct TerminalConfig {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct DatabaseConfig {
+pub struct StorageConfig {
     /// If previous channels switched to should be tracked.
     pub channels: bool,
     /// If previous username mentions should be tracked.

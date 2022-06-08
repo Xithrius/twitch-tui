@@ -6,16 +6,12 @@ mod utils;
 
 use clap::Parser;
 use color_eyre::eyre::{Report, Result, WrapErr};
-use rusqlite::Connection as SqliteConnection;
 use tokio::sync::mpsc;
 
-use crate::{
-    handlers::{
-        app::App,
-        args::{merge_args_into_config, Cli},
-        config::CompleteConfig,
-    },
-    utils::pathing::config_path,
+use crate::handlers::{
+    app::App,
+    args::{merge_args_into_config, Cli},
+    config::CompleteConfig,
 };
 
 #[tokio::main]
@@ -28,9 +24,7 @@ async fn main() -> Result<(), Report> {
 
     merge_args_into_config(&mut config, Cli::parse());
 
-    let sqlite_connection = SqliteConnection::open(&config_path("db.sqlite3")).unwrap();
-
-    let app = App::new(config.clone(), sqlite_connection);
+    let app = App::new(config.clone());
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = mpsc::channel(100);

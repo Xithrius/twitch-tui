@@ -19,9 +19,8 @@ pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App, channel_
 
     let suggestion = if channel_suggestions {
         if let Some(result) = app
-            .database
-            .get_table_content("channels".to_string())
-            .unwrap()
+            .storage
+            .get("channels".to_string())
             .iter()
             .filter(|s| s.starts_with(input_buffer.as_str()))
             .collect::<Vec<&String>>()
