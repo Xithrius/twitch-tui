@@ -214,9 +214,7 @@ pub async fn ui_driver(
                                         .unwrap();
 
                                     if let Some(msg) = input_message.strip_prefix('@') {
-                                        app.database
-                                            .add("mentions".to_string(), msg.to_string())
-                                            .unwrap();
+                                        app.storage.add("mentions".to_string(), msg.to_string())
                                     }
                                 }
 
@@ -235,9 +233,8 @@ pub async fn ui_driver(
 
                                     config.twitch.channel = input_message.to_string();
 
-                                    app.database
+                                    app.storage
                                         .add("channels".to_string(), input_message.to_string())
-                                        .unwrap();
                                 }
 
                                 input_message.update("", 0);
@@ -297,6 +294,8 @@ pub async fn ui_driver(
             }
         }
     }
+
+    app.cleanup();
 
     Ok(())
 }

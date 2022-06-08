@@ -50,9 +50,7 @@ pub fn message_input<T: Backend>(
                     format!(
                         "@{}",
                         first_result(
-                            app.database
-                                .get_table_content("mentions".to_string())
-                                .unwrap(),
+                            app.storage.get("mentions".to_string()),
                             input_buffer.to_string(),
                         )
                     )

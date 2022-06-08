@@ -14,7 +14,7 @@ tick_delay = 30
 # The maximum amount of messages to be stored.
 maximum_messages = 150
 
-[database]
+[storage]
 # If previous channels switched to should be tracked.
 channels = true
 # If previous username mentions should be tracked.
