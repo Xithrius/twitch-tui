@@ -5,12 +5,11 @@ use std::{
 };
 
 use enum_iterator::IntoEnumIterator;
-use rusqlite::Connection as SqliteConnection;
 use rustyline::line_buffer::LineBuffer;
 use tui::layout::Constraint;
 
 use crate::{
-    handlers::{config::CompleteConfig, data::Data, database::Database, filters::Filters},
+    handlers::{config::CompleteConfig, data::Data, filters::Filters, storage::Storage},
     utils::pathing::config_path,
 };
 
@@ -32,8 +31,8 @@ pub enum BufferName {
 pub struct App {
     /// History of recorded messages (time, username, message).
     pub messages: VecDeque<Data>,
-    /// Connection to the sqlite3 database.
-    pub database: Database,
+    /// Data loaded in from a JSON file.
+    pub storage: Storage,
     /// Filtering out messages, no usernames since Twitch does that themselves.
     pub filters: Filters,
     /// Which window the terminal is currently showing.
@@ -53,7 +52,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig, database_connection: SqliteConnection) -> Self {
+    pub fn new(config: CompleteConfig) -> Self {
         let mut input_buffers_map = HashMap::new();
 
         for name in BufferName::into_enum_iter() {
@@ -62,7 +61,7 @@ impl App {
 
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
-            database: Database::new(database_connection),
+            storage: Storage::new(config_path("storage.json"), config.storage),
             filters: Filters::new(config_path("filters.txt"), config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
@@ -80,5 +79,9 @@ impl App {
 
     pub fn current_buffer_mut(&mut self) -> &mut LineBuffer {
         return self.input_buffers.get_mut(&self.selected_buffer).unwrap();
+    }
+
+    pub fn cleanup(&self) {
+        self.storage.dump_data();
     }
 }
