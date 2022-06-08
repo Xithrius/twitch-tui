@@ -14,7 +14,7 @@ lazy_static! {
     pub static ref ITEM_KEYS: Vec<&'static str> = vec!["channels", "mentions"];
 }
 
-pub type StorageMap = HashMap<String, StorageItem>;
+type StorageMap = HashMap<String, StorageItem>;
 
 #[derive(Debug)]
 pub struct Storage {
