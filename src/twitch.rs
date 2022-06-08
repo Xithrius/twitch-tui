@@ -1,12 +1,18 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use futures::StreamExt;
-use irc::error::Error::PingTimeout;
 use irc::{
-    client::{prelude::*, Client},
+    client::{
+        prelude::{Capability, Config},
+        Client, ClientStream,
+    },
+    error::Error::PingTimeout,
     proto::Command,
 };
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::{
+    sync::mpsc::{Receiver, Sender},
+    time::sleep,
+};
 
 use crate::handlers::{
     config::CompleteConfig,
@@ -24,7 +30,7 @@ pub enum Action {
     Join(String),
 }
 
-pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
+async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStream) {
     let irc_config = Config {
         nickname: Some(config.twitch.username.to_owned()),
         server: Some(config.twitch.server.to_owned()),
@@ -41,9 +47,16 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
 
     client.identify().unwrap();
 
-    let mut stream = client.stream().unwrap();
+    let stream = client.stream().unwrap();
+
+    (client, stream)
+}
+
+pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
+
+    let (mut client, mut stream) = create_client_stream(config.clone()).await;
 
     // Request commands capabilities
     if client
@@ -208,6 +221,8 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                             }
                         }
 
+                        (client, stream) = create_client_stream(config.clone()).await;
+
                         client.send_quit("twitch-tui attempting reconnect").unwrap();
 
                         if client.send_join(format!("#{}", config.twitch.channel)).is_err() {
@@ -215,6 +230,8 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                         } else {
                             tx.send(data_builder.system("Successfully rejoined channel.".to_string())).await.unwrap();
                         }
+
+                        sleep(Duration::from_millis(1000)).await;
                     }
                 }
             }
