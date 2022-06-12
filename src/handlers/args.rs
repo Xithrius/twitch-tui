@@ -4,6 +4,7 @@ use crate::handlers::config::{CompleteConfig, Palette};
 
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]
+#[clap(author, version, about)]
 /// Twitch chat in the terminal
 pub struct Cli {
     /// The streamer's name
