@@ -4,8 +4,8 @@ mod twitch;
 mod ui;
 mod utils;
 
-use anyhow::Result;
 use clap::Parser;
+use color_eyre::eyre::{Result, WrapErr};
 use tokio::sync::mpsc;
 
 use crate::handlers::{
@@ -16,10 +16,11 @@ use crate::handlers::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut config = match CompleteConfig::new() {
-        Ok(c) => c,
-        Err(e) => panic!("Configuration error: {}", e),
-    };
+    color_eyre::install().unwrap();
+
+    let mut config = CompleteConfig::new()
+        .wrap_err("Configuration error.")
+        .unwrap();
 
     merge_args_into_config(&mut config, Cli::parse());
 

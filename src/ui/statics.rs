@@ -9,6 +9,7 @@ lazy_static! {
         vec!["Ctrl + f", "Search messages"],
         vec!["?", "Bring up this window"],
         vec!["q", "Quit this application"],
+        vec!["Ctrl + p", "Manually trigger a panic"],
         vec!["Esc", "Drop back to previous window layer"],
         vec!["Ctrl + f", "Move cursor to the right"],
         vec!["Ctrl + b", "Move cursor to the left"],

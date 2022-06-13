@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{bail, Error, Result};
+use color_eyre::eyre::{bail, Error, Result};
 use serde::Deserialize;
 
 use crate::utils::pathing::config_path;

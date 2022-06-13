@@ -3,8 +3,8 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Result;
 use chrono::offset::Local;
+use color_eyre::eyre::Result;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
@@ -26,12 +26,25 @@ use crate::{
     utils::text::align_text,
 };
 
+fn reset_terminal() {
+    disable_raw_mode().unwrap();
+
+    execute!(stdout(), LeaveAlternateScreen).unwrap();
+}
+
 pub async fn ui_driver(
     mut config: CompleteConfig,
     mut app: App,
     tx: Sender<Action>,
     mut rx: Receiver<Data>,
 ) -> Result<()> {
+    let original_hook = std::panic::take_hook();
+
+    std::panic::set_hook(Box::new(move |panic| {
+        reset_terminal();
+        original_hook(panic);
+    }));
+
     let mut events = Events::with_config(Config {
         exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
@@ -41,11 +54,11 @@ pub async fn ui_driver(
     enable_raw_mode()?;
 
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
 
     let backend = CrosstermBackend::new(stdout);
 
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal = Terminal::new(backend).unwrap();
 
     let username_column_title = align_text(
         "Username",
@@ -277,6 +290,9 @@ pub async fn ui_driver(
                         app.state = State::MessageInput;
                         app.selected_buffer = BufferName::Chat;
                     }
+                    Key::Ctrl('p') => {
+                        panic!("Manual panic triggered by user.");
+                    }
                     Key::Char('?') => app.state = State::Help,
                     Key::Char('q') => {
                         if let State::Normal = app.state {
@@ -294,6 +310,8 @@ pub async fn ui_driver(
             }
         }
     }
+
+    reset_terminal();
 
     app.cleanup();
 

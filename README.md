@@ -39,6 +39,9 @@
     <td> Ctrl + r
     <td> Reverse the filter.
   <tr>
+    <td> Ctrl + p
+    <td> Manually trigger a panic, so the application crashes.
+  <tr>
     <td> Esc
     <td> Exits out of layered windows, such as going from the help window to normal view.
   </table>
