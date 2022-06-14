@@ -2,6 +2,8 @@ pub mod chunks;
 pub mod popups;
 pub mod statics;
 
+use std::collections::VecDeque;
+
 use chrono::offset::Local;
 use tui::{
     backend::Backend,
@@ -74,7 +76,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
     let mut total_row_height: usize = 0;
-    let mut display_rows = std::collections::VecDeque::new();
+    let mut display_rows = VecDeque::new();
 
     let mut scroll_offset = app.scroll_offset;
 

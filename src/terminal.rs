@@ -4,7 +4,6 @@ use std::{
 };
 
 use chrono::offset::Local;
-use color_eyre::eyre::Result;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
@@ -32,12 +31,23 @@ fn reset_terminal() {
     execute!(stdout(), LeaveAlternateScreen).unwrap();
 }
 
+fn init_terminal() -> Terminal<CrosstermBackend<Stdout>> {
+    enable_raw_mode().unwrap();
+
+    let mut stdout = stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
+
+    let backend = CrosstermBackend::new(stdout);
+
+    Terminal::new(backend).unwrap()
+}
+
 pub async fn ui_driver(
     mut config: CompleteConfig,
     mut app: App,
     tx: Sender<Action>,
     mut rx: Receiver<Data>,
-) -> Result<()> {
+) {
     let original_hook = std::panic::take_hook();
 
     std::panic::set_hook(Box::new(move |panic| {
@@ -51,14 +61,7 @@ pub async fn ui_driver(
     })
     .await;
 
-    enable_raw_mode()?;
-
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
-
-    let backend = CrosstermBackend::new(stdout);
-
-    let mut terminal = Terminal::new(backend).unwrap();
+    let mut terminal = init_terminal();
 
     let username_column_title = align_text(
         "Username",
@@ -99,12 +102,14 @@ pub async fn ui_driver(
 
     let quitting = |mut terminal: Terminal<CrosstermBackend<Stdout>>| {
         disable_raw_mode().unwrap();
+
         execute!(
             terminal.backend_mut(),
             LeaveAlternateScreen,
             DisableMouseCapture
         )
         .unwrap();
+
         terminal.show_cursor().unwrap();
     };
 
@@ -311,9 +316,7 @@ pub async fn ui_driver(
         }
     }
 
-    reset_terminal();
-
     app.cleanup();
 
-    Ok(())
+    reset_terminal();
 }
