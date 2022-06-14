@@ -85,7 +85,9 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             if app.filters.contaminated(msg) {
                 continue;
             }
-        } else if scroll_offset > 0 {
+        }
+
+        if scroll_offset > 0 {
             scroll_offset -= 1;
 
             continue;
