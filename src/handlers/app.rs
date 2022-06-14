@@ -19,6 +19,7 @@ pub enum State {
     Help,
     ChannelSwitch,
     MessageSearch,
+    Logging,
 }
 
 #[derive(PartialEq, Eq, Hash, IntoEnumIterator)]

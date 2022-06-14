@@ -138,8 +138,10 @@ pub async fn ui_driver(
             .unwrap();
 
         if let Some(Event::Input(key)) = events.next().await {
-            match app.state {
-                State::MessageInput | State::MessageSearch | State::Normal => match key {
+            if let State::MessageInput | State::MessageSearch | State::Normal | State::Logging =
+                app.state
+            {
+                match key {
                     Key::ScrollUp => {
                         if app.scroll_offset < app.messages.len() {
                             app.scroll_offset += 1;
@@ -151,8 +153,7 @@ pub async fn ui_driver(
                         }
                     }
                     _ => {}
-                },
-                _ => {}
+                }
             }
 
             match app.state {
@@ -295,6 +296,15 @@ pub async fn ui_driver(
                         app.state = State::MessageInput;
                         app.selected_buffer = BufferName::Chat;
                     }
+                    Key::Ctrl('l') => {
+                        if !config.frontend.logging {
+                            app.state = State::Logging;
+                        } else {
+                            app.state = State::Normal;
+                        }
+
+                        config.frontend.logging = !config.frontend.logging;
+                    }
                     Key::Ctrl('p') => {
                         panic!("Manual panic triggered by user.");
                     }
@@ -307,6 +317,7 @@ pub async fn ui_driver(
                     }
                     Key::Esc => {
                         app.scroll_offset = 0;
+                        config.frontend.logging = false;
                         app.state = State::Normal;
                         app.selected_buffer = BufferName::Chat;
                     }

@@ -43,3 +43,5 @@ title_shown = true
 padding = true
 # Show twitch badges next to usernames.
 badges = true
+# The state of the logging window
+logging = true

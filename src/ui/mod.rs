@@ -13,6 +13,7 @@ use tui::{
     text::Spans,
     widgets::{Block, Borders, Cell, Row, Table},
 };
+use tui_logger::{TuiLoggerLevelOutput, TuiLoggerSmartWidget};
 
 use crate::{
     handlers::{
@@ -26,11 +27,11 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Verticals {
     pub chunks: Vec<Rect>,
-    pub constraints: Vec<Constraint>,
+    pub constraints: VecDeque<Constraint>,
 }
 
 impl Verticals {
-    pub fn new(chunks: Vec<Rect>, constraints: Vec<Constraint>) -> Self {
+    pub fn new(chunks: Vec<Rect>, constraints: VecDeque<Constraint>) -> Self {
         Self {
             chunks,
             constraints,
@@ -41,11 +42,19 @@ impl Verticals {
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
     let table_widths = app.table_constraints.as_ref().unwrap();
 
-    let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
+    let mut vertical_chunk_constraints = VecDeque::from([Constraint::Min(1)]);
 
     // Allowing the input box to exist in different modes
     if let State::MessageInput | State::MessageSearch = app.state {
-        vertical_chunk_constraints.extend(vec![Constraint::Length(3)]);
+        vertical_chunk_constraints.push_back(Constraint::Length(3));
+    }
+
+    let mut logging_offset = 0;
+
+    if config.frontend.logging {
+        vertical_chunk_constraints.push_front(Constraint::Percentage(50));
+
+        logging_offset = 1;
     }
 
     let margin = if config.frontend.padding { 1 } else { 0 };
@@ -53,22 +62,39 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(margin)
-        .constraints(vertical_chunk_constraints.as_ref())
+        .constraints(vertical_chunk_constraints.clone())
         .split(frame.size());
 
     let verticals = Verticals::new(vertical_chunks, vertical_chunk_constraints);
 
-    let horizontal_chunks = Layout::default()
+    if config.frontend.logging {
+        let logging_widget = TuiLoggerSmartWidget::default()
+            .style_error(Style::default().fg(Color::Red))
+            .style_debug(Style::default().fg(Color::Green))
+            .style_warn(Style::default().fg(Color::Yellow))
+            .style_trace(Style::default().fg(Color::Magenta))
+            .style_info(Style::default().fg(Color::Cyan))
+            .output_separator(':')
+            .output_timestamp(Some("%H:%M:%S".to_string()))
+            .output_level(Some(TuiLoggerLevelOutput::Abbreviated))
+            .output_target(true)
+            .output_file(true)
+            .output_line(true);
+
+        frame.render_widget(logging_widget, verticals.chunks[0]);
+    }
+
+    let horizontal_table_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(margin)
         .constraints(table_widths.as_ref())
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = verticals.chunks[0].height as usize - 3;
+    let general_chunk_height = verticals.chunks[logging_offset].height as usize - 3;
 
     // The chunk furthest to the right is the messages, that's the one we want.
-    let message_chunk_width = horizontal_chunks[table_widths.len() - 1].width as usize - 4;
+    let message_chunk_width = horizontal_table_chunks[table_widths.len() - 1].width as usize - 4;
 
     // Making sure that messages do have a limit and don't eat up all the RAM.
     app.messages.truncate(config.terminal.maximum_messages);
@@ -175,7 +201,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .widths(table_widths.as_ref())
         .column_spacing(1);
 
-    frame.render_widget(table, verticals.chunks[0]);
+    frame.render_widget(table, verticals.chunks[logging_offset]);
 
     match app.state {
         // States of the application that require a chunk of the main window

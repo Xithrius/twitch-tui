@@ -18,6 +18,9 @@ use crate::handlers::{
 async fn main() -> Result<()> {
     color_eyre::install().unwrap();
 
+    tui_logger::init_logger(log::LevelFilter::Trace).unwrap();
+    tui_logger::set_default_level(log::LevelFilter::Trace);
+
     let mut config = CompleteConfig::new()
         .wrap_err("Configuration error.")
         .unwrap();

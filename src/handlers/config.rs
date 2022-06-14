@@ -110,6 +110,8 @@ pub struct FrontendConfig {
     pub padding: bool,
     /// Show twitch badges next to usernames.
     pub badges: bool,
+    /// The state of the logging window.
+    pub logging: bool,
 }
 
 fn download_file(url_source: &str, destination: &str) -> Result<(), ureq::Error> {
