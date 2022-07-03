@@ -8,11 +8,7 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use tokio::sync::mpsc;
 
-use crate::handlers::{
-    app::App,
-    args::{Cli},
-    config::CompleteConfig,
-};
+use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
 #[tokio::main]
 async fn main() -> Result<()> {
