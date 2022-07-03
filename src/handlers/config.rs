@@ -126,14 +126,19 @@ impl Default for FrontendConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Palette {
-    #[default]
     Pastel,
     Vibrant,
     Warm,
     Cool,
+}
+
+impl Default for Palette {
+    fn default() -> Self {
+        Palette::Pastel
+    }
 }
 
 impl FromStr for Palette {
