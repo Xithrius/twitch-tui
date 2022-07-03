@@ -31,7 +31,6 @@ lazy_static = "1.4.0"
 enum-iterator = "0.8.1"
 fuzzy-matcher = "0.3.7"
 regex = "1.5.6"
-ureq = "2.4.0"
 color-eyre = "0.6.1"
 tui-logger = "0.8.0"
 log = "0.4.17"
@@ -40,3 +39,6 @@ log = "0.4.17"
 bench = false
 path = "src/main.rs"
 name = "twt"
+
+[profile.release]
+lto = "thin"
