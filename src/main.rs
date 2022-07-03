@@ -8,21 +8,15 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use tokio::sync::mpsc;
 
-use crate::handlers::{
-    app::App,
-    args::{merge_args_into_config, Cli},
-    config::CompleteConfig,
-};
+use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install().unwrap();
 
-    let mut config = CompleteConfig::new()
+    let config = CompleteConfig::new(Cli::parse())
         .wrap_err("Configuration error.")
         .unwrap();
-
-    merge_args_into_config(&mut config, Cli::parse());
 
     let app = App::new(config.clone());
 
