@@ -8,10 +8,7 @@ use enum_iterator::IntoEnumIterator;
 use rustyline::line_buffer::LineBuffer;
 use tui::layout::Constraint;
 
-use crate::{
-    handlers::{config::CompleteConfig, data::Data, filters::Filters, storage::Storage},
-    utils::pathing::config_path,
-};
+use crate::handlers::{config::CompleteConfig, data::Data, filters::Filters, storage::Storage};
 
 pub enum State {
     Normal,
@@ -61,8 +58,8 @@ impl App {
 
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
-            storage: Storage::new(config_path("storage.json"), config.storage),
-            filters: Filters::new(config_path("filters.txt"), config.filters),
+            storage: Storage::new("storage.json", config.storage),
+            filters: Filters::new("filters.txt", config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
             buffer_suggestion: "".to_string(),

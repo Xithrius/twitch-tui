@@ -9,6 +9,7 @@ use irc::{
     error::Error::PingTimeout,
     proto::Command,
 };
+use log::debug;
 use tokio::{
     sync::mpsc::{Receiver, Sender},
     time::sleep,
@@ -53,6 +54,8 @@ async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStream) 
 }
 
 pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
+    debug!("Spawned Twitch IRC thread.");
+
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
 

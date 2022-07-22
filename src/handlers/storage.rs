@@ -8,7 +8,7 @@ use std::{
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::config::StorageConfig;
+use crate::{handlers::config::StorageConfig, utils::pathing::config_path};
 
 lazy_static! {
     pub static ref ITEM_KEYS: Vec<&'static str> = vec!["channels", "mentions"];
@@ -29,7 +29,9 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(file_path: String, config: StorageConfig) -> Self {
+    pub fn new(file: &str, config: StorageConfig) -> Self {
+        let file_path = config_path(file);
+
         if !Path::new(&file_path).exists() {
             let mut items = StorageMap::new();
 

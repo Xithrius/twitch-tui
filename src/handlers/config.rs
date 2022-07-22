@@ -48,6 +48,8 @@ pub struct TerminalConfig {
     pub tick_delay: u64,
     /// The maximum amount of messages before truncation.
     pub maximum_messages: usize,
+    /// The file path to log to.
+    pub log_file: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -105,6 +107,7 @@ impl Default for TerminalConfig {
         Self {
             tick_delay: 30,
             maximum_messages: 150,
+            log_file: None,
         }
     }
 }

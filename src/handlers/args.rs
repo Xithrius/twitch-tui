@@ -10,6 +10,9 @@ pub struct Cli {
     /// The streamer's name
     #[clap(short, long)]
     pub channel: Option<String>,
+    /// File to log to
+    #[clap(short, long)]
+    pub log_file: Option<String>,
     /// The delay in milliseconds between terminal updates
     #[clap(short, long)]
     pub tick_delay: Option<u64>,
@@ -34,8 +37,11 @@ pub struct Cli {
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
-    if let Some(ch) = args.channel {
-        config.twitch.channel = ch;
+    if let Some(channel) = args.channel {
+        config.twitch.channel = channel;
+    }
+    if let Some(log_file) = args.log_file {
+        config.terminal.log_file = Some(log_file);
     }
     if let Some(tick_delay) = args.tick_delay {
         config.terminal.tick_delay = tick_delay;
