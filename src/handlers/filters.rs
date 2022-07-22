@@ -2,7 +2,7 @@ use std::fs::read_to_string;
 
 use regex::Regex;
 
-use crate::handlers::config::FiltersConfig;
+use crate::{handlers::config::FiltersConfig, utils::pathing::config_path};
 
 #[derive(Debug, Clone)]
 pub struct Filters {
@@ -12,9 +12,11 @@ pub struct Filters {
 }
 
 impl Filters {
-    pub fn new(filter_path: String, config: FiltersConfig) -> Self {
+    pub fn new(file: &str, config: FiltersConfig) -> Self {
+        let file_path = config_path(file);
+
         Self {
-            captures: if let Ok(f) = read_to_string(filter_path) {
+            captures: if let Ok(f) = read_to_string(file_path) {
                 f.split('\n')
                     .filter(|s| !s.is_empty())
                     .flat_map(Regex::new)

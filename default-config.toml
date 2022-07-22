@@ -13,6 +13,8 @@ token = ""
 tick_delay = 30
 # The maximum amount of messages to be stored.
 maximum_messages = 150
+# The file path to log to.
+log_file = ""
 
 [storage]
 # If previous channels switched to should be tracked.
