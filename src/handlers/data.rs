@@ -1,4 +1,4 @@
-use chrono::offset::Local;
+use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
 use tui::{
@@ -35,7 +35,7 @@ impl<'conf> DataBuilder<'conf> {
 
     pub fn user(self, user: String, message: String) -> Data {
         Data {
-            time_sent: Local::now().format(self.date_format).to_string(),
+            time_sent: Local::now(),
             author: user,
             system: false,
             payload: PayLoad::Message(message),
@@ -44,7 +44,7 @@ impl<'conf> DataBuilder<'conf> {
 
     pub fn system(self, message: String) -> Data {
         Data {
-            time_sent: Local::now().format(self.date_format).to_string(),
+            time_sent: Local::now(),
             author: "System".to_string(),
             system: true,
             payload: PayLoad::Message(message),
@@ -53,7 +53,7 @@ impl<'conf> DataBuilder<'conf> {
 
     pub fn twitch(self, message: String) -> Data {
         Data {
-            time_sent: Local::now().format(self.date_format).to_string(),
+            time_sent: Local::now(),
             author: "Twitch".to_string(),
             system: true,
             payload: PayLoad::Message(message),
@@ -63,7 +63,7 @@ impl<'conf> DataBuilder<'conf> {
 
 #[derive(Debug, Clone)]
 pub struct Data {
-    pub time_sent: String,
+    pub time_sent: DateTime<Local>,
     pub author: String,
     pub system: bool,
     pub payload: PayLoad,
@@ -153,7 +153,14 @@ impl Data {
         ];
 
         if frontend_config.date_shown {
-            cell_vector.insert(0, Cell::from(self.time_sent.to_string()));
+            cell_vector.insert(
+                0,
+                Cell::from(
+                    self.time_sent
+                        .format(&frontend_config.date_format)
+                        .to_string(),
+                ),
+            );
         };
 
         let mut row_vector = vec![Row::new(cell_vector)];
@@ -182,7 +189,7 @@ mod tests {
     fn test_username_hash() {
         assert_eq!(
             Data {
-                time_sent: Local::now().format("%c").to_string(),
+                time_sent: Local::now(),
                 author: "human".to_string(),
                 system: false,
                 payload: PayLoad::Message("beep boop".to_string()),
