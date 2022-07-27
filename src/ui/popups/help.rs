@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub fn show_keybinds<T: Backend>(frame: &mut Frame<T>) {
-    let table_widths = vector_column_max(&HELP_KEYBINDS, None)
+    let table_widths = vector_column_max(&HELP_KEYBINDS)
         .into_iter()
         .map(Constraint::Min)
         .collect::<Vec<Constraint>>();

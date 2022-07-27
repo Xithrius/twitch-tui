@@ -1,6 +1,6 @@
 use tui::{
     backend::Backend,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
@@ -9,8 +9,10 @@ use tui::{
 use crate::{
     handlers::app::App,
     ui::{statics::COMMANDS, Verticals},
-    utils::text::get_cursor_position,
+    utils::text::{get_cursor_position, title_spans},
 };
+
+const TWITCH_MESSAGE_LIMIT: usize = 500;
 
 pub fn message_input<T: Backend>(
     frame: &mut Frame<T>,
@@ -19,6 +21,8 @@ pub fn message_input<T: Backend>(
     mention_suggestions: bool,
 ) {
     let input_buffer = app.current_buffer();
+
+    let current_input = input_buffer.to_string();
 
     let suggestion = if let Some(start_character) = input_buffer.chars().next() {
         let first_result = |choices: Vec<String>, choice: String| -> String {
@@ -87,7 +91,13 @@ pub fn message_input<T: Backend>(
     .block(
         Block::default()
             .borders(Borders::ALL)
-            .title("[ Input ]")
+            .title(title_spans(
+                vec![vec![
+                    "Message limit",
+                    format!("{} / {}", current_input.len(), TWITCH_MESSAGE_LIMIT).as_str(),
+                ]],
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ))
             .border_style(Style::default().fg(Color::Yellow)),
     )
     .scroll((
