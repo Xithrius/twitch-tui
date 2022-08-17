@@ -8,11 +8,12 @@ use tui::{
 
 use crate::{
     handlers::app::App,
-    ui::{statics::COMMANDS, Verticals},
+    ui::{
+        statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
+        Verticals,
+    },
     utils::text::{get_cursor_position, title_spans},
 };
-
-const TWITCH_MESSAGE_LIMIT: usize = 500;
 
 pub fn message_input<T: Backend>(
     frame: &mut Frame<T>,
@@ -94,11 +95,17 @@ pub fn message_input<T: Backend>(
             .title(title_spans(
                 vec![vec![
                     "Message limit",
-                    format!("{} / {}", current_input.len(), TWITCH_MESSAGE_LIMIT).as_str(),
+                    format!("{} / {}", current_input.len(), *TWITCH_MESSAGE_LIMIT).as_str(),
                 ]],
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))
-            .border_style(Style::default().fg(Color::Yellow)),
+            .border_style(
+                Style::default().fg(if current_input.len() > *TWITCH_MESSAGE_LIMIT {
+                    Color::Red
+                } else {
+                    Color::Yellow
+                }),
+            ),
     )
     .scroll((
         0,
