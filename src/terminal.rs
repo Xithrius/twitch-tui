@@ -22,7 +22,7 @@ use crate::{
         event::{Config, Event, Events, Key},
     },
     twitch::Action,
-    ui::draw_ui,
+    ui::{draw_ui, statics::TWITCH_MESSAGE_LIMIT},
     utils::text::align_text,
 };
 
@@ -224,21 +224,24 @@ pub async fn ui_driver(
                                 let input_message =
                                     app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
-                                if !input_message.is_empty()
-                                    && !app.filters.contaminated(input_message.to_string())
+                                if input_message.is_empty()
+                                    || app.filters.contaminated(input_message.to_string())
+                                    || input_message.len() > *TWITCH_MESSAGE_LIMIT
                                 {
-                                    app.messages.push_front(data_builder.user(
-                                        config.twitch.username.to_string(),
-                                        input_message.to_string(),
-                                    ));
+                                    continue;
+                                }
 
-                                    tx.send(Action::Privmsg(input_message.to_string()))
-                                        .await
-                                        .unwrap();
+                                app.messages.push_front(data_builder.user(
+                                    config.twitch.username.to_string(),
+                                    input_message.to_string(),
+                                ));
 
-                                    if let Some(msg) = input_message.strip_prefix('@') {
-                                        app.storage.add("mentions".to_string(), msg.to_string())
-                                    }
+                                tx.send(Action::Privmsg(input_message.to_string()))
+                                    .await
+                                    .unwrap();
+
+                                if let Some(msg) = input_message.strip_prefix('@') {
+                                    app.storage.add("mentions".to_string(), msg.to_string())
                                 }
 
                                 input_message.update("", 0);

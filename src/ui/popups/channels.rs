@@ -1,6 +1,6 @@
 use tui::{
     backend::Backend,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, Paragraph},
@@ -50,7 +50,7 @@ pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App, channel_
             } else {
                 ""
             },
-            Style::default().fg(Color::LightYellow),
+            Style::default().add_modifier(Modifier::DIM),
         ),
     ]))
     .block(

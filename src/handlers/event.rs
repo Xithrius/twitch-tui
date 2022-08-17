@@ -91,6 +91,7 @@ impl Events {
                                     KeyModifiers::ALT => Key::Alt(c),
                                     _ => Key::Null,
                                 },
+                                _ => Key::Null,
                             };
                             if let Err(err) = tx.send(Event::Input(key)).await {
                                 eprintln!("Keyboard input error: {}", err);
