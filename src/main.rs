@@ -6,7 +6,7 @@ mod utils;
 
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
-use log::debug;
+use log::info;
 use tokio::sync::mpsc;
 
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
@@ -22,7 +22,11 @@ fn initialize_logging(config: &CompleteConfig) {
                 message
             ))
         })
-        .level(log::LevelFilter::Debug);
+        .level(if config.terminal.verbose {
+            log::LevelFilter::Debug
+        } else {
+            log::LevelFilter::Info
+        });
 
     if let Some(log_file_path) = config.terminal.log_file.to_owned() {
         if !log_file_path.is_empty() {
@@ -46,14 +50,14 @@ async fn main() -> Result<()> {
 
     initialize_logging(&config);
 
-    debug!("Logging system initialised");
+    info!("Logging system initialised");
 
     let app = App::new(config.clone());
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = mpsc::channel(100);
 
-    debug!("Started tokio communication channels.");
+    info!("Started tokio communication channels.");
 
     let cloned_config = config.clone();
 

@@ -9,7 +9,7 @@ use irc::{
     error::Error::PingTimeout,
     proto::Command,
 };
-use log::debug;
+use log::{debug, info};
 use tokio::{
     sync::mpsc::{Receiver, Sender},
     time::sleep,
@@ -54,7 +54,7 @@ async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStream) 
 }
 
 pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Receiver<Action>) {
-    debug!("Spawned Twitch IRC thread.");
+    info!("Spawned Twitch IRC thread.");
 
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
@@ -90,11 +90,15 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
 
                 match action {
                     Action::Privmsg(message) => {
+                        debug!("Sending message to Twitch: {}", message);
+
                         client
                             .send_privmsg(current_channel, message)
                             .unwrap();
                     }
                     Action::Join(channel) => {
+                        debug!("Switching to channel {}", channel);
+
                         let channel_list = format!("#{}", channel);
 
                         // Leave previous channel
@@ -133,6 +137,7 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                                     Some(username) => username.to_string(),
                                     None => "Undefined username".to_string(),
                                 };
+
                                 if config.frontend.badges {
                                     let mut badges = String::new();
                                     if let Some(ref tags) = message.tags {
@@ -184,9 +189,12 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                                         }
                                     }
                                 }
-                                tx.send(data_builder.user(name, msg.to_string()))
+
+                                tx.send(data_builder.user(name.to_string(), msg.to_string()))
                                 .await
                                 .unwrap();
+
+                                debug!("Message received from twitch: {} - {}", name, msg);
                             }
                             Command::NOTICE(ref _target, ref msg) => {
                                 tx.send(data_builder.twitch(msg.to_string()))
@@ -217,6 +225,8 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, mut rx: Re
                         }
                     }
                     Err(err) => {
+                        debug!("Twitch connection error encountered: {}", err);
+
                         match err {
                             PingTimeout => {
                                 tx.send(data_builder.system("Attempting to reconnect due to Twitch ping timeout.".to_string())).await.unwrap();

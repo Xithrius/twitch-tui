@@ -13,6 +13,9 @@ pub struct Cli {
     /// File to log to
     #[clap(short, long)]
     pub log_file: Option<String>,
+    /// If debug logs should be shown
+    #[clap(short, long)]
+    pub verbose: bool,
     /// The delay in milliseconds between terminal updates
     #[clap(short, long)]
     pub tick_delay: Option<u64>,
@@ -37,18 +40,25 @@ pub struct Cli {
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
-    if let Some(channel) = args.channel {
-        config.twitch.channel = channel;
-    }
+    // Terminal arguments
     if let Some(log_file) = args.log_file {
         config.terminal.log_file = Some(log_file);
     }
+    config.terminal.verbose = args.verbose;
+
     if let Some(tick_delay) = args.tick_delay {
         config.terminal.tick_delay = tick_delay;
     }
     if let Some(max_messages) = args.max_messages {
         config.terminal.maximum_messages = max_messages;
     }
+
+    // Twitch arguments
+    if let Some(channel) = args.channel {
+        config.twitch.channel = channel;
+    }
+
+    // Frontend arguments
     if let Some(date_shown) = args.date_shown {
         config.frontend.date_shown = matches!(date_shown.as_str(), "true");
     }

@@ -9,7 +9,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use log::debug;
+use log::{debug, info};
 use rustyline::{At, Word};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
@@ -49,7 +49,7 @@ pub async fn ui_driver(
     tx: Sender<Action>,
     mut rx: Receiver<Data>,
 ) {
-    debug!("Started UI driver.");
+    info!("Started UI driver.");
 
     let original_hook = std::panic::take_hook();
 

@@ -50,6 +50,8 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
     /// The file path to log to.
     pub log_file: Option<String>,
+    /// if debug logging should be enabled
+    pub verbose: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -108,6 +110,7 @@ impl Default for TerminalConfig {
             tick_delay: 30,
             maximum_messages: 150,
             log_file: None,
+            verbose: false,
         }
     }
 }

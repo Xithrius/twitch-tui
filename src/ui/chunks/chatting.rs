@@ -86,7 +86,7 @@ pub fn message_input<T: Backend>(
             } else {
                 ""
             },
-            Style::default().fg(Color::LightYellow),
+            Style::default().add_modifier(Modifier::DIM),
         ),
     ]))
     .block(
