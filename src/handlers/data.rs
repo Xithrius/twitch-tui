@@ -95,6 +95,7 @@ impl Data {
         frontend_config: &FrontendConfig,
         limit: &usize,
         highlight: Option<String>,
+        theme_style: Style,
     ) -> Vec<Row> {
         let message = if let PayLoad::Message(m) = &self.payload {
             textwrap::fill(m.as_str(), *limit)
@@ -163,11 +164,11 @@ impl Data {
             );
         };
 
-        let mut row_vector = vec![Row::new(cell_vector)];
+        let mut row_vector = vec![Row::new(cell_vector).style(theme_style)];
 
         if msg_cells.len() > 1 {
             for cell in msg_cells.iter().skip(1) {
-                let mut wrapped_msg = vec![Cell::from(""), cell.to_owned().style(styles::CHAT)];
+                let mut wrapped_msg = vec![Cell::from(""), cell.to_owned()];
 
                 if frontend_config.date_shown {
                     wrapped_msg.insert(0, Cell::from(""));

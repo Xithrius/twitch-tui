@@ -6,9 +6,17 @@ use std::{
 
 use enum_iterator::IntoEnumIterator;
 use rustyline::line_buffer::LineBuffer;
-use tui::layout::Constraint;
+use tui::{layout::Constraint, style::Style};
 
-use crate::handlers::{config::CompleteConfig, data::Data, filters::Filters, storage::Storage};
+use crate::{
+    handlers::{
+        config::{CompleteConfig, Theme},
+        data::Data,
+        filters::Filters,
+        storage::Storage,
+    },
+    utils::styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
+};
 
 pub enum State {
     Normal,
@@ -46,6 +54,8 @@ pub struct App {
     pub column_titles: Option<Vec<String>>,
     /// Scrolling offset for windows.
     pub scroll_offset: usize,
+    /// The syling for the theme.
+    pub theme_style: Style,
 }
 
 impl App {
@@ -67,6 +77,10 @@ impl App {
             table_constraints: None,
             column_titles: None,
             scroll_offset: 0,
+            theme_style: match config.frontend.theme {
+                Theme::Light => BORDER_NAME_LIGHT,
+                _ => BORDER_NAME_DARK,
+            },
         }
     }
 

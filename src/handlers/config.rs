@@ -91,6 +91,8 @@ pub struct FrontendConfig {
     pub padding: bool,
     /// Show twitch badges next to usernames.
     pub badges: bool,
+    /// Theme, being either light or dark.
+    pub theme: Theme,
 }
 
 impl Default for TwitchConfig {
@@ -126,6 +128,7 @@ impl Default for FrontendConfig {
             title_shown: true,
             padding: true,
             badges: false,
+            theme: Theme::Dark,
         }
     }
 }
@@ -154,6 +157,31 @@ impl FromStr for Palette {
             "warm" => Ok(Palette::Warm),
             "cool" => Ok(Palette::Cool),
             _ => Ok(Palette::Pastel),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum Theme {
+    Dark,
+    Light,
+    Custom,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Theme::Dark
+    }
+}
+
+impl FromStr for Theme {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "light" => Ok(Theme::Light),
+            _ => Ok(Theme::Dark),
         }
     }
 }

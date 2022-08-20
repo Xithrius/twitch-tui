@@ -103,9 +103,15 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                     BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
                 },
+                app.theme_style,
             )
         } else {
-            data.to_row(&config.frontend, &message_chunk_width, None)
+            data.to_row(
+                &config.frontend,
+                &message_chunk_width,
+                None,
+                app.theme_style,
+            )
         };
 
         for row in rows.iter().rev() {
@@ -170,7 +176,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             Block::default()
                 .borders(Borders::ALL)
                 .title(chat_title_format())
-                .style(styles::BORDER_NAME),
+                .style(app.theme_style),
         )
         .widths(table_widths.as_ref())
         .column_spacing(1);
@@ -185,7 +191,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         State::MessageSearch => chunks::message_search::search_messages(frame, app, verticals),
 
         // States that require popups
-        State::Help => popups::help::show_keybinds(frame),
+        State::Help => popups::help::show_keybinds(frame, app.theme_style),
         State::ChannelSwitch => {
             popups::channels::switch_channels(frame, app, config.storage.channels)
         }

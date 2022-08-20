@@ -45,3 +45,5 @@ title_shown = true
 padding = true
 # Show twitch badges next to usernames.
 badges = true
+# The theme of the frontend, dark (default), or light.
+theme = "dark"
