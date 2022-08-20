@@ -1,6 +1,10 @@
+use std::str::FromStr;
+
 use clap::Parser;
 
 use crate::handlers::config::{CompleteConfig, Palette};
+
+use super::config::Theme;
 
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]
@@ -37,6 +41,9 @@ pub struct Cli {
     /// Twitch badges support
     #[clap(short, long)]
     pub badges: bool,
+    /// The theme of the terminal
+    #[clap(long, possible_values = &["dark", "light"])]
+    pub theme: Option<String>,
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
@@ -72,4 +79,7 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
         config.frontend.palette = palette;
     }
     config.frontend.badges = args.badges;
+    if let Some(theme) = args.theme {
+        config.frontend.theme = Theme::from_str(theme.as_str()).unwrap();
+    }
 }
