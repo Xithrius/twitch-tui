@@ -119,6 +119,4 @@
 
 If you have any problems, do not hesitate to [submit an issue](https://github.com/Xithrius/twitch-tui/issues/new/choose).
 
-## More information
-
-- This project used to be named `terminal-twitch-chat`, but was renamed to `twitch-tui` in version [1.2.2](https://github.com/Xithrius/twitch-tui/releases/tag/v1.2.2).
+Along with this application, I recommend using [streamlink](https://github.com/streamlink/streamlink) so there's no more need for a browser.
