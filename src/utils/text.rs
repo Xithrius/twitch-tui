@@ -32,8 +32,8 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
 }
 
 pub fn vector_column_max<T>(vec: &[Vec<T>]) -> IntoIter<u16>
-    where
-        T: AsRef<str>,
+where
+    T: AsRef<str>,
 {
     if vec.is_empty() {
         panic!("Vector length should be greater than or equal to 1.")
