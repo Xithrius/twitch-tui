@@ -32,8 +32,8 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
 }
 
 pub fn vector_column_max<T>(vec: &[Vec<T>]) -> IntoIter<u16>
-where
-    T: AsRef<str>,
+    where
+        T: AsRef<str>,
 {
     if vec.is_empty() {
         panic!("Vector length should be greater than or equal to 1.")
@@ -63,7 +63,7 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
         .sum()
 }
 
-pub fn title_spans<'a>(contents: Vec<Vec<&str>>, style: Style) -> Spans<'a> {
+pub fn title_spans(contents: Vec<Vec<&str>>, style: Style) -> Vec<Span> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
@@ -74,7 +74,7 @@ pub fn title_spans<'a>(contents: Vec<Vec<&str>>, style: Style) -> Spans<'a> {
         ]);
     }
 
-    Spans::from(complete)
+    complete
 }
 
 #[cfg(test)]
@@ -82,6 +82,7 @@ mod tests {
     use tui::style::{Color, Modifier};
 
     use super::*;
+
     #[test]
     #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
     fn test_text_align_maximum_length() {
@@ -175,10 +176,10 @@ mod tests {
 
     #[test]
     fn test_2_dimensional_vector_to_spans() {
-        let s = title_spans(
+        let s = Spans::from(title_spans(
             vec![vec!["Time", "Some time"]],
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-        );
+        ));
 
         assert_eq!(s.width(), "[ Time: Some time ]".len());
     }

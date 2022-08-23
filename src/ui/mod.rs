@@ -1,13 +1,13 @@
-pub mod chunks;
-pub mod popups;
-pub mod statics;
-
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use chrono::offset::Local;
+use lazy_static::lazy_static;
+use maplit::hashmap;
+use tui::layout::Rect;
+use tui::text::Span;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     terminal::Frame,
     text::Spans,
@@ -23,52 +23,56 @@ use crate::{
     utils::{styles, text::title_spans},
 };
 
-#[derive(Debug, Clone)]
-pub struct Verticals {
-    pub chunks: Vec<Rect>,
-    pub constraints: Vec<Constraint>,
+pub mod chunks;
+pub mod popups;
+pub mod statics;
+
+lazy_static! {
+    pub static ref LAYOUTS: HashMap<State, Vec<Constraint>> = hashmap! {
+        State::Normal => vec![Constraint::Min(1)],
+        State::Insert => vec![Constraint::Min(1), Constraint::Length(3)],
+        State::Help => vec![Constraint::Min(1)]
+    };
 }
 
-impl Verticals {
-    pub fn new(chunks: Vec<Rect>, constraints: Vec<Constraint>) -> Self {
+pub struct LayoutAttributes<'a> {
+    constraints: &'a Vec<Constraint>,
+    chunks: Vec<Rect>,
+}
+
+impl<'a> LayoutAttributes<'a> {
+    pub fn new(constraints: &Vec<Constraint>, chunks: Vec<Rect>) -> Self {
         Self {
-            chunks,
             constraints,
+            chunks,
         }
     }
 }
 
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
-    let table_widths = app.table_constraints.as_ref().unwrap();
+    let mut v_constraints = LAYOUTS.get(&app.state).unwrap();
 
-    let mut vertical_chunk_constraints = vec![Constraint::Min(1)];
-
-    // Allowing the input box to exist in different modes
-    if let State::MessageInput | State::MessageSearch = app.state {
-        vertical_chunk_constraints.extend(vec![Constraint::Length(3)]);
-    }
-
-    let margin = if config.frontend.padding { 1 } else { 0 };
-
-    let vertical_chunks = Layout::default()
+    let v_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(margin)
-        .constraints(vertical_chunk_constraints.as_ref())
+        .margin(config.frontend.margin)
+        .constraints(v_constraints.as_ref())
         .split(frame.size());
 
-    let verticals = Verticals::new(vertical_chunks, vertical_chunk_constraints);
+    let layout = LayoutAttributes::new(v_constraints, v_chunks);
 
-    let horizontal_chunks = Layout::default()
+    let table_widths = app.table_constraints.as_ref().unwrap();
+
+    let h_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .margin(margin)
+        // .margin(1)
         .constraints(table_widths.as_ref())
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = verticals.chunks[0].height as usize - 3;
+    let general_chunk_height = v_chunks[0].height as usize - 3;
 
     // The chunk furthest to the right is the messages, that's the one we want.
-    let message_chunk_width = horizontal_chunks[table_widths.len() - 1].width as usize - 4;
+    let message_chunk_width = h_chunks[table_widths.len() - 1].width as usize - 4;
 
     // Making sure that messages do have a limit and don't eat up all the RAM.
     app.messages.truncate(config.terminal.maximum_messages);
@@ -134,7 +138,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let chat_title_format = || -> Spans {
         if config.frontend.title_shown {
-            title_spans(
+            let mut t_spans = title_spans(
                 vec![
                     vec![
                         "Time",
@@ -143,26 +147,22 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                             .to_string(),
                     ],
                     vec!["Channel", config.twitch.channel.as_str()],
-                    vec![
-                        "Filters",
-                        format!(
-                            "{} / {}",
-                            if app.filters.enabled() {
-                                "enabled"
-                            } else {
-                                "disabled"
-                            },
-                            if app.filters.reversed() {
-                                "reversed"
-                            } else {
-                                "static"
-                            }
-                        )
-                        .as_str(),
-                    ],
                 ],
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            )
+            );
+
+            let style = Style::default().add_modifier(Modifier::BOLD);
+
+            t_spans.extend(vec![Span::styled(
+                "Filter",
+                style.fg(if app.filters.enabled() {
+                    Color::Green
+                } else {
+                    Color::Red
+                }),
+            )]);
+
+            Spans::from(&t_spans)
         } else {
             Spans::default()
         }
@@ -181,14 +181,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .widths(table_widths.as_ref())
         .column_spacing(1);
 
-    frame.render_widget(table, verticals.chunks[0]);
+    frame.render_widget(table, v_chunks[0]);
 
     match app.state {
         // States of the application that require a chunk of the main window
-        State::MessageInput => {
-            chunks::chatting::message_input(frame, app, verticals, config.storage.mentions)
+        State::Insert => {
+            chunks::chatting::message_input(frame, app, layout, config.storage.mentions)
         }
-        State::MessageSearch => chunks::message_search::search_messages(frame, app, verticals),
+        State::MessageSearch => chunks::message_search::search_messages(frame, app, layout),
 
         // States that require popups
         State::Help => popups::help::show_keybinds(frame, app.theme_style),

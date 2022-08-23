@@ -5,13 +5,13 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::{handlers::app::App, ui::Verticals, utils::text::get_cursor_position};
+use crate::{handlers::app::App, ui::LayoutAttributes, utils::text::get_cursor_position};
 
-pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App, verticals: Verticals) {
+pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App, layout: LayoutAttributes) {
     let input_buffer = app.current_buffer();
 
     let cursor_pos = get_cursor_position(input_buffer);
-    let input_rect = verticals.chunks[verticals.constraints.len() - 1];
+    let input_rect = layout.chunks[layout.constraints.len() - 1];
 
     frame.set_cursor(
         (input_rect.x + cursor_pos as u16 + 1)
@@ -31,5 +31,5 @@ pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App, vertical
             ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
         ));
 
-    frame.render_widget(paragraph, verticals.chunks[verticals.constraints.len() - 1]);
+    frame.render_widget(paragraph, input_rect);
 }

@@ -1,24 +1,16 @@
-use tui::{
-    backend::Backend,
-    style::{Color, Modifier, Style},
-    terminal::Frame,
-    text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph},
-};
+use tui::{backend::Backend, terminal::Frame};
 
 use crate::{
     handlers::app::App,
-    ui::{
-        statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
-        Verticals,
-    },
-    utils::text::{get_cursor_position, title_spans},
+    ui::{statics::COMMANDS, LayoutAttributes},
 };
+
+use super::insert_box_chunk;
 
 pub fn message_input<T: Backend>(
     frame: &mut Frame<T>,
     app: &mut App,
-    verticals: Verticals,
+    layout: LayoutAttributes,
     mention_suggestions: bool,
 ) {
     let input_buffer = app.current_buffer();
@@ -69,50 +61,7 @@ pub fn message_input<T: Backend>(
         "".to_string()
     };
 
-    let cursor_pos = get_cursor_position(input_buffer);
-    let input_rect = verticals.chunks[verticals.constraints.len() - 1];
-
-    frame.set_cursor(
-        (input_rect.x + cursor_pos as u16 + 1)
-            .min(input_rect.x + input_rect.width.saturating_sub(2)),
-        input_rect.y + 1,
-    );
-
-    let paragraph = Paragraph::new(Spans::from(vec![
-        Span::raw(input_buffer.as_str()),
-        Span::styled(
-            if suggestion.len() > input_buffer.as_str().len() {
-                &suggestion[input_buffer.as_str().len()..]
-            } else {
-                ""
-            },
-            Style::default().add_modifier(Modifier::DIM),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(title_spans(
-                vec![vec![
-                    "Message limit",
-                    format!("{} / {}", current_input.len(), *TWITCH_MESSAGE_LIMIT).as_str(),
-                ]],
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ))
-            .border_style(
-                Style::default().fg(if current_input.len() > *TWITCH_MESSAGE_LIMIT {
-                    Color::Red
-                } else {
-                    Color::Yellow
-                }),
-            ),
-    )
-    .scroll((
-        0,
-        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
-    ));
-
-    frame.render_widget(paragraph, verticals.chunks[verticals.constraints.len() - 1]);
+    insert_box_chunk(frame, layout, *input_buffer, Some(suggestion));
 
     app.buffer_suggestion = suggestion;
 }

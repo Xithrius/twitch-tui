@@ -1,5 +1,5 @@
 use std::{
-    cmp::Eq,
+    cmp::{Eq, PartialEq},
     collections::{HashMap, VecDeque},
     hash::Hash,
 };
@@ -18,9 +18,10 @@ use crate::{
     utils::styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
 };
 
+#[derive(PartialEq, Eq, Hash)]
 pub enum State {
     Normal,
-    MessageInput,
+    Insert,
     Help,
     ChannelSwitch,
     MessageSearch,
@@ -54,7 +55,7 @@ pub struct App {
     pub column_titles: Option<Vec<String>>,
     /// Scrolling offset for windows.
     pub scroll_offset: usize,
-    /// The syling for the theme.
+    /// The styling for the theme.
     pub theme_style: Style,
 }
 
