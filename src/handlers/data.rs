@@ -94,7 +94,8 @@ impl Data {
         &self,
         frontend_config: &FrontendConfig,
         limit: &usize,
-        highlight: Option<String>,
+        search_highlight: Option<String>,
+        _username_highlight: Option<String>,
         theme_style: Style,
     ) -> Vec<Row> {
         let message = if let PayLoad::Message(m) = &self.payload {
@@ -103,7 +104,7 @@ impl Data {
             panic!("Data.to_row() can only take an enum of PayLoad::Message.");
         };
 
-        let msg_cells: Vec<Cell> = if let Some(search) = highlight {
+        let msg_cells: Vec<Cell> = if let Some(search) = search_highlight {
             message
                 .split('\n')
                 .map(|s| {

@@ -93,6 +93,8 @@ pub struct FrontendConfig {
     pub badges: bool,
     /// Theme, being either light or dark.
     pub theme: Theme,
+    /// If the username should be highlighted when it appears in chat.
+    pub username_highlight: bool,
 }
 
 impl Default for TwitchConfig {
@@ -129,6 +131,7 @@ impl Default for FrontendConfig {
             padding: true,
             badges: false,
             theme: Theme::Dark,
+            username_highlight: true,
         }
     }
 }

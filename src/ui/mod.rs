@@ -95,6 +95,12 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
         let buffer = app.current_buffer();
 
+        let username_highlight = if config.frontend.username_highlight {
+            Some(config.twitch.username.clone())
+        } else {
+            None
+        };
+
         let rows = if !buffer.is_empty() {
             data.to_row(
                 &config.frontend,
@@ -103,6 +109,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                     BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
                 },
+                username_highlight,
                 app.theme_style,
             )
         } else {
@@ -110,6 +117,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 &config.frontend,
                 &message_chunk_width,
                 None,
+                username_highlight,
                 app.theme_style,
             )
         };
