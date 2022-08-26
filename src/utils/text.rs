@@ -5,10 +5,7 @@ use textwrap::core::display_width;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use tui::{
-    style::Style,
-    text::{Span, Spans},
-};
+use tui::{style::Style, text::Span};
 
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     if maximum_length < 1 {
@@ -63,23 +60,59 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
         .sum()
 }
 
-pub fn title_spans(contents: Vec<Vec<&str>>, style: Style) -> Vec<Span> {
+pub enum TitleStyle<'a> {
+    Combined(&'a str, &'a str),
+    Single(&'a str),
+    Custom(Span<'a>),
+}
+
+pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
-        complete.extend(vec![
-            Span::raw(format!("{}[ ", if i != 0 { " " } else { "" })),
-            Span::styled(item[0].to_string(), style),
-            Span::raw(format!(": {} ]", item[1])),
-        ]);
+        let first_bracket = Span::raw(format!("{}[ ", if i != 0 { " " } else { "" }));
+
+        complete.extend(match item {
+            TitleStyle::Combined(title, value) => vec![
+                first_bracket,
+                Span::styled(title.to_string(), style),
+                Span::raw(format!(": {} ]", value)),
+            ],
+            TitleStyle::Single(value) => vec![
+                first_bracket,
+                Span::styled(value.to_string(), style),
+                Span::raw(" ]"),
+            ],
+            TitleStyle::Custom(span) => vec![first_bracket, span.to_owned(), Span::raw(" ]")],
+        });
     }
 
     complete
 }
 
+pub fn suggestion_partition(search: String, possibilities: Vec<String>) -> Option<String> {
+    if let Some(result) = possibilities
+        .iter()
+        .filter(|s| s.starts_with(&search))
+        .collect::<Vec<&String>>()
+        .first()
+    {
+        if result.len() > search.len() {
+            Some((result[search.len()..]).to_string())
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use tui::style::{Color, Modifier};
+    use tui::{
+        style::{Color, Modifier},
+        text::Spans,
+    };
 
     use super::*;
 
@@ -177,7 +210,7 @@ mod tests {
     #[test]
     fn test_2_dimensional_vector_to_spans() {
         let s = Spans::from(title_spans(
-            vec![vec!["Time", "Some time"]],
+            vec![TitleStyle::Combined("Time", "Some time")],
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         ));
 

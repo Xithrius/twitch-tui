@@ -9,7 +9,7 @@ use tui::{
 use crate::{
     handlers::app::App,
     ui::popups::{centered_popup, WindowType},
-    utils::text::get_cursor_position,
+    utils::text::{get_cursor_position, suggestion_partition},
 };
 
 pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App, channel_suggestions: bool) {
@@ -18,20 +18,16 @@ pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App, channel_
     let input_buffer = app.current_buffer();
 
     let suggestion = if channel_suggestions {
-        if let Some(result) = app
-            .storage
-            .get("channels".to_string())
-            .iter()
-            .filter(|s| s.starts_with(input_buffer.as_str()))
-            .collect::<Vec<&String>>()
-            .first()
-        {
-            result.to_string()
-        } else {
-            "".to_string()
-        }
+        suggestion_partition(
+            input_buffer.to_string(),
+            app.storage
+                .get("channels".to_string())
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>(),
+        )
     } else {
-        "".to_string()
+        None
     };
 
     let cursor_pos = get_cursor_position(input_buffer);
@@ -45,10 +41,10 @@ pub fn switch_channels<T: Backend>(frame: &mut Frame<T>, app: &mut App, channel_
     let paragraph = Paragraph::new(Spans::from(vec![
         Span::raw(input_buffer.as_str()),
         Span::styled(
-            if suggestion.len() > input_buffer.as_str().len() {
-                &suggestion[input_buffer.as_str().len()..]
+            if let Some(suggestion_buffer) = suggestion.clone() {
+                suggestion_buffer
             } else {
-                ""
+                "".to_string()
             },
             Style::default().add_modifier(Modifier::DIM),
         ),

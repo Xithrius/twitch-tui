@@ -1,6 +1,8 @@
 use std::collections::{HashMap, VecDeque};
+use std::vec;
 
 use chrono::offset::Local;
+use color_eyre::eyre::ContextCompat;
 use lazy_static::lazy_static;
 use maplit::hashmap;
 use tui::layout::Rect;
@@ -14,6 +16,7 @@ use tui::{
     widgets::{Block, Borders, Cell, Row, Table},
 };
 
+use crate::utils::text::TitleStyle;
 use crate::{
     handlers::{
         app::{App, BufferName, State},
@@ -31,7 +34,8 @@ lazy_static! {
     pub static ref LAYOUTS: HashMap<State, Vec<Constraint>> = hashmap! {
         State::Normal => vec![Constraint::Min(1)],
         State::Insert => vec![Constraint::Min(1), Constraint::Length(3)],
-        State::Help => vec![Constraint::Min(1)]
+        State::Help => vec![Constraint::Min(1)],
+        State::ChannelSwitch => vec![Constraint::Min(1)]
     };
 }
 
@@ -41,7 +45,7 @@ pub struct LayoutAttributes<'a> {
 }
 
 impl<'a> LayoutAttributes<'a> {
-    pub fn new(constraints: &Vec<Constraint>, chunks: Vec<Rect>) -> Self {
+    pub fn new(constraints: &'a Vec<Constraint>, chunks: Vec<Rect>) -> Self {
         Self {
             constraints,
             chunks,
@@ -50,7 +54,10 @@ impl<'a> LayoutAttributes<'a> {
 }
 
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
-    let mut v_constraints = LAYOUTS.get(&app.state).unwrap();
+    let v_constraints = LAYOUTS
+        .get(&app.state)
+        .wrap_err(format!("Could not find layout {:?}.", &app.state))
+        .unwrap();
 
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -62,14 +69,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let table_widths = app.table_constraints.as_ref().unwrap();
 
+    // Horizontal chunks represents the table within the main chat window.
     let h_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        // .margin(1)
         .constraints(table_widths.as_ref())
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = v_chunks[0].height as usize - 3;
+    let general_chunk_height = layout.chunks[0].height as usize - 3;
 
     // The chunk furthest to the right is the messages, that's the one we want.
     let message_chunk_width = h_chunks[table_widths.len() - 1].width as usize - 4;
@@ -91,6 +98,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             }
         }
 
+        // Offsetting of messages for scrolling through said messages
         if scroll_offset > 0 {
             scroll_offset -= 1;
 
@@ -136,36 +144,30 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         }
     }
 
-    let chat_title_format = || -> Spans {
-        if config.frontend.title_shown {
-            let mut t_spans = title_spans(
-                vec![
-                    vec![
-                        "Time",
-                        &Local::now()
-                            .format(config.frontend.date_format.as_str())
-                            .to_string(),
-                    ],
-                    vec!["Channel", config.twitch.channel.as_str()],
-                ],
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            );
+    let current_time = Local::now()
+        .format(&config.frontend.date_format)
+        .to_string();
 
-            let style = Style::default().add_modifier(Modifier::BOLD);
-
-            t_spans.extend(vec![Span::styled(
-                "Filter",
-                style.fg(if app.filters.enabled() {
-                    Color::Green
-                } else {
-                    Color::Red
-                }),
-            )]);
-
-            Spans::from(&t_spans)
-        } else {
-            Spans::default()
-        }
+    let chat_title = if config.frontend.title_shown {
+        Spans::from(title_spans(
+            vec![
+                TitleStyle::Combined("Time", &current_time),
+                TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
+                TitleStyle::Custom(Span::styled(
+                    "Filter",
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .fg(if app.filters.enabled() {
+                            Color::Green
+                        } else {
+                            Color::Red
+                        }),
+                )),
+            ],
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        ))
+    } else {
+        Spans::default()
     };
 
     let table = Table::new(display_rows)
@@ -175,13 +177,13 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(chat_title_format())
+                .title(chat_title)
                 .style(app.theme_style),
         )
         .widths(table_widths.as_ref())
         .column_spacing(1);
 
-    frame.render_widget(table, v_chunks[0]);
+    frame.render_widget(table, layout.chunks[0]);
 
     match app.state {
         // States of the application that require a chunk of the main window

@@ -18,7 +18,7 @@ use crate::{
     utils::styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
 };
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum State {
     Normal,
     Insert,
@@ -46,7 +46,7 @@ pub struct App {
     /// Which input buffer is currently selected.
     pub selected_buffer: BufferName,
     /// The current suggestion for a specific buffer.
-    pub buffer_suggestion: String,
+    pub buffer_suggestion: Option<String>,
     /// Current value of the input box.
     pub input_buffers: HashMap<BufferName, LineBuffer>,
     /// The constraints that are set on the table.
@@ -73,7 +73,7 @@ impl App {
             filters: Filters::new("filters.txt", config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
-            buffer_suggestion: "".to_string(),
+            buffer_suggestion: Some("".to_string()),
             input_buffers: input_buffers_map,
             table_constraints: None,
             column_titles: None,

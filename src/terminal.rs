@@ -210,13 +210,13 @@ pub async fn ui_driver(
                             input_buffer.backspace(1);
                         }
                         Key::Tab => {
-                            let suggestion = app.buffer_suggestion.as_str();
+                            let suggestion = app.buffer_suggestion.clone();
 
-                            if !suggestion.is_empty() {
+                            if let Some(suggestion_buffer) = suggestion {
                                 app.input_buffers
                                     .get_mut(&app.selected_buffer)
                                     .unwrap()
-                                    .update(suggestion, suggestion.len());
+                                    .update(suggestion_buffer.as_str(), suggestion_buffer.len());
                             }
                         }
                         Key::Enter => match app.selected_buffer {
