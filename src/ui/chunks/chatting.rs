@@ -19,14 +19,33 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
     let suggestion = if mention_suggestions {
         if let Some(start_character) = input_buffer.chars().next() {
             match start_character {
-                '/' => suggestion_query(
-                    current_input,
-                    COMMANDS
-                        .iter()
-                        .map(|s| s.to_string())
-                        .collect::<Vec<String>>(),
-                ),
-                '@' => suggestion_query(current_input, app.storage.get("mentions".to_string())),
+                '/' => {
+                    let possible_suggestion = suggestion_query(
+                        current_input[1..].to_string(),
+                        COMMANDS
+                            .iter()
+                            .map(|s| s.to_string())
+                            .collect::<Vec<String>>(),
+                    );
+
+                    if let Some(s) = possible_suggestion {
+                        Some(format!("/{}", s))
+                    } else {
+                        possible_suggestion
+                    }
+                }
+                '@' => {
+                    let possible_suggestion = suggestion_query(
+                        current_input[1..].to_string(),
+                        app.storage.get("mentions".to_string()),
+                    );
+
+                    if let Some(s) = possible_suggestion {
+                        Some(format!("@{}", s))
+                    } else {
+                        possible_suggestion
+                    }
+                }
                 _ => None,
             }
         } else {
