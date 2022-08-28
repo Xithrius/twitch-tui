@@ -1,118 +1,68 @@
-use tui::{
-    backend::Backend,
-    style::{Color, Modifier, Style},
-    terminal::Frame,
-    text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph},
-};
+use tui::backend::Backend;
 
 use crate::{
-    handlers::app::App,
     ui::{
+        insert_box_chunk,
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
-        Verticals,
+        WindowAttributes,
     },
-    utils::text::{get_cursor_position, title_spans},
+    utils::text::suggestion_query,
 };
 
-pub fn message_input<T: Backend>(
-    frame: &mut Frame<T>,
-    app: &mut App,
-    verticals: Verticals,
-    mention_suggestions: bool,
-) {
+pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
+    let WindowAttributes { frame, app, layout } = window;
+
     let input_buffer = app.current_buffer();
 
     let current_input = input_buffer.to_string();
 
-    let suggestion = if let Some(start_character) = input_buffer.chars().next() {
-        let first_result = |choices: Vec<String>, choice: String| -> String {
-            if let Some(result) = choices
-                .iter()
-                .filter(|s| s.starts_with(&choice[1..]))
-                .collect::<Vec<&String>>()
-                .first()
-            {
-                result.to_string()
-            } else {
-                "".to_string()
-            }
-        };
+    let suggestion = if mention_suggestions {
+        if let Some(start_character) = input_buffer.chars().next() {
+            match start_character {
+                '/' => {
+                    let possible_suggestion = suggestion_query(
+                        current_input[1..].to_string(),
+                        COMMANDS
+                            .iter()
+                            .map(|s| s.to_string())
+                            .collect::<Vec<String>>(),
+                    );
 
-        match start_character {
-            '/' => format!(
-                "/{}",
-                first_result(
-                    COMMANDS
-                        .iter()
-                        .map(|s| s.to_string())
-                        .collect::<Vec<String>>(),
-                    input_buffer.to_string(),
-                )
-            ),
-            '@' => {
-                if mention_suggestions {
-                    format!(
-                        "@{}",
-                        first_result(
-                            app.storage.get("mentions".to_string()),
-                            input_buffer.to_string(),
-                        )
-                    )
-                } else {
-                    "".to_string()
+                    if let Some(s) = possible_suggestion {
+                        Some(format!("/{}", s))
+                    } else {
+                        possible_suggestion
+                    }
                 }
+                '@' => {
+                    let possible_suggestion = suggestion_query(
+                        current_input[1..].to_string(),
+                        app.storage.get("mentions".to_string()),
+                    );
+
+                    if let Some(s) = possible_suggestion {
+                        Some(format!("@{}", s))
+                    } else {
+                        possible_suggestion
+                    }
+                }
+                _ => None,
             }
-            _ => "".to_string(),
+        } else {
+            None
         }
     } else {
-        "".to_string()
+        None
     };
 
-    let cursor_pos = get_cursor_position(input_buffer);
-    let input_rect = verticals.chunks[verticals.constraints.len() - 1];
-
-    frame.set_cursor(
-        (input_rect.x + cursor_pos as u16 + 1)
-            .min(input_rect.x + input_rect.width.saturating_sub(2)),
-        input_rect.y + 1,
+    insert_box_chunk(
+        frame,
+        app,
+        layout,
+        None,
+        suggestion,
+        Some(Box::new(|s: String| -> bool {
+            s.len() < *TWITCH_MESSAGE_LIMIT
+        })),
     );
-
-    let paragraph = Paragraph::new(Spans::from(vec![
-        Span::raw(input_buffer.as_str()),
-        Span::styled(
-            if suggestion.len() > input_buffer.as_str().len() {
-                &suggestion[input_buffer.as_str().len()..]
-            } else {
-                ""
-            },
-            Style::default().add_modifier(Modifier::DIM),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(title_spans(
-                vec![vec![
-                    "Message limit",
-                    format!("{} / {}", current_input.len(), *TWITCH_MESSAGE_LIMIT).as_str(),
-                ]],
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ))
-            .border_style(
-                Style::default().fg(if current_input.len() > *TWITCH_MESSAGE_LIMIT {
-                    Color::Red
-                } else {
-                    Color::Yellow
-                }),
-            ),
-    )
-    .scroll((
-        0,
-        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
-    ));
-
-    frame.render_widget(paragraph, verticals.chunks[verticals.constraints.len() - 1]);
-
-    app.buffer_suggestion = suggestion;
 }

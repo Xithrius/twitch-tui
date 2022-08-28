@@ -87,8 +87,8 @@ pub struct FrontendConfig {
     pub palette: Palette,
     /// Show Title with time and channel.
     pub title_shown: bool,
-    /// Show padding around chat frame.
-    pub padding: bool,
+    /// The amount of space between the chat window and the terminal border.
+    pub margin: u16,
     /// Show twitch badges next to usernames.
     pub badges: bool,
     /// Theme, being either light or dark.
@@ -128,7 +128,7 @@ impl Default for FrontendConfig {
             username_alignment: "right".to_string(),
             palette: Palette::default(),
             title_shown: true,
-            padding: true,
+            margin: 0,
             badges: false,
             theme: Theme::Dark,
             username_highlight: true,

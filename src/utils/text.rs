@@ -2,13 +2,9 @@ use std::vec::IntoIter;
 
 use rustyline::line_buffer::LineBuffer;
 use textwrap::core::display_width;
+use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-
-use tui::{
-    style::Style,
-    text::{Span, Spans},
-};
 
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     if maximum_length < 1 {
@@ -54,6 +50,7 @@ where
     column_max_lengths.into_iter()
 }
 
+/// Acquiring the horizontal position of the cursor so it can be rendered visually.
 pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
     line_buffer
         .as_str()
@@ -63,25 +60,62 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
         .sum()
 }
 
-pub fn title_spans<'a>(contents: Vec<Vec<&str>>, style: Style) -> Spans<'a> {
+pub enum TitleStyle<'a> {
+    Combined(&'a str, &'a str),
+    Single(&'a str),
+    Custom(Span<'a>),
+}
+
+pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
-        complete.extend(vec![
-            Span::raw(format!("{}[ ", if i != 0 { " " } else { "" })),
-            Span::styled(item[0].to_string(), style),
-            Span::raw(format!(": {} ]", item[1])),
-        ]);
+        let first_bracket = Span::raw(format!("{}[ ", if i != 0 { " " } else { "" }));
+
+        complete.extend(match item {
+            TitleStyle::Combined(title, value) => vec![
+                first_bracket,
+                Span::styled(title.to_string(), style),
+                Span::raw(format!(": {} ]", value)),
+            ],
+            TitleStyle::Single(value) => vec![
+                first_bracket,
+                Span::styled(value.to_string(), style),
+                Span::raw(" ]"),
+            ],
+            TitleStyle::Custom(span) => vec![first_bracket, span.to_owned(), Span::raw(" ]")],
+        });
     }
 
-    Spans::from(complete)
+    complete
+}
+
+pub fn suggestion_query(search: String, possibilities: Vec<String>) -> Option<String> {
+    if let Some(result) = possibilities
+        .iter()
+        .filter(|s| s.starts_with(&search))
+        .collect::<Vec<&String>>()
+        .first()
+    {
+        if result.len() > search.len() {
+            Some(result.to_string())
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use tui::style::{Color, Modifier};
+    use tui::{
+        style::{Color, Modifier},
+        text::Spans,
+    };
 
     use super::*;
+
     #[test]
     #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
     fn test_text_align_maximum_length() {
@@ -175,11 +209,20 @@ mod tests {
 
     #[test]
     fn test_2_dimensional_vector_to_spans() {
-        let s = title_spans(
-            vec![vec!["Time", "Some time"]],
+        let s = Spans::from(title_spans(
+            vec![TitleStyle::Combined("Time", "Some time")],
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-        );
+        ));
 
         assert_eq!(s.width(), "[ Time: Some time ]".len());
+    }
+
+    #[test]
+    fn test_partial_suggestion_output() {
+        let v = vec!["Nope".to_string()];
+
+        let output = suggestion_query("No".to_string(), v);
+
+        assert_eq!(output, Some("Nope".to_string()))
     }
 }

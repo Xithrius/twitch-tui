@@ -118,7 +118,7 @@ pub async fn ui_driver(
         terminal.show_cursor().unwrap();
     };
 
-    'outer: loop {
+    loop {
         if let Ok(info) = rx.try_recv() {
             match info.payload {
                 PayLoad::Message(_) => app.messages.push_front(info),
@@ -144,7 +144,7 @@ pub async fn ui_driver(
 
         if let Some(Event::Input(key)) = events.next().await {
             match app.state {
-                State::MessageInput | State::MessageSearch | State::Normal => match key {
+                State::Insert | State::MessageSearch | State::Normal => match key {
                     Key::ScrollUp => {
                         if app.scroll_offset < app.messages.len() {
                             app.scroll_offset += 1;
@@ -161,12 +161,12 @@ pub async fn ui_driver(
             }
 
             match app.state {
-                State::MessageInput | State::ChannelSwitch | State::MessageSearch => {
+                State::Insert | State::ChannelSwitch | State::MessageSearch => {
                     let input_buffer = app.current_buffer_mut();
 
                     match key {
                         Key::Up => {
-                            if let State::MessageInput = app.state {
+                            if let State::Insert = app.state {
                                 app.state = State::Normal;
                             }
                         }
@@ -210,13 +210,13 @@ pub async fn ui_driver(
                             input_buffer.backspace(1);
                         }
                         Key::Tab => {
-                            let suggestion = app.buffer_suggestion.as_str();
+                            let suggestion = app.buffer_suggestion.clone();
 
-                            if !suggestion.is_empty() {
+                            if let Some(suggestion_buffer) = suggestion {
                                 app.input_buffers
                                     .get_mut(&app.selected_buffer)
                                     .unwrap()
-                                    .update(suggestion, suggestion.len());
+                                    .update(suggestion_buffer.as_str(), suggestion_buffer.len());
                             }
                         }
                         Key::Enter => match app.selected_buffer {
@@ -300,7 +300,7 @@ pub async fn ui_driver(
                         app.filters.reverse();
                     }
                     Key::Char('i') | Key::Insert => {
-                        app.state = State::MessageInput;
+                        app.state = State::Insert;
                         app.selected_buffer = BufferName::Chat;
                     }
                     Key::Ctrl('p') => {
@@ -310,7 +310,7 @@ pub async fn ui_driver(
                     Key::Char('q') => {
                         if let State::Normal = app.state {
                             quitting(terminal);
-                            break 'outer;
+                            break;
                         }
                     }
                     Key::Esc => {
