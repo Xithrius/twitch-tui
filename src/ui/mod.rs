@@ -1,36 +1,37 @@
-use std::collections::{HashMap, VecDeque};
-use std::vec;
+use std::{
+    collections::{HashMap, VecDeque},
+    vec,
+};
 
 use chrono::offset::Local;
 use color_eyre::eyre::ContextCompat;
 use lazy_static::lazy_static;
 use maplit::hashmap;
-use tui::layout::Rect;
-use tui::text::Span;
-use tui::widgets::{Clear, Paragraph};
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::Spans,
-    widgets::{Block, Borders, Cell, Row, Table},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
 };
 
-use crate::utils::text::{get_cursor_position, TitleStyle};
 use crate::{
     handlers::{
         app::{App, BufferName, State},
         config::CompleteConfig,
         data::PayLoad,
     },
-    utils::{styles, text::title_spans},
+    ui::{
+        chunks::{chatting::ui_insert_message, message_search::ui_search_messages},
+        popups::{channels::ui_switch_channels, help::ui_show_keybinds},
+    },
+    utils::{
+        styles,
+        text::title_spans,
+        text::{get_cursor_position, TitleStyle},
+    },
 };
-
-use self::chunks::chatting::ui_insert_message;
-use self::chunks::message_search::ui_search_messages;
-use self::popups::channels::ui_switch_channels;
-use self::popups::help::ui_show_keybinds;
 
 pub mod chunks;
 pub mod popups;

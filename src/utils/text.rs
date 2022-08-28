@@ -2,10 +2,9 @@ use std::vec::IntoIter;
 
 use rustyline::line_buffer::LineBuffer;
 use textwrap::core::display_width;
+use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-
-use tui::{style::Style, text::Span};
 
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     if maximum_length < 1 {

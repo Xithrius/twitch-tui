@@ -2,9 +2,7 @@ use std::str::FromStr;
 
 use clap::Parser;
 
-use crate::handlers::config::{CompleteConfig, Palette};
-
-use super::config::Theme;
+use crate::handlers::config::{CompleteConfig, Palette, Theme};
 
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]

@@ -1,15 +1,15 @@
-mod handlers;
-mod terminal;
-mod twitch;
-mod ui;
-mod utils;
-
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::info;
 use tokio::sync::mpsc;
 
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
+
+mod handlers;
+mod terminal;
+mod twitch;
+mod ui;
+mod utils;
 
 fn initialize_logging(config: &CompleteConfig) {
     let logger = fern::Dispatch::new()
