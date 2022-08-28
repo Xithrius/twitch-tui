@@ -224,6 +224,6 @@ mod tests {
 
         let output = suggestion_query("No".to_string(), v);
 
-        assert_eq!(output, Some("pe".to_string()))
+        assert_eq!(output, Some("Nope".to_string()))
     }
 }
