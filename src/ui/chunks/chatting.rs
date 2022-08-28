@@ -1,22 +1,20 @@
-use tui::{backend::Backend, terminal::Frame};
+use tui::backend::Backend;
 
 use crate::{
-    handlers::app::App,
     ui::{
+        insert_box_chunk,
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
-        LayoutAttributes,
+        WindowAttributes,
     },
-    utils::text::suggestion_partition,
+    utils::text::suggestion_query,
 };
 
-use super::insert_box_chunk;
-
-pub fn message_input<T: Backend>(
-    frame: &mut Frame<T>,
-    app: &mut App,
-    layout: LayoutAttributes,
+pub fn ui_insert_message<'a: 'b, 'b, 'c, T: Backend>(
+    window: WindowAttributes<'a, 'b, 'c, T>,
     mention_suggestions: bool,
 ) {
+    let WindowAttributes { frame, app, layout } = window;
+
     let input_buffer = app.current_buffer();
 
     let current_input = input_buffer.to_string();
@@ -24,14 +22,14 @@ pub fn message_input<T: Backend>(
     let suggestion = if mention_suggestions {
         if let Some(start_character) = input_buffer.chars().next() {
             match start_character {
-                '/' => suggestion_partition(
+                '/' => suggestion_query(
                     current_input,
                     COMMANDS
                         .iter()
                         .map(|s| s.to_string())
                         .collect::<Vec<String>>(),
                 ),
-                '@' => suggestion_partition(current_input, app.storage.get("mentions".to_string())),
+                '@' => suggestion_query(current_input, app.storage.get("mentions".to_string())),
                 _ => None,
             }
         } else {
@@ -43,13 +41,12 @@ pub fn message_input<T: Backend>(
 
     insert_box_chunk(
         frame,
+        app,
         layout,
-        input_buffer,
+        None,
         suggestion.clone(),
         Some(Box::new(|s: String| -> bool {
             s.len() < *TWITCH_MESSAGE_LIMIT
         })),
     );
-
-    app.buffer_suggestion = suggestion;
 }

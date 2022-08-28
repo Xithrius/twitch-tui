@@ -1,13 +1,14 @@
 use tui::{
     backend::Backend,
     style::{Color, Style},
-    terminal::Frame,
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::{handlers::app::App, ui::LayoutAttributes, utils::text::get_cursor_position};
+use crate::{ui::WindowAttributes, utils::text::get_cursor_position};
 
-pub fn search_messages<T: Backend>(frame: &mut Frame<T>, app: &mut App, layout: LayoutAttributes) {
+pub fn ui_search_messages<'a: 'b, 'b, 'c, T: Backend>(window: WindowAttributes<'a, 'b, 'c, T>) {
+    let WindowAttributes { frame, layout, app } = window;
+
     let input_buffer = app.current_buffer();
 
     let cursor_pos = get_cursor_position(input_buffer);

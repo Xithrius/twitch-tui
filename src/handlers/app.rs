@@ -27,13 +27,14 @@ pub enum State {
     MessageSearch,
 }
 
-#[derive(PartialEq, Eq, Hash, IntoEnumIterator)]
+#[derive(Debug, PartialEq, Eq, Hash, IntoEnumIterator)]
 pub enum BufferName {
     Chat,
     Channel,
     MessageHighlighter,
 }
 
+#[derive(Debug)]
 pub struct App {
     /// History of recorded messages (time, username, message).
     pub messages: VecDeque<Data>,

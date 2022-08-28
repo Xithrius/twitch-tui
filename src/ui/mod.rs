@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use maplit::hashmap;
 use tui::layout::Rect;
 use tui::text::Span;
+use tui::widgets::{Clear, Paragraph};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
@@ -16,7 +17,7 @@ use tui::{
     widgets::{Block, Borders, Cell, Row, Table},
 };
 
-use crate::utils::text::TitleStyle;
+use crate::utils::text::{get_cursor_position, TitleStyle};
 use crate::{
     handlers::{
         app::{App, BufferName, State},
@@ -25,6 +26,11 @@ use crate::{
     },
     utils::{styles, text::title_spans},
 };
+
+use self::chunks::chatting::ui_insert_message;
+use self::chunks::message_search::ui_search_messages;
+use self::popups::channels::ui_switch_channels;
+use self::popups::help::ui_show_keybinds;
 
 pub mod chunks;
 pub mod popups;
@@ -39,17 +45,33 @@ lazy_static! {
     };
 }
 
-pub struct LayoutAttributes<'a> {
-    constraints: &'a Vec<Constraint>,
+#[derive(Debug, Clone)]
+pub struct LayoutAttributes {
+    constraints: Vec<Constraint>,
     chunks: Vec<Rect>,
 }
 
-impl<'a> LayoutAttributes<'a> {
-    pub fn new(constraints: &'a Vec<Constraint>, chunks: Vec<Rect>) -> Self {
+impl LayoutAttributes {
+    pub fn new(constraints: Vec<Constraint>, chunks: Vec<Rect>) -> Self {
         Self {
             constraints,
             chunks,
         }
+    }
+}
+
+pub struct WindowAttributes<'a: 'b, 'b, 'c, T: Backend> {
+    frame: &'a mut Frame<'b, T>,
+    app: &'c mut App,
+    layout: LayoutAttributes,
+}
+
+impl<'a: 'b, 'b, 'c, T> WindowAttributes<'a, 'b, 'c, T>
+where
+    T: Backend,
+{
+    pub fn new(frame: &'a mut Frame<'b, T>, app: &'c mut App, layout: LayoutAttributes) -> Self {
+        Self { frame, app, layout }
     }
 }
 
@@ -65,7 +87,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .constraints(v_constraints.as_ref())
         .split(frame.size());
 
-    let layout = LayoutAttributes::new(v_constraints, v_chunks);
+    let layout = LayoutAttributes::new(v_constraints.to_vec(), v_chunks);
 
     let table_widths = app.table_constraints.as_ref().unwrap();
 
@@ -185,18 +207,95 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     frame.render_widget(table, layout.chunks[0]);
 
-    match app.state {
+    let window = WindowAttributes::new(frame, app, layout);
+
+    match window.app.state {
         // States of the application that require a chunk of the main window
-        State::Insert => {
-            chunks::chatting::message_input(frame, app, layout, config.storage.mentions)
-        }
-        State::MessageSearch => chunks::message_search::search_messages(frame, app, layout),
+        State::Insert => ui_insert_message(window, config.storage.mentions),
+        State::MessageSearch => ui_search_messages(window),
 
         // States that require popups
-        State::Help => popups::help::show_keybinds(frame, app.theme_style),
-        State::ChannelSwitch => {
-            popups::channels::switch_channels(frame, app, config.storage.channels)
-        }
+        State::Help => ui_show_keybinds(window),
+        State::ChannelSwitch => ui_switch_channels(window, config.storage.channels),
         _ => {}
     }
+}
+
+/// Puts a box for user input at the bottom of the screen,
+/// with an interactive cursor.
+/// input_validation checks if the user's input is valid, changes window
+/// theme to red if invalid, default otherwise.
+pub fn insert_box_chunk<T: Backend>(
+    frame: &mut Frame<T>,
+    app: &mut App,
+    layout: LayoutAttributes,
+    input_rectangle: Option<Rect>,
+    // buffer: &LineBuffer,
+    suggestion: Option<String>,
+    input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
+) {
+    let buffer = app.current_buffer();
+
+    let cursor_pos = get_cursor_position(buffer);
+
+    let input_rect = if let Some(r) = input_rectangle {
+        r
+    } else {
+        layout.chunks[layout.constraints.len() - 1]
+    };
+
+    frame.set_cursor(
+        (input_rect.x + cursor_pos as u16 + 1)
+            .min(input_rect.x + input_rect.width.saturating_sub(2)),
+        input_rect.y + 1,
+    );
+
+    let current_input = buffer.as_str();
+
+    let valid_input = if let Some(check_func) = input_validation {
+        check_func(current_input.to_string())
+    } else {
+        true
+    };
+
+    let paragraph = Paragraph::new(Spans::from(vec![
+        Span::raw(current_input),
+        Span::styled(
+            if let Some(suggestion_buffer) = suggestion.clone() {
+                if suggestion_buffer.len() > current_input.len() {
+                    suggestion_buffer[current_input.len()..].to_string()
+                } else {
+                    "".to_string()
+                }
+            } else {
+                "".to_string()
+            },
+            Style::default().add_modifier(Modifier::DIM),
+        ),
+    ]))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(title_spans(
+                vec![TitleStyle::Single("Message input")],
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ))
+            .border_style(Style::default().fg(if valid_input {
+                Color::Yellow
+            } else {
+                Color::Red
+            })),
+    )
+    .scroll((
+        0,
+        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
+    ));
+
+    if matches!(app.state, State::ChannelSwitch) {
+        frame.render_widget(Clear, input_rect);
+    }
+
+    frame.render_widget(paragraph, input_rect);
+
+    app.buffer_suggestion = suggestion;
 }

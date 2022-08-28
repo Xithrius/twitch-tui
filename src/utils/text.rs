@@ -90,7 +90,7 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     complete
 }
 
-pub fn suggestion_partition(search: String, possibilities: Vec<String>) -> Option<String> {
+pub fn suggestion_query(search: String, possibilities: Vec<String>) -> Option<String> {
     if let Some(result) = possibilities
         .iter()
         .filter(|s| s.starts_with(&search))
@@ -98,7 +98,7 @@ pub fn suggestion_partition(search: String, possibilities: Vec<String>) -> Optio
         .first()
     {
         if result.len() > search.len() {
-            Some((result[search.len()..]).to_string())
+            Some(result.to_string())
         } else {
             None
         }
@@ -215,5 +215,14 @@ mod tests {
         ));
 
         assert_eq!(s.width(), "[ Time: Some time ]".len());
+    }
+
+    #[test]
+    fn test_partial_suggestion_output() {
+        let v = vec!["Nope".to_string()];
+
+        let output = suggestion_query("No".to_string(), v);
+
+        assert_eq!(output, Some("pe".to_string()))
     }
 }
