@@ -9,10 +9,7 @@ use crate::{
     utils::text::suggestion_query,
 };
 
-pub fn ui_switch_channels<'a: 'b, 'b, 'c, T: Backend>(
-    window: WindowAttributes<'a, 'b, 'c, T>,
-    channel_suggestions: bool,
-) {
+pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_suggestions: bool) {
     let WindowAttributes { frame, app, layout } = window;
 
     let input_buffer = app.current_buffer();
@@ -32,12 +29,5 @@ pub fn ui_switch_channels<'a: 'b, 'b, 'c, T: Backend>(
         None
     };
 
-    insert_box_chunk(
-        frame,
-        app,
-        layout,
-        Some(input_rect),
-        suggestion.clone(),
-        None,
-    );
+    insert_box_chunk(frame, app, layout, Some(input_rect), suggestion, None);
 }

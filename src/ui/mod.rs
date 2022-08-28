@@ -60,13 +60,13 @@ impl LayoutAttributes {
     }
 }
 
-pub struct WindowAttributes<'a: 'b, 'b, 'c, T: Backend> {
+pub struct WindowAttributes<'a, 'b, 'c, T: Backend> {
     frame: &'a mut Frame<'b, T>,
     app: &'c mut App,
     layout: LayoutAttributes,
 }
 
-impl<'a: 'b, 'b, 'c, T> WindowAttributes<'a, 'b, 'c, T>
+impl<'a, 'b, 'c, T> WindowAttributes<'a, 'b, 'c, T>
 where
     T: Backend,
 {

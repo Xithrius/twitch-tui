@@ -9,10 +9,7 @@ use crate::{
     utils::text::suggestion_query,
 };
 
-pub fn ui_insert_message<'a: 'b, 'b, 'c, T: Backend>(
-    window: WindowAttributes<'a, 'b, 'c, T>,
-    mention_suggestions: bool,
-) {
+pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
     let WindowAttributes { frame, app, layout } = window;
 
     let input_buffer = app.current_buffer();
@@ -44,7 +41,7 @@ pub fn ui_insert_message<'a: 'b, 'b, 'c, T: Backend>(
         app,
         layout,
         None,
-        suggestion.clone(),
+        suggestion,
         Some(Box::new(|s: String| -> bool {
             s.len() < *TWITCH_MESSAGE_LIMIT
         })),

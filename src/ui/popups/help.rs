@@ -13,7 +13,7 @@ use crate::{
     utils::{styles, text::vector_column_max},
 };
 
-pub fn ui_show_keybinds<'a: 'b, 'b, 'c, T: Backend>(window: WindowAttributes<'a, 'b, 'c, T>) {
+pub fn ui_show_keybinds<T: Backend>(window: WindowAttributes<T>) {
     let WindowAttributes {
         frame,
         app,

@@ -51,6 +51,7 @@ where
     column_max_lengths.into_iter()
 }
 
+/// Acquiring the horizontal position of the cursor so it can be rendered visually.
 pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
     line_buffer
         .as_str()

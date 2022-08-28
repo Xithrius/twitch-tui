@@ -6,7 +6,7 @@ use tui::{
 
 use crate::{ui::WindowAttributes, utils::text::get_cursor_position};
 
-pub fn ui_search_messages<'a: 'b, 'b, 'c, T: Backend>(window: WindowAttributes<'a, 'b, 'c, T>) {
+pub fn ui_search_messages<T: Backend>(window: WindowAttributes<T>) {
     let WindowAttributes { frame, layout, app } = window;
 
     let input_buffer = app.current_buffer();
