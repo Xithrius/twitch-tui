@@ -1,8 +1,6 @@
 use tui::{
     backend::Backend,
     layout::Constraint,
-    style::Style,
-    terminal::Frame,
     widgets::{Block, Borders, Clear, Row, Table},
 };
 
@@ -10,11 +8,18 @@ use crate::{
     ui::{
         popups::{centered_popup, Centering, WindowType},
         statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
+        WindowAttributes,
     },
     utils::{styles, text::vector_column_max},
 };
 
-pub fn show_keybinds<T: Backend>(frame: &mut Frame<T>, theme_style: Style) {
+pub fn ui_show_keybinds<T: Backend>(window: WindowAttributes<T>) {
+    let WindowAttributes {
+        frame,
+        app,
+        layout: _,
+    } = window;
+
     let table_widths = vector_column_max(&HELP_KEYBINDS)
         .into_iter()
         .map(Constraint::Min)
@@ -25,7 +30,7 @@ pub fn show_keybinds<T: Backend>(frame: &mut Frame<T>, theme_style: Style) {
         .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
         .widths(&table_widths)
         .column_spacing(2)
-        .style(theme_style);
+        .style(app.theme_style);
 
     let area = centered_popup(
         WindowType::Window(

@@ -1,5 +1,5 @@
 use std::{
-    cmp::Eq,
+    cmp::{Eq, PartialEq},
     collections::{HashMap, VecDeque},
     hash::Hash,
 };
@@ -18,21 +18,23 @@ use crate::{
     utils::styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
 };
 
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum State {
     Normal,
-    MessageInput,
+    Insert,
     Help,
     ChannelSwitch,
     MessageSearch,
 }
 
-#[derive(PartialEq, Eq, Hash, IntoEnumIterator)]
+#[derive(Debug, PartialEq, Eq, Hash, IntoEnumIterator)]
 pub enum BufferName {
     Chat,
     Channel,
     MessageHighlighter,
 }
 
+#[derive(Debug)]
 pub struct App {
     /// History of recorded messages (time, username, message).
     pub messages: VecDeque<Data>,
@@ -45,7 +47,7 @@ pub struct App {
     /// Which input buffer is currently selected.
     pub selected_buffer: BufferName,
     /// The current suggestion for a specific buffer.
-    pub buffer_suggestion: String,
+    pub buffer_suggestion: Option<String>,
     /// Current value of the input box.
     pub input_buffers: HashMap<BufferName, LineBuffer>,
     /// The constraints that are set on the table.
@@ -54,7 +56,7 @@ pub struct App {
     pub column_titles: Option<Vec<String>>,
     /// Scrolling offset for windows.
     pub scroll_offset: usize,
-    /// The syling for the theme.
+    /// The styling for the theme.
     pub theme_style: Style,
 }
 
@@ -72,7 +74,7 @@ impl App {
             filters: Filters::new("filters.txt", config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
-            buffer_suggestion: "".to_string(),
+            buffer_suggestion: Some("".to_string()),
             input_buffers: input_buffers_map,
             table_constraints: None,
             column_titles: None,

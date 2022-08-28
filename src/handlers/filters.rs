@@ -49,6 +49,7 @@ impl Filters {
         self.enabled = !self.enabled;
     }
 
+    #[allow(dead_code)]
     pub fn reversed(&self) -> bool {
         self.reversed
     }
