@@ -28,6 +28,8 @@ lazy_static! {
         vec!["Tab", "Fill in suggestion, if available"],
         vec!["Enter", "Confirm the input text to go through"],
     ];
+
+    // https://help.twitch.tv/s/article/chat-commands?language=en_US
     pub static ref COMMANDS: Vec<&'static str> = vec![
         "ban",
         "unban",
@@ -66,4 +68,7 @@ lazy_static! {
 
     // https://discuss.dev.twitch.tv/t/irc-bot-and-message-lengths/23327/4
     pub static ref TWITCH_MESSAGE_LIMIT: usize = 500;
+
+    // https://www.reddit.com/r/Twitch/comments/32w5b2/username_requirements/
+    pub static ref CHANNEL_NAME_REGEX: &'static str = "^[a-zA-Z0-9_]{4,25}$";
 }

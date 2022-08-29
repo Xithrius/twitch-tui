@@ -47,3 +47,5 @@ margin = 0
 badges = true
 # The theme of the frontend, dark (default), or light.
 theme = "dark"
+# If the user's name appears in chat, highlight it.
+username_highlight = true

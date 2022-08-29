@@ -1,12 +1,6 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    vec,
-};
+use std::{collections::VecDeque, vec};
 
 use chrono::offset::Local;
-use color_eyre::eyre::ContextCompat;
-use lazy_static::lazy_static;
-use maplit::hashmap;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -23,28 +17,18 @@ use crate::{
         data::PayLoad,
     },
     ui::{
-        chunks::{chatting::ui_insert_message, message_search::ui_search_messages},
+        chunks::chatting::ui_insert_message,
         popups::{channels::ui_switch_channels, help::ui_show_keybinds},
     },
     utils::{
         styles,
-        text::title_spans,
-        text::{get_cursor_position, TitleStyle},
+        text::{get_cursor_position, title_spans, TitleStyle},
     },
 };
 
 pub mod chunks;
 pub mod popups;
 pub mod statics;
-
-lazy_static! {
-    pub static ref LAYOUTS: HashMap<State, Vec<Constraint>> = hashmap! {
-        State::Normal => vec![Constraint::Min(1)],
-        State::Insert => vec![Constraint::Min(1), Constraint::Length(3)],
-        State::Help => vec![Constraint::Min(1)],
-        State::ChannelSwitch => vec![Constraint::Min(1)]
-    };
-}
 
 #[derive(Debug, Clone)]
 pub struct LayoutAttributes {
@@ -77,10 +61,10 @@ where
 }
 
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
-    let v_constraints = LAYOUTS
-        .get(&app.state)
-        .wrap_err(format!("Could not find layout {:?}.", &app.state))
-        .unwrap();
+    let v_constraints = match app.state {
+        State::Insert | State::MessageSearch => vec![Constraint::Min(1), Constraint::Length(3)],
+        _ => vec![Constraint::Min(1)],
+    };
 
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -130,6 +114,12 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
         let buffer = app.current_buffer();
 
+        let username_highlight = if config.frontend.username_highlight {
+            Some(config.twitch.username.clone())
+        } else {
+            None
+        };
+
         let rows = if !buffer.is_empty() {
             data.to_row(
                 &config.frontend,
@@ -138,6 +128,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                     BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
                 },
+                username_highlight,
                 app.theme_style,
             )
         } else {
@@ -145,6 +136,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 &config.frontend,
                 &message_chunk_width,
                 None,
+                username_highlight,
                 app.theme_style,
             )
         };
@@ -213,7 +205,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     match window.app.state {
         // States of the application that require a chunk of the main window
         State::Insert => ui_insert_message(window, config.storage.mentions),
-        State::MessageSearch => ui_search_messages(window),
+        State::MessageSearch => insert_box_chunk(window, "Message Search", None, None, None),
 
         // States that require popups
         State::Help => ui_show_keybinds(window),
@@ -227,14 +219,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 /// input_validation checks if the user's input is valid, changes window
 /// theme to red if invalid, default otherwise.
 pub fn insert_box_chunk<T: Backend>(
-    frame: &mut Frame<T>,
-    app: &mut App,
-    layout: LayoutAttributes,
+    window: WindowAttributes<T>,
+    box_title: &str,
     input_rectangle: Option<Rect>,
-    // buffer: &LineBuffer,
     suggestion: Option<String>,
     input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
 ) {
+    let WindowAttributes { frame, layout, app } = window;
+
     let buffer = app.current_buffer();
 
     let cursor_pos = get_cursor_position(buffer);
@@ -278,7 +270,7 @@ pub fn insert_box_chunk<T: Backend>(
         Block::default()
             .borders(Borders::ALL)
             .title(title_spans(
-                vec![TitleStyle::Single("Message input")],
+                vec![TitleStyle::Single(box_title)],
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))
             .border_style(Style::default().fg(if valid_input {

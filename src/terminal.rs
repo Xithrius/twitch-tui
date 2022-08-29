@@ -10,6 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use log::{debug, info};
+use regex::Regex;
 use rustyline::{At, Word};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
@@ -22,7 +23,10 @@ use crate::{
         event::{Config, Event, Events, Key},
     },
     twitch::Action,
-    ui::{draw_ui, statics::TWITCH_MESSAGE_LIMIT},
+    ui::{
+        draw_ui,
+        statics::{CHANNEL_NAME_REGEX, TWITCH_MESSAGE_LIMIT},
+    },
     utils::text::align_text,
 };
 
@@ -250,18 +254,24 @@ pub async fn ui_driver(
                                 let input_message =
                                     app.input_buffers.get_mut(&app.selected_buffer).unwrap();
 
-                                if !input_message.is_empty() {
-                                    app.messages.clear();
-
-                                    tx.send(Action::Join(input_message.to_string()))
-                                        .await
-                                        .unwrap();
-
-                                    config.twitch.channel = input_message.to_string();
-
-                                    app.storage
-                                        .add("channels".to_string(), input_message.to_string())
+                                if input_message.is_empty()
+                                    || !Regex::new(*CHANNEL_NAME_REGEX)
+                                        .unwrap()
+                                        .is_match(input_message)
+                                {
+                                    continue;
                                 }
+
+                                app.messages.clear();
+
+                                tx.send(Action::Join(input_message.to_string()))
+                                    .await
+                                    .unwrap();
+
+                                config.twitch.channel = input_message.to_string();
+
+                                app.storage
+                                    .add("channels".to_string(), input_message.to_string());
 
                                 input_message.update("", 0);
 

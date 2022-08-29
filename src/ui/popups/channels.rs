@@ -1,16 +1,22 @@
+use regex::Regex;
 use tui::backend::Backend;
 
 use crate::{
     ui::{
         insert_box_chunk,
         popups::{centered_popup, WindowType},
+        statics::CHANNEL_NAME_REGEX,
         WindowAttributes,
     },
     utils::text::suggestion_query,
 };
 
 pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_suggestions: bool) {
-    let WindowAttributes { frame, app, layout } = window;
+    let WindowAttributes {
+        frame,
+        app,
+        layout: _,
+    } = &window;
 
     let input_buffer = app.current_buffer();
 
@@ -29,5 +35,15 @@ pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_sugge
         None
     };
 
-    insert_box_chunk(frame, app, layout, Some(input_rect), suggestion, None);
+    insert_box_chunk(
+        window,
+        "Channel",
+        Some(input_rect),
+        suggestion,
+        Some(Box::new(|s: String| -> bool {
+            Regex::new(*CHANNEL_NAME_REGEX)
+                .unwrap()
+                .is_match(s.as_str())
+        })),
+    );
 }

@@ -10,7 +10,11 @@ use crate::{
 };
 
 pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
-    let WindowAttributes { frame, app, layout } = window;
+    let WindowAttributes {
+        frame: _,
+        app,
+        layout: _,
+    } = &window;
 
     let input_buffer = app.current_buffer();
 
@@ -56,9 +60,13 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
     };
 
     insert_box_chunk(
-        frame,
-        app,
-        layout,
+        window,
+        format!(
+            "Message Input: {} / {}",
+            current_input.len(),
+            *TWITCH_MESSAGE_LIMIT
+        )
+        .as_str(),
         None,
         suggestion,
         Some(Box::new(|s: String| -> bool {
