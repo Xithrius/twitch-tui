@@ -1,6 +1,7 @@
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
+use regex::Regex;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
@@ -9,8 +10,14 @@ use tui::{
 
 use crate::{
     handlers::config::{FrontendConfig, Palette},
-    utils::{colors::hsl_to_rgb, styles, text::align_text},
+    utils::{
+        colors::hsl_to_rgb,
+        styles::{self, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT},
+        text::align_text,
+    },
 };
+
+use super::config::Theme;
 
 lazy_static! {
     pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
@@ -95,7 +102,7 @@ impl Data {
         frontend_config: &FrontendConfig,
         limit: &usize,
         search_highlight: Option<String>,
-        _username_highlight: Option<String>,
+        username_highlight: Option<String>,
         theme_style: Style,
     ) -> Vec<Row> {
         let message = if let PayLoad::Message(m) = &self.payload {
@@ -104,7 +111,23 @@ impl Data {
             panic!("Data.to_row() can only take an enum of PayLoad::Message.");
         };
 
-        let msg_cells: Vec<Cell> = if let Some(search) = search_highlight {
+        let username_highlight_style = if let Some(username) = username_highlight {
+            if Regex::new(format!("^.*{}.*$", username).as_str())
+                .unwrap()
+                .is_match(&message)
+            {
+                match frontend_config.theme {
+                    Theme::Light => HIGHLIGHT_NAME_LIGHT,
+                    _ => HIGHLIGHT_NAME_DARK,
+                }
+            } else {
+                Style::default()
+            }
+        } else {
+            Style::default()
+        };
+
+        let msg_cells = if let Some(search) = search_highlight {
             message
                 .split('\n')
                 .map(|s| {
@@ -129,14 +152,22 @@ impl Data {
                                 .collect::<Vec<Span>>(),
                         )])
                     } else {
-                        Cell::from(s.to_owned())
+                        Cell::from(Spans::from(vec![Span::styled(
+                            s.to_owned(),
+                            username_highlight_style,
+                        )]))
                     }
                 })
                 .collect::<Vec<Cell>>()
         } else {
             message
                 .split('\n')
-                .map(|c| Cell::from(c.to_string()))
+                .map(|s| {
+                    Cell::from(Spans::from(vec![Span::styled(
+                        s.to_owned(),
+                        username_highlight_style,
+                    )]))
+                })
                 .collect::<Vec<Cell>>()
         };
 

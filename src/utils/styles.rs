@@ -12,12 +12,27 @@ pub const BORDER_NAME_LIGHT: Style = Style {
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
 };
+
+pub const HIGHLIGHT_NAME_DARK: Style = Style {
+    fg: Some(Color::Black),
+    bg: Some(Color::White),
+    add_modifier: Modifier::empty(),
+    sub_modifier: Modifier::empty(),
+};
+pub const HIGHLIGHT_NAME_LIGHT: Style = Style {
+    fg: Some(Color::White),
+    bg: Some(Color::Black),
+    add_modifier: Modifier::empty(),
+    sub_modifier: Modifier::empty(),
+};
+
 pub const COLUMN_TITLE: Style = Style {
     fg: Some(Color::LightCyan),
     bg: None,
     add_modifier: Modifier::BOLD,
     sub_modifier: Modifier::empty(),
 };
+
 pub const SYSTEM_CHAT: Style = Style {
     fg: Some(Color::Red),
     bg: None,
