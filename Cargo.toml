@@ -34,7 +34,6 @@ regex = "1.6.0"
 color-eyre = "0.6.2"
 log = "0.4.17"
 fern = "0.6.1"
-maplit = "1.0.2"
 
 [[bin]]
 bench = false
