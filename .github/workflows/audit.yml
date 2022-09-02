@@ -1,4 +1,4 @@
-name: audit
+name: Audit
 
 on:
   workflow_dispatch:
