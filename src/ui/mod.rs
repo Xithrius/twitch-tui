@@ -17,8 +17,8 @@ use crate::{
         data::PayLoad,
     },
     ui::{
-        chunks::chatting::ui_insert_message,
-        popups::{channels::ui_switch_channels, help::ui_show_keybinds},
+        chunks::ui_insert_message,
+        popups::{ui_switch_channels, ui_show_keybinds},
     },
     utils::{
         styles,
@@ -100,7 +100,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     'outer: for data in app.messages.iter() {
         if let PayLoad::Message(msg) = data.payload.clone() {
-            if app.filters.contaminated(msg) {
+            if app.filters.contaminated(msg.as_str()) {
                 continue;
             }
         }
@@ -123,7 +123,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         let rows = if !buffer.is_empty() {
             data.to_row(
                 &config.frontend,
-                &message_chunk_width,
+                message_chunk_width,
                 match app.selected_buffer {
                     BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
@@ -134,7 +134,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         } else {
             data.to_row(
                 &config.frontend,
-                &message_chunk_width,
+                message_chunk_width,
                 None,
                 username_highlight,
                 app.theme_style,
@@ -165,7 +165,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let chat_title = if config.frontend.title_shown {
         Spans::from(title_spans(
-            vec![
+            &vec![
                 TitleStyle::Combined("Time", &current_time),
                 TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
                 TitleStyle::Custom(Span::styled(
@@ -270,7 +270,7 @@ pub fn insert_box_chunk<T: Backend>(
         Block::default()
             .borders(Borders::ALL)
             .title(title_spans(
-                vec![TitleStyle::Single(box_title)],
+                &vec![TitleStyle::Single(box_title)],
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))
             .border_style(Style::default().fg(if valid_input {

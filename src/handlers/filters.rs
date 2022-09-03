@@ -12,7 +12,7 @@ pub struct Filters {
 }
 
 impl Filters {
-    pub fn new(file: &str, config: FiltersConfig) -> Self {
+    pub fn new(file: &str, config: &FiltersConfig) -> Self {
         let file_path = config_path(file);
 
         Self {
@@ -29,10 +29,10 @@ impl Filters {
         }
     }
 
-    pub fn contaminated(&self, data: String) -> bool {
+    pub fn contaminated(&self, data: &str) -> bool {
         if self.enabled {
             for re in &self.captures {
-                if re.is_match(&data) {
+                if re.is_match(data) {
                     return !self.reversed;
                 }
             }
@@ -41,7 +41,7 @@ impl Filters {
         self.reversed
     }
 
-    pub fn enabled(&self) -> bool {
+    pub const fn enabled(&self) -> bool {
         self.enabled
     }
 
@@ -50,7 +50,7 @@ impl Filters {
     }
 
     #[allow(dead_code)]
-    pub fn reversed(&self) -> bool {
+    pub const fn reversed(&self) -> bool {
         self.reversed
     }
 
@@ -75,14 +75,14 @@ mod tests {
     fn test_contaminated() {
         let filters = setup();
 
-        assert!(filters.contaminated("bad word".to_string()));
+        assert!(filters.contaminated("bad word"));
     }
 
     #[test]
     fn test_non_contaminated() {
         let filters = setup();
 
-        assert!(!filters.contaminated("not a bad word".to_string()));
+        assert!(!filters.contaminated("not a bad word"));
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
 
         filters.reverse();
 
-        assert!(!filters.contaminated("bad word".to_string()));
+        assert!(!filters.contaminated("bad word"));
     }
 
     #[test]
@@ -100,6 +100,6 @@ mod tests {
 
         filters.reverse();
 
-        assert!(filters.contaminated("not a bad word".to_string()));
+        assert!(filters.contaminated("not a bad word"));
     }
 }

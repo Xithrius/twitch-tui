@@ -36,11 +36,11 @@ pub struct DataBuilder<'conf> {
 }
 
 impl<'conf> DataBuilder<'conf> {
-    pub fn new(date_format: &'conf str) -> Self {
+    pub const fn new(date_format: &'conf str) -> Self {
         DataBuilder { date_format }
     }
 
-    pub fn user(self, user: String, message: String) -> Data {
+    pub fn user(user: String, message: String) -> Data {
         Data {
             time_sent: Local::now(),
             author: user,
@@ -78,18 +78,18 @@ pub struct Data {
 
 impl Data {
     fn hash_username(&self, palette: &Palette) -> Color {
-        let hash = self
+        let hash = f64::from(self
             .author
             .as_bytes()
             .iter()
-            .map(|&b| b as u32)
-            .sum::<u32>() as f64;
+            .map(|&b| u32::from(b))
+            .sum::<u32>());
 
         let (hue, saturation, lightness) = match palette {
             Palette::Pastel => (hash % 360. + 1., 0.5, 0.75),
             Palette::Vibrant => (hash % 360. + 1., 1., 0.6),
             Palette::Warm => ((hash % 100. + 1.) * 1.2, 0.8, 0.7),
-            Palette::Cool => ((hash % 100. + 1.) * 1.2 + 180., 0.6, 0.7),
+            Palette::Cool => ((hash % 100. + 1.).mul_add(1.2, 180.), 0.6, 0.7),
         };
 
         let rgb = hsl_to_rgb(hue, saturation, lightness);
@@ -100,13 +100,13 @@ impl Data {
     pub fn to_row(
         &self,
         frontend_config: &FrontendConfig,
-        limit: &usize,
+        limit: usize,
         search_highlight: Option<String>,
         username_highlight: Option<String>,
         theme_style: Style,
     ) -> Vec<Row> {
         let message = if let PayLoad::Message(m) = &self.payload {
-            textwrap::fill(m.as_str(), *limit)
+            textwrap::fill(m.as_str(), limit)
         } else {
             panic!("Data.to_row() can only take an enum of PayLoad::Message.");
         };
@@ -200,7 +200,7 @@ impl Data {
 
         if msg_cells.len() > 1 {
             for cell in msg_cells.iter().skip(1) {
-                let mut wrapped_msg = vec![Cell::from(""), cell.to_owned()];
+                let mut wrapped_msg = vec![Cell::from(""), cell.clone()];
 
                 if frontend_config.date_shown {
                     wrapped_msg.insert(0, Cell::from(""));

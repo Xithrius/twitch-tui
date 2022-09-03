@@ -61,7 +61,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig) -> Self {
+    pub fn new(config: &CompleteConfig) -> Self {
         let mut input_buffers_map = HashMap::new();
 
         for name in BufferName::into_enum_iter() {
@@ -70,8 +70,8 @@ impl App {
 
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
-            storage: Storage::new("storage.json", config.storage),
-            filters: Filters::new("filters.txt", config.filters),
+            storage: Storage::new("storage.json", &config.storage),
+            filters: Filters::new("filters.txt", &config.filters),
             state: State::Normal,
             selected_buffer: BufferName::Chat,
             buffer_suggestion: Some("".to_string()),

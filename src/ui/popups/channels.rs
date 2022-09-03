@@ -1,3 +1,5 @@
+use std::string::ToString;
+
 use regex::Regex;
 use tui::backend::Backend;
 
@@ -28,7 +30,7 @@ pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_sugge
             app.storage
                 .get("channels".to_string())
                 .iter()
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<String>>(),
         )
     } else {
