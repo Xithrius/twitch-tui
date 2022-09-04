@@ -136,7 +136,7 @@ pub async fn handle_user_input(
                                 .unwrap();
 
                             if let Some(msg) = input_message.strip_prefix('@') {
-                                app.storage.add("mentions".to_string(), msg.to_string())
+                                app.storage.add("mentions", msg.to_string())
                             }
 
                             input_message.update("", 0);
@@ -162,7 +162,7 @@ pub async fn handle_user_input(
                             config.twitch.channel = input_message.to_string();
 
                             app.storage
-                                .add("channels".to_string(), input_message.to_string());
+                                .add("channels", input_message.to_string());
 
                             input_message.update("", 0);
 

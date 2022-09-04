@@ -78,12 +78,13 @@ pub struct Data {
 
 impl Data {
     fn hash_username(&self, palette: &Palette) -> Color {
-        let hash = f64::from(self
-            .author
-            .as_bytes()
-            .iter()
-            .map(|&b| u32::from(b))
-            .sum::<u32>());
+        let hash = f64::from(
+            self.author
+                .as_bytes()
+                .iter()
+                .map(|&b| u32::from(b))
+                .sum::<u32>(),
+        );
 
         let (hue, saturation, lightness) = match palette {
             Palette::Pastel => (hash % 360. + 1., 0.5, 0.75),
@@ -111,7 +112,7 @@ impl Data {
             panic!("Data.to_row() can only take an enum of PayLoad::Message.");
         };
 
-        let username_highlight_style = if let Some(username) = username_highlight {
+        let username_highlight_style = username_highlight.map_or_else(Style::default, |username| {
             if Regex::new(format!("^.*{}.*$", username).as_str())
                 .unwrap()
                 .is_match(&message)
@@ -123,53 +124,54 @@ impl Data {
             } else {
                 Style::default()
             }
-        } else {
-            Style::default()
-        };
+        });
 
-        let msg_cells = if let Some(search) = search_highlight {
-            message
-                .split('\n')
-                .map(|s| {
-                    let chars = s.chars();
-
-                    if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
-                        Cell::from(vec![Spans::from(
-                            chars
-                                .enumerate()
-                                .map(|(i, s)| {
-                                    if indices.contains(&i) {
-                                        Span::styled(
-                                            s.to_string(),
-                                            Style::default()
-                                                .fg(Color::Red)
-                                                .add_modifier(Modifier::BOLD),
-                                        )
-                                    } else {
-                                        Span::raw(s.to_string())
-                                    }
-                                })
-                                .collect::<Vec<Span>>(),
-                        )])
-                    } else {
+        let msg_cells = search_highlight.map_or_else(
+            || {
+                message
+                    .split('\n')
+                    .map(|s| {
                         Cell::from(Spans::from(vec![Span::styled(
                             s.to_owned(),
                             username_highlight_style,
                         )]))
-                    }
-                })
-                .collect::<Vec<Cell>>()
-        } else {
-            message
-                .split('\n')
-                .map(|s| {
-                    Cell::from(Spans::from(vec![Span::styled(
-                        s.to_owned(),
-                        username_highlight_style,
-                    )]))
-                })
-                .collect::<Vec<Cell>>()
-        };
+                    })
+                    .collect::<Vec<Cell>>()
+            },
+            |search| {
+                message
+                    .split('\n')
+                    .map(|s| {
+                        let chars = s.chars();
+
+                        if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
+                            Cell::from(vec![Spans::from(
+                                chars
+                                    .enumerate()
+                                    .map(|(i, s)| {
+                                        if indices.contains(&i) {
+                                            Span::styled(
+                                                s.to_string(),
+                                                Style::default()
+                                                    .fg(Color::Red)
+                                                    .add_modifier(Modifier::BOLD),
+                                            )
+                                        } else {
+                                            Span::raw(s.to_string())
+                                        }
+                                    })
+                                    .collect::<Vec<Span>>(),
+                            )])
+                        } else {
+                            Cell::from(Spans::from(vec![Span::styled(
+                                s.to_owned(),
+                                username_highlight_style,
+                            )]))
+                        }
+                    })
+                    .collect::<Vec<Cell>>()
+            },
+        );
 
         let mut cell_vector = vec![
             Cell::from(align_text(

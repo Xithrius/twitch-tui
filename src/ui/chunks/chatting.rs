@@ -21,14 +21,15 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
     let current_input = input_buffer.to_string();
 
     let suggestion = if mention_suggestions {
-        if let Some(start_character) = input_buffer.chars().next() {
-            match start_character {
+        input_buffer
+            .chars()
+            .next().and_then(|start_character| match start_character {
                 '/' => {
                     let possible_suggestion = suggestion_query(
                         current_input[1..].to_string(),
                         COMMANDS
                             .iter()
-                            .map(|s| s.to_string())
+                            .map(ToString::to_string)
                             .collect::<Vec<String>>(),
                     );
 
@@ -44,17 +45,10 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
                         app.storage.get("mentions".to_string()),
                     );
 
-                    if let Some(s) = possible_suggestion {
-                        Some(format!("@{}", s))
-                    } else {
-                        possible_suggestion
-                    }
+                    possible_suggestion.map_or(possible_suggestion, |s| Some(format!("@{}", s)))
                 }
                 _ => None,
-            }
-        } else {
-            None
-        }
+            })
     } else {
         None
     };

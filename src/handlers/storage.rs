@@ -75,9 +75,9 @@ impl Storage {
         file.write_all(storage_str.as_bytes()).unwrap();
     }
 
-    pub fn add(&mut self, key: String, value: String) {
-        if ITEM_KEYS.contains(&key.as_str()) {
-            if let Some(item) = self.items.get_mut(&key) {
+    pub fn add(&mut self, key: &str, value: String) {
+        if ITEM_KEYS.contains(&key) {
+            if let Some(item) = self.items.get_mut(&key.to_string()) {
                 if !item.content.contains(&value) && item.enabled {
                     item.content.push(value);
                 }

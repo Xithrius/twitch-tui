@@ -70,7 +70,7 @@ pub enum TitleStyle<'a> {
     Custom(Span<'a>),
 }
 
-pub fn title_spans<'a>(contents: &'a Vec<TitleStyle>, style: Style) -> Vec<Span<'a>> {
+pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
@@ -214,7 +214,7 @@ mod tests {
     #[test]
     fn test_2_dimensional_vector_to_spans() {
         let s = Spans::from(title_spans(
-            &vec![TitleStyle::Combined("Time", "Some time")],
+            vec![TitleStyle::Combined("Time", "Some time")],
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         ));
 
