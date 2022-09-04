@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     assert!(
-        maximum_length < 1,
+        maximum_length >= 1,
         "Parameter of 'maximum_length' cannot be below 1."
     );
 
@@ -35,7 +35,7 @@ where
     T: AsRef<str>,
 {
     assert!(
-        v.is_empty(),
+        !v.is_empty(),
         "Vector length should be greater than or equal to 1."
     );
 

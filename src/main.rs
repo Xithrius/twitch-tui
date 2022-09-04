@@ -5,7 +5,8 @@
     clippy::cast_precision_loss,
     clippy::module_name_repetitions,
     clippy::struct_excessive_bools,
-    clippy::unused_self
+    clippy::unused_self,
+    clippy::future_not_send
 )]
 
 use clap::Parser;
