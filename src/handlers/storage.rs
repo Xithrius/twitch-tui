@@ -29,7 +29,7 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(file: &str, config: StorageConfig) -> Self {
+    pub fn new(file: &str, config: &StorageConfig) -> Self {
         let file_path = config_path(file);
 
         if !Path::new(&file_path).exists() {
@@ -43,7 +43,7 @@ impl Storage {
                 };
 
                 items.insert(
-                    item_key.to_string(),
+                    (*item_key).to_string(),
                     StorageItem {
                         content: vec![],
                         enabled,
@@ -57,14 +57,14 @@ impl Storage {
 
             file.write_all(storage_str.as_bytes()).unwrap();
 
-            return Storage { items, file_path };
+            return Self { items, file_path };
         }
 
         let file_content = read_to_string(&file_path).unwrap();
 
         let items: StorageMap = serde_json::from_str(&file_content).unwrap();
 
-        Storage { items, file_path }
+        Self { items, file_path }
     }
 
     pub fn dump_data(&self) {
@@ -75,9 +75,9 @@ impl Storage {
         file.write_all(storage_str.as_bytes()).unwrap();
     }
 
-    pub fn add(&mut self, key: String, value: String) {
-        if ITEM_KEYS.contains(&key.as_str()) {
-            if let Some(item) = self.items.get_mut(&key) {
+    pub fn add(&mut self, key: &str, value: String) {
+        if ITEM_KEYS.contains(&key) {
+            if let Some(item) = self.items.get_mut(&key.to_string()) {
                 if !item.content.contains(&value) && item.enabled {
                     item.content.push(value);
                 }
@@ -87,13 +87,11 @@ impl Storage {
         }
     }
 
-    pub fn get(&self, key: String) -> Vec<String> {
-        if ITEM_KEYS.contains(&key.as_str()) {
-            if let Some(item) = self.items.get(&key) {
-                item.content.clone()
-            } else {
-                vec![]
-            }
+    pub fn get(&self, key: &str) -> Vec<String> {
+        if ITEM_KEYS.contains(&key) {
+            self.items
+                .get(&key.to_string())
+                .map_or_else(Vec::new, |item| item.content.clone())
         } else {
             panic!("Attempted to get key {} from JSON storage.", key);
         }

@@ -1,3 +1,5 @@
+#![allow(clippy::use_self)]
+
 use std::{
     fs::{create_dir_all, read_to_string, File},
     io::Write,
@@ -147,7 +149,7 @@ pub enum Palette {
 
 impl Default for Palette {
     fn default() -> Self {
-        Palette::Pastel
+        Self::Pastel
     }
 }
 
@@ -156,10 +158,10 @@ impl FromStr for Palette {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "vibrant" => Ok(Palette::Vibrant),
-            "warm" => Ok(Palette::Warm),
-            "cool" => Ok(Palette::Cool),
-            _ => Ok(Palette::Pastel),
+            "vibrant" => Ok(Self::Vibrant),
+            "warm" => Ok(Self::Warm),
+            "cool" => Ok(Self::Cool),
+            _ => Ok(Self::Pastel),
         }
     }
 }
@@ -174,7 +176,7 @@ pub enum Theme {
 
 impl Default for Theme {
     fn default() -> Self {
-        Theme::Dark
+        Self::Dark
     }
 }
 
@@ -183,8 +185,8 @@ impl FromStr for Theme {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "light" => Ok(Theme::Light),
-            _ => Ok(Theme::Dark),
+            "light" => Ok(Self::Light),
+            _ => Ok(Self::Dark),
         }
     }
 }

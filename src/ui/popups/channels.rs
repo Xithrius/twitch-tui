@@ -1,3 +1,5 @@
+use std::string::ToString;
+
 use regex::Regex;
 use tui::backend::Backend;
 
@@ -24,11 +26,11 @@ pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_sugge
 
     let suggestion = if channel_suggestions {
         suggestion_query(
-            input_buffer.to_string(),
+            input_buffer,
             app.storage
-                .get("channels".to_string())
+                .get("channels")
                 .iter()
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<String>>(),
         )
     } else {

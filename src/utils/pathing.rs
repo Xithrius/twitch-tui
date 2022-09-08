@@ -45,7 +45,7 @@ mod tests {
                 std::env::var("HOME").unwrap(),
                 BINARY_NAME,
             )
-        )
+        );
     }
 
     #[test]

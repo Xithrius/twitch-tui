@@ -1,3 +1,16 @@
+#![warn(clippy::nursery, clippy::pedantic)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::module_name_repetitions,
+    clippy::struct_excessive_bools,
+    clippy::unused_self,
+    clippy::future_not_send,
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines
+)]
+
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::info;
@@ -6,6 +19,7 @@ use tokio::sync::mpsc;
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
 mod handlers;
+mod input;
 mod terminal;
 mod twitch;
 mod ui;
@@ -20,7 +34,7 @@ fn initialize_logging(config: &CompleteConfig) {
                 record.target(),
                 record.level(),
                 message
-            ))
+            ));
         })
         .level(if config.terminal.verbose {
             log::LevelFilter::Debug
@@ -28,7 +42,7 @@ fn initialize_logging(config: &CompleteConfig) {
             log::LevelFilter::Info
         });
 
-    if let Some(log_file_path) = config.terminal.log_file.to_owned() {
+    if let Some(log_file_path) = config.terminal.log_file.clone() {
         if !log_file_path.is_empty() {
             logger
                 .chain(fern::log_file(log_file_path).unwrap())
@@ -52,7 +66,7 @@ async fn main() -> Result<()> {
 
     info!("Logging system initialised");
 
-    let app = App::new(config.clone());
+    let app = App::new(&config);
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = mpsc::channel(100);

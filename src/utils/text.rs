@@ -7,15 +7,18 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
-    if maximum_length < 1 {
-        panic!("Parameter of 'maximum_length' cannot be below 1.");
-    }
+    assert!(
+        maximum_length >= 1,
+        "Parameter of 'maximum_length' cannot be below 1."
+    );
 
     // Compute the display width of `text` with support of emojis and CJK characters
     let mut dw = display_width(text);
+
     if dw > maximum_length as usize {
         dw = maximum_length as usize;
     }
+
     match alignment {
         "right" => format!("{}{}", " ".repeat(maximum_length as usize - dw), text),
         "center" => {
@@ -27,24 +30,25 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     }
 }
 
-pub fn vector_column_max<T>(vec: &[Vec<T>]) -> IntoIter<u16>
+pub fn vector_column_max<T>(v: &[Vec<T>]) -> IntoIter<u16>
 where
     T: AsRef<str>,
 {
-    if vec.is_empty() {
-        panic!("Vector length should be greater than or equal to 1.")
-    }
+    assert!(
+        !v.is_empty(),
+        "Vector length should be greater than or equal to 1."
+    );
 
     let column_max = |vec: &[Vec<T>], index: usize| -> u16 {
         vec.iter().map(|v| v[index].as_ref().len()).max().unwrap() as u16
     };
 
-    let column_amount = vec[0].len();
+    let column_amount = v[0].len();
 
     let mut column_max_lengths: Vec<u16> = vec![];
 
     for i in 0..column_amount {
-        column_max_lengths.push(column_max(vec, i));
+        column_max_lengths.push(column_max(v, i));
     }
 
     column_max_lengths.into_iter()
@@ -70,41 +74,39 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
-        let first_bracket = Span::raw(format!("{}[ ", if i != 0 { " " } else { "" }));
+        let first_bracket = Span::raw(format!("{}[ ", if i == 0 { "" } else { " " }));
 
         complete.extend(match item {
             TitleStyle::Combined(title, value) => vec![
                 first_bracket,
-                Span::styled(title.to_string(), style),
+                Span::styled((*title).to_string(), style),
                 Span::raw(format!(": {} ]", value)),
             ],
             TitleStyle::Single(value) => vec![
                 first_bracket,
-                Span::styled(value.to_string(), style),
+                Span::styled((*value).to_string(), style),
                 Span::raw(" ]"),
             ],
-            TitleStyle::Custom(span) => vec![first_bracket, span.to_owned(), Span::raw(" ]")],
+            TitleStyle::Custom(span) => vec![first_bracket, span.clone(), Span::raw(" ]")],
         });
     }
 
     complete
 }
 
-pub fn suggestion_query(search: String, possibilities: Vec<String>) -> Option<String> {
-    if let Some(result) = possibilities
+pub fn suggestion_query(search: &str, possibilities: Vec<String>) -> Option<String> {
+    possibilities
         .iter()
         .filter(|s| s.starts_with(&search))
         .collect::<Vec<&String>>()
         .first()
-    {
-        if result.len() > search.len() {
-            Some(result.to_string())
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+        .and_then(|result| {
+            if result.len() > search.len() {
+                Some((*result).to_string())
+            } else {
+                None
+            }
+        })
 }
 
 #[cfg(test)]
@@ -221,8 +223,8 @@ mod tests {
     fn test_partial_suggestion_output() {
         let v = vec!["Nope".to_string()];
 
-        let output = suggestion_query("No".to_string(), v);
+        let output = suggestion_query("No", v);
 
-        assert_eq!(output, Some("Nope".to_string()))
+        assert_eq!(output, Some("Nope".to_string()));
     }
 }

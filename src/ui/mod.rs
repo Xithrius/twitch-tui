@@ -17,8 +17,8 @@ use crate::{
         data::PayLoad,
     },
     ui::{
-        chunks::chatting::ui_insert_message,
-        popups::{channels::ui_switch_channels, help::ui_show_keybinds},
+        chunks::ui_insert_message,
+        popups::{ui_show_keybinds, ui_switch_channels},
     },
     utils::{
         styles,
@@ -72,7 +72,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .constraints(v_constraints.as_ref())
         .split(frame.size());
 
-    let layout = LayoutAttributes::new(v_constraints.to_vec(), v_chunks);
+    let layout = LayoutAttributes::new(v_constraints, v_chunks);
 
     let table_widths = app.table_constraints.as_ref().unwrap();
 
@@ -98,9 +98,9 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut scroll_offset = app.scroll_offset;
 
-    'outer: for data in app.messages.iter() {
+    'outer: for data in &app.messages {
         if let PayLoad::Message(msg) = data.payload.clone() {
-            if app.filters.contaminated(msg) {
+            if app.filters.contaminated(msg.as_str()) {
                 continue;
             }
         }
@@ -120,10 +120,18 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             None
         };
 
-        let rows = if !buffer.is_empty() {
+        let rows = if buffer.is_empty() {
             data.to_row(
                 &config.frontend,
-                &message_chunk_width,
+                message_chunk_width,
+                None,
+                username_highlight,
+                app.theme_style,
+            )
+        } else {
+            data.to_row(
+                &config.frontend,
+                message_chunk_width,
                 match app.selected_buffer {
                     BufferName::MessageHighlighter => Some(buffer.to_string()),
                     _ => None,
@@ -131,19 +139,11 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 username_highlight,
                 app.theme_style,
             )
-        } else {
-            data.to_row(
-                &config.frontend,
-                &message_chunk_width,
-                None,
-                username_highlight,
-                app.theme_style,
-            )
         };
 
         for row in rows.iter().rev() {
             if total_row_height < general_chunk_height {
-                display_rows.push_front(row.to_owned());
+                display_rows.push_front(row.clone());
 
                 total_row_height += 1;
             } else {
@@ -186,9 +186,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     };
 
     let table = Table::new(display_rows)
-        .header(
-            Row::new(app.column_titles.as_ref().unwrap().to_owned()).style(styles::COLUMN_TITLE),
-        )
+        .header(Row::new(app.column_titles.as_ref().unwrap().clone()).style(styles::COLUMN_TITLE))
         .block(
             Block::default()
                 .borders(Borders::ALL)
@@ -210,13 +208,13 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         // States that require popups
         State::Help => ui_show_keybinds(window),
         State::ChannelSwitch => ui_switch_channels(window, config.storage.channels),
-        _ => {}
+        State::Normal => {}
     }
 }
 
 /// Puts a box for user input at the bottom of the screen,
 /// with an interactive cursor.
-/// input_validation checks if the user's input is valid, changes window
+/// `input_validation` checks if the user's input is valid, changes window
 /// theme to red if invalid, default otherwise.
 pub fn insert_box_chunk<T: Backend>(
     window: WindowAttributes<T>,
@@ -245,24 +243,22 @@ pub fn insert_box_chunk<T: Backend>(
 
     let current_input = buffer.as_str();
 
-    let valid_input = if let Some(check_func) = input_validation {
-        check_func(current_input.to_string())
-    } else {
-        true
-    };
+    let valid_input =
+        input_validation.map_or(true, |check_func| check_func(current_input.to_string()));
 
     let paragraph = Paragraph::new(Spans::from(vec![
         Span::raw(current_input),
         Span::styled(
-            if let Some(suggestion_buffer) = suggestion.clone() {
-                if suggestion_buffer.len() > current_input.len() {
-                    suggestion_buffer[current_input.len()..].to_string()
-                } else {
-                    "".to_string()
-                }
-            } else {
-                "".to_string()
-            },
+            suggestion.clone().map_or_else(
+                || "".to_string(),
+                |suggestion_buffer| {
+                    if suggestion_buffer.len() > current_input.len() {
+                        suggestion_buffer[current_input.len()..].to_string()
+                    } else {
+                        "".to_string()
+                    }
+                },
+            ),
             Style::default().add_modifier(Modifier::DIM),
         ),
     ]))
