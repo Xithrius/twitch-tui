@@ -87,10 +87,10 @@ impl Storage {
         }
     }
 
-    pub fn get(&self, key: String) -> Vec<String> {
-        if ITEM_KEYS.contains(&key.as_str()) {
+    pub fn get(&self, key: &str) -> Vec<String> {
+        if ITEM_KEYS.contains(&key) {
             self.items
-                .get(&key)
+                .get(&key.to_string())
                 .map_or_else(Vec::new, |item| item.content.clone())
         } else {
             panic!("Attempted to get key {} from JSON storage.", key);

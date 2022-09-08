@@ -94,21 +94,19 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     complete
 }
 
-pub fn suggestion_query(search: String, possibilities: Vec<String>) -> Option<String> {
-    if let Some(result) = possibilities
+pub fn suggestion_query(search: &str, possibilities: Vec<String>) -> Option<String> {
+    possibilities
         .iter()
         .filter(|s| s.starts_with(&search))
         .collect::<Vec<&String>>()
         .first()
-    {
-        if result.len() > search.len() {
-            Some(result.to_string())
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+        .and_then(|result| {
+            if result.len() > search.len() {
+                Some((*result).to_string())
+            } else {
+                None
+            }
+        })
 }
 
 #[cfg(test)]
@@ -225,8 +223,8 @@ mod tests {
     fn test_partial_suggestion_output() {
         let v = vec!["Nope".to_string()];
 
-        let output = suggestion_query("No".to_string(), v);
+        let output = suggestion_query("No", v);
 
-        assert_eq!(output, Some("Nope".to_string()))
+        assert_eq!(output, Some("Nope".to_string()));
     }
 }

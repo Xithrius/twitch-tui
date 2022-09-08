@@ -6,7 +6,9 @@
     clippy::module_name_repetitions,
     clippy::struct_excessive_bools,
     clippy::unused_self,
-    clippy::future_not_send
+    clippy::future_not_send,
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines
 )]
 
 use clap::Parser;

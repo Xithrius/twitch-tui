@@ -23,29 +23,28 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
     let suggestion = if mention_suggestions {
         input_buffer
             .chars()
-            .next().and_then(|start_character| match start_character {
+            .next()
+            .and_then(|start_character| match start_character {
                 '/' => {
                     let possible_suggestion = suggestion_query(
-                        current_input[1..].to_string(),
+                        &current_input[1..],
                         COMMANDS
                             .iter()
                             .map(ToString::to_string)
                             .collect::<Vec<String>>(),
                     );
 
-                    if let Some(s) = possible_suggestion {
-                        Some(format!("/{}", s))
-                    } else {
-                        possible_suggestion
-                    }
+                    let default_suggestion = possible_suggestion.clone();
+
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{}", s)))
                 }
                 '@' => {
-                    let possible_suggestion = suggestion_query(
-                        current_input[1..].to_string(),
-                        app.storage.get("mentions".to_string()),
-                    );
+                    let possible_suggestion =
+                        suggestion_query(&current_input[1..], app.storage.get("mentions"));
 
-                    possible_suggestion.map_or(possible_suggestion, |s| Some(format!("@{}", s)))
+                    let default_suggestion = possible_suggestion.clone();
+
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{}", s)))
                 }
                 _ => None,
             })

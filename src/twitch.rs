@@ -138,14 +138,14 @@ pub async fn twitch_irc(
 
                         // Leave previous channel
                         if let Err(err) = sender.send_part(current_channel) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap()
+                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
                         } else {
                             tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
                         }
 
                         // Join specified channel
                         if let Err(err) = sender.send_join(&channel_list) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap()
+                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
                         }
 
                         // Set old channel to new channel
@@ -153,12 +153,13 @@ pub async fn twitch_irc(
                     }
                 }
             }
-            Some(_message) = stream.next() => {
-                match _message {
+            Some(message) = stream.next() => {
+                match message {
                     Ok(message) => {
                         let mut tags: HashMap<&str, &str> = HashMap::new();
-                        if let Some(ref _tags) = message.tags {
-                            for tag in _tags {
+
+                        if let Some(ref ref_tags) = message.tags {
+                            for tag in ref_tags {
                                 if let Some(ref tag_value) = tag.1 {
                                     tags.insert(&tag.0, tag_value);
                                 }
@@ -205,7 +206,7 @@ pub async fn twitch_irc(
                                     }
                                     "USERNOTICE" => {
                                         if let Some(value) = tags.get("system-msg") {
-                                            tx.send(data_builder.twitch(value.to_string()))
+                                            tx.send(data_builder.twitch((*value).to_string()))
                                             .await
                                             .unwrap();
                                         }
@@ -219,7 +220,7 @@ pub async fn twitch_irc(
                     Err(err) => {
                         debug!("Twitch connection error encountered: {}, attempting to reconnect.", err);
 
-                        client_stream_reconnect(err, tx.clone(), data_builder, &mut client, &mut stream, &config);
+                        client_stream_reconnect(err, tx.clone(), data_builder, &mut client, &mut stream, &config).await;
                     }
                 }
             }

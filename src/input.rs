@@ -1,19 +1,6 @@
-use std::{
-    io::{stdout, Stdout},
-    time::Duration,
-};
-
-use chrono::offset::Local;
-use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use log::{debug, info};
 use regex::Regex;
 use rustyline::{At, Word};
-use tokio::sync::mpsc::{Receiver, Sender};
-use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
+use tokio::sync::mpsc::Sender;
 
 use crate::{
     handlers::{
@@ -35,7 +22,6 @@ pub async fn handle_user_input(
     app: &mut App,
     config: &mut CompleteConfig,
     tx: Sender<TwitchAction>,
-    data_builder: DataBuilder<'_>,
 ) -> Option<TerminalAction> {
     if let Some(Event::Input(key)) = events.next().await {
         match app.state {
@@ -61,7 +47,7 @@ pub async fn handle_user_input(
 
                 match key {
                     Key::Up => {
-                        if let State::Insert = app.state {
+                        if app.state == State::Insert {
                             app.state = State::Normal;
                         }
                     }
@@ -136,7 +122,7 @@ pub async fn handle_user_input(
                                 .unwrap();
 
                             if let Some(msg) = input_message.strip_prefix('@') {
-                                app.storage.add("mentions", msg.to_string())
+                                app.storage.add("mentions", msg.to_string());
                             }
 
                             input_message.update("", 0);
@@ -161,15 +147,14 @@ pub async fn handle_user_input(
 
                             config.twitch.channel = input_message.to_string();
 
-                            app.storage
-                                .add("channels", input_message.to_string());
+                            app.storage.add("channels", input_message.to_string());
 
                             input_message.update("", 0);
 
                             app.selected_buffer = BufferName::Chat;
                             app.state = State::Normal;
                         }
-                        _ => {}
+                        BufferName::MessageHighlighter => {}
                     },
                     Key::Char(c) => {
                         input_buffer.insert(c, 1);
@@ -209,7 +194,7 @@ pub async fn handle_user_input(
                 }
                 Key::Char('?') => app.state = State::Help,
                 Key::Char('q') => {
-                    if let State::Normal = app.state {
+                    if app.state == State::Normal {
                         return Some(TerminalAction::Quitting);
                     }
                 }

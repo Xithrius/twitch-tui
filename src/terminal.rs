@@ -139,14 +139,8 @@ pub async fn ui_driver(
             .draw(|frame| draw_ui(frame, &mut app, &config))
             .unwrap();
 
-        if let Some(TerminalAction::Quitting) = handle_user_input(
-            &mut events,
-            &mut app,
-            &mut config.clone(),
-            tx.clone(),
-            data_builder,
-        )
-        .await
+        if let Some(TerminalAction::Quitting) =
+            handle_user_input(&mut events, &mut app, &mut config.clone(), tx.clone()).await
         {
             quit_terminal(terminal);
 
