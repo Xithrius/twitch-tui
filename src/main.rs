@@ -7,8 +7,7 @@
     clippy::struct_excessive_bools,
     clippy::unused_self,
     clippy::future_not_send,
-    clippy::needless_pass_by_value,
-    clippy::too_many_lines
+    clippy::needless_pass_by_value
 )]
 
 use clap::Parser;
@@ -19,7 +18,6 @@ use tokio::sync::mpsc;
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
 mod handlers;
-mod input;
 mod terminal;
 mod twitch;
 mod ui;

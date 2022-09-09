@@ -18,9 +18,11 @@ use crate::{
         app::{App, BufferName, State},
         config::CompleteConfig,
         data::{Data, DataBuilder, PayLoad},
-        event::{Config, Events, Key},
+        user_input::{
+            events::{Config, Events, Key},
+            input::{handle_stateful_user_input, TerminalAction},
+        },
     },
-    input::{handle_user_input, TerminalAction},
     twitch::TwitchAction,
     ui::draw_ui,
     utils::text::align_text,
@@ -140,7 +142,7 @@ pub async fn ui_driver(
             .unwrap();
 
         if let Some(TerminalAction::Quitting) =
-            handle_user_input(&mut events, &mut app, &mut config.clone(), tx.clone()).await
+            handle_stateful_user_input(&mut events, &mut app, &mut config.clone(), tx.clone()).await
         {
             quit_terminal(terminal);
 

@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_lines)]
+
 use std::{collections::VecDeque, vec};
 
 use chrono::offset::Local;
