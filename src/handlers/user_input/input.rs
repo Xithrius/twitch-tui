@@ -4,7 +4,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::{
     handlers::{
-        app::{App, BufferName, State},
+        app::{App, State},
         config::CompleteConfig,
         data::DataBuilder,
         user_input::events::{Event, Events, Key},
@@ -48,12 +48,12 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
         tx,
     } = action;
 
-    match app.selected_buffer {
-        BufferName::Chat => {
-            let input_message = app.input_buffers.get_mut(&app.selected_buffer).unwrap();
+    match app.state {
+        State::Insert => {
+            let input_message = &mut app.input_buffer;
 
             if input_message.is_empty()
-                || app.filters.contaminated(input_message)
+                || app.filters.contaminated(input_message.as_str())
                 || input_message.len() > *TWITCH_MESSAGE_LIMIT
             {
                 return;
@@ -74,8 +74,8 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
 
             input_message.update("", 0);
         }
-        BufferName::Channel => {
-            let input_message = app.input_buffers.get_mut(&app.selected_buffer).unwrap();
+        State::ChannelSwitch => {
+            let input_message = &mut app.input_buffer;
 
             if input_message.is_empty()
                 || !Regex::new(*CHANNEL_NAME_REGEX)
@@ -97,10 +97,9 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
 
             input_message.update("", 0);
 
-            app.selected_buffer = BufferName::Chat;
             app.state = State::Normal;
         }
-        BufferName::MessageHighlighter => {}
+        _ => {}
     }
 }
 
@@ -112,7 +111,7 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
         tx: _,
     } = action;
 
-    let input_buffer = app.current_buffer_mut();
+    let input_buffer = &mut app.input_buffer;
 
     match key {
         Key::Up => {
@@ -163,9 +162,7 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
             let suggestion = app.buffer_suggestion.clone();
 
             if let Some(suggestion_buffer) = suggestion {
-                app.input_buffers
-                    .get_mut(&app.selected_buffer)
-                    .unwrap()
+                app.input_buffer
                     .update(suggestion_buffer.as_str(), suggestion_buffer.len());
             }
         }
@@ -218,15 +215,12 @@ pub async fn handle_stateful_user_input(
             _ => match key {
                 Key::Char('c') => {
                     app.state = State::Normal;
-                    app.selected_buffer = BufferName::Chat;
                 }
                 Key::Char('s') => {
                     app.state = State::ChannelSwitch;
-                    app.selected_buffer = BufferName::Channel;
                 }
                 Key::Ctrl('f') => {
                     app.state = State::MessageSearch;
-                    app.selected_buffer = BufferName::MessageHighlighter;
                 }
                 Key::Ctrl('t') => {
                     app.filters.toggle();
@@ -236,7 +230,6 @@ pub async fn handle_stateful_user_input(
                 }
                 Key::Char('i') | Key::Insert => {
                     app.state = State::Insert;
-                    app.selected_buffer = BufferName::Chat;
                 }
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
@@ -250,7 +243,6 @@ pub async fn handle_stateful_user_input(
                 Key::Esc => {
                     app.scroll_offset = 0;
                     app.state = State::Normal;
-                    app.selected_buffer = BufferName::Chat;
                 }
                 _ => {}
             },

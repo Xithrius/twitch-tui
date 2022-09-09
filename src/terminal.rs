@@ -3,7 +3,6 @@ use std::{
     time::Duration,
 };
 
-use chrono::offset::Local;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
@@ -11,11 +10,11 @@ use crossterm::{
 };
 use log::{debug, info};
 use tokio::sync::mpsc::{Receiver, Sender};
-use tui::{backend::CrosstermBackend, layout::Constraint, Terminal};
+use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
     handlers::{
-        app::{App, BufferName, State},
+        app::{App, State},
         config::CompleteConfig,
         data::{Data, DataBuilder, PayLoad},
         user_input::{
@@ -25,7 +24,6 @@ use crate::{
     },
     twitch::TwitchAction,
     ui::draw_ui,
-    utils::text::align_text,
 };
 
 fn reset_terminal() {
@@ -83,36 +81,6 @@ pub async fn ui_driver(
 
     let mut terminal = init_terminal();
 
-    let username_column_title = align_text(
-        "Username",
-        &config.frontend.username_alignment,
-        config.frontend.maximum_username_length,
-    );
-
-    let mut column_titles = vec![username_column_title.clone(), "Message content".to_string()];
-
-    let mut table_constraints = vec![
-        Constraint::Length(config.frontend.maximum_username_length),
-        Constraint::Percentage(100),
-    ];
-
-    if config.frontend.date_shown {
-        column_titles.insert(0, "Time".to_string());
-
-        table_constraints.insert(
-            0,
-            Constraint::Length(
-                Local::now()
-                    .format(config.frontend.date_format.as_str())
-                    .to_string()
-                    .len() as u16,
-            ),
-        );
-    }
-
-    app.column_titles = Some(column_titles);
-    app.table_constraints = Some(table_constraints);
-
     terminal.clear().unwrap();
 
     let data_builder = DataBuilder::new(&config.frontend.date_format);
@@ -125,7 +93,6 @@ pub async fn ui_driver(
                 // If something such as a keypress failed, fallback to the normal state of the application.
                 PayLoad::Err(err) => {
                     app.state = State::Normal;
-                    app.selected_buffer = BufferName::Chat;
 
                     app.messages.push_front(data_builder.system(err));
                 }

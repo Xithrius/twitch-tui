@@ -20,7 +20,7 @@ pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_sugge
         layout: _,
     } = &window;
 
-    let input_buffer = app.current_buffer();
+    let input_buffer = &app.input_buffer;
 
     let input_rect = centered_popup(WindowType::Input(frame.size().height), frame.size());
 

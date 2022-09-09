@@ -16,7 +16,7 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
         layout: _,
     } = &window;
 
-    let input_buffer = app.current_buffer();
+    let input_buffer = &app.input_buffer;
 
     let current_input = input_buffer.to_string();
 

@@ -14,7 +14,7 @@ use tui::{
 
 use crate::{
     handlers::{
-        app::{App, BufferName, State},
+        app::{App, State},
         config::CompleteConfig,
         data::PayLoad,
     },
@@ -24,7 +24,7 @@ use crate::{
     },
     utils::{
         styles,
-        text::{get_cursor_position, title_spans, TitleStyle},
+        text::{align_text, get_cursor_position, title_spans, TitleStyle},
     },
 };
 
@@ -63,6 +63,33 @@ where
 }
 
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
+    let username_column_title = align_text(
+        "Username",
+        &config.frontend.username_alignment,
+        config.frontend.maximum_username_length,
+    );
+
+    let mut column_titles = vec![username_column_title, "Message content".to_string()];
+
+    let mut table_constraints = vec![
+        Constraint::Length(config.frontend.maximum_username_length),
+        Constraint::Percentage(100),
+    ];
+
+    if config.frontend.date_shown {
+        column_titles.insert(0, "Time".to_string());
+
+        table_constraints.insert(
+            0,
+            Constraint::Length(
+                Local::now()
+                    .format(config.frontend.date_format.as_str())
+                    .to_string()
+                    .len() as u16,
+            ),
+        );
+    }
+
     let v_constraints = match app.state {
         State::Insert | State::MessageSearch => vec![Constraint::Min(1), Constraint::Length(3)],
         _ => vec![Constraint::Min(1)],
@@ -76,19 +103,17 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let layout = LayoutAttributes::new(v_constraints, v_chunks);
 
-    let table_widths = app.table_constraints.as_ref().unwrap();
-
     // Horizontal chunks represents the table within the main chat window.
     let h_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints(table_widths.as_ref())
+        .constraints(table_constraints.clone())
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
     let general_chunk_height = layout.chunks[0].height as usize - 3;
 
     // The chunk furthest to the right is the messages, that's the one we want.
-    let message_chunk_width = h_chunks[table_widths.len() - 1].width as usize - 4;
+    let message_chunk_width = h_chunks[table_constraints.len() - 1].width as usize - 4;
 
     // Making sure that messages do have a limit and don't eat up all the RAM.
     app.messages.truncate(config.terminal.maximum_messages);
@@ -114,7 +139,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             continue;
         }
 
-        let buffer = app.current_buffer();
+        let buffer = &mut app.input_buffer;
 
         let username_highlight = if config.frontend.username_highlight {
             Some(config.twitch.username.clone())
@@ -134,8 +159,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             data.to_row(
                 &config.frontend,
                 message_chunk_width,
-                match app.selected_buffer {
-                    BufferName::MessageHighlighter => Some(buffer.to_string()),
+                match app.state {
+                    State::MessageSearch => Some(buffer.to_string()),
                     _ => None,
                 },
                 username_highlight,
@@ -188,14 +213,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     };
 
     let table = Table::new(display_rows)
-        .header(Row::new(app.column_titles.as_ref().unwrap().clone()).style(styles::COLUMN_TITLE))
+        .header(Row::new(column_titles.clone()).style(styles::COLUMN_TITLE))
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .title(chat_title)
                 .style(app.theme_style),
         )
-        .widths(table_widths.as_ref())
+        .widths(&table_constraints)
         .column_spacing(1);
 
     frame.render_widget(table, layout.chunks[0]);
@@ -227,7 +252,7 @@ pub fn insert_box_chunk<T: Backend>(
 ) {
     let WindowAttributes { frame, layout, app } = window;
 
-    let buffer = app.current_buffer();
+    let buffer = &app.input_buffer;
 
     let cursor_pos = get_cursor_position(buffer);
 
