@@ -1,7 +1,6 @@
 use std::{
     cmp::{Eq, PartialEq},
     collections::VecDeque,
-    hash::Hash,
 };
 
 use rustyline::line_buffer::LineBuffer;
@@ -19,7 +18,7 @@ use crate::{
 
 const INPUT_BUFFER_LIMIT: usize = 4096;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum State {
     Normal,
     Insert,
@@ -30,21 +29,21 @@ pub enum State {
 
 #[derive(Debug)]
 pub struct App {
-    /// History of recorded messages (time, username, message).
+    /// History of recorded messages (time, username, message, etc.)
     pub messages: VecDeque<Data>,
     /// Data loaded in from a JSON file.
     pub storage: Storage,
-    /// Filtering out messages, no usernames since Twitch does that themselves.
+    /// Messages to be filtered out
     pub filters: Filters,
-    /// Which window the terminal is currently showing.
+    /// Which window the terminal is currently focused on
     pub state: State,
-    /// The state of the user's input.
+    /// What the user currently has inputted
     pub input_buffer: LineBuffer,
-    /// The current suggestion for a specific buffer.
+    /// The current suggestion, if any
     pub buffer_suggestion: Option<String>,
-    /// Scrolling offset for windows.
+    /// Scrolling offset for the main window
     pub scroll_offset: usize,
-    /// The styling for the theme.
+    /// The theme selected by the user
     pub theme_style: Style,
 }
 
@@ -64,14 +63,6 @@ impl App {
             },
         }
     }
-
-    // pub fn current_buffer(&self) -> &LineBuffer {
-    //     return self.input_buffers.get(&self.selected_buffer).unwrap();
-    // }
-
-    // pub fn current_buffer_mut(&mut self) -> &mut LineBuffer {
-    //     return self.input_buffers.get_mut(&self.selected_buffer).unwrap();
-    // }
 
     pub fn cleanup(&self) {
         self.storage.dump_data();

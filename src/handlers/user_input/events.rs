@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crossterm::event::{self, Event as CEvent, KeyCode, KeyModifiers, MouseButton, MouseEventKind};
+use crossterm::event::{self, Event as CEvent, KeyCode, KeyModifiers, MouseEventKind};
 use tokio::{sync::mpsc, time::Instant};
 
 #[derive(Debug, Clone, Copy)]
@@ -16,24 +16,16 @@ pub enum Key {
     End,
     Delete,
     Insert,
-    PageUp,
-    PageDown,
     Tab,
-    BackTab,
     Enter,
     Char(char),
     Ctrl(char),
     Alt(char),
-    F(u8),
     Null,
 
     // Mouse controls
     ScrollUp,
     ScrollDown,
-    PressedButton(MouseButton),
-    ReleasedButton(MouseButton),
-    Drag(MouseButton),
-    Moved,
 }
 
 pub enum Event<I> {
@@ -78,12 +70,8 @@ impl Events {
                                 KeyCode::End => Key::End,
                                 KeyCode::Delete => Key::Delete,
                                 KeyCode::Insert => Key::Insert,
-                                KeyCode::PageUp => Key::PageUp,
-                                KeyCode::PageDown => Key::PageDown,
                                 KeyCode::Tab => Key::Tab,
-                                KeyCode::BackTab => Key::BackTab,
                                 KeyCode::Enter => Key::Enter,
-                                KeyCode::F(k) => Key::F(k),
                                 KeyCode::Char(c) => match key.modifiers {
                                     KeyModifiers::NONE | KeyModifiers::SHIFT => Key::Char(c),
                                     KeyModifiers::CONTROL => Key::Ctrl(c),
@@ -101,10 +89,7 @@ impl Events {
                             let key = match key.kind {
                                 MouseEventKind::ScrollDown => Key::ScrollDown,
                                 MouseEventKind::ScrollUp => Key::ScrollUp,
-                                MouseEventKind::Down(button) => Key::PressedButton(button),
-                                MouseEventKind::Up(button) => Key::ReleasedButton(button),
-                                MouseEventKind::Drag(button) => Key::Drag(button),
-                                MouseEventKind::Moved => Key::Moved,
+                                _ => Key::Null,
                             };
 
                             if let Err(err) = tx.send(Event::Input(key)).await {

@@ -139,7 +139,7 @@ async fn handle_message_command(
             let mut name = message.source_nickname().unwrap().to_string();
 
             if badges {
-                retrieve_user_badges(&mut name, message.clone());
+                retrieve_user_badges(&mut name, &message);
             }
 
             tx.send(DataBuilder::user(name.to_string(), msg.to_string()))

@@ -5,7 +5,7 @@ const MODERATOR_BADGE: char = '\u{1F528}';
 const SUBSCRIBER_BADGE: char = '\u{2B50}';
 const PRIME_GAMING_BADGE: char = '\u{1F451}';
 
-pub fn retrieve_user_badges(name: &mut String, message: Message) {
+pub fn retrieve_user_badges(name: &mut String, message: &Message) {
     let mut badges = String::new();
 
     if let Some(ref tags) = message.tags {

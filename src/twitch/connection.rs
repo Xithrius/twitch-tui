@@ -11,6 +11,7 @@ use crate::handlers::{
     data::{Data, DataBuilder},
 };
 
+/// Initialize the config and send it to the client to connect to an IRC channel.
 pub async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStream) {
     let irc_config = Config {
         nickname: Some(config.twitch.username.clone()),
@@ -33,6 +34,7 @@ pub async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStre
     (client, stream)
 }
 
+/// If an error of any kind occurs, attempt to reconnect to the IRC channel.
 pub async fn client_stream_reconnect(
     err: Error,
     tx: Sender<Data>,
