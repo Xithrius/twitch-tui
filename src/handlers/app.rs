@@ -55,7 +55,7 @@ impl App {
             filters: Filters::new("filters.txt", &config.filters),
             state: State::Normal,
             input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
-            buffer_suggestion: Some("".to_string()),
+            buffer_suggestion: None,
             scroll_offset: 0,
             theme_style: match config.frontend.theme {
                 Theme::Light => BORDER_NAME_LIGHT,
@@ -66,5 +66,11 @@ impl App {
 
     pub fn cleanup(&self) {
         self.storage.dump_data();
+    }
+
+    pub fn clear_messages(&mut self) {
+        self.messages.clear();
+
+        self.scroll_offset = 0;
     }
 }

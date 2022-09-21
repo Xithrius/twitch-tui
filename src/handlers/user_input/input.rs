@@ -72,7 +72,15 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
                 app.storage.add("mentions", msg.to_string());
             }
 
+            let mut possible_command = String::new();
+
+            input_message.clone_into(&mut possible_command);
+
             input_message.update("", 0);
+
+            if possible_command.as_str() == "/clear" {
+                app.clear_messages();
+            }
         }
         State::ChannelSwitch => {
             let input_message = &mut app.input_buffer;
