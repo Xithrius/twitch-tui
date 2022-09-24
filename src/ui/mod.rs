@@ -18,7 +18,7 @@ use crate::{
         config::CompleteConfig,
         data::PayLoad,
     },
-    ui::{
+    ui::components::{
         chunks::ui_insert_message,
         popups::{ui_show_keybinds, ui_switch_channels},
     },
@@ -28,8 +28,7 @@ use crate::{
     },
 };
 
-pub mod chunks;
-pub mod popups;
+pub mod components;
 pub mod statics;
 
 #[derive(Debug, Clone)]

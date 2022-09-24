@@ -30,6 +30,7 @@ pub fn align_text(text: &str, alignment: &str, maximum_length: u16) -> String {
     }
 }
 
+#[allow(dead_code)]
 pub fn vector_column_max<T>(v: &[Vec<T>]) -> IntoIter<u16>
 where
     T: AsRef<str>,

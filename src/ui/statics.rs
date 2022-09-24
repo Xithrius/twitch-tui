@@ -1,32 +1,38 @@
 use lazy_static::lazy_static;
 
+use crate::handlers::app::State;
+
 lazy_static! {
-    pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["Keybind", "Description"];
-    pub static ref HELP_KEYBINDS: Vec<Vec<&'static str>> = vec![
-        vec!["c", "Chat window"],
-        vec!["i", "Insert mode"],
-        vec!["s", "Swap channels"],
-        vec!["Ctrl + f", "Search messages"],
-        vec!["?", "Bring up this window"],
-        vec!["q", "Quit this application"],
-        vec!["Ctrl + p", "Manually trigger a panic"],
-        vec!["Esc", "Drop back to previous window layer"],
-        vec!["Ctrl + f", "Move cursor to the right"],
-        vec!["Ctrl + b", "Move cursor to the left"],
-        vec!["Ctrl + a", "Move cursor to the start"],
-        vec!["Ctrl + e", "Move cursor to the end"],
-        vec!["Alt + f", "Move to the end of the next word"],
-        vec!["Alt + b", "Move to the start of the previous word"],
-        vec!["Ctrl + t", "Swap previous item with current item"],
-        vec!["Alt + t", "Swap previous word with current word"],
-        vec!["Ctrl + u", "Remove everything before the cursor"],
-        vec!["Ctrl + k", "Remove everything after the cursor"],
-        vec!["Ctrl + w", "Remove the previous word"],
-        vec!["Ctrl + d", "Remove item to the right"],
-        vec!["Ctrl + t", "Toggle the filter"],
-        vec!["Ctrl + r", "Reverse the filter"],
-        vec!["Tab", "Fill in suggestion, if available"],
-        vec!["Enter", "Confirm the input text to go through"],
+    pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["State", "Keybind", "Description"];
+    pub static ref HELP_KEYBINDS: Vec<(State, Vec<(&'static str, &'static str)>)> = vec![
+        (State::Normal, vec![
+            ("c", "Main chat window"),
+            ("i", "Insert mode"),
+            ("s", "Swap channels"),
+            ("?", "* You are here!"),
+            ("Ctrl + f", "Search messages"),
+            ("Ctrl + p", "Manual crash"),
+            ("q", "Quit"),
+            ("Esc", "Go back a window layer")
+        ]),
+        (State::Insert, vec![
+            ("Tab", "Fill in suggestion, if available"),
+            ("Enter", "Confirm the input text to go through"),
+            ("Ctrl + f", "Move cursor to the right"),
+            ("Ctrl + b", "Move cursor to the left"),
+            ("Ctrl + a", "Move cursor to the start"),
+            ("Ctrl + e", "Move cursor to the end"),
+            ("Ctrl + t", "Swap previous item with current item"),
+            ("Ctrl + k", "Remove everything after the cursor"),
+            ("Ctrl + u", "Remove everything before the cursor"),
+            ("Ctrl + w", "Remove the previous word"),
+            ("Ctrl + d", "Remove item to the right"),
+            ("Ctrl + t", "Toggle the filter"),
+            ("Ctrl + r", "Reverse the filter"),
+            ("Alt + f", "Move to the end of the next word"),
+            ("Alt + b", "Move to the start of the previous word"),
+            ("Alt + t", "Swap previous word with current word"),
+        ])
     ];
 
     // https://help.twitch.tv/s/article/chat-commands?language=en_US

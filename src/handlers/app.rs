@@ -27,6 +27,17 @@ pub enum State {
     MessageSearch,
 }
 
+impl ToString for State {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Normal => "Normal",
+            Self::Help => "Help",
+            _ => "Insert mode",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Debug)]
 pub struct App {
     /// History of recorded messages (time, username, message, etc.)
