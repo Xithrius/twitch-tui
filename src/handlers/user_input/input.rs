@@ -86,7 +86,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
             let input_message = &mut app.input_buffer;
 
             if input_message.is_empty()
-                || !Regex::new(*CHANNEL_NAME_REGEX)
+                || !Regex::new(&CHANNEL_NAME_REGEX)
                     .unwrap()
                     .is_match(input_message)
             {
@@ -244,9 +244,7 @@ pub async fn handle_stateful_user_input(
                 }
                 Key::Char('?') => app.state = State::Help,
                 Key::Char('q') => {
-                    if app.state == State::Normal {
-                        return Some(TerminalAction::Quitting);
-                    }
+                    return Some(TerminalAction::Quitting);
                 }
                 Key::Esc => {
                     app.scroll_offset = 0;
