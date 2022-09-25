@@ -32,7 +32,7 @@ impl ToString for State {
         match self {
             Self::Normal => "Normal",
             Self::Help => "Help",
-            _ => "Insert mode",
+            _ => "Input modes",
         }
         .to_string()
     }
