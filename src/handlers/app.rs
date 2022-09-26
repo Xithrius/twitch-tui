@@ -31,10 +31,22 @@ impl ToString for State {
     fn to_string(&self) -> String {
         match self {
             Self::Normal => "Normal",
+            Self::Insert => "Insert",
             Self::Help => "Help",
-            _ => "Input modes",
+            Self::ChannelSwitch => "Channel",
+            Self::MessageSearch => "Search",
         }
         .to_string()
+    }
+}
+
+impl State {
+    /// What general category the state can be identified with.
+    pub fn category(&self) -> String {
+        match self {
+            Self::Normal | Self::Help => self.to_string(),
+            _ => "Insert modes".to_string(),
+        }
     }
 }
 
