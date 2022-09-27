@@ -40,7 +40,7 @@ pub fn render_insert_box<T: Backend>(
     let input_rect = if let Some(r) = input_rectangle {
         r
     } else {
-        layout.chunks[layout.constraints.len() - 1]
+        layout.chunks[layout.constraints.len() - 2]
     };
 
     frame.set_cursor(

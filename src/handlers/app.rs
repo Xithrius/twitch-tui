@@ -18,13 +18,31 @@ use crate::{
 
 const INPUT_BUFFER_LIMIT: usize = 4096;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum State {
     Normal,
     Insert,
     Help,
     ChannelSwitch,
     MessageSearch,
+}
+
+impl State {
+    pub const fn in_insert_mode(&self) -> bool {
+        matches!(
+            self,
+            Self::Insert | Self::ChannelSwitch | Self::MessageSearch
+        )
+    }
+
+    /// What general category the state can be identified with.
+    pub fn category(&self) -> String {
+        if self.in_insert_mode() {
+            "Insert modes".to_string()
+        } else {
+            self.to_string()
+        }
+    }
 }
 
 impl ToString for State {
@@ -37,16 +55,6 @@ impl ToString for State {
             Self::MessageSearch => "Search",
         }
         .to_string()
-    }
-}
-
-impl State {
-    /// What general category the state can be identified with.
-    pub fn category(&self) -> String {
-        match self {
-            Self::Normal | Self::Help => self.to_string(),
-            _ => "Insert modes".to_string(),
-        }
     }
 }
 

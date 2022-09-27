@@ -234,6 +234,10 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     frame.render_widget(table, layout.first_chunk());
 
+    if config.frontend.state_tabs {
+        components::render_state_tabs(frame, layout.clone(), app.state.clone());
+    }
+
     let window = WindowAttributes::new(frame, app, layout);
 
     match window.app.state {
@@ -248,10 +252,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         State::ChannelSwitch => {
             components::render_channel_switcher(window, config.storage.channels);
         }
-        State::Normal => {
-            if config.frontend.state_tabs {
-                components::render_state_tabs(window);
-            }
-        }
+        State::Normal => {}
     }
 }
