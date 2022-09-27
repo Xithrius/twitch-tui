@@ -18,7 +18,7 @@ use crate::{
 const TABLE_CONSTRAINTS: [Constraint; 3] =
     [Constraint::Min(11), Constraint::Min(8), Constraint::Min(38)];
 
-pub fn ui_show_keybinds<T: Backend>(window: WindowAttributes<T>) {
+pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
     let WindowAttributes { frame, app, layout } = window;
 
     let mut rows = vec![];
@@ -27,7 +27,7 @@ pub fn ui_show_keybinds<T: Backend>(window: WindowAttributes<T>) {
         for (i, (key, desc)) in v.iter().enumerate() {
             rows.push(Row::new(vec![
                 if i == 0 {
-                    Cell::from(s.to_string()).style(Style::default().add_modifier(Modifier::BOLD))
+                    Cell::from(s.category()).style(Style::default().add_modifier(Modifier::BOLD))
                 } else {
                     Cell::from("")
                 },
@@ -46,6 +46,6 @@ pub fn ui_show_keybinds<T: Backend>(window: WindowAttributes<T>) {
         .column_spacing(2)
         .style(app.theme_style);
 
-    frame.render_widget(Clear, layout.chunks[0]);
-    frame.render_widget(help_table, layout.chunks[0]);
+    frame.render_widget(Clear, layout.first_chunk());
+    frame.render_widget(help_table, layout.first_chunk());
 }

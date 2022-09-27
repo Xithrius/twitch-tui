@@ -97,6 +97,8 @@ pub struct FrontendConfig {
     pub theme: Theme,
     /// If the username should be highlighted when it appears in chat.
     pub username_highlight: bool,
+    /// If there should be state tabs shown on the bottom of the terminal.
+    pub state_tabs: bool,
 }
 
 impl Default for TwitchConfig {
@@ -134,6 +136,7 @@ impl Default for FrontendConfig {
             badges: false,
             theme: Theme::Dark,
             username_highlight: true,
+            state_tabs: true,
         }
     }
 }

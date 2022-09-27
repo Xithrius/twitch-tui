@@ -2,14 +2,14 @@ use tui::backend::Backend;
 
 use crate::{
     ui::{
-        insert_box_chunk,
+        components::render_insert_box,
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
         WindowAttributes,
     },
     utils::text::suggestion_query,
 };
 
-pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
+pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
     let WindowAttributes {
         frame: _,
         app,
@@ -52,7 +52,7 @@ pub fn ui_insert_message<T: Backend>(window: WindowAttributes<T>, mention_sugges
         None
     };
 
-    insert_box_chunk(
+    render_insert_box(
         window,
         format!(
             "Message Input: {} / {}",

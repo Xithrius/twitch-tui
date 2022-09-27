@@ -1,10 +1,6 @@
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 pub mod channels;
-pub mod help;
-
-pub use channels::ui_switch_channels;
-pub use help::ui_show_keybinds;
 
 const HORIZONTAL_CONSTRAINTS: [Constraint; 3] = [
     Constraint::Percentage(15),

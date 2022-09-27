@@ -5,13 +5,14 @@ use tui::backend::Backend;
 
 use crate::{
     ui::{
-        components::popups::centered_popup, insert_box_chunk, statics::CHANNEL_NAME_REGEX,
+        components::{popups::centered_popup, render_insert_box},
+        statics::CHANNEL_NAME_REGEX,
         WindowAttributes,
     },
     utils::text::suggestion_query,
 };
 
-pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_suggestions: bool) {
+pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_suggestions: bool) {
     let WindowAttributes {
         frame,
         app,
@@ -35,7 +36,7 @@ pub fn ui_switch_channels<T: Backend>(window: WindowAttributes<T>, channel_sugge
         None
     };
 
-    insert_box_chunk(
+    render_insert_box(
         window,
         "Channel",
         Some(input_rect),

@@ -9,7 +9,7 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans},
-    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Row, Table},
 };
 
 use crate::{
@@ -18,13 +18,9 @@ use crate::{
         config::CompleteConfig,
         data::PayLoad,
     },
-    ui::components::{
-        chunks::ui_insert_message,
-        popups::{ui_show_keybinds, ui_switch_channels},
-    },
     utils::{
         styles,
-        text::{align_text, get_cursor_position, title_spans, TitleStyle},
+        text::{align_text, title_spans, TitleStyle},
     },
 };
 
@@ -43,6 +39,14 @@ impl LayoutAttributes {
             constraints,
             chunks,
         }
+    }
+
+    pub fn first_chunk(&self) -> Rect {
+        self.chunks[0]
+    }
+
+    pub fn last_chunk(&self) -> Rect {
+        self.chunks[self.chunks.len() - 1]
     }
 }
 
@@ -89,10 +93,16 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         );
     }
 
-    let v_constraints = match app.state {
+    // Constraints for different states of the application.
+    // Modify this in order to create new layouts.
+    let mut v_constraints = match app.state {
         State::Insert | State::MessageSearch => vec![Constraint::Min(1), Constraint::Length(3)],
         _ => vec![Constraint::Min(1)],
     };
+
+    if config.frontend.state_tabs {
+        v_constraints.push(Constraint::Length(1));
+    }
 
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -109,7 +119,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .split(frame.size());
 
     // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = layout.chunks[0].height as usize - 3;
+    let general_chunk_height = layout.first_chunk().height as usize - 3;
 
     // The chunk furthest to the right is the messages, that's the one we want.
     let message_chunk_width = h_chunks[table_constraints.len() - 1].width as usize - 4;
@@ -222,95 +232,26 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .widths(&table_constraints)
         .column_spacing(1);
 
-    frame.render_widget(table, layout.chunks[0]);
+    frame.render_widget(table, layout.first_chunk());
+
+    if config.frontend.state_tabs {
+        components::render_state_tabs(frame, layout.clone(), app.state.clone());
+    }
 
     let window = WindowAttributes::new(frame, app, layout);
 
     match window.app.state {
         // States of the application that require a chunk of the main window
-        State::Insert => ui_insert_message(window, config.storage.mentions),
-        State::MessageSearch => insert_box_chunk(window, "Message Search", None, None, None),
+        State::Insert => components::render_chat_box(window, config.storage.mentions),
+        State::MessageSearch => {
+            components::render_insert_box(window, "Message Search", None, None, None);
+        }
 
         // States that require popups
-        State::Help => ui_show_keybinds(window),
-        State::ChannelSwitch => ui_switch_channels(window, config.storage.channels),
+        State::Help => components::render_help_window(window),
+        State::ChannelSwitch => {
+            components::render_channel_switcher(window, config.storage.channels);
+        }
         State::Normal => {}
     }
-}
-
-/// Puts a box for user input at the bottom of the screen,
-/// with an interactive cursor.
-/// `input_validation` checks if the user's input is valid, changes window
-/// theme to red if invalid, default otherwise.
-pub fn insert_box_chunk<T: Backend>(
-    window: WindowAttributes<T>,
-    box_title: &str,
-    input_rectangle: Option<Rect>,
-    suggestion: Option<String>,
-    input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
-) {
-    let WindowAttributes { frame, layout, app } = window;
-
-    let buffer = &app.input_buffer;
-
-    let cursor_pos = get_cursor_position(buffer);
-
-    let input_rect = if let Some(r) = input_rectangle {
-        r
-    } else {
-        layout.chunks[layout.constraints.len() - 1]
-    };
-
-    frame.set_cursor(
-        (input_rect.x + cursor_pos as u16 + 1)
-            .min(input_rect.x + input_rect.width.saturating_sub(2)),
-        input_rect.y + 1,
-    );
-
-    let current_input = buffer.as_str();
-
-    let valid_input =
-        input_validation.map_or(true, |check_func| check_func(current_input.to_string()));
-
-    let paragraph = Paragraph::new(Spans::from(vec![
-        Span::raw(current_input),
-        Span::styled(
-            suggestion.clone().map_or_else(
-                || "".to_string(),
-                |suggestion_buffer| {
-                    if suggestion_buffer.len() > current_input.len() {
-                        suggestion_buffer[current_input.len()..].to_string()
-                    } else {
-                        "".to_string()
-                    }
-                },
-            ),
-            Style::default().add_modifier(Modifier::DIM),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(title_spans(
-                vec![TitleStyle::Single(box_title)],
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ))
-            .border_style(Style::default().fg(if valid_input {
-                Color::Yellow
-            } else {
-                Color::Red
-            })),
-    )
-    .scroll((
-        0,
-        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
-    ));
-
-    if matches!(app.state, State::ChannelSwitch) {
-        frame.render_widget(Clear, input_rect);
-    }
-
-    frame.render_widget(paragraph, input_rect);
-
-    app.buffer_suggestion = suggestion;
 }
