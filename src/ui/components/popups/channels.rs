@@ -17,6 +17,7 @@ pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_
         frame,
         app,
         layout: _,
+        show_state_tabs: _,
     } = &window;
 
     let input_buffer = &app.input_buffer;

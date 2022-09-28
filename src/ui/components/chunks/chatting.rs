@@ -14,6 +14,7 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
         frame: _,
         app,
         layout: _,
+        show_state_tabs: _,
     } = &window;
 
     let input_buffer = &app.input_buffer;

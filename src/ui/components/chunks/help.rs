@@ -19,7 +19,12 @@ const TABLE_CONSTRAINTS: [Constraint; 3] =
     [Constraint::Min(11), Constraint::Min(8), Constraint::Min(38)];
 
 pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
-    let WindowAttributes { frame, app, layout } = window;
+    let WindowAttributes {
+        frame,
+        app,
+        layout,
+        show_state_tabs: _,
+    } = window;
 
     let mut rows = vec![];
 

@@ -54,14 +54,22 @@ pub struct WindowAttributes<'a, 'b, 'c, T: Backend> {
     frame: &'a mut Frame<'b, T>,
     app: &'c mut App,
     layout: LayoutAttributes,
+    show_state_tabs: bool,
 }
 
-impl<'a, 'b, 'c, T> WindowAttributes<'a, 'b, 'c, T>
-where
-    T: Backend,
-{
-    pub fn new(frame: &'a mut Frame<'b, T>, app: &'c mut App, layout: LayoutAttributes) -> Self {
-        Self { frame, app, layout }
+impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
+    pub fn new(
+        frame: &'a mut Frame<'b, T>,
+        app: &'c mut App,
+        layout: LayoutAttributes,
+        show_state_tabs: bool,
+    ) -> Self {
+        Self {
+            frame,
+            app,
+            layout,
+            show_state_tabs,
+        }
     }
 }
 
@@ -238,7 +246,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         components::render_state_tabs(frame, layout.clone(), app.state.clone());
     }
 
-    let window = WindowAttributes::new(frame, app, layout);
+    let window = WindowAttributes::new(frame, app, layout, config.frontend.state_tabs);
 
     match window.app.state {
         // States of the application that require a chunk of the main window

@@ -31,7 +31,12 @@ pub fn render_insert_box<T: Backend>(
     suggestion: Option<String>,
     input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
 ) {
-    let WindowAttributes { frame, layout, app } = window;
+    let WindowAttributes {
+        frame,
+        layout,
+        app,
+        show_state_tabs,
+    } = window;
 
     let buffer = &app.input_buffer;
 
@@ -40,7 +45,7 @@ pub fn render_insert_box<T: Backend>(
     let input_rect = if let Some(r) = input_rectangle {
         r
     } else {
-        layout.chunks[layout.constraints.len() - 2]
+        layout.chunks[layout.constraints.len() - (if show_state_tabs { 2 } else { 1 })]
     };
 
     frame.set_cursor(
