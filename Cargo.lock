@@ -1451,7 +1451,7 @@ dependencies = [
 
 [[package]]
 name = "twitch-tui"
-version = "2.0.0-alpha.11"
+version = "2.0.0-alpha.12"
 dependencies = [
  "chrono",
  "clap",
