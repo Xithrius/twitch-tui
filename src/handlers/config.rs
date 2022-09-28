@@ -136,7 +136,7 @@ impl Default for FrontendConfig {
             badges: false,
             theme: Theme::Dark,
             username_highlight: true,
-            state_tabs: true,
+            state_tabs: false,
         }
     }
 }
@@ -220,6 +220,9 @@ impl CompleteConfig {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
                 }
             }
+
+            // Channel names for the IRC connection can only be in lowercase.
+            config.twitch.channel = config.twitch.channel.to_lowercase();
 
             Ok(config)
         } else {
