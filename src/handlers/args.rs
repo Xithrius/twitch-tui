@@ -1,47 +1,87 @@
-use std::str::FromStr;
+use clap::{builder::PossibleValue, Parser};
 
-use clap::Parser;
+use crate::handlers::config::{Alignment, CompleteConfig, Palette, Theme};
 
-use crate::handlers::config::{CompleteConfig, Palette, Theme};
+impl clap::ValueEnum for Alignment {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Left, Self::Center, Self::Right]
+    }
 
-#[derive(Parser)]
+    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
+        Some(PossibleValue::new(match self {
+            Self::Left => "left",
+            Self::Center => "center",
+            Self::Right => "right",
+        }))
+    }
+}
+
+impl clap::ValueEnum for Palette {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Pastel, Self::Vibrant, Self::Warm, Self::Cool]
+    }
+
+    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
+        Some(PossibleValue::new(match self {
+            Self::Pastel => "pastel",
+            Self::Vibrant => "vibrant",
+            Self::Warm => "warm",
+            Self::Cool => "cool",
+        }))
+    }
+}
+
+impl clap::ValueEnum for Theme {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Dark, Self::Light]
+    }
+
+    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
+        Some(PossibleValue::new(match self {
+            Self::Light => "light",
+            _ => "dark",
+        }))
+    }
+}
+
+#[derive(Parser, Debug)]
 #[clap(rename_all = "kebab-case")]
 #[clap(author, version, about)]
 /// Twitch chat in the terminal
 pub struct Cli {
     /// The streamer's name
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub channel: Option<String>,
     /// File to log to
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub log_file: Option<String>,
     /// If debug logs should be shown
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub verbose: bool,
     /// The delay in milliseconds between terminal updates
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub tick_delay: Option<u64>,
     /// The maximum amount of messages to be stored
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub max_messages: Option<usize>,
     /// Show the date/time
-    #[clap(short, long, possible_values = &["true", "false"])]
-    pub date_shown: Option<String>,
+    #[arg(short, long)]
+    pub date_shown: bool,
     /// Maximum length for Twitch usernames
-    #[clap(short = 'u', long)]
+    #[arg(short = 'u', long)]
     pub max_username_length: Option<u16>,
     /// Username column alignment
-    #[clap(short = 'a', long, possible_values = &["left", "center", "right"])]
-    pub username_alignment: Option<String>,
+    #[arg(short = 'a', long)]
+    pub username_alignment: Option<Alignment>,
     /// Username color palette
-    #[clap(short, long, possible_values = &["pastel", "vibrant", "warm", "cool"])]
+    #[arg(short, long)]
     pub palette: Option<Palette>,
     /// Twitch badges support
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub badges: bool,
     /// The theme of the terminal
-    #[clap(long, possible_values = &["dark", "light"])]
-    pub theme: Option<String>,
+    #[arg(long)]
+    pub theme: Option<Theme>,
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
@@ -64,9 +104,8 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     }
 
     // Frontend arguments
-    if let Some(date_shown) = args.date_shown {
-        config.frontend.date_shown = matches!(date_shown.as_str(), "true");
-    }
+    config.frontend.date_shown = args.date_shown;
+
     if let Some(maximum_username_length) = args.max_username_length {
         config.frontend.maximum_username_length = maximum_username_length;
     }
@@ -78,6 +117,6 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     }
     config.frontend.badges = args.badges;
     if let Some(theme) = args.theme {
-        config.frontend.theme = Theme::from_str(theme.as_str()).unwrap();
+        config.frontend.theme = theme;
     }
 }

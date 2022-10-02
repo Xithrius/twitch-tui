@@ -76,7 +76,7 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
     let username_column_title = align_text(
         "Username",
-        &config.frontend.username_alignment,
+        config.frontend.username_alignment,
         config.frontend.maximum_username_length,
     );
 

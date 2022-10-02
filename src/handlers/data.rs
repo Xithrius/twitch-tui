@@ -176,7 +176,7 @@ impl Data {
         let mut cell_vector = vec![
             Cell::from(align_text(
                 &self.author,
-                frontend_config.username_alignment.as_str(),
+                frontend_config.username_alignment,
                 frontend_config.maximum_username_length,
             ))
             .style(if self.system {
