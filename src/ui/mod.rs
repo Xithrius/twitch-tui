@@ -142,6 +142,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut scroll_offset = app.scroll_offset;
 
+    let mut total_num_search_results = 0;
     'outer: for data in &app.messages {
         if let PayLoad::Message(msg) = data.payload.clone() {
             if app.filters.contaminated(msg.as_str()) {
@@ -164,8 +165,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             None
         };
 
-        let rows = if buffer.is_empty() {
-            data.to_row(
+        let (rows, num_results) = if buffer.is_empty() {
+            data.to_row_and_num_search_results(
                 &config.frontend,
                 message_chunk_width,
                 None,
@@ -173,7 +174,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 app.theme_style,
             )
         } else {
-            data.to_row(
+            data.to_row_and_num_search_results(
                 &config.frontend,
                 message_chunk_width,
                 match app.state {
@@ -184,6 +185,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 app.theme_style,
             )
         };
+        total_num_search_results += num_results;
 
         for row in rows.iter().rev() {
             if total_row_height < general_chunk_height {
@@ -252,7 +254,13 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         // States of the application that require a chunk of the main window
         State::Insert => components::render_chat_box(window, config.storage.mentions),
         State::MessageSearch => {
-            components::render_insert_box(window, "Message Search", None, None, None);
+            components::render_insert_box(
+                window,
+                format!("Message Search: {total_num_search_results} found").as_str(),
+                None,
+                None,
+                None,
+            );
         }
 
         // States that require popups
