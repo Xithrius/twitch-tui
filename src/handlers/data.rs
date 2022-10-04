@@ -98,14 +98,14 @@ impl Data {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row(
+    pub fn to_row_and_num_search_results(
         &self,
         frontend_config: &FrontendConfig,
         limit: usize,
         search_highlight: Option<String>,
         username_highlight: Option<String>,
         theme_style: Style,
-    ) -> Vec<Row> {
+    ) -> (Vec<Row>, u32) {
         let message = if let PayLoad::Message(m) = &self.payload {
             textwrap::fill(m.as_str(), limit)
         } else {
@@ -126,6 +126,7 @@ impl Data {
             }
         });
 
+        let mut num_search_matches = 0;
         let msg_cells = search_highlight.map_or_else(
             || {
                 message
@@ -145,6 +146,7 @@ impl Data {
                         let chars = s.chars();
 
                         if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
+                            num_search_matches += 1;
                             Cell::from(vec![Spans::from(
                                 chars
                                     .enumerate()
@@ -212,7 +214,7 @@ impl Data {
             }
         }
 
-        row_vector
+        (row_vector, num_search_matches)
     }
 }
 
