@@ -4,6 +4,5 @@ updates:
   - package-ecosystem: cargo
     directory: "/"
     schedule:
-      interval: daily
-      time: "07:00"
+      interval: weekly
     open-pull-requests-limit: 5
