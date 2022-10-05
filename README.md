@@ -111,7 +111,7 @@
 
 ## Links
 
-- rustdoc docs: https://xithrius.github.io/twitch-tui/twt/
+- Documentation: https://xithrius.github.io/twitch-tui/twt/
 
 ## Setup
 
