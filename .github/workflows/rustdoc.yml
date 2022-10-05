@@ -1,7 +1,11 @@
 name: Build & deploy rustdoc
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - main
 
@@ -13,7 +17,7 @@ env:
 
 jobs:
   rustdoc:
-    if: github.repository == 'Xithrius/twitch-tui'
+    if: github.repository == 'Xithrius/twitch-tui' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     steps:
