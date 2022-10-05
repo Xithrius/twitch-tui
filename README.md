@@ -109,6 +109,10 @@
 
 </details>
 
+## Links
+
+- rustdoc docs: https://xithrius.github.io/twitch-tui/twt/
+
 ## Setup
 
 1. Install Rustup from the [rust-lang website](https://www.rust-lang.org/learn/get-started).
