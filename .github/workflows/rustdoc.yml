@@ -12,7 +12,7 @@ env:
 
 jobs:
   rustdoc:
-    if: github.repository == 'rust-lang/rust-analyzer'
+    if: github.repository == 'Xithrius/twitch-tui'
     runs-on: ubuntu-latest
 
     steps:
