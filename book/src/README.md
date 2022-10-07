@@ -11,7 +11,6 @@
 
 <details>
   <summary>Normal mode</summary>
-
   <table>
   <tr>
     <td> <b>Key</b>
