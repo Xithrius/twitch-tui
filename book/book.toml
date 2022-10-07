@@ -1,0 +1,6 @@
+[book]
+authors = ["Nadhem"]
+language = "en"
+multilingual = false
+src = "src"
+title = "twitch-tui"
