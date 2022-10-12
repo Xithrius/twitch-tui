@@ -13,6 +13,7 @@
 
 # JetBrains project config folder.
 .idea
+.fleet
 
 # Ignore Vim temporary and swap files.
 *.sw?
