@@ -57,7 +57,7 @@ fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
 }
 
 pub async fn ui_driver(
-    config: CompleteConfig,
+    mut config: CompleteConfig,
     mut app: App,
     tx: Sender<TwitchAction>,
     mut rx: Receiver<Data>,
@@ -83,7 +83,8 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
-    let data_builder = DataBuilder::new(&config.frontend.date_format);
+    let date_format = config.frontend.date_format.clone();
+    let data_builder = DataBuilder::new(&date_format);
 
     loop {
         if let Ok(info) = rx.try_recv() {
@@ -109,7 +110,7 @@ pub async fn ui_driver(
             .unwrap();
 
         if let Some(TerminalAction::Quitting) =
-            handle_stateful_user_input(&mut events, &mut app, &mut config.clone(), tx.clone()).await
+            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone()).await
         {
             quit_terminal(terminal);
 
