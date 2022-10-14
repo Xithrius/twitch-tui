@@ -13,7 +13,13 @@ Navigation to different modes are also explained here.
 <td> Go to the chat window chat.
 <tr>
 <td> i
-<td> Enter message input mode for sending messages. Exit this mode with `Esc`.
+<td> Enter message insert mode for sending messages. Exit this mode with `Esc`.
+<tr>
+<td> @
+<td> Enter insert mode with the mention symbol `@` already existing.
+<tr>
+<td> /
+<td> Enter insert mode with the command symbol `/` already existing.
 <tr>
 <td> ?
 <td> Have the keybinds popup window appear.

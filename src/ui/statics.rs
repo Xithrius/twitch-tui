@@ -8,6 +8,8 @@ lazy_static! {
         (State::Normal, vec![
             ("c", "Main chat window"),
             ("i", "Insert mode"),
+            ("@", "Insert mode with mention symbol"),
+            ("/", "Insert mode with command symbol"),
             ("s", "Swap channels"),
             ("?", "* You are here!"),
             ("Ctrl + f", "Search messages"),

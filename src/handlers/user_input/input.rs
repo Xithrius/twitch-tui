@@ -239,6 +239,10 @@ pub async fn handle_stateful_user_input(
                 Key::Char('i') | Key::Insert => {
                     app.state = State::Insert;
                 }
+                Key::Char('@' | '/') => {
+                    app.state = State::Insert;
+                    app.input_buffer.update(&key.to_string(), 1);
+                }
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }

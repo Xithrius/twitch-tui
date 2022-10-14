@@ -28,6 +28,16 @@ pub enum Key {
     ScrollDown,
 }
 
+impl ToString for Key {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Char(c) | Self::Ctrl(c) | Self::Alt(c) => c,
+            _ => unimplemented!(),
+        }
+        .to_string()
+    }
+}
+
 pub enum Event<I> {
     Input(I),
     Tick,
