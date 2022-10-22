@@ -17,7 +17,7 @@ pub async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStre
         nickname: Some(config.twitch.username.clone()),
         server: Some(config.twitch.server.clone()),
         channels: vec![format!("#{}", config.twitch.channel)],
-        password: Some(config.twitch.token.clone()),
+        password: config.twitch.token.clone(),
         port: Some(6667),
         use_tls: Some(false),
         ping_timeout: Some(10),
