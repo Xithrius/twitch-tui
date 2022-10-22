@@ -12,7 +12,10 @@ use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    handlers::args::{merge_args_into_config, Cli},
+    handlers::{
+        app::State,
+        args::{merge_args_into_config, Cli},
+    },
     utils::pathing::config_path,
 };
 
@@ -53,8 +56,10 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
     /// The file path to log to.
     pub log_file: Option<String>,
-    /// if debug logging should be enabled
+    /// if debug logging should be enabled.
     pub verbose: bool,
+    /// What state the application should start in.
+    pub start_state: State,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -120,6 +125,7 @@ impl Default for TerminalConfig {
             maximum_messages: 150,
             log_file: None,
             verbose: false,
+            start_state: State::Normal,
         }
     }
 }

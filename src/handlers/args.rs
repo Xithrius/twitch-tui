@@ -1,8 +1,11 @@
-use clap::{builder::PossibleValue, Parser};
+use clap::{builder::PossibleValue, Parser, ValueEnum};
 
-use crate::handlers::config::{Alignment, CompleteConfig, Palette, Theme};
+use crate::handlers::{
+    app::State,
+    config::{Alignment, CompleteConfig, Palette, Theme},
+};
 
-impl clap::ValueEnum for Alignment {
+impl ValueEnum for Alignment {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::Left, Self::Center, Self::Right]
     }
@@ -16,7 +19,7 @@ impl clap::ValueEnum for Alignment {
     }
 }
 
-impl clap::ValueEnum for Palette {
+impl ValueEnum for Palette {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::Pastel, Self::Vibrant, Self::Warm, Self::Cool]
     }
@@ -31,7 +34,7 @@ impl clap::ValueEnum for Palette {
     }
 }
 
-impl clap::ValueEnum for Theme {
+impl ValueEnum for Theme {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::Dark, Self::Light]
     }
@@ -40,6 +43,28 @@ impl clap::ValueEnum for Theme {
         Some(PossibleValue::new(match self {
             Self::Light => "light",
             _ => "dark",
+        }))
+    }
+}
+
+impl ValueEnum for State {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[
+            Self::Normal,
+            Self::Insert,
+            Self::Help,
+            Self::ChannelSwitch,
+            Self::MessageSearch,
+        ]
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        Some(PossibleValue::new(match self {
+            Self::Normal => "normal",
+            Self::Insert => "insert",
+            Self::Help => "help",
+            Self::ChannelSwitch => "channel",
+            Self::MessageSearch => "search",
         }))
     }
 }
@@ -82,6 +107,9 @@ pub struct Cli {
     /// The theme of the terminal
     #[arg(long)]
     pub theme: Option<Theme>,
+    /// The starting state of the terminal
+    #[arg(short, long)]
+    pub start_state: Option<State>,
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
@@ -96,6 +124,9 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     }
     if let Some(max_messages) = args.max_messages {
         config.terminal.maximum_messages = max_messages;
+    }
+    if let Some(start_state) = args.start_state {
+        config.terminal.start_state = start_state;
     }
 
     // Twitch arguments

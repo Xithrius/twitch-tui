@@ -9,15 +9,13 @@ use tui::{
 };
 
 use crate::{
-    handlers::config::{FrontendConfig, Palette},
+    handlers::config::{FrontendConfig, Palette, Theme},
     utils::{
         colors::hsl_to_rgb,
-        styles::{self, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT},
+        styles::{HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT},
         text::align_text,
     },
 };
-
-use super::config::Theme;
 
 lazy_static! {
     pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
@@ -182,7 +180,7 @@ impl Data {
                 frontend_config.maximum_username_length,
             ))
             .style(if self.system {
-                styles::SYSTEM_CHAT
+                SYSTEM_CHAT
             } else {
                 Style::default().fg(self.hash_username(&frontend_config.palette))
             }),

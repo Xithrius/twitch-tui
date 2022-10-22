@@ -1,9 +1,12 @@
+#![allow(clippy::use_self)]
+
 use std::{
     cmp::{Eq, PartialEq},
     collections::VecDeque,
 };
 
 use rustyline::line_buffer::LineBuffer;
+use serde::{Deserialize, Serialize};
 use tui::style::Style;
 
 use crate::{
@@ -18,7 +21,7 @@ use crate::{
 
 const INPUT_BUFFER_LIMIT: usize = 4096;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum State {
     Normal,
     Insert,
@@ -84,7 +87,7 @@ impl App {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
             storage: Storage::new("storage.json", &config.storage),
             filters: Filters::new("filters.txt", &config.filters),
-            state: State::Normal,
+            state: config.terminal.start_state.clone(),
             input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
             buffer_suggestion: None,
             scroll_offset: 0,
