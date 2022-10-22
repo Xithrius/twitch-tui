@@ -1,6 +1,7 @@
 #![allow(clippy::use_self)]
 
 use std::{
+    env,
     fs::{create_dir_all, read_to_string, File},
     io::Write,
     path::Path,
@@ -8,6 +9,7 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, Error, Result};
+use log::{debug, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -40,7 +42,7 @@ pub struct TwitchConfig {
     /// The IRC channel to connect to.
     pub server: String,
     /// The authentication token for the IRC.
-    pub token: String,
+    pub token: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -107,7 +109,7 @@ impl Default for TwitchConfig {
             username: "".to_string(),
             channel: "".to_string(),
             server: "irc.chat.twitch.tv".to_string(),
-            token: "".to_string(),
+            token: None,
         }
     }
 }
@@ -239,10 +241,20 @@ impl CompleteConfig {
 
             merge_args_into_config(&mut config, cli);
 
+            let token: Option<&'static str> = option_env!("TWT_TOKEN");
+
+            if let Some(env_token) = token {
+                if !env_token.is_empty() {
+                    debug!("TWT_TOKEN found, and will be used.");
+
+                    config.twitch.token = Some(env_token.to_string());
+                }
+            }
+
             {
                 let t = &config.twitch;
 
-                if t.username.is_empty() || t.channel.is_empty() || t.token.is_empty() {
+                if t.username.is_empty() || t.channel.is_empty() || t.token.is_none() {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
                 }
             }
