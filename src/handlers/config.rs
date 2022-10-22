@@ -9,7 +9,7 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, Error, Result};
-use log::{debug, info};
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
