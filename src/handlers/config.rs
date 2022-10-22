@@ -9,7 +9,6 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, Error, Result};
-use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -245,8 +244,6 @@ impl CompleteConfig {
 
             if let Some(env_token) = token {
                 if !env_token.is_empty() {
-                    debug!("TWT_TOKEN found, and will be used.");
-
                     config.twitch.token = Some(env_token.to_string());
                 }
             }
@@ -254,7 +251,9 @@ impl CompleteConfig {
             {
                 let t = &config.twitch;
 
-                if t.username.is_empty() || t.channel.is_empty() || t.token.is_none() {
+                let check_token = t.token.as_ref().map_or("", |t| t);
+
+                if t.username.is_empty() || t.channel.is_empty() || check_token.is_empty() {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
                 }
             }
