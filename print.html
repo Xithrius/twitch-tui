@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="guide/installation.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="keybinds/index.html"><strong aria-hidden="true">2.</strong> Keybinds</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="keybinds/normal.html"><strong aria-hidden="true">2.1.</strong> Normal mode</a></li><li class="chapter-item expanded "><a href="keybinds/insert.html"><strong aria-hidden="true">2.2.</strong> Insert mode</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="guide/index.html"><strong aria-hidden="true">1.</strong> Starting off</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="guide/installation.html"><strong aria-hidden="true">1.1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="guide/configuration.html"><strong aria-hidden="true">1.2.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="keybinds/index.html"><strong aria-hidden="true">2.</strong> Keybinds</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="keybinds/normal.html"><strong aria-hidden="true">2.1.</strong> Normal mode</a></li><li class="chapter-item expanded "><a href="keybinds/insert.html"><strong aria-hidden="true">2.2.</strong> Insert mode</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -144,6 +144,12 @@
 <p>To enter insert mode, press <code>i</code>. To drop back to visual mode, press <code>esc</code>.</p>
 <p>Insert modes at this time are message search (<code>Ctrl + f</code>), channel swapper (<code>s</code>), and the previously mentioned insert mode (<code>i</code>).</p>
 <p>To see all the options with keybinds, either head over to the <a href="https://xithrius.github.io/twitch-tui/keybinds/index.html">keybinds section</a> of this book, or press <code>?</code> while in visual mode.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration-and-installation"><a class="header" href="#configuration-and-installation">Configuration and installation</a></h1>
+<p>The how-to of getting this application up and running.</p>
+<ul>
+<li><a href="guide/installation.html">Installation</a></li>
+<li><a href="guide/configuration.html">Configuration</a></li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
 <p>After <a href="https://www.rust-lang.org/tools/install">installing Rust</a>, use the following command to install twitch-tui:</p>
 <pre><code class="language-sh">cargo install twitch-tui
@@ -152,6 +158,23 @@
 <p>Installing a version such as <code>2.0.0-alpha.1</code> would be <code>cargo install twitch-tui --version &quot;2.0.0-alpha.1&quot;</code>.</p>
 <p>(PPT and AUR repos coming soon)</p>
 <p>To uninstall, run the command <code>cargo uninstall twitch-tui</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<h2 id="config-file"><a class="header" href="#config-file">Config file</a></h2>
+<p>After running <code>twt</code> for the first time, a config file will be generated at the following locations, depending on your OS:</p>
+<ul>
+<li>Linux/MacOS: <code>~/.config/twt/config.toml</code></li>
+<li>Windows: <code>%appdata%\twt\config.toml</code></li>
+</ul>
+<p>You can find the default configuration values <a href="https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml">here</a>.</p>
+<h2 id="auth"><a class="header" href="#auth">Auth</a></h2>
+<p>Get an OAuth token from <a href="https://twitchapps.com/tmi/">Twitch</a>, and put the value in one of two places:</p>
+<ol>
+<li>The <code>token</code> variable in the <code>config.toml</code> that was previously generated.</li>
+<li>The environment variable <code>TWT_TOKEN</code>.</li>
+</ol>
+<p>The environment variable will be used first, even if a token exists in <code>config.toml</code>. If one doesn't exist there, your config token will be used.</p>
+<h2 id="run-it"><a class="header" href="#run-it">Run it</a></h2>
+<p>Run <code>twt</code> in the terminal. For help, <code>twt --help</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="keybind-guide"><a class="header" href="#keybind-guide">Keybind guide</a></h1>
 <p>All of the keybinds are in this section.</p>
 <ul>
