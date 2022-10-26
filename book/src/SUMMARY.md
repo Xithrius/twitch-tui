@@ -4,7 +4,9 @@
 
 # User Guide
 
-- [Installation](guide/installation.md)
+- [Starting off](guide/README.md)
+    - [Installation](guide/installation.md)
+    - [Configuration](guide/configuration.md)
 - [Keybinds](keybinds/README.md)
     - [Normal mode](keybinds/normal.md)
     - [Insert mode](keybinds/insert.md)
