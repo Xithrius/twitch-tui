@@ -17,3 +17,5 @@
 If you have any problems, do not hesitate to [submit an issue](https://github.com/Xithrius/twitch-tui/issues/new/choose).
 
 Combine this application with [streamlink](https://github.com/streamlink/streamlink) to rid the need of a browser while watching streams.
+
+This project follows the guidelines of [Semantic Versioning](https://semver.org/).
