@@ -16,14 +16,15 @@ impl Filters {
         let file_path = config_path(file);
 
         Self {
-            captures: if let Ok(f) = read_to_string(file_path) {
-                f.split('\n')
-                    .filter(|s| !s.is_empty())
-                    .flat_map(Regex::new)
-                    .collect::<Vec<Regex>>()
-            } else {
-                vec![]
-            },
+            captures: read_to_string(file_path).map_or_else(
+                |_| vec![],
+                |f| {
+                    f.split('\n')
+                        .filter(|s| !s.is_empty())
+                        .flat_map(Regex::new)
+                        .collect::<Vec<Regex>>()
+                },
+            ),
             enabled: config.enabled,
             reversed: config.reversed,
         }

@@ -110,8 +110,8 @@ pub struct FrontendConfig {
 impl Default for TwitchConfig {
     fn default() -> Self {
         Self {
-            username: "".to_string(),
-            channel: "".to_string(),
+            username: String::new(),
+            channel: String::new(),
             server: "irc.chat.twitch.tv".to_string(),
             token: None,
         }
@@ -241,7 +241,7 @@ impl CompleteConfig {
             file.write_all(default_toml_string.as_bytes()).unwrap();
 
             bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
-        } else if let Ok(config_contents) = read_to_string(&p) {
+        } else if let Ok(config_contents) = read_to_string(p) {
             let mut config: CompleteConfig = toml::from_str(config_contents.as_str()).unwrap();
 
             merge_args_into_config(&mut config, cli);

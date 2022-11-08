@@ -62,16 +62,15 @@ pub fn render_insert_box<T: Backend>(
     let paragraph = Paragraph::new(Spans::from(vec![
         Span::raw(current_input),
         Span::styled(
-            suggestion.clone().map_or_else(
-                || "".to_string(),
-                |suggestion_buffer| {
+            suggestion
+                .clone()
+                .map_or_else(String::new, |suggestion_buffer| {
                     if suggestion_buffer.len() > current_input.len() {
                         suggestion_buffer[current_input.len()..].to_string()
                     } else {
-                        "".to_string()
+                        String::new()
                     }
-                },
-            ),
+                }),
             Style::default().add_modifier(Modifier::DIM),
         ),
     ]))

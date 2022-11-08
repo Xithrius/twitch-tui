@@ -100,7 +100,7 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
 pub fn suggestion_query(search: &str, possibilities: Vec<String>) -> Option<String> {
     possibilities
         .iter()
-        .filter(|s| s.starts_with(&search))
+        .filter(|s| s.starts_with(search))
         .collect::<Vec<&String>>()
         .first()
         .and_then(|result| {
@@ -176,8 +176,8 @@ mod tests {
     #[test]
     fn test_vector_column_max_strings() {
         let vec = vec![
-            vec!["".to_string(), "another".to_string()],
-            vec!["".to_string(), "the last string".to_string()],
+            vec![String::new(), "another".to_string()],
+            vec![String::new(), "the last string".to_string()],
         ];
 
         let mut output_vec_all = vector_column_max(&vec);
