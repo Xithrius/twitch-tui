@@ -16,7 +16,6 @@ use crate::{
     handlers::{
         app::{App, State},
         config::CompleteConfig,
-        data::PayLoad,
     },
     utils::{
         styles,
@@ -144,10 +143,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut total_num_search_results = 0;
     'outer: for data in &app.messages {
-        if let PayLoad::Message(msg) = data.payload.clone() {
-            if app.filters.contaminated(msg.as_str()) {
-                continue;
-            }
+        if app.filters.contaminated(data.message.clone().as_str()) {
+            continue;
         }
 
         // Offsetting of messages for scrolling through said messages
@@ -215,7 +212,11 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 TitleStyle::Combined("Time", &current_time),
                 TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
                 TitleStyle::Custom(Span::styled(
-                    "Filter",
+                    if app.filters.reversed() {
+                        "retliF"
+                    } else {
+                        "Filter"
+                    },
                     Style::default()
                         .add_modifier(Modifier::BOLD)
                         .fg(if app.filters.enabled() {

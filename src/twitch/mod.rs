@@ -3,13 +3,13 @@ mod connection;
 
 use std::collections::HashMap;
 
+use flume::{Receiver, Sender};
 use futures::StreamExt;
 use irc::{
     client::prelude::Capability,
     proto::{Command, Message},
 };
 use log::{debug, info};
-use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::{
     handlers::{
@@ -28,11 +28,7 @@ pub enum TwitchAction {
     Join(String),
 }
 
-pub async fn twitch_irc(
-    mut config: CompleteConfig,
-    tx: Sender<Data>,
-    mut rx: Receiver<TwitchAction>,
-) {
+pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, rx: Receiver<TwitchAction>) {
     info!("Spawned Twitch IRC thread.");
 
     let data_builder = DataBuilder::new(&config.frontend.date_format);
@@ -50,7 +46,7 @@ pub async fn twitch_irc(
         ])
         .is_err()
     {
-        tx.send(
+        tx.send_async(
             data_builder.system(
                 "Unable to request commands/tags capability, certain features may be affected."
                     .to_string(),
@@ -64,7 +60,7 @@ pub async fn twitch_irc(
         tokio::select! {
             biased;
 
-            Some(action) = rx.recv() => {
+            Ok(action) = rx.recv_async() => {
                 let current_channel = format!("#{}", config.twitch.channel);
 
                 match action {
@@ -82,14 +78,14 @@ pub async fn twitch_irc(
 
                         // Leave previous channel
                         if let Err(err) = sender.send_part(current_channel) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
+                            tx.send_async(data_builder.twitch(err.to_string())).await.unwrap();
                         } else {
-                            tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
+                            tx.send_async(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
                         }
 
                         // Join specified channel
                         if let Err(err) = sender.send_join(&channel_list) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
+                            tx.send_async(data_builder.twitch(err.to_string())).await.unwrap();
                         }
 
                         // Set old channel to new channel
@@ -142,14 +138,16 @@ async fn handle_message_command(
                 retrieve_user_badges(&mut name, &message);
             }
 
-            tx.send(DataBuilder::user(name.to_string(), msg.to_string()))
+            tx.send_async(DataBuilder::user(name.to_string(), msg.to_string()))
                 .await
                 .unwrap();
 
             debug!("Message received from twitch: {} - {}", name, msg);
         }
         Command::NOTICE(ref _target, ref msg) => {
-            tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
+            tx.send_async(data_builder.twitch(msg.to_string()))
+                .await
+                .unwrap();
         }
         Command::Raw(ref cmd, ref _items) => {
             match cmd.as_ref() {
@@ -164,7 +162,7 @@ async fn handle_message_command(
                 }
                 "USERNOTICE" => {
                     if let Some(value) = tags.get("system-msg") {
-                        tx.send(data_builder.twitch((*value).to_string()))
+                        tx.send_async(data_builder.twitch((*value).to_string()))
                             .await
                             .unwrap();
                     }
@@ -208,7 +206,7 @@ pub async fn handle_roomstate(tx: &Sender<Data>, tags: &HashMap<&str, &str>) {
         return;
     }
 
-    tx.send(DataBuilder::user(String::from("Info"), room_state))
+    tx.send_async(DataBuilder::user(String::from("Info"), room_state))
         .await
         .unwrap();
 }

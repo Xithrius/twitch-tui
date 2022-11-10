@@ -1,6 +1,6 @@
+use flume::Sender;
 use regex::Regex;
 use rustyline::{At, Word};
-use tokio::sync::mpsc::Sender;
 
 use crate::{
     handlers::{
@@ -64,7 +64,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
                 input_message.to_string(),
             ));
 
-            tx.send(TwitchAction::Privmsg(input_message.to_string()))
+            tx.send_async(TwitchAction::Privmsg(input_message.to_string()))
                 .await
                 .unwrap();
 
@@ -95,7 +95,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
 
             app.messages.clear();
 
-            tx.send(TwitchAction::Join(input_message.to_string()))
+            tx.send_async(TwitchAction::Join(input_message.to_string()))
                 .await
                 .unwrap();
 

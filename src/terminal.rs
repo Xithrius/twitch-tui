@@ -8,15 +8,15 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use flume::{Receiver, Sender};
 use log::{debug, info};
-use tokio::sync::mpsc::{Receiver, Sender};
 use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
     handlers::{
-        app::{App, State},
+        app::App,
         config::CompleteConfig,
-        data::{Data, DataBuilder, PayLoad},
+        data::Data,
         user_input::{
             events::{Config, Events, Key},
             input::{handle_stateful_user_input, TerminalAction},
@@ -60,7 +60,7 @@ pub async fn ui_driver(
     mut config: CompleteConfig,
     mut app: App,
     tx: Sender<TwitchAction>,
-    mut rx: Receiver<Data>,
+    rx: Receiver<Data>,
 ) {
     info!("Started UI driver.");
 
@@ -83,21 +83,9 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
-    let date_format = config.frontend.date_format.clone();
-    let data_builder = DataBuilder::new(&date_format);
-
     loop {
         if let Ok(info) = rx.try_recv() {
-            match info.payload {
-                PayLoad::Message(_) => app.messages.push_front(info),
-
-                // If something such as a keypress failed, fallback to the normal state of the application.
-                PayLoad::Err(err) => {
-                    app.state = State::Normal;
-
-                    app.messages.push_front(data_builder.system(err));
-                }
-            }
+            app.messages.push_front(info);
 
             // If scrolling is enabled, pad for more messages.
             if app.scroll_offset > 0 {

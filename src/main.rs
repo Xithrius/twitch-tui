@@ -13,7 +13,6 @@
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::info;
-use tokio::sync::mpsc;
 
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
@@ -66,8 +65,11 @@ async fn main() -> Result<()> {
 
     let app = App::new(&config);
 
-    let (twitch_tx, terminal_rx) = mpsc::channel(100);
-    let (terminal_tx, twitch_rx) = mpsc::channel(100);
+    // Sender<Data>, Receiver<TwitchAction>
+    let (twitch_tx, terminal_rx) = flume::unbounded();
+
+    // Sender<TwitchAction>, Receiver<Data>
+    let (terminal_tx, twitch_rx) = flume::unbounded();
 
     info!("Started tokio communication channels.");
 

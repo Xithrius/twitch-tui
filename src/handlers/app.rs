@@ -98,10 +98,12 @@ impl App {
         }
     }
 
+    /// Dumps all the storage that we had in memory to a specified file.
     pub fn cleanup(&self) {
         self.storage.dump_data();
     }
 
+    /// Removes all the messages currently residing in the terminal
     pub fn clear_messages(&mut self) {
         self.messages.clear();
 

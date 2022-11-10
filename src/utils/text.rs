@@ -1,5 +1,3 @@
-use std::vec::IntoIter;
-
 use rustyline::line_buffer::LineBuffer;
 use textwrap::core::display_width;
 use tui::{style::Style, text::Span};
@@ -30,31 +28,6 @@ pub fn align_text(text: &str, alignment: Alignment, maximum_length: u16) -> Stri
         }
         Alignment::Left => text.to_string(),
     }
-}
-
-#[allow(dead_code)]
-pub fn vector_column_max<T>(v: &[Vec<T>]) -> IntoIter<u16>
-where
-    T: AsRef<str>,
-{
-    assert!(
-        !v.is_empty(),
-        "Vector length should be greater than or equal to 1."
-    );
-
-    let column_max = |vec: &[Vec<T>], index: usize| -> u16 {
-        vec.iter().map(|v| v[index].as_ref().len()).max().unwrap() as u16
-    };
-
-    let column_amount = v[0].len();
-
-    let mut column_max_lengths: Vec<u16> = vec![];
-
-    for i in 0..column_amount {
-        column_max_lengths.push(column_max(v, i));
-    }
-
-    column_max_lengths.into_iter()
 }
 
 /// Acquiring the horizontal position of the cursor so it can be rendered visually.
@@ -97,6 +70,8 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     complete
 }
 
+/// Return the first suggestion out of a bunch of possibilities
+/// based on starting characters of the search string.
 pub fn suggestion_query(search: &str, possibilities: Vec<String>) -> Option<String> {
     possibilities
         .iter()
@@ -153,37 +128,6 @@ mod tests {
         assert_eq!(align_text("a", Alignment::Center, 1), "a".to_string());
         assert_eq!(align_text("你好", Alignment::Center, 6), " 你好 ");
         assert_eq!(align_text("👑123", Alignment::Center, 7), " 👑123 ");
-    }
-
-    #[test]
-    #[should_panic(expected = "Vector length should be greater than or equal to 1.")]
-    fn test_vector_column_max_empty_vector() {
-        let vec: Vec<Vec<String>> = vec![];
-
-        vector_column_max(&vec);
-    }
-
-    #[test]
-    fn test_vector_column_max_reference_strings() {
-        let vec = vec![vec!["", "s"], vec!["longer string", "lll"]];
-
-        let mut output_vec_all = vector_column_max(&vec);
-
-        assert_eq!(output_vec_all.next(), Some(13));
-        assert_eq!(output_vec_all.next(), Some(3));
-    }
-
-    #[test]
-    fn test_vector_column_max_strings() {
-        let vec = vec![
-            vec![String::new(), "another".to_string()],
-            vec![String::new(), "the last string".to_string()],
-        ];
-
-        let mut output_vec_all = vector_column_max(&vec);
-
-        assert_eq!(output_vec_all.next(), Some(0));
-        assert_eq!(output_vec_all.next(), Some(15));
     }
 
     #[test]

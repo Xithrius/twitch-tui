@@ -1,10 +1,11 @@
 use std::time::Duration;
 
+use flume::Sender;
 use irc::{
     client::{prelude::Config, Client, ClientStream},
     error::Error::{self, PingTimeout},
 };
-use tokio::{sync::mpsc::Sender, time::sleep};
+use tokio::time::sleep;
 
 use crate::handlers::{
     config::CompleteConfig,
@@ -45,7 +46,7 @@ pub async fn client_stream_reconnect(
 ) {
     match err {
         PingTimeout => {
-            tx.send(
+            tx.send_async(
                 data_builder
                     .system("Attempting to reconnect due to Twitch ping timeout.".to_string()),
             )
@@ -53,7 +54,7 @@ pub async fn client_stream_reconnect(
             .unwrap();
         }
         _ => {
-            tx.send(data_builder.system(
+            tx.send_async(data_builder.system(
                 format!("Attempting to reconnect due to fatal error: {:?}", err).to_string(),
             ))
             .await
