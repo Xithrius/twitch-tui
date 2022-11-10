@@ -4,7 +4,7 @@ mod connection;
 use std::collections::HashMap;
 
 use flume::{Receiver, Sender};
-use futures::StreamExt;
+use futures::TryStreamExt;
 use irc::{
     client::prelude::Capability,
     proto::{Command, Message},
@@ -57,58 +57,75 @@ pub async fn twitch_irc(mut config: CompleteConfig, tx: Sender<Data>, rx: Receiv
     }
 
     loop {
-        tokio::select! {
-            biased;
+        if let Ok(action) = rx.try_recv() {
+            let current_channel = format!("#{}", config.twitch.channel);
 
-            Ok(action) = rx.recv_async() => {
-                let current_channel = format!("#{}", config.twitch.channel);
+            match action {
+                TwitchAction::Privmsg(message) => {
+                    debug!("Sending message to Twitch: {}", message);
 
-                match action {
-                    TwitchAction::Privmsg(message) => {
-                        debug!("Sending message to Twitch: {}", message);
+                    client.send_privmsg(current_channel, message).unwrap();
+                }
+                TwitchAction::Join(channel) => {
+                    debug!("Switching to channel {}", channel);
 
-                        client
-                            .send_privmsg(current_channel, message)
+                    let channel_list = format!("#{}", channel);
+
+                    // Leave previous channel
+                    if let Err(err) = sender.send_part(current_channel) {
+                        tx.send_async(data_builder.twitch(err.to_string()))
+                            .await
+                            .unwrap();
+                    } else {
+                        tx.send_async(data_builder.twitch(format!("Joined {}", channel_list)))
+                            .await
                             .unwrap();
                     }
-                    TwitchAction::Join(channel) => {
-                        debug!("Switching to channel {}", channel);
 
-                        let channel_list = format!("#{}", channel);
-
-                        // Leave previous channel
-                        if let Err(err) = sender.send_part(current_channel) {
-                            tx.send_async(data_builder.twitch(err.to_string())).await.unwrap();
-                        } else {
-                            tx.send_async(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
-                        }
-
-                        // Join specified channel
-                        if let Err(err) = sender.send_join(&channel_list) {
-                            tx.send_async(data_builder.twitch(err.to_string())).await.unwrap();
-                        }
-
-                        // Set old channel to new channel
-                        config.twitch.channel = channel;
+                    // Join specified channel
+                    if let Err(err) = sender.send_join(&channel_list) {
+                        tx.send_async(data_builder.twitch(err.to_string()))
+                            .await
+                            .unwrap();
                     }
+
+                    // Set old channel to new channel
+                    config.twitch.channel = channel;
                 }
             }
-            Some(message) = stream.next() => {
-                match message {
-                    Ok(message) => {
-                        if let Some(b) = handle_message_command(message, tx.clone(), data_builder, config.frontend.badges, room_state_startup).await {
-                            room_state_startup = b;
-                        }
-                    }
-                    Err(err) => {
-                        debug!("Twitch connection error encountered: {}, attempting to reconnect.", err);
-
-                        client_stream_reconnect(err, tx.clone(), data_builder, &mut client, &mut stream, &config).await;
-                    }
+        }
+        match stream.try_next().await {
+            Ok(Some(message)) => {
+                if let Some(b) = handle_message_command(
+                    message,
+                    tx.clone(),
+                    data_builder,
+                    config.frontend.badges,
+                    room_state_startup,
+                )
+                .await
+                {
+                    room_state_startup = b;
                 }
             }
-            else => {}
-        };
+            Ok(None) => (),
+            Err(err) => {
+                debug!(
+                    "Twitch connection error encountered: {}, attempting to reconnect.",
+                    err
+                );
+
+                client_stream_reconnect(
+                    err,
+                    tx.clone(),
+                    data_builder,
+                    &mut client,
+                    &mut stream,
+                    &config,
+                )
+                .await;
+            }
+        }
     }
 }
 
