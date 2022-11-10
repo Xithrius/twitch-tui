@@ -11,6 +11,8 @@ lazy_static! {
             ("@", "Insert mode with mention symbol"),
             ("/", "Insert mode with command symbol"),
             ("s", "Swap channels"),
+            ("Ctrl + t", "Enable filters"),
+            ("Ctrl + r", "Reverse filters"),
             ("?", "* You are here!"),
             ("Ctrl + f", "Search messages"),
             ("Ctrl + p", "Manual crash"),
