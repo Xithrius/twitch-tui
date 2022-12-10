@@ -117,7 +117,8 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     if let Some(log_file) = args.log_file {
         config.terminal.log_file = Some(log_file);
     }
-    config.terminal.verbose = args.verbose;
+
+    config.terminal.verbose = config.terminal.verbose || args.verbose;
 
     if let Some(tick_delay) = args.tick_delay {
         config.terminal.tick_delay = tick_delay;
@@ -135,7 +136,7 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     }
 
     // Frontend arguments
-    config.frontend.date_shown = args.date_shown;
+    config.frontend.date_shown = config.frontend.date_shown || args.date_shown;
 
     if let Some(maximum_username_length) = args.max_username_length {
         config.frontend.maximum_username_length = maximum_username_length;
@@ -146,7 +147,9 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     if let Some(palette) = args.palette {
         config.frontend.palette = palette;
     }
-    config.frontend.badges = args.badges;
+
+    config.frontend.badges = config.frontend.badges || args.badges;
+
     if let Some(theme) = args.theme {
         config.frontend.theme = theme;
     }
