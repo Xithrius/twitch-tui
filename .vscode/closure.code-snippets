@@ -1,0 +1,9 @@
+{
+    "closure": {
+        "prefix": "closure",
+        "body": [
+            "let $1 = |$2: $3| -> $4 { $5 };",
+        ],
+        "description": "Typed lambda in Rust.",
+    }
+}
