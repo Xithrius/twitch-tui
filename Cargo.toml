@@ -1,6 +1,6 @@
 [package]
 name = "twitch-tui"
-version = "2.0.0-rc.1"
+version = "2.0.0"
 authors = ["Xithrius <xithrius@gmail.com>"]
 edition = "2021"
 rust-version = "1.61.0"
@@ -15,21 +15,21 @@ categories = ["command-line-utilities"]
 [dependencies]
 crossterm = "0.25.0"
 tui = { version = "0.19.0", default-features = false, features = [ "crossterm" ] }
-tokio = { version = "1.21.2", features = [ "full" ] }
-clap = { version = "4.0.18", features = [ "derive", "cargo" ] }
-serde = { version = "1.0.147", features = [ "derive" ] }
-serde_json = "1.0.87"
+tokio = { version = "1.23.0", features = [ "full" ] }
+clap = { version = "4.0.29", features = [ "derive", "cargo" ] }
+serde = { version = "1.0.149", features = [ "derive" ] }
+serde_json = "1.0.89"
 unicode-width = "0.1.10"
 unicode-segmentation = "1.10.0"
-chrono = "0.4.22"
+chrono = "0.4.23"
 irc = "0.15.0"
-futures = "0.3.24"
+futures = "0.3.25"
 toml = "0.5.9"
 textwrap = "0.16.0"
 rustyline = "10.0.0"
 lazy_static = "1.4.0"
 fuzzy-matcher = "0.3.7"
-regex = "1.6.0"
+regex = "1.7.0"
 color-eyre = "0.6.2"
 log = "0.4.17"
 fern = "0.6.1"
@@ -48,4 +48,3 @@ opt-level = 3
 [profile.release]
 lto = "thin"
 debug = 1
-incremental = true
