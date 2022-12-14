@@ -33,13 +33,10 @@ use crate::{
 pub struct ResetCursorShape;
 
 impl Command for ResetCursorShape {
+    /// Fs escape sequence RIS for full reset
+    /// <https://en.wikipedia.org/wiki/ANSI_escape_code#Fs_Escape_sequences/>
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         f.write_str("\x1Bc")
-    }
-
-    #[cfg(windows)]
-    fn execute_winapi(&self) -> Result<()> {
-        Ok(())
     }
 }
 
