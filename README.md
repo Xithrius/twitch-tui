@@ -5,7 +5,7 @@
 [![Lines of code](https://tokei.rs/b1/github/Xithrius/twitch-tui?category=code)](https://github.com/Xithrius/twitch-tui)
 [![Crate Status](https://img.shields.io/crates/v/twitch-tui.svg)](https://crates.io/crates/twitch-tui)
 
-![image](https://user-images.githubusercontent.com/15021300/155114244-00704633-e852-49bb-9a5a-33c623f775f8.png)
+<img width="714" alt="image" src="https://user-images.githubusercontent.com/15021300/206926779-121da601-ae05-4bef-adfa-0459901027cf.png">
 
 ## Links
 
