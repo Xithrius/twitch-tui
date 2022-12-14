@@ -38,6 +38,11 @@ impl Command for ResetCursorShape {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         f.write_str("\x1Bc")
     }
+
+    #[cfg(windows)]
+    fn execute_winapi(&self) -> Result<(), std::io::Error> {
+        Ok(())
+    }
 }
 
 fn reset_terminal() {
