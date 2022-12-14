@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     io::{stdout, Stdout},
     time::Duration,
 };
@@ -8,6 +9,7 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    Command,
 };
 use log::{debug, info};
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -27,10 +29,24 @@ use crate::{
     ui::draw_ui,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ResetCursorShape;
+
+impl Command for ResetCursorShape {
+    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
+        f.write_str("\x1Bc")
+    }
+
+    #[cfg(windows)]
+    fn execute_winapi(&self) -> Result<()> {
+        Ok(())
+    }
+}
+
 fn reset_terminal() {
     disable_raw_mode().unwrap();
 
-    execute!(stdout(), LeaveAlternateScreen).unwrap();
+    execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
 }
 
 fn init_terminal(cursor_shape: CursorType) -> Terminal<CrosstermBackend<Stdout>> {
@@ -62,7 +78,7 @@ fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
-        DisableMouseCapture
+        DisableMouseCapture,
     )
     .unwrap();
 
