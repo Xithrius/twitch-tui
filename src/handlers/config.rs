@@ -105,6 +105,8 @@ pub struct FrontendConfig {
     pub username_highlight: bool,
     /// If there should be state tabs shown on the bottom of the terminal.
     pub state_tabs: bool,
+    /// The shape of the cursor in insert boxes.
+    pub cursor_shape: CursorType,
 }
 
 impl Default for TwitchConfig {
@@ -144,6 +146,7 @@ impl Default for FrontendConfig {
             theme: Theme::Dark,
             username_highlight: true,
             state_tabs: false,
+            cursor_shape: CursorType::default(),
         }
     }
 }
@@ -171,6 +174,32 @@ impl FromStr for Alignment {
             "center" => Ok(Self::Center),
             _ => Ok(Self::Right),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum CursorType {
+    Line,
+    Block,
+    UnderScore,
+}
+
+impl FromStr for CursorType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<CursorType, Self::Err> {
+        match s {
+            "line" => Ok(CursorType::Line),
+            "underscore" => Ok(CursorType::UnderScore),
+            _ => Ok(CursorType::Block),
+        }
+    }
+}
+
+impl Default for CursorType {
+    fn default() -> Self {
+        Self::Block
     }
 }
 

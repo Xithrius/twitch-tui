@@ -51,3 +51,5 @@ badges = true
 theme = "dark"
 # If the user's name appears in chat, highlight it.
 username_highlight = true
+# The shape of the cursor, block (default), underscore, or line.
+cursor_shape = "block"
