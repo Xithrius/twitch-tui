@@ -1,12 +1,15 @@
 use std::{
+    fmt,
     io::{stdout, Stdout},
     time::Duration,
 };
 
 use crossterm::{
+    cursor::{CursorShape, SetCursorShape},
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    Command,
 };
 use log::{debug, info};
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -15,7 +18,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 use crate::{
     handlers::{
         app::{App, State},
-        config::CompleteConfig,
+        config::{CompleteConfig, CursorType},
         data::{Data, DataBuilder, PayLoad},
         user_input::{
             events::{Config, Events, Key},
@@ -26,17 +29,45 @@ use crate::{
     ui::draw_ui,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ResetCursorShape;
+
+impl Command for ResetCursorShape {
+    /// Fs escape sequence RIS for full reset
+    /// <https://en.wikipedia.org/wiki/ANSI_escape_code#Fs_Escape_sequences/>
+    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
+        f.write_str("\x1Bc")
+    }
+
+    #[cfg(windows)]
+    fn execute_winapi(&self) -> Result<(), std::io::Error> {
+        Ok(())
+    }
+}
+
 fn reset_terminal() {
     disable_raw_mode().unwrap();
 
-    execute!(stdout(), LeaveAlternateScreen).unwrap();
+    execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
 }
 
-fn init_terminal() -> Terminal<CrosstermBackend<Stdout>> {
+fn init_terminal(cursor_shape: CursorType) -> Terminal<CrosstermBackend<Stdout>> {
     enable_raw_mode().unwrap();
 
+    let cursor_type = match cursor_shape {
+        CursorType::Line => CursorShape::Line,
+        CursorType::UnderScore => CursorShape::UnderScore,
+        CursorType::Block => CursorShape::Block,
+    };
+
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        SetCursorShape(cursor_type),
+    )
+    .unwrap();
 
     let backend = CrosstermBackend::new(stdout);
 
@@ -49,7 +80,7 @@ fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
-        DisableMouseCapture
+        DisableMouseCapture,
     )
     .unwrap();
 
@@ -79,7 +110,7 @@ pub async fn ui_driver(
     })
     .await;
 
-    let mut terminal = init_terminal();
+    let mut terminal = init_terminal(config.frontend.cursor_shape.clone());
 
     terminal.clear().unwrap();
 
