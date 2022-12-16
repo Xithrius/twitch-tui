@@ -21,60 +21,24 @@ lazy_static! {
     pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum PayLoad {
-    Message(String),
-    Err(String),
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct DataBuilder<'conf> {
-    pub date_format: &'conf str,
-}
-
-impl<'conf> DataBuilder<'conf> {
-    pub const fn new(date_format: &'conf str) -> Self {
-        DataBuilder { date_format }
-    }
-
-    pub fn user(user: String, message: String) -> Data {
-        Data {
-            time_sent: Local::now(),
-            author: user,
-            system: false,
-            payload: PayLoad::Message(message),
-        }
-    }
-
-    pub fn system(self, message: String) -> Data {
-        Data {
-            time_sent: Local::now(),
-            author: "System".to_string(),
-            system: true,
-            payload: PayLoad::Message(message),
-        }
-    }
-
-    pub fn twitch(self, message: String) -> Data {
-        Data {
-            time_sent: Local::now(),
-            author: "Twitch".to_string(),
-            system: true,
-            payload: PayLoad::Message(message),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Data {
     pub time_sent: DateTime<Local>,
     pub author: String,
     pub system: bool,
-    pub payload: PayLoad,
+    pub payload: String,
 }
 
 impl Data {
+    pub fn new(author: String, system: bool, payload: String) -> Self {
+        Self {
+            time_sent: Local::now(),
+            author,
+            system,
+            payload,
+        }
+    }
+
     fn hash_username(&self, palette: &Palette) -> Color {
         let hash = f64::from(
             self.author
@@ -104,11 +68,7 @@ impl Data {
         username_highlight: Option<String>,
         theme_style: Style,
     ) -> (Vec<Row>, u32) {
-        let message = if let PayLoad::Message(m) = &self.payload {
-            textwrap::fill(m.as_str(), limit)
-        } else {
-            panic!("Data.to_row() can only take an enum of PayLoad::Message.");
-        };
+        let message = textwrap::fill(self.payload.as_str(), limit);
 
         let username_highlight_style = username_highlight.map_or_else(Style::default, |username| {
             if Regex::new(format!("^.*{username}.*$").as_str())
@@ -216,6 +176,29 @@ impl Data {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct DataBuilder<'conf> {
+    pub date_format: &'conf str,
+}
+
+impl<'conf> DataBuilder<'conf> {
+    pub const fn new(date_format: &'conf str) -> Self {
+        DataBuilder { date_format }
+    }
+
+    pub fn user(user: String, payload: String) -> Data {
+        Data::new(user, false, payload)
+    }
+
+    pub fn system(self, payload: String) -> Data {
+        Data::new("System".to_string(), true, payload)
+    }
+
+    pub fn twitch(self, payload: String) -> Data {
+        Data::new("Twitch".to_string(), true, payload)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -223,13 +206,8 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            Data {
-                time_sent: Local::now(),
-                author: "human".to_string(),
-                system: false,
-                payload: PayLoad::Message("beep boop".to_string()),
-            }
-            .hash_username(&Palette::Pastel),
+            Data::new("human".to_string(), false, "beep boop".to_string())
+                .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );
     }
