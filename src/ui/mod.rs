@@ -206,26 +206,28 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .format(&config.frontend.date_format)
         .to_string();
 
+    let spans = [
+        TitleStyle::Combined("Time", &current_time),
+        TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
+        TitleStyle::Custom(Span::styled(
+            if app.filters.reversed() {
+                "retliF"
+            } else {
+                "Filter"
+            },
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(if app.filters.enabled() {
+                    Color::Green
+                } else {
+                    Color::Red
+                }),
+        )),
+    ];
+
     let chat_title = if config.frontend.title_shown {
         Spans::from(title_spans(
-            vec![
-                TitleStyle::Combined("Time", &current_time),
-                TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
-                TitleStyle::Custom(Span::styled(
-                    if app.filters.reversed() {
-                        "retliF"
-                    } else {
-                        "Filter"
-                    },
-                    Style::default()
-                        .add_modifier(Modifier::BOLD)
-                        .fg(if app.filters.enabled() {
-                            Color::Green
-                        } else {
-                            Color::Red
-                        }),
-                )),
-            ],
+            &spans,
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         ))
     } else {
@@ -246,7 +248,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     frame.render_widget(table, layout.first_chunk());
 
     if config.frontend.state_tabs {
-        components::render_state_tabs(frame, layout.clone(), app.state.clone());
+        components::render_state_tabs(frame, &layout, &app.state);
     }
 
     let window = WindowAttributes::new(frame, app, layout, config.frontend.state_tabs);

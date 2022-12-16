@@ -19,8 +19,8 @@ const TABS_TO_RENDER: [State; 5] = [
 
 pub fn render_state_tabs<T: Backend>(
     frame: &mut Frame<T>,
-    layout: LayoutAttributes,
-    current_state: State,
+    layout: &LayoutAttributes,
+    current_state: &State,
 ) {
     let tab_titles = TABS_TO_RENDER
         .iter()
@@ -40,7 +40,7 @@ pub fn render_state_tabs<T: Backend>(
         .select(
             TABS_TO_RENDER
                 .iter()
-                .position(|s| s == &current_state)
+                .position(|s| s == current_state)
                 .unwrap(),
         );
 

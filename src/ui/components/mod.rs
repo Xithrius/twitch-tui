@@ -59,6 +59,8 @@ pub fn render_insert_box<T: Backend>(
     let valid_input =
         input_validation.map_or(true, |check_func| check_func(current_input.to_string()));
 
+    let binding = [TitleStyle::Single(box_title)];
+
     let paragraph = Paragraph::new(Spans::from(vec![
         Span::raw(current_input),
         Span::styled(
@@ -78,7 +80,7 @@ pub fn render_insert_box<T: Backend>(
         Block::default()
             .borders(Borders::ALL)
             .title(title_spans(
-                vec![TitleStyle::Single(box_title)],
+                &binding,
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))
             .border_style(Style::default().fg(if valid_input {

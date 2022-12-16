@@ -49,7 +49,7 @@ pub enum TitleStyle<'a> {
     Custom(Span<'a>),
 }
 
-pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
+pub fn title_spans<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span<'a>> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
@@ -73,7 +73,7 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
     complete
 }
 
-pub fn suggestion_query(search: &str, possibilities: Vec<String>) -> Option<String> {
+pub fn suggestion_query(search: &str, possibilities: &[String]) -> Option<String> {
     possibilities
         .iter()
         .filter(|s| s.starts_with(search))
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_2_dimensional_vector_to_spans() {
         let s = Spans::from(title_spans(
-            vec![TitleStyle::Combined("Time", "Some time")],
+            &[TitleStyle::Combined("Time", "Some time")],
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         ));
 
@@ -171,7 +171,7 @@ mod tests {
     fn test_partial_suggestion_output() {
         let v = vec!["Nope".to_string()];
 
-        let output = suggestion_query("No", v);
+        let output = suggestion_query("No", &v);
 
         assert_eq!(output, Some("Nope".to_string()));
     }

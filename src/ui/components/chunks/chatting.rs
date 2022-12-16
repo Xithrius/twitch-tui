@@ -29,7 +29,7 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
                 '/' => {
                     let possible_suggestion = suggestion_query(
                         &current_input[1..],
-                        COMMANDS
+                        &COMMANDS
                             .iter()
                             .map(ToString::to_string)
                             .collect::<Vec<String>>(),
@@ -41,7 +41,7 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
                 }
                 '@' => {
                     let possible_suggestion =
-                        suggestion_query(&current_input[1..], app.storage.get("mentions"));
+                        suggestion_query(&current_input[1..], &app.storage.get("mentions"));
 
                     let default_suggestion = possible_suggestion.clone();
 

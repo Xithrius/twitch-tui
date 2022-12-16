@@ -51,7 +51,7 @@ fn reset_terminal() {
     execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
 }
 
-fn init_terminal(cursor_shape: CursorType) -> Terminal<CrosstermBackend<Stdout>> {
+fn init_terminal(cursor_shape: &CursorType) -> Terminal<CrosstermBackend<Stdout>> {
     enable_raw_mode().unwrap();
 
     let cursor_type = match cursor_shape {
@@ -110,7 +110,7 @@ pub async fn ui_driver(
     })
     .await;
 
-    let mut terminal = init_terminal(config.frontend.cursor_shape.clone());
+    let mut terminal = init_terminal(&config.frontend.cursor_shape);
 
     terminal.clear().unwrap();
 

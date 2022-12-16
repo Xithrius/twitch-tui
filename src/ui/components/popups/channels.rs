@@ -27,7 +27,7 @@ pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_
     let suggestion = if channel_suggestions {
         suggestion_query(
             input_buffer,
-            app.storage
+            &app.storage
                 .get("channels")
                 .iter()
                 .map(ToString::to_string)

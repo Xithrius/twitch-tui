@@ -7,7 +7,6 @@
     clippy::struct_excessive_bools,
     clippy::unused_self,
     clippy::future_not_send,
-    clippy::needless_pass_by_value,
     clippy::suboptimal_flops
 )]
 
