@@ -76,15 +76,15 @@ pub async fn twitch_irc(
                             .unwrap();
                     }
                     TwitchAction::Join(channel) => {
-                        debug!("Switching to channel {}", channel);
+                        debug!("Switching to channel {channel}");
 
-                        let channel_list = format!("#{}", channel);
+                        let channel_list = format!("#{channel}");
 
                         // Leave previous channel
                         if let Err(err) = sender.send_part(current_channel) {
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap();
                         } else {
-                            tx.send(data_builder.twitch(format!("Joined {}", channel_list))).await.unwrap();
+                            tx.send(data_builder.twitch(format!("Joined {channel_list}"))).await.unwrap();
                         }
 
                         // Join specified channel

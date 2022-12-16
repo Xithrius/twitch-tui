@@ -13,7 +13,7 @@ pub fn centered_popup(size: Rect, terminal_height: u16) -> Rect {
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Length((terminal_height / 2) as u16 - 6),
+                Constraint::Length((terminal_height / 2) - 6),
                 Constraint::Length(3),
                 Constraint::Min(0),
             ]

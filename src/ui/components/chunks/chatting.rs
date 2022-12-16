@@ -37,7 +37,7 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
 
                     let default_suggestion = possible_suggestion.clone();
 
-                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{}", s)))
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
                 }
                 '@' => {
                     let possible_suggestion =
@@ -45,7 +45,7 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
 
                     let default_suggestion = possible_suggestion.clone();
 
-                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{}", s)))
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
                 }
                 _ => None,
             })

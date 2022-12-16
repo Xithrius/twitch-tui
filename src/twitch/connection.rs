@@ -54,7 +54,7 @@ pub async fn client_stream_reconnect(
         }
         _ => {
             tx.send(data_builder.system(
-                format!("Attempting to reconnect due to fatal error: {:?}", err).to_string(),
+                format!("Attempting to reconnect due to fatal error: {err:?}").to_string(),
             ))
             .await
             .unwrap();

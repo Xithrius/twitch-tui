@@ -111,7 +111,7 @@ impl Data {
         };
 
         let username_highlight_style = username_highlight.map_or_else(Style::default, |username| {
-            if Regex::new(format!("^.*{}.*$", username).as_str())
+            if Regex::new(format!("^.*{username}.*$").as_str())
                 .unwrap()
                 .is_match(&message)
             {

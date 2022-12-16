@@ -39,7 +39,7 @@ impl Storage {
                 let enabled = match *item_key {
                     "channels" => config.channels,
                     "mentions" => config.mentions,
-                    _ => panic!("Invalid storage key {}.", item_key),
+                    _ => panic!("Invalid storage key {item_key}."),
                 };
 
                 items.insert(
@@ -83,7 +83,7 @@ impl Storage {
                 }
             }
         } else {
-            panic!("Attempted to add value with key {} to JSON storage.", key);
+            panic!("Attempted to add value with key {key} to JSON storage.");
         }
     }
 
@@ -93,7 +93,7 @@ impl Storage {
                 .get(&key.to_string())
                 .map_or_else(Vec::new, |item| item.content.clone())
         } else {
-            panic!("Attempted to get key {} from JSON storage.", key);
+            panic!("Attempted to get key {key} from JSON storage.");
         }
     }
 }

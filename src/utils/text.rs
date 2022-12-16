@@ -22,11 +22,14 @@ pub fn align_text(text: &str, alignment: Alignment, maximum_length: u16) -> Stri
     }
 
     match alignment {
-        Alignment::Right => format!("{}{}", " ".repeat(maximum_length as usize - dw), text),
+        Alignment::Right => {
+            let spacing = " ".repeat(maximum_length as usize - dw);
+            format!("{spacing}{text}")
+        }
         Alignment::Center => {
             let side_spaces =
                 " ".repeat(((maximum_length / 2) - (((dw / 2) as f32).floor() as u16)) as usize);
-            format!("{}{}{}", side_spaces, text, side_spaces)
+            format!("{side_spaces}{text}{side_spaces}")
         }
         Alignment::Left => text.to_string(),
     }
@@ -83,7 +86,7 @@ pub fn title_spans(contents: Vec<TitleStyle>, style: Style) -> Vec<Span> {
             TitleStyle::Combined(title, value) => vec![
                 first_bracket,
                 Span::styled((*title).to_string(), style),
-                Span::raw(format!(": {} ]", value)),
+                Span::raw(format!(": {value} ]")),
             ],
             TitleStyle::Single(value) => vec![
                 first_bracket,
