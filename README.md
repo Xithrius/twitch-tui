@@ -7,6 +7,14 @@
 
 <img width="714" alt="image" src="https://user-images.githubusercontent.com/15021300/206926779-121da601-ae05-4bef-adfa-0459901027cf.png">
 
+## Feature list
+
+- Read/send/search messages
+- Switch channels
+- Create and toggle filters
+- Command, channel, and mention suggestions
+- Customize functionality and looks to your liking using a [config file](https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml)
+
 ## Links
 
 - [Documentation](https://xithrius.github.io/twitch-tui/)
