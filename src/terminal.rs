@@ -119,8 +119,8 @@ pub async fn ui_driver(
             app.messages.push_front(info);
 
             // If scrolling is enabled, pad for more messages.
-            if app.scroll_offset > 0 {
-                app.scroll_offset += 1;
+            if app.scrolling.get_offset() > 0 {
+                app.scrolling.up();
             }
         }
 

@@ -190,14 +190,12 @@ fn handle_user_scroll(app: &mut App, key: Key) {
     match app.state {
         State::Insert | State::MessageSearch | State::Normal => match key {
             Key::ScrollUp => {
-                if app.scroll_offset < app.messages.len() {
-                    app.scroll_offset += 1;
+                if app.scrolling.get_offset() < app.messages.len() {
+                    app.scrolling.up();
                 }
             }
             Key::ScrollDown => {
-                if app.scroll_offset > 0 {
-                    app.scroll_offset -= 1;
-                }
+                app.scrolling.down();
             }
             _ => {}
         },
@@ -251,7 +249,8 @@ pub async fn handle_stateful_user_input(
                     return Some(TerminalAction::Quitting);
                 }
                 Key::Esc => {
-                    app.scroll_offset = 0;
+                    app.scrolling.jump_to(0);
+
                     app.state = State::Normal;
                 }
                 _ => {}

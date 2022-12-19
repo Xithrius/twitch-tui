@@ -107,6 +107,8 @@ pub struct FrontendConfig {
     pub state_tabs: bool,
     /// The shape of the cursor in insert boxes.
     pub cursor_shape: CursorType,
+    /// If the scrolling should be inverted
+    pub inverted_scrolling: bool,
 }
 
 impl Default for TwitchConfig {
@@ -147,6 +149,7 @@ impl Default for FrontendConfig {
             username_highlight: true,
             state_tabs: false,
             cursor_shape: CursorType::default(),
+            inverted_scrolling: false,
         }
     }
 }

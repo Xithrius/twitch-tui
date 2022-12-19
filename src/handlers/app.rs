@@ -61,7 +61,51 @@ impl ToString for State {
     }
 }
 
-#[derive(Debug)]
+pub struct Scrolling {
+    /// Offset of scroll
+    pub offset: usize,
+    /// If the scrolling is currently inverted
+    pub inverted: bool,
+}
+
+impl Scrolling {
+    pub fn new(inverted: bool) -> Self {
+        Self {
+            offset: 0,
+            inverted,
+        }
+    }
+
+    /// TODO: Make part of this function modular
+    pub fn up(&mut self) {
+        if self.offset > 0 {
+            if self.inverted {
+                self.offset -= 1;
+            } else {
+                self.offset += 1;
+            }
+        }
+    }
+
+    pub fn down(&mut self) {
+        if self.offset > 0 {
+            if self.inverted {
+                self.offset += 1;
+            } else {
+                self.offset -= 1;
+            }
+        }
+    }
+
+    pub fn jump_to(&mut self, index: usize) {
+        self.offset = index;
+    }
+
+    pub fn get_offset(&self) -> usize {
+        self.offset
+    }
+}
+
 pub struct App {
     /// History of recorded messages (time, username, message, etc.)
     pub messages: VecDeque<Data>,
@@ -75,8 +119,8 @@ pub struct App {
     pub input_buffer: LineBuffer,
     /// The current suggestion, if any
     pub buffer_suggestion: Option<String>,
-    /// Scrolling offset for the main window
-    pub scroll_offset: usize,
+    /// Interactions with scrolling of the application
+    pub scrolling: Scrolling,
     /// The theme selected by the user
     pub theme_style: Style,
 }
@@ -90,11 +134,11 @@ impl App {
             state: config.terminal.start_state.clone(),
             input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
             buffer_suggestion: None,
-            scroll_offset: 0,
             theme_style: match config.frontend.theme {
                 Theme::Light => BORDER_NAME_LIGHT,
                 _ => BORDER_NAME_DARK,
             },
+            scrolling: Scrolling::new(config.frontend.inverted_scrolling),
         }
     }
 
@@ -105,6 +149,11 @@ impl App {
     pub fn clear_messages(&mut self) {
         self.messages.clear();
 
-        self.scroll_offset = 0;
+        self.scrolling.jump_to(0);
+    }
+
+    #[allow(dead_code)]
+    pub fn rotate_theme(&mut self) {
+        todo!("Rotate through different themes")
     }
 }

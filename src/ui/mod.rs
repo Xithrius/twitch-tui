@@ -139,7 +139,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     let mut total_row_height: usize = 0;
     let mut display_rows = VecDeque::new();
 
-    let mut scroll_offset = app.scroll_offset;
+    let mut scroll_offset = app.scrolling.get_offset();
 
     let mut total_num_search_results = 0;
     'outer: for data in &app.messages {
