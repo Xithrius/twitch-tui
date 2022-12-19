@@ -188,17 +188,23 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
 
 fn handle_user_scroll(app: &mut App, key: Key) {
     match app.state {
-        State::Insert | State::MessageSearch | State::Normal => match key {
-            Key::ScrollUp => {
-                if app.scrolling.get_offset() < app.messages.len() {
-                    app.scrolling.up();
+        State::Insert | State::MessageSearch | State::Normal => {
+            let limit = app.scrolling.get_offset() < app.messages.len();
+
+            match key {
+                Key::ScrollUp => {
+                    if limit && !app.scrolling.inverted {
+                        app.scrolling.up();
+                    }
                 }
+                Key::ScrollDown => {
+                    if limit && app.scrolling.inverted {
+                        app.scrolling.down();
+                    }
+                }
+                _ => {}
             }
-            Key::ScrollDown => {
-                app.scrolling.down();
-            }
-            _ => {}
-        },
+        }
         _ => {}
     }
 }

@@ -76,25 +76,22 @@ impl Scrolling {
         }
     }
 
-    /// TODO: Make part of this function modular
+    /// Scrolling upwards, towards the start of the chat
     pub fn up(&mut self) {
-        if self.offset > 0 {
-            if self.inverted {
-                self.offset -= 1;
-            } else {
-                self.offset += 1;
-            }
-        }
+        self.offset = if self.inverted {
+            self.offset.saturating_sub(1)
+        } else {
+            self.offset + 1
+        };
     }
 
+    /// Scrolling downwards, towards the most recent message(s)
     pub fn down(&mut self) {
-        if self.offset > 0 {
-            if self.inverted {
-                self.offset += 1;
-            } else {
-                self.offset -= 1;
-            }
-        }
+        self.offset = if self.inverted {
+            self.offset + 1
+        } else {
+            self.offset.saturating_sub(1)
+        };
     }
 
     pub fn jump_to(&mut self, index: usize) {
