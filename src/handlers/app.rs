@@ -69,7 +69,7 @@ pub struct Scrolling {
 }
 
 impl Scrolling {
-    pub fn new(inverted: bool) -> Self {
+    pub const fn new(inverted: bool) -> Self {
         Self {
             offset: 0,
             inverted,
@@ -101,7 +101,7 @@ impl Scrolling {
         self.offset = index;
     }
 
-    pub fn get_offset(&self) -> usize {
+    pub const fn get_offset(&self) -> usize {
         self.offset
     }
 }
