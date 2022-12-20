@@ -61,6 +61,12 @@ pub fn render_insert_box<T: Backend>(
 
     let binding = [TitleStyle::Single(box_title)];
 
+    let status_color = if valid_input {
+        Color::Green
+    } else {
+        Color::Red
+    };
+
     let paragraph = Paragraph::new(Spans::from(vec![
         Span::raw(current_input),
         Span::styled(
@@ -81,13 +87,11 @@ pub fn render_insert_box<T: Backend>(
             .borders(Borders::ALL)
             .title(title_spans(
                 &binding,
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(status_color)
+                    .add_modifier(Modifier::BOLD),
             ))
-            .border_style(Style::default().fg(if valid_input {
-                Color::Yellow
-            } else {
-                Color::Red
-            })),
+            .border_style(Style::default().fg(status_color)),
     )
     .scroll((
         0,

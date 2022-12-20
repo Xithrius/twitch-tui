@@ -255,12 +255,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         // States of the application that require a chunk of the main window
         State::Insert => components::render_chat_box(window, config.storage.mentions),
         State::MessageSearch => {
+            let checking_func = |s: String| -> bool { !s.is_empty() };
+
             components::render_insert_box(
                 window,
                 format!("Message Search: {total_num_search_results} found").as_str(),
                 None,
                 None,
-                None,
+                Some(Box::new(checking_func)),
             );
         }
 
