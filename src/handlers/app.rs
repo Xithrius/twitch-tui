@@ -61,7 +61,44 @@ impl ToString for State {
     }
 }
 
-#[derive(Debug)]
+pub struct Scrolling {
+    /// Offset of scroll
+    offset: usize,
+    /// If the scrolling is currently inverted
+    inverted: bool,
+}
+
+impl Scrolling {
+    pub const fn new(inverted: bool) -> Self {
+        Self {
+            offset: 0,
+            inverted,
+        }
+    }
+
+    /// Scrolling upwards, towards the start of the chat
+    pub fn up(&mut self) {
+        self.offset += 1;
+    }
+
+    /// Scrolling downwards, towards the most recent message(s)
+    pub fn down(&mut self) {
+        self.offset = self.offset.saturating_sub(1);
+    }
+
+    pub const fn inverted(&self) -> bool {
+        self.inverted
+    }
+
+    pub fn jump_to(&mut self, index: usize) {
+        self.offset = index;
+    }
+
+    pub const fn get_offset(&self) -> usize {
+        self.offset
+    }
+}
+
 pub struct App {
     /// History of recorded messages (time, username, message, etc.)
     pub messages: VecDeque<Data>,
@@ -75,8 +112,8 @@ pub struct App {
     pub input_buffer: LineBuffer,
     /// The current suggestion, if any
     pub buffer_suggestion: Option<String>,
-    /// Scrolling offset for the main window
-    pub scroll_offset: usize,
+    /// Interactions with scrolling of the application
+    pub scrolling: Scrolling,
     /// The theme selected by the user
     pub theme_style: Style,
 }
@@ -90,11 +127,11 @@ impl App {
             state: config.terminal.start_state.clone(),
             input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
             buffer_suggestion: None,
-            scroll_offset: 0,
             theme_style: match config.frontend.theme {
                 Theme::Light => BORDER_NAME_LIGHT,
                 _ => BORDER_NAME_DARK,
             },
+            scrolling: Scrolling::new(config.frontend.inverted_scrolling),
         }
     }
 
@@ -105,6 +142,25 @@ impl App {
     pub fn clear_messages(&mut self) {
         self.messages.clear();
 
-        self.scroll_offset = 0;
+        self.scrolling.jump_to(0);
+    }
+
+    #[allow(dead_code)]
+    pub fn rotate_theme(&mut self) {
+        todo!("Rotate through different themes")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_no_scroll_overflow_not_inverted() {
+        let mut scroll = Scrolling::new(false);
+        assert_eq!(scroll.get_offset(), 0);
+
+        scroll.down();
+        assert_eq!(scroll.get_offset(), 0);
     }
 }
