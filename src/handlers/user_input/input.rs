@@ -193,12 +193,18 @@ fn handle_user_scroll(app: &mut App, key: Key) {
 
             match key {
                 Key::ScrollUp => {
-                    if limit && !app.scrolling.inverted {
+                    if limit {
                         app.scrolling.up();
+                    } else if app.scrolling.inverted() {
+                        app.scrolling.down();
                     }
                 }
                 Key::ScrollDown => {
-                    if limit && app.scrolling.inverted {
+                    if app.scrolling.inverted() {
+                        if limit {
+                            app.scrolling.up();
+                        }
+                    } else {
                         app.scrolling.down();
                     }
                 }

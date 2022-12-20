@@ -63,9 +63,9 @@ impl ToString for State {
 
 pub struct Scrolling {
     /// Offset of scroll
-    pub offset: usize,
+    offset: usize,
     /// If the scrolling is currently inverted
-    pub inverted: bool,
+    inverted: bool,
 }
 
 impl Scrolling {
@@ -78,20 +78,16 @@ impl Scrolling {
 
     /// Scrolling upwards, towards the start of the chat
     pub fn up(&mut self) {
-        self.offset = if self.inverted {
-            self.offset.saturating_sub(1)
-        } else {
-            self.offset + 1
-        };
+        self.offset += 1;
     }
 
     /// Scrolling downwards, towards the most recent message(s)
     pub fn down(&mut self) {
-        self.offset = if self.inverted {
-            self.offset + 1
-        } else {
-            self.offset.saturating_sub(1)
-        };
+        self.offset = self.offset.saturating_sub(1)
+    }
+
+    pub const fn inverted(&self) -> bool {
+        self.inverted
     }
 
     pub fn jump_to(&mut self, index: usize) {
