@@ -107,7 +107,9 @@ pub struct FrontendConfig {
     pub state_tabs: bool,
     /// The shape of the cursor in insert boxes.
     pub cursor_shape: CursorType,
-    /// If the scrolling should be inverted
+    /// If the cursor should be blinking.
+    pub blinking_cursor: bool,
+    /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
 }
 
@@ -149,6 +151,7 @@ impl Default for FrontendConfig {
             username_highlight: true,
             state_tabs: false,
             cursor_shape: CursorType::default(),
+            blinking_cursor: false,
             inverted_scrolling: false,
         }
     }

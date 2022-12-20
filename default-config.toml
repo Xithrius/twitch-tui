@@ -53,5 +53,7 @@ theme = "dark"
 username_highlight = true
 # The shape of the cursor, block (default), underscore, or line.
 cursor_shape = "block"
+# If the cursor should be blinking in input boxes.
+blinking_cursor = false
 # If the scrolling should be inverted.
 inverted_scrolling = false

@@ -1,13 +1,13 @@
 use std::{
     fmt,
-    io::{stdout, Stdout},
+    io::{stdout, Stdout, Write},
     time::Duration,
 };
 
 use crossterm::{
-    cursor::{CursorShape, SetCursorShape},
+    cursor::{CursorShape, DisableBlinking, EnableBlinking, SetCursorShape},
     event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
+    execute, queue,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     Command,
 };
@@ -18,7 +18,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 use crate::{
     handlers::{
         app::App,
-        config::{CompleteConfig, CursorType},
+        config::{CompleteConfig, CursorType, FrontendConfig},
         data::Data,
         user_input::{
             events::{Config, Events, Key},
@@ -32,9 +32,9 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResetCursorShape;
 
+/// Fs escape sequence RIS for full reset
+/// <https://en.wikipedia.org/wiki/ANSI_escape_code#Fs_Escape_sequences/>
 impl Command for ResetCursorShape {
-    /// Fs escape sequence RIS for full reset
-    /// <https://en.wikipedia.org/wiki/ANSI_escape_code#Fs_Escape_sequences/>
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         f.write_str("\x1Bc")
     }
@@ -51,23 +51,31 @@ fn reset_terminal() {
     execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
 }
 
-fn init_terminal(cursor_shape: &CursorType) -> Terminal<CrosstermBackend<Stdout>> {
+fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
     enable_raw_mode().unwrap();
 
-    let cursor_type = match cursor_shape {
+    let cursor_type = match frontend_config.cursor_shape {
         CursorType::Line => CursorShape::Line,
         CursorType::UnderScore => CursorShape::UnderScore,
         CursorType::Block => CursorShape::Block,
     };
 
     let mut stdout = stdout();
-    execute!(
+    queue!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
         SetCursorShape(cursor_type),
     )
     .unwrap();
+
+    if frontend_config.blinking_cursor {
+        queue!(stdout, EnableBlinking).unwrap();
+    } else {
+        queue!(stdout, DisableBlinking).unwrap();
+    }
+
+    stdout.flush().unwrap();
 
     let backend = CrosstermBackend::new(stdout);
 
@@ -110,7 +118,7 @@ pub async fn ui_driver(
     })
     .await;
 
-    let mut terminal = init_terminal(&config.frontend.cursor_shape);
+    let mut terminal = init_terminal(&config.frontend);
 
     terminal.clear().unwrap();
 
