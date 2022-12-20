@@ -83,7 +83,7 @@ impl Scrolling {
 
     /// Scrolling downwards, towards the most recent message(s)
     pub fn down(&mut self) {
-        self.offset = self.offset.saturating_sub(1)
+        self.offset = self.offset.saturating_sub(1);
     }
 
     pub const fn inverted(&self) -> bool {
