@@ -94,7 +94,7 @@ pub fn render_insert_box<T: Backend>(
         ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
     ));
 
-    if matches!(app.state, State::ChannelSwitch) {
+    if matches!(app.get_state(), State::ChannelSwitch) {
         frame.render_widget(Clear, input_rect);
     }
 

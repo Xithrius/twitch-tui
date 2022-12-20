@@ -48,7 +48,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
         tx,
     } = action;
 
-    match app.state {
+    match app.get_state() {
         State::Insert => {
             let input_message = &mut app.input_buffer;
 
@@ -105,7 +105,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
 
             input_message.update("", 0);
 
-            app.state = State::Normal;
+            app.set_state(State::Normal);
         }
         _ => {}
     }
@@ -123,8 +123,8 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
 
     match key {
         Key::Up => {
-            if app.state == State::Insert {
-                app.state = State::Normal;
+            if app.get_state() == State::Insert {
+                app.set_state(State::Normal);
             }
         }
         Key::Ctrl('f') | Key::Right => {
@@ -180,14 +180,14 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
         }
         Key::Esc => {
             input_buffer.update("", 0);
-            app.state = State::Normal;
+            app.set_state(State::Normal);
         }
         _ => {}
     }
 }
 
 fn handle_user_scroll(app: &mut App, key: Key) {
-    match app.state {
+    match app.get_state() {
         State::Insert | State::MessageSearch | State::Normal => {
             let limit = app.scrolling.get_offset() < app.messages.len();
 
@@ -224,7 +224,7 @@ pub async fn handle_stateful_user_input(
     if let Some(Event::Input(key)) = events.next().await {
         handle_user_scroll(app, key);
 
-        match app.state {
+        match app.get_state() {
             State::Insert | State::ChannelSwitch | State::MessageSearch => {
                 let mut action = UserActionAttributes::new(app, config, tx, key);
 
@@ -232,13 +232,13 @@ pub async fn handle_stateful_user_input(
             }
             _ => match key {
                 Key::Char('c') => {
-                    app.state = State::Normal;
+                    app.set_state(State::Normal);
                 }
                 Key::Char('s') => {
-                    app.state = State::ChannelSwitch;
+                    app.set_state(State::ChannelSwitch);
                 }
                 Key::Ctrl('f') => {
-                    app.state = State::MessageSearch;
+                    app.set_state(State::MessageSearch);
                 }
                 Key::Ctrl('t') => {
                     app.filters.toggle();
@@ -247,23 +247,23 @@ pub async fn handle_stateful_user_input(
                     app.filters.reverse();
                 }
                 Key::Char('i') | Key::Insert => {
-                    app.state = State::Insert;
+                    app.set_state(State::Insert);
                 }
                 Key::Char('@' | '/') => {
-                    app.state = State::Insert;
+                    app.set_state(State::Insert);
                     app.input_buffer.update(&key.to_string(), 1);
                 }
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
-                Key::Char('?') => app.state = State::Help,
+                Key::Char('?') => app.set_state(State::Help),
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);
                 }
                 Key::Esc => {
                     app.scrolling.jump_to(0);
 
-                    app.state = State::Normal;
+                    app.set_state(State::Normal);
                 }
                 _ => {}
             },

@@ -107,7 +107,7 @@ pub struct App {
     /// Messages to be filtered out
     pub filters: Filters,
     /// Which window the terminal is currently focused on
-    pub state: State,
+    state: State,
     /// What the user currently has inputted
     pub input_buffer: LineBuffer,
     /// The current suggestion, if any
@@ -143,6 +143,14 @@ impl App {
         self.messages.clear();
 
         self.scrolling.jump_to(0);
+    }
+
+    pub fn get_state(&self) -> State {
+        self.state.clone()
+    }
+
+    pub fn set_state(&mut self, other: State) {
+        self.state = other;
     }
 
     #[allow(dead_code)]

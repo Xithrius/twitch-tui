@@ -102,7 +102,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     // Constraints for different states of the application.
     // Modify this in order to create new layouts.
-    let mut v_constraints = match app.state {
+    let mut v_constraints = match app.get_state() {
         State::Insert | State::MessageSearch => vec![Constraint::Min(1), Constraint::Length(3)],
         _ => vec![Constraint::Min(1)],
     };
@@ -154,15 +154,13 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             continue;
         }
 
-        let buffer = &mut app.input_buffer;
-
         let username_highlight = if config.frontend.username_highlight {
             Some(config.twitch.username.clone())
         } else {
             None
         };
 
-        let (rows, num_results) = if buffer.is_empty() {
+        let (rows, num_results) = if app.input_buffer.is_empty() {
             data.to_row_and_num_search_results(
                 &config.frontend,
                 message_chunk_width,
@@ -174,8 +172,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             data.to_row_and_num_search_results(
                 &config.frontend,
                 message_chunk_width,
-                match app.state {
-                    State::MessageSearch => Some(buffer.to_string()),
+                match &app.get_state() {
+                    State::MessageSearch => Some(app.input_buffer.to_string()),
                     _ => None,
                 },
                 username_highlight,
@@ -248,12 +246,12 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     frame.render_widget(table, layout.first_chunk());
 
     if config.frontend.state_tabs {
-        components::render_state_tabs(frame, &layout, &app.state);
+        components::render_state_tabs(frame, &layout, &app.get_state());
     }
 
     let window = WindowAttributes::new(frame, app, layout, config.frontend.state_tabs);
 
-    match window.app.state {
+    match window.app.get_state() {
         // States of the application that require a chunk of the main window
         State::Insert => components::render_chat_box(window, config.storage.mentions),
         State::MessageSearch => {

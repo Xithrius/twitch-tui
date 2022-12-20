@@ -145,7 +145,7 @@ impl Default for FrontendConfig {
             title_shown: true,
             margin: 0,
             badges: false,
-            theme: Theme::Dark,
+            theme: Theme::default(),
             username_highlight: true,
             state_tabs: false,
             cursor_shape: CursorType::default(),
