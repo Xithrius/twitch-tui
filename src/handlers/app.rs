@@ -150,3 +150,17 @@ impl App {
         todo!("Rotate through different themes")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_no_scroll_overflow_not_inverted() {
+        let mut scroll = Scrolling::new(false);
+        assert_eq!(scroll.get_offset(), 0);
+
+        scroll.down();
+        assert_eq!(scroll.get_offset(), 0);
+    }
+}
