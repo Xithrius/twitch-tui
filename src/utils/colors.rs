@@ -29,3 +29,21 @@ pub fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> [u8; 3] {
 
     [red as u8, green as u8, blue as u8]
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_white_to_rgb() {
+        let white_rgb = hsl_to_rgb(0.0, 0.0, 0.0);
+
+        assert_eq!([0, 0, 0], white_rgb);
+    }
+
+    #[test]
+    fn test_black_to_rgb() {
+        let black_rgb = hsl_to_rgb(255.0, 255.0, 255.0);
+
+        assert_eq!([255, 255, 0], black_rgb);
+    }
+}
