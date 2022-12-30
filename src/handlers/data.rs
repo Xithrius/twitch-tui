@@ -87,6 +87,7 @@ impl Data {
         let mut num_search_matches = 0;
         let msg_cells = search_highlight.map_or_else(
             || {
+                // If the user's name appears in a row, highlight it.
                 message
                     .split('\n')
                     .map(|s| {
@@ -98,6 +99,8 @@ impl Data {
                     .collect::<Vec<Cell>>()
             },
             |search| {
+                // Going through all the rows with a search to see if there's a fuzzy match.
+                // If there is, highlight said match in red.
                 message
                     .split('\n')
                     .map(|s| {
