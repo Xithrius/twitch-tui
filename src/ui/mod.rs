@@ -223,14 +223,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         )),
     ];
 
-    let chat_title = if config.frontend.title_shown {
-        Spans::from(title_spans(
-            &spans,
-            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-        ))
-    } else {
-        Spans::default()
-    };
+    // let chat_title = if config.frontend.title_format {
+    let chat_title = Spans::from(title_spans(
+        &spans,
+        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+    ));
+    // } else {
+    //     Spans::default()
+    // };
 
     let table = Table::new(display_rows)
         .header(Row::new(column_titles.clone()).style(styles::COLUMN_TITLE))

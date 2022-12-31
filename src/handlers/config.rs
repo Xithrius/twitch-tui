@@ -93,8 +93,8 @@ pub struct FrontendConfig {
     pub username_alignment: Alignment,
     /// The color palette.
     pub palette: Palette,
-    /// Show Title with time and channel.
-    pub title_shown: bool,
+    /// The format of the title bar.
+    pub title_format: String,
     /// The amount of space between the chat window and the terminal border.
     pub margin: u16,
     /// Show twitch badges next to usernames.
@@ -144,7 +144,7 @@ impl Default for FrontendConfig {
             maximum_username_length: 26,
             username_alignment: Alignment::default(),
             palette: Palette::default(),
-            title_shown: true,
+            title_format: "%datetime% %channel% %filter%".to_string(),
             margin: 0,
             badges: false,
             theme: Theme::default(),
