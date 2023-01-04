@@ -6,7 +6,7 @@ use crate::{
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
         WindowAttributes,
     },
-    utils::text::suggestion_query,
+    utils::text::first_similarity,
 };
 
 pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
@@ -27,12 +27,12 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
             .next()
             .and_then(|start_character| match start_character {
                 '/' => {
-                    let possible_suggestion = suggestion_query(
-                        &current_input[1..],
+                    let possible_suggestion = first_similarity(
                         &COMMANDS
                             .iter()
                             .map(ToString::to_string)
                             .collect::<Vec<String>>(),
+                        &current_input[1..],
                     );
 
                     let default_suggestion = possible_suggestion.clone();
@@ -41,7 +41,7 @@ pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggesti
                 }
                 '@' => {
                     let possible_suggestion =
-                        suggestion_query(&current_input[1..], &app.storage.get("mentions"));
+                        first_similarity(&app.storage.get("mentions"), &current_input[1..]);
 
                     let default_suggestion = possible_suggestion.clone();
 

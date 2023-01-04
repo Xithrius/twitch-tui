@@ -73,7 +73,8 @@ pub fn title_spans<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span
     complete
 }
 
-pub fn suggestion_query(search: &str, possibilities: &[String]) -> Option<String> {
+/// Within an array of strings, find the first partial or full match, if any.
+pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String> {
     possibilities
         .iter()
         .filter(|s| s.starts_with(search))
@@ -168,11 +169,27 @@ mod tests {
     }
 
     #[test]
-    fn test_partial_suggestion_output() {
+    fn test_first_similarity_some_output() {
         let v = vec!["Nope".to_string()];
 
-        let output = suggestion_query("No", &v);
+        let output = first_similarity(&v, "No");
 
         assert_eq!(output, Some("Nope".to_string()));
+    }
+
+    #[test]
+    fn test_first_similarity_no_output() {
+        let v = vec!["Something".to_string()];
+
+        let output = first_similarity(&v, "blah");
+
+        assert_eq!(output, None);
+    }
+
+    #[test]
+    fn test_first_similarity_no_input_no_output() {
+        let output = first_similarity(&vec![], "asdf");
+
+        assert_eq!(output, None);
     }
 }

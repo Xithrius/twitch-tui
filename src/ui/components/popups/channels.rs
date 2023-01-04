@@ -9,7 +9,7 @@ use crate::{
         statics::CHANNEL_NAME_REGEX,
         WindowAttributes,
     },
-    utils::text::suggestion_query,
+    utils::text::first_similarity,
 };
 
 pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_suggestions: bool) {
@@ -25,13 +25,13 @@ pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_
     let input_rect = centered_popup(frame.size(), frame.size().height);
 
     let suggestion = if channel_suggestions {
-        suggestion_query(
-            input_buffer,
+        first_similarity(
             &app.storage
                 .get("channels")
                 .iter()
                 .map(ToString::to_string)
                 .collect::<Vec<String>>(),
+            input_buffer,
         )
     } else {
         None
