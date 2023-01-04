@@ -1,16 +1,28 @@
+#[allow(dead_code)]
 pub struct TitleBar {
     items: Vec<String>,
 }
 
 impl TitleBar {
-    pub fn new(formatting: String) -> Self {
-        Self {
-            items: formatting.split(',').map(String::from).collect(),
-        }
+    #[allow(dead_code)]
+    pub fn new(formatting: &str) -> Self {
+        let items = formatting
+            .split(',')
+            .filter_map(|s| {
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s.to_string())
+                }
+            })
+            .collect();
+
+        Self { items }
     }
 
-    pub const fn get_items(&self) -> Vec<String> {
-        self.items.iter().copied()
+    #[allow(dead_code)]
+    pub const fn get_items(&self) -> &Vec<String> {
+        &self.items
     }
 }
 
@@ -19,15 +31,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_creation_of_items() {
-        let test = TitleBar::new("datetime,channel,filter".to_string());
+    fn test_titlebar_creation_some_items() {
+        let titles = TitleBar::new("datetime,channel,filter");
 
         assert_eq!(
-            vec!["datetime", "channel", "filter"]
+            &vec!["datetime", "channel", "filter"]
                 .iter()
                 .map(|&s| s.to_string())
                 .collect::<Vec<String>>(),
-            test.get_items()
+            titles.get_items()
         );
+    }
+
+    #[test]
+    fn test_titlebar_creation_no_items() {
+        let titles = TitleBar::new("");
+
+        let empty_vec: Vec<String> = vec![];
+
+        assert_eq!(&empty_vec, titles.get_items());
     }
 }
