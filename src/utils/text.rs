@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_first_similarity_no_input_no_output() {
-        let output = first_similarity(&vec![], "asdf");
+        let output = first_similarity(&[], "asdf");
 
         assert_eq!(output, None);
     }
