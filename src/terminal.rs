@@ -59,9 +59,10 @@ pub async fn ui_driver(
             .draw(|frame| draw_ui(frame, &mut app, &config))
             .unwrap();
 
-        if let Some(TerminalAction::Quitting) =
-            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone()).await
-        {
+        if matches!(
+            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone()).await,
+            Some(TerminalAction::Quitting)
+        ) {
             quit_terminal(terminal);
 
             break;
