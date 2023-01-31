@@ -17,6 +17,7 @@ use tokio::sync::mpsc;
 
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
+mod commands;
 mod handlers;
 mod terminal;
 mod twitch;

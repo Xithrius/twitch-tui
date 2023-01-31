@@ -1,4 +1,4 @@
-name: Build & deploy mdBook
+name: Build & Deploy mdBook
 
 on:
   workflow_run:

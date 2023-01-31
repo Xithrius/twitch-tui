@@ -1,24 +1,13 @@
-use std::{
-    fmt,
-    io::{stdout, Stdout, Write},
-    time::Duration,
-};
+use std::time::Duration;
 
-use crossterm::{
-    cursor::{CursorShape, DisableBlinking, EnableBlinking, SetCursorShape},
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute, queue,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    Command,
-};
 use log::{debug, info};
 use tokio::sync::mpsc::{Receiver, Sender};
-use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
+    commands::{init_terminal, quit_terminal, reset_terminal},
     handlers::{
         app::App,
-        config::{CompleteConfig, CursorType, FrontendConfig},
+        config::CompleteConfig,
         data::Data,
         user_input::{
             events::{Config, Events, Key},
@@ -28,72 +17,6 @@ use crate::{
     twitch::TwitchAction,
     ui::draw_ui,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ResetCursorShape;
-
-/// Fs escape sequence RIS for full reset
-/// <https://en.wikipedia.org/wiki/ANSI_escape_code#Fs_Escape_sequences/>
-impl Command for ResetCursorShape {
-    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        f.write_str("\x1Bc")
-    }
-
-    #[cfg(windows)]
-    fn execute_winapi(&self) -> Result<(), std::io::Error> {
-        Ok(())
-    }
-}
-
-fn reset_terminal() {
-    disable_raw_mode().unwrap();
-
-    execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
-}
-
-fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
-    enable_raw_mode().unwrap();
-
-    let cursor_type = match frontend_config.cursor_shape {
-        CursorType::Line => CursorShape::Line,
-        CursorType::UnderScore => CursorShape::UnderScore,
-        CursorType::Block => CursorShape::Block,
-    };
-
-    let mut stdout = stdout();
-    queue!(
-        stdout,
-        EnterAlternateScreen,
-        EnableMouseCapture,
-        SetCursorShape(cursor_type),
-    )
-    .unwrap();
-
-    if frontend_config.blinking_cursor {
-        queue!(stdout, EnableBlinking).unwrap();
-    } else {
-        queue!(stdout, DisableBlinking).unwrap();
-    }
-
-    stdout.flush().unwrap();
-
-    let backend = CrosstermBackend::new(stdout);
-
-    Terminal::new(backend).unwrap()
-}
-
-fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
-    disable_raw_mode().unwrap();
-
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture,
-    )
-    .unwrap();
-
-    terminal.show_cursor().unwrap();
-}
 
 pub async fn ui_driver(
     mut config: CompleteConfig,
@@ -136,9 +59,10 @@ pub async fn ui_driver(
             .draw(|frame| draw_ui(frame, &mut app, &config))
             .unwrap();
 
-        if let Some(TerminalAction::Quitting) =
-            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone()).await
-        {
+        if matches!(
+            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone()).await,
+            Some(TerminalAction::Quitting)
+        ) {
             quit_terminal(terminal);
 
             break;

@@ -15,7 +15,7 @@ categories = ["command-line-utilities"]
 [dependencies]
 crossterm = "0.25.0"
 tui = { version = "0.19.0", default-features = false, features = [ "crossterm" ] }
-tokio = { version = "1.23.0", features = [ "rt", "macros", "rt-multi-thread" ] }
+tokio = { version = "1.24.1", features = [ "rt", "macros", "rt-multi-thread" ] }
 clap = { version = "4.0.32", features = [ "derive", "cargo" ] }
 serde = { version = "1.0.152", features = [ "derive" ] }
 serde_json = "1.0.91"
@@ -26,13 +26,14 @@ irc = "0.15.0"
 futures = "0.3.25"
 toml = "0.5.10"
 textwrap = "0.16.0"
-rustyline = "10.0.0"
+rustyline = "10.1.0"
 lazy_static = "1.4.0"
 fuzzy-matcher = "0.3.7"
 regex = "1.7.0"
 color-eyre = "0.6.2"
 log = "0.4.17"
 fern = "0.6.1"
+dialoguer = { version = "0.10.3", default-features = false }
 
 [[bin]]
 bench = false

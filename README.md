@@ -20,7 +20,7 @@
 - [Documentation](https://xithrius.github.io/twitch-tui/)
 - [Setup](https://xithrius.github.io/twitch-tui/guide/installation)
 
-## Other information
+## More information
 
 If you have any problems, do not hesitate to [submit an issue](https://github.com/Xithrius/twitch-tui/issues/new/choose).
 
