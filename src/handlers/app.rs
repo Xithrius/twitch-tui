@@ -12,7 +12,7 @@ use tui::style::Style;
 use crate::{
     handlers::{
         config::{CompleteConfig, Theme},
-        data::Data,
+        data::MessageData,
         filters::Filters,
         storage::Storage,
     },
@@ -101,7 +101,7 @@ impl Scrolling {
 
 pub struct App {
     /// History of recorded messages (time, username, message, etc.)
-    pub messages: VecDeque<Data>,
+    pub messages: VecDeque<MessageData>,
     /// Data loaded in from a JSON file.
     pub storage: Storage,
     /// Messages to be filtered out

@@ -91,8 +91,6 @@ pub struct FrontendConfig {
     pub date_format: String,
     /// The maximum length of a Twitch username.
     pub maximum_username_length: u16,
-    /// Which side the username should be aligned to.
-    pub username_alignment: Alignment,
     /// The color palette.
     pub palette: Palette,
     /// Show Title with time and channel.
@@ -144,7 +142,6 @@ impl Default for FrontendConfig {
             date_shown: true,
             date_format: "%a %b %e %T %Y".to_string(),
             maximum_username_length: 26,
-            username_alignment: Alignment::default(),
             palette: Palette::default(),
             title_shown: true,
             margin: 0,
@@ -159,35 +156,10 @@ impl Default for FrontendConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum Alignment {
-    Left,
-    Center,
-    Right,
-}
-
-impl Default for Alignment {
-    fn default() -> Self {
-        Self::Right
-    }
-}
-
-impl FromStr for Alignment {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "left" => Ok(Self::Left),
-            "center" => Ok(Self::Center),
-            _ => Ok(Self::Right),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum CursorType {
+    User,
     Line,
     Block,
     UnderScore,
@@ -200,14 +172,15 @@ impl FromStr for CursorType {
         match s {
             "line" => Ok(CursorType::Line),
             "underscore" => Ok(CursorType::UnderScore),
-            _ => Ok(CursorType::Block),
+            "block" => Ok(CursorType::Block),
+            _ => Ok(CursorType::User),
         }
     }
 }
 
 impl Default for CursorType {
     fn default() -> Self {
-        Self::Block
+        Self::User
     }
 }
 

@@ -6,7 +6,7 @@ use tui::backend::Backend;
 use crate::{
     ui::{
         components::{popups::centered_popup, render_insert_box},
-        statics::CHANNEL_NAME_REGEX,
+        statics::NAME_RESTRICTION_REGEX,
         WindowAttributes,
     },
     utils::text::first_similarity,
@@ -43,7 +43,7 @@ pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_
         Some(input_rect),
         suggestion,
         Some(Box::new(|s: String| -> bool {
-            Regex::new(&CHANNEL_NAME_REGEX)
+            Regex::new(&NAME_RESTRICTION_REGEX)
                 .unwrap()
                 .is_match(s.as_str())
         })),

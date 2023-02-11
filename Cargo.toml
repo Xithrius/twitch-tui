@@ -13,20 +13,20 @@ keywords = ["tui", "twitch"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-crossterm = "0.25.0"
+crossterm = "0.26.0"
 tui = { version = "0.19.0", default-features = false, features = [ "crossterm" ] }
-tokio = { version = "1.24.1", features = [ "rt", "macros", "rt-multi-thread" ] }
-clap = { version = "4.0.32", features = [ "derive", "cargo" ] }
+tokio = { version = "1.25.0", features = [ "rt", "macros", "rt-multi-thread" ] }
+clap = { version = "4.1.4", features = [ "derive", "cargo" ] }
 serde = { version = "1.0.152", features = [ "derive" ] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 unicode-width = "0.1.10"
-unicode-segmentation = "1.10.0"
+unicode-segmentation = "1.10.1"
 chrono = "0.4.23"
 irc = "0.15.0"
-futures = "0.3.25"
-toml = "0.7.1"
+futures = "0.3.26"
+toml = "0.7.2"
 textwrap = "0.16.0"
-rustyline = "10.1.0"
+rustyline = "10.1.1"
 lazy_static = "1.4.0"
 fuzzy-matcher = "0.3.7"
 regex = "1.7.0"

@@ -1,37 +1,7 @@
 use rustyline::line_buffer::LineBuffer;
-use textwrap::core::display_width;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-
-use crate::handlers::config::Alignment;
-
-pub fn align_text(text: &str, alignment: Alignment, maximum_length: u16) -> String {
-    assert!(
-        maximum_length >= 1,
-        "Parameter of 'maximum_length' cannot be below 1."
-    );
-
-    // Compute the display width of `text` with support of emojis and CJK characters
-    let mut dw = display_width(text);
-
-    if dw > maximum_length as usize {
-        dw = maximum_length as usize;
-    }
-
-    match alignment {
-        Alignment::Right => {
-            let spacing = " ".repeat(maximum_length as usize - dw);
-            format!("{spacing}{text}")
-        }
-        Alignment::Center => {
-            let side_spaces =
-                " ".repeat(((maximum_length / 2) - (((dw / 2) as f32).floor() as u16)) as usize);
-            format!("{side_spaces}{text}{side_spaces}")
-        }
-        Alignment::Left => text.to_string(),
-    }
-}
 
 /// Acquiring the horizontal position of the cursor so it can be rendered visually.
 pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
@@ -97,40 +67,6 @@ mod tests {
     };
 
     use super::*;
-
-    #[test]
-    #[should_panic(expected = "Parameter of 'maximum_length' cannot be below 1.")]
-    fn test_text_align_maximum_length() {
-        align_text("", Alignment::Left, 0);
-    }
-
-    #[test]
-    fn test_text_align_left() {
-        assert_eq!(align_text("a", Alignment::Left, 10), "a".to_string());
-        assert_eq!(align_text("a", Alignment::Left, 1), "a".to_string());
-    }
-
-    #[test]
-    fn test_text_align_right() {
-        assert_eq!(
-            align_text("a", Alignment::Right, 10),
-            format!("{}{}", " ".repeat(9), "a")
-        );
-        assert_eq!(align_text("a", Alignment::Right, 1), "a".to_string());
-        assert_eq!(align_text("你好", Alignment::Right, 5), " 你好");
-        assert_eq!(align_text("👑123", Alignment::Right, 6), " 👑123");
-    }
-
-    #[test]
-    fn test_text_align_center() {
-        assert_eq!(
-            align_text("a", Alignment::Center, 11),
-            format!("{}{}{}", " ".repeat(5), "a", " ".repeat(5))
-        );
-        assert_eq!(align_text("a", Alignment::Center, 1), "a".to_string());
-        assert_eq!(align_text("你好", Alignment::Center, 6), " 你好 ");
-        assert_eq!(align_text("👑123", Alignment::Center, 7), " 👑123 ");
-    }
 
     #[test]
     fn test_get_cursor_position_with_single_byte_graphemes() {

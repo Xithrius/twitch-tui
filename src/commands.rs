@@ -4,7 +4,7 @@ use std::{
 };
 
 use crossterm::{
-    cursor::{CursorShape, DisableBlinking, EnableBlinking, SetCursorShape},
+    cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
     event::{DisableMouseCapture, EnableMouseCapture},
     execute, queue,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -39,18 +39,31 @@ pub fn reset_terminal() {
 pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
     enable_raw_mode().unwrap();
 
+    let blink = |a: SetCursorStyle, b: SetCursorStyle| -> SetCursorStyle {
+        if frontend_config.blinking_cursor {
+            a
+        } else {
+            b
+        }
+    };
+
     let cursor_type = match frontend_config.cursor_shape {
-        CursorType::Line => CursorShape::Line,
-        CursorType::UnderScore => CursorShape::UnderScore,
-        CursorType::Block => CursorShape::Block,
+        CursorType::User => SetCursorStyle::DefaultUserShape,
+        CursorType::Line => blink(SetCursorStyle::BlinkingBar, SetCursorStyle::SteadyBar),
+        CursorType::Block => blink(SetCursorStyle::BlinkingBlock, SetCursorStyle::SteadyBlock),
+        CursorType::UnderScore => blink(
+            SetCursorStyle::BlinkingUnderScore,
+            SetCursorStyle::SteadyUnderScore,
+        ),
     };
 
     let mut stdout = stdout();
+
     queue!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
-        SetCursorShape(cursor_type),
+        cursor_type,
     )
     .unwrap();
 
