@@ -92,10 +92,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let layout = LayoutAttributes::new(v_constraints, v_chunks);
 
-    // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = layout.first_chunk().height as usize - 3;
+    let general_chunk_height = layout.first_chunk().height as usize - 2;
 
-    // Making sure that messages do have a limit and don't eat up all the RAM.
     app.messages.truncate(config.terminal.maximum_messages);
 
     // Accounting for not all heights of rows to be the same due to text wrapping,
@@ -106,7 +104,15 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut scroll_offset = app.scrolling.get_offset();
 
-    let mut total_num_search_results = 0;
+    // Horizontal chunks represents the table within the main chat window.
+    let h_chunk = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(1)])
+        .split(frame.size());
+
+    let message_chunk_width = h_chunk[0].width as usize;
+
+    // let mut _total_num_search_results = 0;
 
     'outer: for data in &app.messages {
         if app.filters.contaminated(data.payload.clone().as_str()) {
@@ -126,9 +132,9 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             None
         };
 
-        let (spans, num_results) = data.to_row_and_num_search_results(
+        let (spans, _num_results) = data.to_row_and_num_search_results(
             &config.frontend,
-            frame.size().width as usize,
+            message_chunk_width,
             if app.input_buffer.is_empty() {
                 None
             } else {
@@ -141,39 +147,11 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             app.theme_style,
         );
 
-        // let message_wrapped = textwrap::fill(
-        //     data.payload.as_str(),
-        //     frame.size().width as usize - data.author.len() - data.time_sent.to_string().len()
-        //     // (frame.size().width as u16) - data.author.len() as u16 - data.time_sent.to_string().len() as u16,
-        // );
-
-        // let message_split = message_wrapped.split('\n');
-
-        // let message = message_split
-        //     .map(|s| Span::raw(s))
-        //     .collect::<Vec<Span>>();
-
-        // let info = vec![
-        //     Span::from(
-        //         data.time_sent
-        //             .format(&config.frontend.date_format)
-        //             .to_string(),
-        //     ),
-        //     Span::from(data.author.clone()),
-        //     message[0].clone(),
-        // ];
-
-        // let extra_message_spans = Spans::from(message[0..].to_vec());
-
-        // // (vec![Spans::from(info), extra_message_spans], 0)
-
-        // let spans = vec![Spans::from(info), extra_message_spans];
-
         // total_num_search_results += num_results;
 
         for span in spans.iter().rev() {
             if total_row_height < general_chunk_height {
-                messages.push_front(span.to_owned());
+                messages.push_front(span.clone());
 
                 total_row_height += 1;
             } else {
@@ -254,7 +232,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
             components::render_insert_box(
                 window,
-                format!("Message Search: {total_num_search_results} found").as_str(),
+                // format!("Message Search: {total_num_search_results} found").as_str(),
+                "Message Search".to_string().as_str(),
                 None,
                 None,
                 Some(Box::new(checking_func)),
@@ -266,6 +245,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         State::ChannelSwitch => {
             components::render_channel_switcher(window, config.storage.channels);
         }
-        _ => {}
+        State::Normal => {}
     }
 }

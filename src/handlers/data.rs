@@ -1,6 +1,7 @@
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
+use log::info;
 use regex::Regex;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
@@ -67,9 +68,15 @@ impl MessageData {
         username_highlight: Option<String>,
         theme_style: Style,
     ) -> (Vec<Spans>, u32) {
+        let time_sent = self
+            .time_sent
+            .format(&frontend_config.date_format)
+            .to_string();
+
+        // Subtraction of 2 for the spaces in between the date, user, and message.
         let message = textwrap::fill(
             self.payload.as_str(),
-            width - self.author.len() - self.time_sent.to_string().len(),
+            width - self.author.len() - time_sent.len() - 4 - (frontend_config.margin as usize * 2),
         );
 
         let message_spans = message
@@ -77,19 +84,39 @@ impl MessageData {
             .map(|s| Span::raw(s.to_owned()))
             .collect::<Vec<Span>>();
 
-        let info = vec![
-            Span::from(
-                self.time_sent
-                    .format(&frontend_config.date_format)
-                    .to_string(),
+        let mut info = if frontend_config.date_shown {
+            vec![
+                Span::styled(time_sent, Style::default().fg(Color::DarkGray)),
+                Span::raw(" "),
+            ]
+        } else {
+            vec![]
+        };
+
+        info.extend(vec![
+            Span::styled(
+                self.author.clone(),
+                if self.system {
+                    SYSTEM_CHAT
+                } else {
+                    Style::default().fg(self.hash_username(&frontend_config.palette))
+                },
             ),
-            Span::from(self.author.clone()),
+            Span::raw(" "),
             message_spans[0].clone(),
-        ];
+        ]);
 
-        let extra_message_spans = Spans::from(message_spans[0..].to_vec());
+        let mut info_spans = vec![Spans::from(info)];
 
-        (vec![Spans::from(info), extra_message_spans], 0)
+        if message_spans.len() > 1 {
+            for extra in message_spans[1..].iter().cloned() {
+                info_spans.push(Spans::from(extra));
+            }
+        }
+
+        info!("{:#?}", info_spans);
+
+        (info_spans, 0)
 
         // let username_highlight_style = username_highlight.map_or_else(Style::default, |username| {
         //     if Regex::new(format!("^.*{username}.*$").as_str())
@@ -157,28 +184,6 @@ impl MessageData {
         //             .collect::<Vec<Cell>>()
         //     },
         // );
-
-        // let mut cell_vector = vec![
-        //     Cell::from(self.author).style(if self.system {
-        //         SYSTEM_CHAT
-        //     } else {
-        //         Style::default().fg(self.hash_username(&frontend_config.palette))
-        //     }),
-        //     msg_cells[0].clone(),
-        // ];
-
-        // if frontend_config.date_shown {
-        //     cell_vector.insert(
-        //         0,
-        //         Cell::from(
-        //             self.time_sent
-        //                 .format(&frontend_config.date_format)
-        //                 .to_string(),
-        //         ),
-        //     );
-        // };
-
-        // let mut row_vector = vec![Row::new(cell_vector).style(theme_style)];
 
         // if msg_cells.len() > 1 {
         //     for cell in msg_cells.iter().skip(1) {
