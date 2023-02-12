@@ -9,16 +9,16 @@ use tui::{
     style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans, Text},
-    widgets::{Block, Borders, Cell, List, ListItem},
+    widgets::{Block, Borders, List, ListItem},
 };
 
 use crate::{
     handlers::{
         app::{App, State},
-        config::CompleteConfig,
+        config::{CompleteConfig, Theme},
     },
     utils::{
-        styles,
+        styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
         text::{title_spans, TitleStyle},
     },
 };
@@ -144,7 +144,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 }
             },
             username_highlight,
-            app.theme_style,
         );
 
         // total_num_search_results += num_results;
@@ -210,7 +209,10 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             Block::default()
                 .borders(Borders::ALL)
                 .title(chat_title)
-                .style(app.theme_style),
+                .style(match app.theme {
+                    Theme::Light => BORDER_NAME_LIGHT,
+                    _ => BORDER_NAME_DARK,
+                }),
         )
         .style(Style::default().fg(Color::White));
     // .highlight_style(Style::default().add_modifier(Modifier::ITALIC))

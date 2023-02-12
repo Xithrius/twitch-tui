@@ -13,7 +13,9 @@ use crate::{
     handlers::config::{FrontendConfig, Palette, Theme},
     utils::{
         colors::hsl_to_rgb,
-        styles::{HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT},
+        styles::{
+            DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
+        },
     },
 };
 
@@ -66,7 +68,6 @@ impl MessageData {
         width: usize,
         search_highlight: Option<String>,
         username_highlight: Option<String>,
-        theme_style: Style,
     ) -> (Vec<Spans>, u32) {
         let time_sent = self
             .time_sent
@@ -74,6 +75,9 @@ impl MessageData {
             .to_string();
 
         // Subtraction of 2 for the spaces in between the date, user, and message.
+
+        // TODO: First line wraps while including the length of author and (maybe) date,
+        // while second and additional lines wrap with length of `width`.
         let message = textwrap::fill(
             self.payload.as_str(),
             width - self.author.len() - time_sent.len() - 4 - (frontend_config.margin as usize * 2),
@@ -86,7 +90,13 @@ impl MessageData {
 
         let mut info = if frontend_config.date_shown {
             vec![
-                Span::styled(time_sent, Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    time_sent,
+                    match frontend_config.theme {
+                        Theme::Light => DATETIME_LIGHT,
+                        _ => DATETIME_DARK,
+                    },
+                ),
                 Span::raw(" "),
             ]
         } else {

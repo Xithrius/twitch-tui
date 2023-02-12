@@ -6,11 +6,12 @@ use tui::{
 };
 
 use crate::{
+    handlers::config::Theme,
     ui::{
         statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
         WindowAttributes,
     },
-    utils::styles,
+    utils::styles::{self, BORDER_NAME_DARK, BORDER_NAME_LIGHT},
 };
 
 // Once a solution is found to calculate constraints,
@@ -49,7 +50,10 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
         .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
         .widths(&TABLE_CONSTRAINTS)
         .column_spacing(2)
-        .style(app.theme_style);
+        .style(match app.theme {
+            Theme::Light => BORDER_NAME_LIGHT,
+            _ => BORDER_NAME_DARK,
+        });
 
     frame.render_widget(Clear, layout.first_chunk());
     frame.render_widget(help_table, layout.first_chunk());
