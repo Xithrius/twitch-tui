@@ -81,18 +81,24 @@ impl MessageData {
         let width_sub_margin = width - (frontend_config.margin as usize * 2);
 
         // Subtraction of 2 for the spaces in between the date, user, and message.
-        let first_line_limit = width_sub_margin - self.author.len() - time_sent.len() - 2;
+        let first_line_limit = width_sub_margin - self.author.len() - time_sent.len() - 4;
 
-        let mut message_split: Vec<Cow<str>> = textwrap::wrap(
+        let mut message_split = textwrap::wrap(
             &self.payload,
             Options::new(first_line_limit).wrap_algorithm(*WRAP_ALGORITHM),
-        );
+        )
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
 
         if message_split.len() > 1 {
             let extra = message_split[1].clone();
 
             if extra.len() > width_sub_margin {
-                let extra_split = textwrap::wrap(&extra, width_sub_margin);
+                let extra_split = textwrap::wrap(&extra, width_sub_margin)
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>();
 
                 message_split.extend(extra_split);
             }
