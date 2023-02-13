@@ -1,4 +1,5 @@
 use rustyline::line_buffer::LineBuffer;
+use textwrap::core::Word;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -59,8 +60,38 @@ pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String
         })
 }
 
+/// Wraps the first line according to the width, letting the second line go as long as it would like.
+/// Modified version of function
+/// [`wrap_first_fit`](<https://github.com/mgeisler/textwrap/blob/74b55209a75a49e4fadde3e07a6a33cdd2f24f5d/src/wrap_algorithms.rs#L347-L371/>)
+pub fn wrap_once<'a, 'b>(words: &'b [Word<'a>], line_widths: &'b [usize]) -> Vec<&'b [Word<'a>]> {
+    let default_line_width = line_widths.last().copied().unwrap_or(0);
+    let mut lines = Vec::new();
+    let mut start = 0;
+    let mut width = 0;
+
+    for (idx, word) in words.iter().enumerate() {
+        let line_width = line_widths
+            .get(lines.len())
+            .copied()
+            .unwrap_or(default_line_width);
+
+        if width + word.width() > line_width && idx > start {
+            lines.push(&words[start..idx]);
+            start = idx;
+            break;
+        }
+
+        width += word.width();
+    }
+
+    lines.push(&words[start..]);
+
+    lines
+}
+
 #[cfg(test)]
 mod tests {
+    use textwrap::{wrap, Options, WrapAlgorithm};
     use tui::{
         style::{Color, Modifier},
         text::Spans,
@@ -127,5 +158,35 @@ mod tests {
         let output = first_similarity(&[], "asdf");
 
         assert_eq!(output, None);
+    }
+
+    #[test]
+    fn test_wrap_once_to_one_line() {
+        let options = Options::new(20).wrap_algorithm(WrapAlgorithm::Custom(wrap_once));
+
+        assert_eq!(
+            wrap("Something, another", options),
+            vec!["Something, another"]
+        );
+    }
+
+    #[test]
+    fn test_wrap_once_to_two_lines() {
+        let options = Options::new(10).wrap_algorithm(WrapAlgorithm::Custom(wrap_once));
+
+        assert_eq!(
+            wrap("First, second, third, fourth, fifth, sixth", options),
+            vec!["First,", "second, third, fourth, fifth, sixth"]
+        );
+    }
+
+    #[test]
+    fn test_wrap_once_one_long_word_to_two_lines() {
+        let options = Options::new(10).wrap_algorithm(WrapAlgorithm::Custom(wrap_once));
+
+        assert_eq!(
+            wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", options),
+            vec!["aaaaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]
+        );
     }
 }

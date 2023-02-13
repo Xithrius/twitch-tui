@@ -1,8 +1,10 @@
+use std::borrow::Cow;
+
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
-use log::info;
 use regex::Regex;
+use textwrap::{Options, WrapAlgorithm};
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
@@ -16,11 +18,13 @@ use crate::{
         styles::{
             DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
         },
+        text::wrap_once,
     },
 };
 
 lazy_static! {
     pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
+    pub static ref WRAP_ALGORITHM: WrapAlgorithm = WrapAlgorithm::Custom(wrap_once);
 }
 
 #[derive(Debug, Clone)]
@@ -74,18 +78,29 @@ impl MessageData {
             .format(&frontend_config.date_format)
             .to_string();
 
-        // Subtraction of 2 for the spaces in between the date, user, and message.
+        let width_sub_margin = width - (frontend_config.margin as usize * 2);
 
-        // TODO: First line wraps while including the length of author and (maybe) date,
-        // while second and additional lines wrap with length of `width`.
-        let message = textwrap::fill(
-            self.payload.as_str(),
-            width - self.author.len() - time_sent.len() - 4 - (frontend_config.margin as usize * 2),
+        // Subtraction of 2 for the spaces in between the date, user, and message.
+        let first_line_limit = width_sub_margin - self.author.len() - time_sent.len() - 2;
+
+        let mut message_split: Vec<Cow<str>> = textwrap::wrap(
+            &self.payload,
+            Options::new(first_line_limit).wrap_algorithm(*WRAP_ALGORITHM),
         );
 
-        let message_spans = message
-            .split('\n')
-            .map(|s| Span::raw(s.to_owned()))
+        if message_split.len() > 1 {
+            let extra = message_split[1].clone();
+
+            if extra.len() > width_sub_margin {
+                let extra_split = textwrap::wrap(&extra, width_sub_margin);
+
+                message_split.extend(extra_split);
+            }
+        }
+
+        let message_spans = message_split
+            .iter()
+            .map(|s| Span::raw(s.clone()))
             .collect::<Vec<Span>>();
 
         let mut info = if frontend_config.date_shown {
@@ -123,8 +138,6 @@ impl MessageData {
                 info_spans.push(Spans::from(extra));
             }
         }
-
-        info!("{:#?}", info_spans);
 
         (info_spans, 0)
 
