@@ -66,22 +66,16 @@ impl MessageData {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row_and_num_search_results(
+    fn wrap_message(
         &self,
         frontend_config: &FrontendConfig,
         width: usize,
-        search_highlight: Option<String>,
-        username_highlight: Option<String>,
-    ) -> (Vec<Spans>, u32) {
-        let time_sent = self
-            .time_sent
-            .format(&frontend_config.date_format)
-            .to_string();
-
+        time_sent: String,
+    ) -> Vec<String> {
         let width_sub_margin = width - (frontend_config.margin as usize * 2);
 
         // Subtraction of 2 for the spaces in between the date, user, and message.
-        let first_line_limit = width_sub_margin - self.author.len() - time_sent.len() - 4;
+        let first_line_limit = width_sub_margin - time_sent.len() - self.author.len() - 2;
 
         let mut message_split = textwrap::wrap(
             &self.payload,
@@ -104,9 +98,49 @@ impl MessageData {
             }
         }
 
-        let message_spans = message_split
+        message_split
+    }
+
+    pub fn to_spans(
+        &self,
+        frontend_config: &FrontendConfig,
+        width: usize,
+        search_highlight: Option<String>,
+        username_highlight: Option<String>,
+    ) -> (Vec<Spans>, u32) {
+        let time_sent = self
+            .time_sent
+            .format(&frontend_config.date_format)
+            .to_string();
+
+        let message_spans = self
+            .wrap_message(frontend_config, width, time_sent.clone())
             .iter()
-            .map(|s| Span::raw(s.clone()))
+            .map(|s| {
+                if let Some(search) = search_highlight.clone() {
+                    if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
+                        return s
+                            .chars()
+                            .enumerate()
+                            .map(|(i, c)| {
+                                if indices.contains(&i) {
+                                    Span::styled(
+                                        c.to_string(),
+                                        Style::default()
+                                            .fg(Color::Red)
+                                            .add_modifier(Modifier::BOLD),
+                                    )
+                                } else {
+                                    Span::raw(s.to_string())
+                                }
+                            })
+                            .collect::<Vec<Span>>();
+                    }
+                }
+
+                return vec![Span::raw(s.clone())];
+            })
+            .flatten()
             .collect::<Vec<Span>>();
 
         let mut info = if frontend_config.date_shown {
@@ -162,57 +196,6 @@ impl MessageData {
         // });
 
         // let mut num_search_matches = 0;
-
-        // let msg_cells = search_highlight.map_or_else(
-        //     || {
-        //         // If the user's name appears in a row, highlight it.
-        //         message
-        //             .split('\n')
-        //             .map(|s| {
-        //                 Cell::from(Spans::from(vec![Span::styled(
-        //                     s.to_owned(),
-        //                     username_highlight_style,
-        //                 )]))
-        //             })
-        //             .collect::<Vec<Cell>>()
-        //     },
-        //     |search| {
-        //         // Going through all the rows with a search to see if there's a fuzzy match.
-        //         // If there is, highlight said match in red.
-        //         message
-        //             .split('\n')
-        //             .map(|s| {
-        //                 let chars = s.chars();
-
-        //                 if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
-        //                     num_search_matches += 1;
-        //                     Cell::from(vec![Spans::from(
-        //                         chars
-        //                             .enumerate()
-        //                             .map(|(i, s)| {
-        //                                 if indices.contains(&i) {
-        //                                     Span::styled(
-        //                                         s.to_string(),
-        //                                         Style::default()
-        //                                             .fg(Color::Red)
-        //                                             .add_modifier(Modifier::BOLD),
-        //                                     )
-        //                                 } else {
-        //                                     Span::raw(s.to_string())
-        //                                 }
-        //                             })
-        //                             .collect::<Vec<Span>>(),
-        //                     )])
-        //                 } else {
-        //                     Cell::from(Spans::from(vec![Span::styled(
-        //                         s.to_owned(),
-        //                         username_highlight_style,
-        //                     )]))
-        //                 }
-        //             })
-        //             .collect::<Vec<Cell>>()
-        //     },
-        // );
 
         // if msg_cells.len() > 1 {
         //     for cell in msg_cells.iter().skip(1) {

@@ -132,7 +132,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             None
         };
 
-        let (spans, _num_results) = data.to_row_and_num_search_results(
+        let (spans, _num_results) = data.to_spans(
             &config.frontend,
             message_chunk_width,
             if app.input_buffer.is_empty() {
@@ -215,8 +215,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 }),
         )
         .style(Style::default().fg(Color::White));
-    // .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-    // .highlight_symbol(">>");
 
     frame.render_widget(list, layout.first_chunk());
 
