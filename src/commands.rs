@@ -4,7 +4,7 @@ use std::{
 };
 
 use crossterm::{
-    cursor::{CursorShape, DisableBlinking, EnableBlinking, SetCursorShape},
+    cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
     event::{DisableMouseCapture, EnableMouseCapture},
     execute, queue,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -39,10 +39,10 @@ pub fn reset_terminal() {
 pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
     enable_raw_mode().unwrap();
 
-    let cursor_type = match frontend_config.cursor_shape {
-        CursorType::Line => CursorShape::Line,
-        CursorType::UnderScore => CursorShape::UnderScore,
-        CursorType::Block => CursorShape::Block,
+    let cursor_style = match frontend_config.cursor_shape {
+        CursorType::Line => SetCursorStyle::BlinkingBar,
+        CursorType::Block => SetCursorStyle::BlinkingBlock,
+        CursorType::UnderScore => SetCursorStyle::BlinkingUnderScore,
     };
 
     let mut stdout = stdout();
@@ -50,7 +50,7 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBack
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
-        SetCursorShape(cursor_type),
+        cursor_style,
     )
     .unwrap();
 
