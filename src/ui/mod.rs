@@ -24,6 +24,7 @@ use crate::{
 };
 
 pub mod components;
+pub mod error;
 pub mod statics;
 
 #[derive(Debug, Clone)]
