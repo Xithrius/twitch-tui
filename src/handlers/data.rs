@@ -104,14 +104,6 @@ impl MessageData {
 
         let mut wrapped_message_spans = vec![];
 
-        // let time_spent_styled_span = Span::styled(
-        //     &wrapped_message[0][..time_sent.len()],
-        //     match frontend_config.theme {
-        //         Theme::Light => DATETIME_LIGHT,
-        //         _ => DATETIME_DARK,
-        //     },
-        // );
-
         let mut start_vec = vec![
             Span::styled(
                 raw_message_wrapped[0][..time_sent.len()].to_string(),
@@ -132,7 +124,7 @@ impl MessageData {
             Span::raw(": "),
         ];
 
-        start_vec.extend(if let Some((_, indices)) = search {
+        start_vec.extend(if let Some((_, indices)) = &search {
             raw_message_wrapped[0][raw_message_start.len()..]
                 .chars()
                 .enumerate()
@@ -156,127 +148,47 @@ impl MessageData {
         wrapped_message_spans.push(Spans::from(start_vec));
 
         if raw_message_wrapped.len() > 1 {
-            wrapped_message_spans.extend(
+            let mut index = raw_message_wrapped[0][raw_message_start.len()..].len();
+
+            // TODO: Fix odd search pattern where some words at the start of a new line won't be a result.
+            wrapped_message_spans.extend(if let Some((_, indices)) = search {
+                raw_message_wrapped[1..]
+                    .iter()
+                    .enumerate()
+                    .map(|(s_i, s)| {
+                        let spans = Spans::from(
+                            s.chars()
+                                .enumerate()
+                                .map(|(i, c)| {
+                                    if indices.contains(&(i + index + 1)) {
+                                        Span::styled(
+                                            c.to_string(),
+                                            Style::default()
+                                                .fg(Color::Red)
+                                                .add_modifier(Modifier::BOLD),
+                                        )
+                                    } else {
+                                        Span::raw(c.to_string())
+                                    }
+                                })
+                                .collect::<Vec<Span>>(),
+                        );
+
+                        index = (s.len() * (s_i + 1)) + index;
+
+                        spans
+                    })
+                    .collect::<Vec<Spans>>()
+            } else {
                 raw_message_wrapped[1..]
                     .iter()
                     .map(|s| Spans::from(vec![Span::raw(s.to_string())]))
-                    .collect::<Vec<Spans>>(),
-            );
+                    .collect::<Vec<Spans>>()
+            });
         }
 
         (wrapped_message_spans, 0)
     }
-
-    // pub fn to_spans(
-    //     &self,
-    //     frontend_config: &FrontendConfig,
-    //     width: usize,
-    //     search_highlight: Option<String>,
-    //     username_highlight: Option<String>,
-    // ) -> (Vec<Spans>, u32) {
-    //     let time_sent = self
-    //         .time_sent
-    //         .format(&frontend_config.date_format)
-    //         .to_string();
-
-    //     let message_spans = self
-    //         .wrap_message(frontend_config, width, time_sent.clone())
-    //         .iter()
-    //         .map(|s| {
-    //             if let Some(search) = search_highlight.clone() {
-    //                 if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
-    //                     return s
-    //                         .chars()
-    //                         .enumerate()
-    //                         .map(|(i, c)| {
-    //                             if indices.contains(&i) {
-    //                                 Span::styled(
-    //                                     c.to_string(),
-    //                                     Style::default()
-    //                                         .fg(Color::Red)
-    //                                         .add_modifier(Modifier::BOLD),
-    //                                 )
-    //                             } else {
-    //                                 Span::raw(s.to_string())
-    //                             }
-    //                         })
-    //                         .collect::<Vec<Span>>();
-    //                 }
-    //             }
-
-    //             return vec![Span::raw(s.clone())];
-    //         })
-    //         .flatten()
-    //         .collect::<Vec<Span>>();
-
-    //     let mut info = if frontend_config.date_shown {
-    //         vec![
-    //             Span::styled(
-    //                 time_sent,
-    // match frontend_config.theme {
-    //     Theme::Light => DATETIME_LIGHT,
-    //     _ => DATETIME_DARK,
-    // },
-    //             ),
-    //             Span::raw(" "),
-    //         ]
-    //     } else {
-    //         vec![]
-    //     };
-
-    //     if frontend_config.username_shown {
-    //         info.extend(vec![
-    //             Span::styled(
-    //                 self.author.clone(),
-    //                 if self.system {
-    //                     SYSTEM_CHAT
-    //                 } else {
-    //                     Style::default().fg(self.hash_username(&frontend_config.palette))
-    //                 },
-    //             ),
-    //             Span::raw(": "),
-    //             message_spans[0].clone(),
-    //         ]);
-    //     }
-
-    //     let mut info_spans = vec![Spans::from(info)];
-
-    //     if message_spans.len() > 1 {
-    //         for extra in message_spans[1..].iter().cloned() {
-    //             info_spans.push(Spans::from(extra));
-    //         }
-    //     }
-
-    //     (info_spans, 0)
-
-    //     // let username_highlight_style = username_highlight.map_or_else(Style::default, |username| {
-    //     //     if Regex::new(format!("^.*{username}.*$").as_str())
-    //     //         .unwrap()
-    //     //         .is_match(&message)
-    //     //     {
-    //     //         match frontend_config.theme {
-    //     //             Theme::Light => HIGHLIGHT_NAME_LIGHT,
-    //     //             _ => HIGHLIGHT_NAME_DARK,
-    //     //         }
-    //     //     } else {
-    //     //         Style::default()
-    //     //     }
-    //     // });
-
-    //     // let mut num_search_matches = 0;
-
-    //     // if msg_cells.len() > 1 {
-    //     //     for cell in msg_cells.iter().skip(1) {
-    //     //         let mut wrapped_msg = vec![Cell::from(""), cell.clone()];
-
-    //     //         if frontend_config.date_shown {
-    //     //             wrapped_msg.insert(0, Cell::from(""));
-    //     //         }
-
-    //     //         row_vector.push(Row::new(wrapped_msg));
-    //     //     }
-    //     // }
-    // }
 }
 
 #[derive(Debug, Copy, Clone)]

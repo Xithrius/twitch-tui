@@ -1,7 +1,6 @@
+use dialoguer::{console::Style, theme::ColorfulTheme, Confirm, Input};
+
 use crate::handlers::config::{CompleteConfig, TwitchConfig};
-use dialoguer::console::Style;
-use dialoguer::theme::ColorfulTheme;
-use dialoguer::{Confirm, Input};
 
 pub(super) fn interactive_config() -> Option<CompleteConfig> {
     let theme = ColorfulTheme {
