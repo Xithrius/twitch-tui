@@ -39,22 +39,10 @@ pub fn reset_terminal() {
 pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
     enable_raw_mode().unwrap();
 
-    let blink = |a: SetCursorStyle, b: SetCursorStyle| -> SetCursorStyle {
-        if frontend_config.blinking_cursor {
-            a
-        } else {
-            b
-        }
-    };
-
-    let cursor_type = match frontend_config.cursor_shape {
-        CursorType::User => SetCursorStyle::DefaultUserShape,
-        CursorType::Line => blink(SetCursorStyle::BlinkingBar, SetCursorStyle::SteadyBar),
-        CursorType::Block => blink(SetCursorStyle::BlinkingBlock, SetCursorStyle::SteadyBlock),
-        CursorType::UnderScore => blink(
-            SetCursorStyle::BlinkingUnderScore,
-            SetCursorStyle::SteadyUnderScore,
-        ),
+    let cursor_style = match frontend_config.cursor_shape {
+        CursorType::Line => SetCursorStyle::BlinkingBar,
+        CursorType::Block => SetCursorStyle::BlinkingBlock,
+        CursorType::UnderScore => SetCursorStyle::BlinkingUnderScore,
     };
 
     let mut stdout = stdout();
@@ -63,7 +51,7 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBack
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
-        cursor_type,
+        cursor_style,
     )
     .unwrap();
 
