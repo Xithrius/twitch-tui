@@ -89,8 +89,8 @@ pub struct FrontendConfig {
     pub date_shown: bool,
     /// The format of string that will show up in the terminal.
     pub date_format: String,
-    /// The maximum length of a Twitch username.
-    pub maximum_username_length: u16,
+    /// If the username should be shown.
+    pub username_shown: bool,
     /// The color palette.
     pub palette: Palette,
     /// Show Title with time and channel.
@@ -141,7 +141,7 @@ impl Default for FrontendConfig {
         Self {
             date_shown: true,
             date_format: "%a %b %e %T %Y".to_string(),
-            maximum_username_length: 26,
+            username_shown: true,
             palette: Palette::default(),
             title_shown: true,
             margin: 0,

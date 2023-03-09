@@ -43,6 +43,7 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBack
         CursorType::Line => SetCursorStyle::BlinkingBar,
         CursorType::Block => SetCursorStyle::BlinkingBlock,
         CursorType::UnderScore => SetCursorStyle::BlinkingUnderScore,
+        CursorType::User => SetCursorStyle::DefaultUserShape,
     };
 
     let mut stdout = stdout();

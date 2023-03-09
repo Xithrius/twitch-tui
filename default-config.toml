@@ -35,10 +35,8 @@ reversed = false
 date_shown = true
 # The format of the date and time outputs. Formats can be found at https://strftime.org/.
 date_format = "%a %b %e %T %Y"
-# The longest a username can be.
-maximum_username_length = 26
-# Which side the username should be aligned to.
-username_alignment = "right"
+# If the username should be shown.
+username_shown = true
 # The color palette for the username column: pastel (default), vibrant, warm, cool.
 palette = "pastel"
 # Show title with time and channel.

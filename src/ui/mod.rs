@@ -105,7 +105,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let mut scroll_offset = app.scrolling.get_offset();
 
-    // Horizontal chunks represents the table within the main chat window.
+    // Horizontal chunks represents the list within the main chat window.
     let h_chunk = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(1)])

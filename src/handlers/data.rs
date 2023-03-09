@@ -74,8 +74,8 @@ impl MessageData {
     ) -> Vec<String> {
         let width_sub_margin = width - (frontend_config.margin as usize * 2);
 
-        // Subtraction of 2 for the spaces in between the date, user, and message.
-        let first_line_limit = width_sub_margin - time_sent.len() - self.author.len() - 2;
+        // Subtraction of 2 for the spaces and ':' in between the date, user, and message.
+        let first_line_limit = width_sub_margin - time_sent.len() - self.author.len() - 3;
 
         let mut message_split = textwrap::wrap(
             &self.payload,
@@ -158,18 +158,20 @@ impl MessageData {
             vec![]
         };
 
-        info.extend(vec![
-            Span::styled(
-                self.author.clone(),
-                if self.system {
-                    SYSTEM_CHAT
-                } else {
-                    Style::default().fg(self.hash_username(&frontend_config.palette))
-                },
-            ),
-            Span::raw(" "),
-            message_spans[0].clone(),
-        ]);
+        if frontend_config.username_shown {
+            info.extend(vec![
+                Span::styled(
+                    self.author.clone(),
+                    if self.system {
+                        SYSTEM_CHAT
+                    } else {
+                        Style::default().fg(self.hash_username(&frontend_config.palette))
+                    },
+                ),
+                Span::raw(": "),
+                message_spans[0].clone(),
+            ]);
+        }
 
         let mut info_spans = vec![Spans::from(info)];
 
