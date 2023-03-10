@@ -113,8 +113,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let message_chunk_width = h_chunk[0].width as usize;
 
-    // let mut _total_num_search_results = 0;
-
     'outer: for data in &app.messages {
         if app.filters.contaminated(data.payload.clone().as_str()) {
             continue;
@@ -133,7 +131,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             None
         };
 
-        let (spans, _num_results) = data.to_spans(
+        let spans = data.to_spans(
             &config.frontend,
             message_chunk_width,
             if app.input_buffer.is_empty() {
@@ -144,10 +142,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                     _ => None,
                 }
             },
-            username_highlight,
+            &username_highlight,
         );
-
-        // total_num_search_results += num_results;
 
         for span in spans.iter().rev() {
             if total_row_height < general_chunk_height {
@@ -233,8 +229,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
             components::render_insert_box(
                 window,
-                // format!("Message Search: {total_num_search_results} found").as_str(),
-                "Message Search".to_string().as_str(),
+                "Message Search",
                 None,
                 None,
                 Some(Box::new(checking_func)),

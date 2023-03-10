@@ -1,13 +1,11 @@
-use std::borrow::Cow;
+use std::string::ToString;
 
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
-use regex::Regex;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Cell, Row},
 };
 
 use crate::{
@@ -65,16 +63,16 @@ impl MessageData {
 
     fn wrap_message(
         &self,
-        combined_message: String,
+        combined_message: &str,
         frontend_config: &FrontendConfig,
         width: usize,
     ) -> Vec<String> {
         // Total width of the window subtracted by any margin, then the two border line lengths.
         let wrap_limit = width - (frontend_config.margin as usize * 2) - 2;
 
-        textwrap::wrap(&combined_message, wrap_limit)
+        textwrap::wrap(combined_message, wrap_limit)
             .iter()
-            .map(|s| s.to_string())
+            .map(ToString::to_string)
             .collect::<Vec<String>>()
     }
 
@@ -83,8 +81,8 @@ impl MessageData {
         frontend_config: &FrontendConfig,
         width: usize,
         search_highlight: Option<String>,
-        username_highlight: Option<String>,
-    ) -> (Vec<Spans>, u32) {
+        username_highlight: &Option<String>,
+    ) -> Vec<Spans> {
         let time_sent = self
             .time_sent
             .format(&frontend_config.date_format)
@@ -94,13 +92,23 @@ impl MessageData {
 
         let raw_message = format!("{}{}", raw_message_start, &self.payload);
 
-        let search = if let Some(user_search) = search_highlight {
-            FUZZY_FINDER.fuzzy_indices(&raw_message[raw_message_start.len()..], &user_search)
-        } else {
-            None
-        };
+        let highlighter = username_highlight.as_ref().and_then(|username| {
+            self.payload.find(username).map(|index| {
+                (
+                    index..index + username.len(),
+                    match frontend_config.theme {
+                        Theme::Dark => HIGHLIGHT_NAME_DARK,
+                        _ => HIGHLIGHT_NAME_LIGHT,
+                    },
+                )
+            })
+        });
 
-        let raw_message_wrapped = self.wrap_message(raw_message, frontend_config, width);
+        let search = search_highlight.and_then(|user_search| {
+            FUZZY_FINDER.fuzzy_indices(&raw_message[raw_message_start.len()..], &user_search)
+        });
+
+        let raw_message_wrapped = self.wrap_message(&raw_message, frontend_config, width);
 
         let mut wrapped_message_spans = vec![];
 
@@ -139,6 +147,19 @@ impl MessageData {
                     }
                 })
                 .collect::<Vec<Span>>()
+        } else if let Some((range, style)) = highlighter {
+            raw_message_wrapped[0][raw_message_start.len()..]
+                .chars()
+                .enumerate()
+                .map(|(i, c)| {
+                    let s = c.to_string();
+                    if range.contains(&i) {
+                        Span::styled(s, style)
+                    } else {
+                        Span::raw(s)
+                    }
+                })
+                .collect::<Vec<Span>>()
         } else {
             vec![Span::raw(
                 raw_message_wrapped[0][raw_message_start.len()..].to_string(),
@@ -174,7 +195,7 @@ impl MessageData {
                                 .collect::<Vec<Span>>(),
                         );
 
-                        index = (s.len() * (s_i + 1)) + index;
+                        index += s.len() * (s_i + 1);
 
                         spans
                     })
@@ -187,7 +208,7 @@ impl MessageData {
             });
         }
 
-        (wrapped_message_spans, 0)
+        wrapped_message_spans
     }
 }
 

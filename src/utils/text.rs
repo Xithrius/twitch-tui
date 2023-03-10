@@ -1,5 +1,4 @@
 use rustyline::line_buffer::LineBuffer;
-use textwrap::core::Word;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -62,7 +61,6 @@ pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String
 
 #[cfg(test)]
 mod tests {
-    use textwrap::{wrap, Options, WrapAlgorithm};
     use tui::{
         style::{Color, Modifier},
         text::Spans,
