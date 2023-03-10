@@ -133,6 +133,7 @@ impl MessageData {
         ];
 
         start_vec.extend(if let Some((_, indices)) = &search {
+            // TODO: Possibility of crash due to `raw_message_start.len()` being out of range
             raw_message_wrapped[0][raw_message_start.len()..]
                 .chars()
                 .enumerate()
@@ -147,14 +148,14 @@ impl MessageData {
                     }
                 })
                 .collect::<Vec<Span>>()
-        } else if let Some((range, style)) = highlighter {
+        } else if let Some((range, style)) = &highlighter {
             raw_message_wrapped[0][raw_message_start.len()..]
                 .chars()
                 .enumerate()
                 .map(|(i, c)| {
                     let s = c.to_string();
                     if range.contains(&i) {
-                        Span::styled(s, style)
+                        Span::styled(s, *style)
                     } else {
                         Span::raw(s)
                     }
@@ -188,6 +189,31 @@ impl MessageData {
                                                 .fg(Color::Red)
                                                 .add_modifier(Modifier::BOLD),
                                         )
+                                    } else {
+                                        Span::raw(c.to_string())
+                                    }
+                                })
+                                .collect::<Vec<Span>>(),
+                        );
+
+                        index += s.len() * (s_i + 1);
+
+                        spans
+                    })
+                    .collect::<Vec<Spans>>()
+            } else if let Some((range, style)) = highlighter {
+                let mut index = raw_message_wrapped[0][raw_message_start.len()..].len();
+
+                raw_message_wrapped[1..]
+                    .iter()
+                    .enumerate()
+                    .map(|(s_i, s)| {
+                        let spans = Spans::from(
+                            s.chars()
+                                .enumerate()
+                                .map(|(i, c)| {
+                                    if range.contains(&(i + index + 1)) {
+                                        Span::styled(c.to_string(), style)
                                     } else {
                                         Span::raw(c.to_string())
                                     }
