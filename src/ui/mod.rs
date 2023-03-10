@@ -8,18 +8,18 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::{Span, Spans},
-    widgets::{Block, Borders, Cell, Row, Table},
+    text::{Span, Spans, Text},
+    widgets::{Block, Borders, List, ListItem},
 };
 
 use crate::{
     handlers::{
         app::{App, State},
-        config::CompleteConfig,
+        config::{CompleteConfig, Theme},
     },
     utils::{
-        styles,
-        text::{align_text, title_spans, TitleStyle},
+        styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
+        text::{title_spans, TitleStyle},
     },
 };
 
@@ -74,33 +74,6 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
 }
 
 pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
-    let username_column_title = align_text(
-        "Username",
-        config.frontend.username_alignment,
-        config.frontend.maximum_username_length,
-    );
-
-    let mut column_titles = vec![username_column_title, "Message content".to_string()];
-
-    let mut table_constraints = vec![
-        Constraint::Length(config.frontend.maximum_username_length),
-        Constraint::Percentage(100),
-    ];
-
-    if config.frontend.date_shown {
-        column_titles.insert(0, "Time".to_string());
-
-        table_constraints.insert(
-            0,
-            Constraint::Length(
-                Local::now()
-                    .format(config.frontend.date_format.as_str())
-                    .to_string()
-                    .len() as u16,
-            ),
-        );
-    }
-
     // Constraints for different states of the application.
     // Modify this in order to create new layouts.
     let mut v_constraints = match app.get_state() {
@@ -120,29 +93,26 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let layout = LayoutAttributes::new(v_constraints, v_chunks);
 
-    // Horizontal chunks represents the table within the main chat window.
-    let h_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(table_constraints.clone())
-        .split(frame.size());
+    let general_chunk_height = layout.first_chunk().height as usize - 2;
 
-    // 0'th index because no matter what index is obtained, they're the same height.
-    let general_chunk_height = layout.first_chunk().height as usize - 3;
-
-    // The chunk furthest to the right is the messages, that's the one we want.
-    let message_chunk_width = h_chunks[table_constraints.len() - 1].width as usize - 4;
-
-    // Making sure that messages do have a limit and don't eat up all the RAM.
     app.messages.truncate(config.terminal.maximum_messages);
 
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
     let mut total_row_height: usize = 0;
-    let mut display_rows = VecDeque::new();
+
+    let mut messages: VecDeque<Spans> = VecDeque::new();
 
     let mut scroll_offset = app.scrolling.get_offset();
 
-    let mut total_num_search_results = 0;
+    // Horizontal chunks represents the list within the main chat window.
+    let h_chunk = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(1)])
+        .split(frame.size());
+
+    let message_chunk_width = h_chunk[0].width as usize;
+
     'outer: for data in &app.messages {
         if app.filters.contaminated(data.payload.clone().as_str()) {
             continue;
@@ -161,31 +131,23 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             None
         };
 
-        let (rows, num_results) = if app.input_buffer.is_empty() {
-            data.to_row_and_num_search_results(
-                &config.frontend,
-                message_chunk_width,
-                None,
-                username_highlight,
-                app.theme_style,
-            )
-        } else {
-            data.to_row_and_num_search_results(
-                &config.frontend,
-                message_chunk_width,
+        let spans = data.to_spans(
+            &config.frontend,
+            message_chunk_width,
+            if app.input_buffer.is_empty() {
+                None
+            } else {
                 match &app.get_state() {
                     State::MessageSearch => Some(app.input_buffer.to_string()),
                     _ => None,
-                },
-                username_highlight,
-                app.theme_style,
-            )
-        };
-        total_num_search_results += num_results;
+                }
+            },
+            &username_highlight,
+        );
 
-        for row in rows.iter().rev() {
+        for span in spans.iter().rev() {
             if total_row_height < general_chunk_height {
-                display_rows.push_front(row.clone());
+                messages.push_front(span.clone());
 
                 total_row_height += 1;
             } else {
@@ -197,7 +159,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
     // Padding with empty rows so chat can go from bottom to top.
     if general_chunk_height > total_row_height {
         for _ in 0..(general_chunk_height - total_row_height) {
-            display_rows.push_front(Row::new(vec![Cell::from("")]));
+            messages.push_front(Spans::from(vec![Span::raw("")]));
         }
     }
 
@@ -233,18 +195,25 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         Spans::default()
     };
 
-    let table = Table::new(display_rows)
-        .header(Row::new(column_titles.clone()).style(styles::COLUMN_TITLE))
+    let mut final_messages = vec![];
+
+    for item in messages {
+        final_messages.push(ListItem::new(Text::from(item)));
+    }
+
+    let list = List::new(final_messages)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .title(chat_title)
-                .style(app.theme_style),
+                .style(match app.theme {
+                    Theme::Light => BORDER_NAME_LIGHT,
+                    _ => BORDER_NAME_DARK,
+                }),
         )
-        .widths(&table_constraints)
-        .column_spacing(1);
+        .style(Style::default().fg(Color::White));
 
-    frame.render_widget(table, layout.first_chunk());
+    frame.render_widget(list, layout.first_chunk());
 
     if config.frontend.state_tabs {
         components::render_state_tabs(frame, &layout, &app.get_state());
@@ -260,7 +229,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
             components::render_insert_box(
                 window,
-                format!("Message Search: {total_num_search_results} found").as_str(),
+                "Message Search",
                 None,
                 None,
                 Some(Box::new(checking_func)),

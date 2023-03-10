@@ -2,22 +2,8 @@ use clap::{builder::PossibleValue, Parser, ValueEnum};
 
 use crate::handlers::{
     app::State,
-    config::{Alignment, CompleteConfig, Palette, Theme},
+    config::{CompleteConfig, Palette, Theme},
 };
-
-impl ValueEnum for Alignment {
-    fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Left, Self::Center, Self::Right]
-    }
-
-    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
-        Some(PossibleValue::new(match self {
-            Self::Left => "left",
-            Self::Center => "center",
-            Self::Right => "right",
-        }))
-    }
-}
 
 impl ValueEnum for Palette {
     fn value_variants<'a>() -> &'a [Self] {
@@ -92,12 +78,6 @@ pub struct Cli {
     /// Show the date/time
     #[arg(short, long)]
     pub date_shown: bool,
-    /// Maximum length for Twitch usernames
-    #[arg(short = 'u', long)]
-    pub max_username_length: Option<u16>,
-    /// Username column alignment
-    #[arg(short = 'a', long)]
-    pub username_alignment: Option<Alignment>,
     /// Username color palette
     #[arg(short, long)]
     pub palette: Option<Palette>,
@@ -138,12 +118,6 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     // Frontend arguments
     config.frontend.date_shown = config.frontend.date_shown || args.date_shown;
 
-    if let Some(maximum_username_length) = args.max_username_length {
-        config.frontend.maximum_username_length = maximum_username_length;
-    }
-    if let Some(username_alignment) = args.username_alignment {
-        config.frontend.username_alignment = username_alignment;
-    }
     if let Some(palette) = args.palette {
         config.frontend.palette = palette;
     }

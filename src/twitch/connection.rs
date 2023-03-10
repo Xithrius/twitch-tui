@@ -8,7 +8,7 @@ use tokio::{sync::mpsc::Sender, time::sleep};
 
 use crate::handlers::{
     config::CompleteConfig,
-    data::{Data, DataBuilder},
+    data::{DataBuilder, MessageData},
 };
 
 /// Initialize the config and send it to the client to connect to an IRC channel.
@@ -37,7 +37,7 @@ pub async fn create_client_stream(config: CompleteConfig) -> (Client, ClientStre
 /// If an error of any kind occurs, attempt to reconnect to the IRC channel.
 pub async fn client_stream_reconnect(
     err: Error,
-    tx: Sender<Data>,
+    tx: Sender<MessageData>,
     data_builder: DataBuilder<'_>,
     client: &mut Client,
     stream: &mut ClientStream,

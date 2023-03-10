@@ -1,19 +1,20 @@
+use std::string::ToString;
+
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
-use regex::Regex;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Cell, Row},
 };
 
 use crate::{
     handlers::config::{FrontendConfig, Palette, Theme},
     utils::{
         colors::hsl_to_rgb,
-        styles::{HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT},
-        text::align_text,
+        styles::{
+            DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
+        },
     },
 };
 
@@ -22,14 +23,14 @@ lazy_static! {
 }
 
 #[derive(Debug, Clone)]
-pub struct Data {
+pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
     pub system: bool,
     pub payload: String,
 }
 
-impl Data {
+impl MessageData {
     pub fn new(author: String, system: bool, payload: String) -> Self {
         Self {
             time_sent: Local::now(),
@@ -60,122 +61,180 @@ impl Data {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_row_and_num_search_results(
+    fn wrap_message(
+        &self,
+        combined_message: &str,
+        frontend_config: &FrontendConfig,
+        width: usize,
+    ) -> Vec<String> {
+        // Total width of the window subtracted by any margin, then the two border line lengths.
+        let wrap_limit = width - (frontend_config.margin as usize * 2) - 2;
+
+        textwrap::wrap(combined_message, wrap_limit)
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>()
+    }
+
+    pub fn to_spans(
         &self,
         frontend_config: &FrontendConfig,
-        limit: usize,
+        width: usize,
         search_highlight: Option<String>,
-        username_highlight: Option<String>,
-        theme_style: Style,
-    ) -> (Vec<Row>, u32) {
-        let message = textwrap::fill(self.payload.as_str(), limit);
+        username_highlight: &Option<String>,
+    ) -> Vec<Spans> {
+        let time_sent = self
+            .time_sent
+            .format(&frontend_config.date_format)
+            .to_string();
 
-        let username_highlight_style = username_highlight.map_or_else(Style::default, |username| {
-            if Regex::new(format!("^.*{username}.*$").as_str())
-                .unwrap()
-                .is_match(&message)
-            {
-                match frontend_config.theme {
-                    Theme::Light => HIGHLIGHT_NAME_LIGHT,
-                    _ => HIGHLIGHT_NAME_DARK,
-                }
-            } else {
-                Style::default()
-            }
+        let raw_message_start = format!("{} {}: ", time_sent, &self.author);
+
+        let raw_message = format!("{}{}", raw_message_start, &self.payload);
+
+        let highlighter = username_highlight.as_ref().and_then(|username| {
+            self.payload.find(username).map(|index| {
+                (
+                    index..index + username.len(),
+                    match frontend_config.theme {
+                        Theme::Dark => HIGHLIGHT_NAME_DARK,
+                        _ => HIGHLIGHT_NAME_LIGHT,
+                    },
+                )
+            })
         });
 
-        let mut num_search_matches = 0;
-        let msg_cells = search_highlight.map_or_else(
-            || {
-                // If the user's name appears in a row, highlight it.
-                message
-                    .split('\n')
-                    .map(|s| {
-                        Cell::from(Spans::from(vec![Span::styled(
-                            s.to_owned(),
-                            username_highlight_style,
-                        )]))
-                    })
-                    .collect::<Vec<Cell>>()
-            },
-            |search| {
-                // Going through all the rows with a search to see if there's a fuzzy match.
-                // If there is, highlight said match in red.
-                message
-                    .split('\n')
-                    .map(|s| {
-                        let chars = s.chars();
+        let search = search_highlight.and_then(|user_search| {
+            FUZZY_FINDER.fuzzy_indices(&raw_message[raw_message_start.len()..], &user_search)
+        });
 
-                        if let Some((_, indices)) = FUZZY_FINDER.fuzzy_indices(s, search.as_str()) {
-                            num_search_matches += 1;
-                            Cell::from(vec![Spans::from(
-                                chars
-                                    .enumerate()
-                                    .map(|(i, s)| {
-                                        if indices.contains(&i) {
-                                            Span::styled(
-                                                s.to_string(),
-                                                Style::default()
-                                                    .fg(Color::Red)
-                                                    .add_modifier(Modifier::BOLD),
-                                            )
-                                        } else {
-                                            Span::raw(s.to_string())
-                                        }
-                                    })
-                                    .collect::<Vec<Span>>(),
-                            )])
-                        } else {
-                            Cell::from(Spans::from(vec![Span::styled(
-                                s.to_owned(),
-                                username_highlight_style,
-                            )]))
-                        }
-                    })
-                    .collect::<Vec<Cell>>()
-            },
-        );
+        let raw_message_wrapped = self.wrap_message(&raw_message, frontend_config, width);
 
-        let mut cell_vector = vec![
-            Cell::from(align_text(
-                &self.author,
-                frontend_config.username_alignment,
-                frontend_config.maximum_username_length,
-            ))
-            .style(if self.system {
-                SYSTEM_CHAT
-            } else {
-                Style::default().fg(self.hash_username(&frontend_config.palette))
-            }),
-            msg_cells[0].clone(),
+        let mut wrapped_message_spans = vec![];
+
+        let mut start_vec = vec![
+            Span::styled(
+                raw_message_wrapped[0][..time_sent.len()].to_string(),
+                match frontend_config.theme {
+                    Theme::Light => DATETIME_LIGHT,
+                    _ => DATETIME_DARK,
+                },
+            ),
+            Span::raw(" "),
+            Span::styled(
+                self.author.clone(),
+                if self.system {
+                    SYSTEM_CHAT
+                } else {
+                    Style::default().fg(self.hash_username(&frontend_config.palette))
+                },
+            ),
+            Span::raw(": "),
         ];
 
-        if frontend_config.date_shown {
-            cell_vector.insert(
-                0,
-                Cell::from(
-                    self.time_sent
-                        .format(&frontend_config.date_format)
-                        .to_string(),
-                ),
-            );
-        };
+        start_vec.extend(if let Some((_, indices)) = &search {
+            // TODO: Possibility of crash due to `raw_message_start.len()` being out of range
+            raw_message_wrapped[0][raw_message_start.len()..]
+                .chars()
+                .enumerate()
+                .map(|(i, c)| {
+                    if indices.contains(&i) {
+                        Span::styled(
+                            c.to_string(),
+                            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                        )
+                    } else {
+                        Span::raw(c.to_string())
+                    }
+                })
+                .collect::<Vec<Span>>()
+        } else if let Some((range, style)) = &highlighter {
+            raw_message_wrapped[0][raw_message_start.len()..]
+                .chars()
+                .enumerate()
+                .map(|(i, c)| {
+                    let s = c.to_string();
+                    if range.contains(&i) {
+                        Span::styled(s, *style)
+                    } else {
+                        Span::raw(s)
+                    }
+                })
+                .collect::<Vec<Span>>()
+        } else {
+            vec![Span::raw(
+                raw_message_wrapped[0][raw_message_start.len()..].to_string(),
+            )]
+        });
 
-        let mut row_vector = vec![Row::new(cell_vector).style(theme_style)];
+        wrapped_message_spans.push(Spans::from(start_vec));
 
-        if msg_cells.len() > 1 {
-            for cell in msg_cells.iter().skip(1) {
-                let mut wrapped_msg = vec![Cell::from(""), cell.clone()];
+        if raw_message_wrapped.len() > 1 {
+            let mut index = raw_message_wrapped[0][raw_message_start.len()..].len();
 
-                if frontend_config.date_shown {
-                    wrapped_msg.insert(0, Cell::from(""));
-                }
+            // TODO: Fix odd search pattern where some words at the start of a new line won't be a result.
+            wrapped_message_spans.extend(if let Some((_, indices)) = search {
+                raw_message_wrapped[1..]
+                    .iter()
+                    .enumerate()
+                    .map(|(s_i, s)| {
+                        let spans = Spans::from(
+                            s.chars()
+                                .enumerate()
+                                .map(|(i, c)| {
+                                    if indices.contains(&(i + index + 1)) {
+                                        Span::styled(
+                                            c.to_string(),
+                                            Style::default()
+                                                .fg(Color::Red)
+                                                .add_modifier(Modifier::BOLD),
+                                        )
+                                    } else {
+                                        Span::raw(c.to_string())
+                                    }
+                                })
+                                .collect::<Vec<Span>>(),
+                        );
 
-                row_vector.push(Row::new(wrapped_msg));
-            }
+                        index += s.len() * (s_i + 1);
+
+                        spans
+                    })
+                    .collect::<Vec<Spans>>()
+            } else if let Some((range, style)) = highlighter {
+                let mut index = raw_message_wrapped[0][raw_message_start.len()..].len();
+
+                raw_message_wrapped[1..]
+                    .iter()
+                    .enumerate()
+                    .map(|(s_i, s)| {
+                        let spans = Spans::from(
+                            s.chars()
+                                .enumerate()
+                                .map(|(i, c)| {
+                                    if range.contains(&(i + index + 1)) {
+                                        Span::styled(c.to_string(), style)
+                                    } else {
+                                        Span::raw(c.to_string())
+                                    }
+                                })
+                                .collect::<Vec<Span>>(),
+                        );
+
+                        index += s.len() * (s_i + 1);
+
+                        spans
+                    })
+                    .collect::<Vec<Spans>>()
+            } else {
+                raw_message_wrapped[1..]
+                    .iter()
+                    .map(|s| Spans::from(vec![Span::raw(s.to_string())]))
+                    .collect::<Vec<Spans>>()
+            });
         }
 
-        (row_vector, num_search_matches)
+        wrapped_message_spans
     }
 }
 
@@ -189,16 +248,16 @@ impl<'conf> DataBuilder<'conf> {
         DataBuilder { date_format }
     }
 
-    pub fn user(user: String, payload: String) -> Data {
-        Data::new(user, false, payload)
+    pub fn user(user: String, payload: String) -> MessageData {
+        MessageData::new(user, false, payload)
     }
 
-    pub fn system(self, payload: String) -> Data {
-        Data::new("System".to_string(), true, payload)
+    pub fn system(self, payload: String) -> MessageData {
+        MessageData::new("System".to_string(), true, payload)
     }
 
-    pub fn twitch(self, payload: String) -> Data {
-        Data::new("Twitch".to_string(), true, payload)
+    pub fn twitch(self, payload: String) -> MessageData {
+        MessageData::new("Twitch".to_string(), true, payload)
     }
 }
 
@@ -209,7 +268,7 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            Data::new("human".to_string(), false, "beep boop".to_string())
+            MessageData::new("human".to_string(), false, "beep boop".to_string())
                 .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );

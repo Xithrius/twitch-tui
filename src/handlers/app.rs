@@ -7,16 +7,12 @@ use std::{
 
 use rustyline::line_buffer::LineBuffer;
 use serde::{Deserialize, Serialize};
-use tui::style::Style;
 
-use crate::{
-    handlers::{
-        config::{CompleteConfig, Theme},
-        data::Data,
-        filters::Filters,
-        storage::Storage,
-    },
-    utils::styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
+use crate::handlers::{
+    config::{CompleteConfig, Theme},
+    data::MessageData,
+    filters::Filters,
+    storage::Storage,
 };
 
 const INPUT_BUFFER_LIMIT: usize = 4096;
@@ -101,7 +97,7 @@ impl Scrolling {
 
 pub struct App {
     /// History of recorded messages (time, username, message, etc.)
-    pub messages: VecDeque<Data>,
+    pub messages: VecDeque<MessageData>,
     /// Data loaded in from a JSON file.
     pub storage: Storage,
     /// Messages to be filtered out
@@ -115,7 +111,7 @@ pub struct App {
     /// Interactions with scrolling of the application
     pub scrolling: Scrolling,
     /// The theme selected by the user
-    pub theme_style: Style,
+    pub theme: Theme,
 }
 
 impl App {
@@ -127,10 +123,7 @@ impl App {
             state: config.terminal.start_state.clone(),
             input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
             buffer_suggestion: None,
-            theme_style: match config.frontend.theme {
-                Theme::Light => BORDER_NAME_LIGHT,
-                _ => BORDER_NAME_DARK,
-            },
+            theme: config.frontend.theme.clone(),
             scrolling: Scrolling::new(config.frontend.inverted_scrolling),
         }
     }

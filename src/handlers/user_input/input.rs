@@ -10,7 +10,7 @@ use crate::{
         user_input::events::{Event, Events, Key},
     },
     twitch::TwitchAction,
-    ui::statics::{CHANNEL_NAME_REGEX, TWITCH_MESSAGE_LIMIT},
+    ui::statics::{NAME_RESTRICTION_REGEX, TWITCH_MESSAGE_LIMIT},
 };
 
 pub enum TerminalAction {
@@ -86,7 +86,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
             let input_message = &mut app.input_buffer;
 
             if input_message.is_empty()
-                || !Regex::new(&CHANNEL_NAME_REGEX)
+                || !Regex::new(&NAME_RESTRICTION_REGEX)
                     .unwrap()
                     .is_match(input_message)
             {

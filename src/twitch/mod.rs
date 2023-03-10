@@ -14,7 +14,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use crate::{
     handlers::{
         config::CompleteConfig,
-        data::{Data, DataBuilder},
+        data::{DataBuilder, MessageData},
     },
     twitch::{
         badges::retrieve_user_badges,
@@ -30,7 +30,7 @@ pub enum TwitchAction {
 
 pub async fn twitch_irc(
     mut config: CompleteConfig,
-    tx: Sender<Data>,
+    tx: Sender<MessageData>,
     mut rx: Receiver<TwitchAction>,
 ) {
     info!("Spawned Twitch IRC thread.");
@@ -118,7 +118,7 @@ pub async fn twitch_irc(
 
 async fn handle_message_command(
     message: Message,
-    tx: Sender<Data>,
+    tx: Sender<MessageData>,
     data_builder: DataBuilder<'_>,
     badges: bool,
     room_state_startup: bool,
@@ -142,9 +142,15 @@ async fn handle_message_command(
                 retrieve_user_badges(&mut name, &message);
             }
 
-            tx.send(DataBuilder::user(name.to_string(), msg.to_string()))
-                .await
-                .unwrap();
+            // An attempt to remove null bytes from the message.
+            let cleaned_message = msg.trim_matches(char::from(0));
+
+            tx.send(DataBuilder::user(
+                name.to_string(),
+                cleaned_message.to_string(),
+            ))
+            .await
+            .unwrap();
 
             debug!("Message received from twitch: {} - {}", name, msg);
         }
@@ -178,7 +184,7 @@ async fn handle_message_command(
     None
 }
 
-pub async fn handle_roomstate(tx: &Sender<Data>, tags: &HashMap<&str, &str>) {
+pub async fn handle_roomstate(tx: &Sender<MessageData>, tags: &HashMap<&str, &str>) {
     let mut room_state = String::new();
 
     for (name, value) in tags.iter() {

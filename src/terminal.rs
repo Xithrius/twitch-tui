@@ -8,7 +8,7 @@ use crate::{
     handlers::{
         app::App,
         config::CompleteConfig,
-        data::Data,
+        data::MessageData,
         user_input::{
             events::{Config, Events, Key},
             input::{handle_stateful_user_input, TerminalAction},
@@ -22,7 +22,7 @@ pub async fn ui_driver(
     mut config: CompleteConfig,
     mut app: App,
     tx: Sender<TwitchAction>,
-    mut rx: Receiver<Data>,
+    mut rx: Receiver<MessageData>,
 ) {
     info!("Started UI driver.");
 
