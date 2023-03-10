@@ -142,9 +142,15 @@ async fn handle_message_command(
                 retrieve_user_badges(&mut name, &message);
             }
 
-            tx.send(DataBuilder::user(name.to_string(), msg.to_string()))
-                .await
-                .unwrap();
+            // An attempt to remove null bytes from the message.
+            let cleaned_message = msg.trim_matches(char::from(0));
+
+            tx.send(DataBuilder::user(
+                name.to_string(),
+                cleaned_message.to_string(),
+            ))
+            .await
+            .unwrap();
 
             debug!("Message received from twitch: {} - {}", name, msg);
         }
