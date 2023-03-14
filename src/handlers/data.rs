@@ -1,4 +1,4 @@
-use std::string::ToString;
+use std::{borrow::Cow, string::ToString};
 
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
@@ -61,19 +61,18 @@ impl MessageData {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    fn wrap_message(
-        &self,
-        combined_message: &str,
+    fn wrap_message<'s>(
+        &'s self,
+        combined_message: &'s str,
         frontend_config: &FrontendConfig,
         width: usize,
-    ) -> Vec<String> {
+    ) -> Vec<Cow<str>> {
         // Total width of the window subtracted by any margin, then the two border line lengths.
         let wrap_limit = width - (frontend_config.margin as usize * 2) - 2;
 
         textwrap::wrap(combined_message, wrap_limit)
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<String>>()
+            .into_iter()
+            .collect()
     }
 
     pub fn to_spans(
@@ -83,6 +82,16 @@ impl MessageData {
         search_highlight: Option<String>,
         username_highlight: &Option<String>,
     ) -> Vec<Spans> {
+        let name_theme = match frontend_config.theme {
+            Theme::Dark => HIGHLIGHT_NAME_DARK,
+            _ => HIGHLIGHT_NAME_LIGHT,
+        };
+
+        let date_theme = match frontend_config.theme {
+            Theme::Dark => DATETIME_DARK,
+            _ => DATETIME_LIGHT,
+        };
+
         let time_sent = self
             .time_sent
             .format(&frontend_config.date_format)
@@ -93,15 +102,9 @@ impl MessageData {
         let raw_message = format!("{}{}", raw_message_start, &self.payload);
 
         let highlighter = username_highlight.as_ref().and_then(|username| {
-            self.payload.find(username).map(|index| {
-                (
-                    index..index + username.len(),
-                    match frontend_config.theme {
-                        Theme::Dark => HIGHLIGHT_NAME_DARK,
-                        _ => HIGHLIGHT_NAME_LIGHT,
-                    },
-                )
-            })
+            self.payload
+                .find(username)
+                .map(|index| (index..index + username.len(), name_theme))
         });
 
         let search = search_highlight.and_then(|user_search| {
@@ -115,10 +118,7 @@ impl MessageData {
         let mut start_vec = vec![
             Span::styled(
                 raw_message_wrapped[0][..time_sent.len()].to_string(),
-                match frontend_config.theme {
-                    Theme::Light => DATETIME_LIGHT,
-                    _ => DATETIME_DARK,
-                },
+                date_theme,
             ),
             Span::raw(" "),
             Span::styled(
