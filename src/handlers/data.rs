@@ -15,6 +15,7 @@ use crate::{
         styles::{
             DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
         },
+        text::split_cow_in_place,
     },
 };
 
@@ -61,180 +62,138 @@ impl MessageData {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    fn wrap_message<'s>(
-        &'s self,
-        combined_message: &'s str,
-        frontend_config: &FrontendConfig,
-        width: usize,
-    ) -> Vec<Cow<str>> {
-        // Total width of the window subtracted by any margin, then the two border line lengths.
-        let wrap_limit = width - (frontend_config.margin as usize * 2) - 2;
-
-        textwrap::wrap(combined_message, wrap_limit)
-            .into_iter()
-            .collect()
-    }
-
     pub fn to_spans(
         &self,
         frontend_config: &FrontendConfig,
         width: usize,
-        search_highlight: Option<String>,
-        username_highlight: &Option<String>,
+        search_highlight: Option<&str>,
+        username_highlight: Option<&str>,
     ) -> Vec<Spans> {
-        let name_theme = match frontend_config.theme {
+        #[inline]
+        fn highlight<'s>(
+            line: Cow<'s, str>,
+            start_index: &mut usize,
+            search_highlight: &[usize],
+            search_theme: Style,
+            username_highlight: &[usize],
+            username_theme: Style,
+        ) -> Vec<Span<'s>> {
+            // Fast path
+            if search_highlight.is_empty() && username_highlight.is_empty() {
+                return vec![Span::raw(line)];
+            }
+
+            // Slow path
+            let spans = line
+                .chars()
+                .zip(*start_index..)
+                .map(|(c, i)| {
+                    if search_highlight.binary_search(&i).is_ok() {
+                        Span::styled(c.to_string(), search_theme)
+                    } else if username_highlight.binary_search(&i).is_ok() {
+                        Span::styled(c.to_string(), username_theme)
+                    } else {
+                        Span::raw(c.to_string())
+                    }
+                })
+                .collect();
+            *start_index += line.len();
+            spans
+        }
+
+        // Theme styles
+        let username_theme = match frontend_config.theme {
             Theme::Dark => HIGHLIGHT_NAME_DARK,
             _ => HIGHLIGHT_NAME_LIGHT,
         };
-
-        let date_theme = match frontend_config.theme {
+        let author_theme = if self.system {
+            SYSTEM_CHAT
+        } else {
+            Style::default().fg(self.hash_username(&frontend_config.palette))
+        };
+        let datetime_theme = match frontend_config.theme {
             Theme::Dark => DATETIME_DARK,
             _ => DATETIME_LIGHT,
         };
+        let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
 
+        // All indices to highlight like a user
+        let username_highlight = username_highlight
+            .map(|name| {
+                self.payload
+                    .match_indices(name)
+                    .flat_map(move |(index, _)| index..(index + name.len()))
+                    .collect::<Vec<usize>>()
+            })
+            .unwrap_or_default();
+
+        // All indices to highlight like a search result
+        let search_highlight = search_highlight
+            .and_then(|query| {
+                FUZZY_FINDER
+                    .fuzzy_indices(&self.payload, query)
+                    .map(|(_, indices)| indices)
+            })
+            .unwrap_or_default();
+
+        // Message prefix
         let time_sent = self
             .time_sent
             .format(&frontend_config.date_format)
             .to_string();
 
-        let raw_message_start = format!("{} {}: ", time_sent, &self.author);
+        // Add 3 for the " " and ": "
+        let prefix_len = time_sent.len() + self.author.len() + 3;
 
-        let raw_message = format!("{}{}", raw_message_start, &self.payload);
+        // Width of the window - window margin on both sides
+        let wrap_limit = {
+            // Add 1 for the border line
+            let window_margin = usize::from(frontend_config.margin) + 1;
+            width - window_margin * 2
+        };
 
-        let highlighter = username_highlight.as_ref().and_then(|username| {
-            self.payload
-                .find(username)
-                .map(|index| (index..index + username.len(), name_theme))
-        });
+        let prefix = " ".repeat(prefix_len);
+        let opts = textwrap::Options::new(wrap_limit).initial_indent(&prefix);
+        let wrapped_message = textwrap::wrap(&self.payload, opts);
+        if wrapped_message.is_empty() {
+            return vec![];
+        }
+        let mut lines = wrapped_message.into_iter();
 
-        let search = search_highlight.and_then(|user_search| {
-            FUZZY_FINDER.fuzzy_indices(&raw_message[raw_message_start.len()..], &user_search)
-        });
-
-        let raw_message_wrapped = self.wrap_message(&raw_message, frontend_config, width);
-
-        let mut wrapped_message_spans = vec![];
-
-        let mut start_vec = vec![
-            Span::styled(
-                raw_message_wrapped[0][..time_sent.len()].to_string(),
-                date_theme,
-            ),
+        let mut first_row = vec![
+            // Datetime
+            Span::styled(time_sent, datetime_theme),
             Span::raw(" "),
-            Span::styled(
-                self.author.clone(),
-                if self.system {
-                    SYSTEM_CHAT
-                } else {
-                    Style::default().fg(self.hash_username(&frontend_config.palette))
-                },
-            ),
+            // Author
+            Span::styled(&self.author, author_theme),
             Span::raw(": "),
         ];
 
-        start_vec.extend(if let Some((_, indices)) = &search {
-            // TODO: Possibility of crash due to `raw_message_start.len()` being out of range
-            raw_message_wrapped[0][raw_message_start.len()..]
-                .chars()
-                .enumerate()
-                .map(|(i, c)| {
-                    if indices.contains(&i) {
-                        Span::styled(
-                            c.to_string(),
-                            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                        )
-                    } else {
-                        Span::raw(c.to_string())
-                    }
-                })
-                .collect::<Vec<Span>>()
-        } else if let Some((range, style)) = &highlighter {
-            raw_message_wrapped[0][raw_message_start.len()..]
-                .chars()
-                .enumerate()
-                .map(|(i, c)| {
-                    let s = c.to_string();
-                    if range.contains(&i) {
-                        Span::styled(s, *style)
-                    } else {
-                        Span::raw(s)
-                    }
-                })
-                .collect::<Vec<Span>>()
-        } else {
-            vec![Span::raw(
-                raw_message_wrapped[0][raw_message_start.len()..].to_string(),
-            )]
-        });
+        let mut next_index = 0;
+        // Unwrapping is safe because of the empty check above
+        let mut first_line = lines.next().unwrap();
+        let first_line_msg = split_cow_in_place(&mut first_line, prefix_len - 1);
+        first_row.extend(highlight(
+            first_line_msg,
+            &mut next_index,
+            &search_highlight,
+            search_theme,
+            &username_highlight,
+            username_theme,
+        ));
 
-        wrapped_message_spans.push(Spans::from(start_vec));
-
-        if raw_message_wrapped.len() > 1 {
-            let mut index = raw_message_wrapped[0][raw_message_start.len()..].len();
-
-            // TODO: Fix odd search pattern where some words at the start of a new line won't be a result.
-            wrapped_message_spans.extend(if let Some((_, indices)) = search {
-                raw_message_wrapped[1..]
-                    .iter()
-                    .enumerate()
-                    .map(|(s_i, s)| {
-                        let spans = Spans::from(
-                            s.chars()
-                                .enumerate()
-                                .map(|(i, c)| {
-                                    if indices.contains(&(i + index + 1)) {
-                                        Span::styled(
-                                            c.to_string(),
-                                            Style::default()
-                                                .fg(Color::Red)
-                                                .add_modifier(Modifier::BOLD),
-                                        )
-                                    } else {
-                                        Span::raw(c.to_string())
-                                    }
-                                })
-                                .collect::<Vec<Span>>(),
-                        );
-
-                        index += s.len() * (s_i + 1);
-
-                        spans
-                    })
-                    .collect::<Vec<Spans>>()
-            } else if let Some((range, style)) = highlighter {
-                let mut index = raw_message_wrapped[0][raw_message_start.len()..].len();
-
-                raw_message_wrapped[1..]
-                    .iter()
-                    .enumerate()
-                    .map(|(s_i, s)| {
-                        let spans = Spans::from(
-                            s.chars()
-                                .enumerate()
-                                .map(|(i, c)| {
-                                    if range.contains(&(i + index + 1)) {
-                                        Span::styled(c.to_string(), style)
-                                    } else {
-                                        Span::raw(c.to_string())
-                                    }
-                                })
-                                .collect::<Vec<Span>>(),
-                        );
-
-                        index += s.len() * (s_i + 1);
-
-                        spans
-                    })
-                    .collect::<Vec<Spans>>()
-            } else {
-                raw_message_wrapped[1..]
-                    .iter()
-                    .map(|s| Spans::from(vec![Span::raw(s.to_string())]))
-                    .collect::<Vec<Spans>>()
-            });
-        }
-
-        wrapped_message_spans
+        let mut rows = vec![Spans(first_row)];
+        rows.extend(lines.map(|line| {
+            Spans(highlight(
+                line,
+                &mut next_index,
+                &search_highlight,
+                search_theme,
+                &username_highlight,
+                username_theme,
+            ))
+        }));
+        rows
     }
 }
 

@@ -125,8 +125,8 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
             continue;
         }
 
-        let username_highlight = if config.frontend.username_highlight {
-            Some(config.twitch.username.clone())
+        let username_highlight: Option<&str> = if config.frontend.username_highlight {
+            Some(&config.twitch.username)
         } else {
             None
         };
@@ -138,11 +138,11 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
                 None
             } else {
                 match &app.get_state() {
-                    State::MessageSearch => Some(app.input_buffer.to_string()),
+                    State::MessageSearch => Some(app.input_buffer.as_str()),
                     _ => None,
                 }
             },
-            &username_highlight,
+            username_highlight,
         );
 
         for span in spans.iter().rev() {
