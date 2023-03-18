@@ -11,6 +11,7 @@
     clippy::too_many_lines
 )]
 
+use crate::emotes::kitty::get_terminal_cell_size;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::info;
@@ -19,6 +20,7 @@ use tokio::sync::mpsc;
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
 mod commands;
+mod emotes;
 mod handlers;
 mod terminal;
 mod twitch;
@@ -70,8 +72,21 @@ async fn main() -> Result<()> {
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = mpsc::channel(100);
+    let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
     info!("Started tokio communication channels.");
+
+    if emotes::emotes_enabled(&config.frontend) {
+        let cloned_config = config.clone();
+
+        // We need to probe the terminal for it's size before starting the tui,
+        // as writing on stdout on a different thread can interfere.
+        let cell_size = get_terminal_cell_size().unwrap();
+
+        tokio::task::spawn(async move {
+            emotes::emotes_setup(cloned_config, emotes_tx, cell_size).await;
+        });
+    }
 
     let cloned_config = config.clone();
 
@@ -79,7 +94,7 @@ async fn main() -> Result<()> {
         twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
     });
 
-    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx).await;
+    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, emotes_rx).await;
 
     std::process::exit(0)
 }

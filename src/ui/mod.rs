@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_lines)]
 
+use std::collections::HashMap;
 use std::{collections::VecDeque, vec};
 
 use chrono::offset::Local;
@@ -11,7 +12,9 @@ use tui::{
     text::{Span, Spans, Text},
     widgets::{Block, Borders, List, ListItem},
 };
+use unicode_width::UnicodeWidthStr;
 
+use crate::emotes::{calculate_emote_position, delete_emotes, emotes_enabled, show_emotes};
 use crate::{
     handlers::{
         app::{App, State},
@@ -73,7 +76,12 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
     }
 }
 
-pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
+pub fn draw_ui<T: Backend>(
+    frame: &mut Frame<T>,
+    app: &mut App,
+    config: &CompleteConfig,
+    displayed_emotes: &mut HashMap<(u32, u32), (u32, u32)>,
+) {
     // Constraints for different states of the application.
     // Modify this in order to create new layouts.
     let mut v_constraints = match app.get_state() {
@@ -93,75 +101,14 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
 
     let layout = LayoutAttributes::new(v_constraints, v_chunks.to_vec());
 
-    let general_chunk_height = layout.first_chunk().height as usize - 2;
-
-    app.messages.truncate(config.terminal.maximum_messages);
-
-    // Accounting for not all heights of rows to be the same due to text wrapping,
-    // so extra space needs to be used in order to scroll correctly.
-    let mut total_row_height: usize = 0;
-
-    let mut messages: VecDeque<Spans> = VecDeque::new();
-
-    let mut scroll_offset = app.scrolling.get_offset();
-
-    // Horizontal chunks represents the list within the main chat window.
-    let h_chunk = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(1)])
-        .split(frame.size());
-
-    let message_chunk_width = h_chunk[0].width as usize;
-
-    'outer: for data in &app.messages {
-        if app.filters.contaminated(data.payload.clone().as_str()) {
-            continue;
+    if app.messages.len() > config.terminal.maximum_messages {
+        for data in app.messages.range(config.terminal.maximum_messages..) {
+            delete_emotes(&data.emotes, displayed_emotes, data.payload.width());
         }
-
-        // Offsetting of messages for scrolling through said messages
-        if scroll_offset > 0 {
-            scroll_offset -= 1;
-
-            continue;
-        }
-
-        let username_highlight: Option<&str> = if config.frontend.username_highlight {
-            Some(&config.twitch.username)
-        } else {
-            None
-        };
-
-        let spans = data.to_spans(
-            &config.frontend,
-            message_chunk_width,
-            if app.input_buffer.is_empty() {
-                None
-            } else {
-                match &app.get_state() {
-                    State::MessageSearch => Some(app.input_buffer.as_str()),
-                    _ => None,
-                }
-            },
-            username_highlight,
-        );
-
-        for span in spans.iter().rev() {
-            if total_row_height < general_chunk_height {
-                messages.push_front(span.clone());
-
-                total_row_height += 1;
-            } else {
-                break 'outer;
-            }
-        }
+        app.messages.truncate(config.terminal.maximum_messages);
     }
 
-    // Padding with empty rows so chat can go from bottom to top.
-    if general_chunk_height > total_row_height {
-        for _ in 0..(general_chunk_height - total_row_height) {
-            messages.push_front(Spans::from(vec![Span::raw("")]));
-        }
-    }
+    let messages = get_messages(frame, app, config, displayed_emotes, &layout);
 
     let current_time = Local::now()
         .format(&config.frontend.date_format)
@@ -243,4 +190,120 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         }
         State::Normal => {}
     }
+}
+
+fn get_messages<'a, T: Backend>(
+    frame: &mut Frame<T>,
+    app: &'a App,
+    config: &CompleteConfig,
+    displayed_emotes: &mut HashMap<(u32, u32), (u32, u32)>,
+    layout: &LayoutAttributes,
+) -> VecDeque<Spans<'a>> {
+    // Accounting for not all heights of rows to be the same due to text wrapping,
+    // so extra space needs to be used in order to scroll correctly.
+    let mut total_row_height: usize = 0;
+
+    let mut messages = VecDeque::new();
+
+    let mut scroll_offset = app.scrolling.get_offset();
+
+    let general_chunk_height = layout.first_chunk().height as usize - 2;
+
+    // Horizontal chunks represents the list within the main chat window.
+    let h_chunk = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(1)])
+        .split(frame.size());
+
+    let message_chunk_width = h_chunk[0].width as usize;
+
+    'outer: for data in &app.messages {
+        if app.filters.contaminated(data.payload.clone().as_str()) {
+            continue;
+        }
+
+        // Offsetting of messages for scrolling through said messages
+        if scroll_offset > 0 {
+            scroll_offset -= 1;
+            delete_emotes(&data.emotes, displayed_emotes, data.payload.width());
+
+            continue;
+        }
+
+        let username_highlight: Option<&str> = if config.frontend.username_highlight {
+            Some(&config.twitch.username)
+        } else {
+            None
+        };
+
+        let spans = data.to_spans(
+            &config.frontend,
+            message_chunk_width,
+            if app.input_buffer.is_empty() {
+                None
+            } else {
+                match app.get_state() {
+                    State::MessageSearch => Some(app.input_buffer.as_str()),
+                    _ => None,
+                }
+            },
+            username_highlight,
+        );
+
+        let mut payload = " ".to_string();
+        payload.push_str(&data.payload);
+
+        for span in spans.iter().rev() {
+            let mut span = span.clone();
+
+            if total_row_height < general_chunk_height {
+                if emotes_enabled(&config.frontend) {
+                    if let Ok((span_width, span_end)) =
+                        calculate_emote_position(&span, &mut payload)
+                    {
+                        if let Some(last_span) = span.0.last_mut() {
+                            show_emotes(
+                                &data.emotes,
+                                span_width + config.frontend.margin as usize + 1
+                                    - last_span.content.width(),
+                                payload.width(),
+                                span_end,
+                                general_chunk_height - total_row_height,
+                                last_span,
+                                displayed_emotes,
+                            );
+                        }
+                    }
+                }
+
+                messages.push_front(span);
+                total_row_height += 1;
+            } else {
+                if !emotes_enabled(&config.frontend) {
+                    break 'outer;
+                }
+
+                // If the current message already had all its emotes deleted, the following messages should
+                // also have had their emotes deleted
+                delete_emotes(&data.emotes, displayed_emotes, payload.width());
+                if !data.emotes.is_empty()
+                    && !data
+                        .emotes
+                        .iter()
+                        .all(|x| !displayed_emotes.contains_key(&x.kitty_id))
+                {
+                    break 'outer;
+                }
+            }
+        }
+    }
+
+    // Padding with empty rows so chat can go from bottom to top.
+    if general_chunk_height > total_row_height {
+        for _ in 0..(general_chunk_height - total_row_height) {
+            messages.push_front(Spans::from(vec![Span::raw("")]));
+        }
+    }
+
+    messages
 }

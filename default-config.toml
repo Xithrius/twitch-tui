@@ -7,6 +7,10 @@ channel = ""
 server = "irc.chat.twitch.tv"
 # OAuth token that authenticates you into Twitch. Acquired through https://twitchapps.com/tmi/.
 token = ""
+# API Token used to download emotes. Acquired throught https://twitchtokengenerator.com.
+api = ""
+# Client-Id used to authenticate with the api. Acquired throught https://twitchtokengenerator.com.
+id = ""
 
 [terminal]
 # The delay in milliseconds between terminal updates.
@@ -55,3 +59,9 @@ cursor_shape = "block"
 blinking_cursor = false
 # If the scrolling should be inverted.
 inverted_scrolling = false
+# Show twitch emotes
+twitch_emotes = false
+# Show betterttv emotes
+betterttv_emotes = false
+# Show 7tv emotes
+seventv_emotes = false

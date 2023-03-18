@@ -11,6 +11,7 @@ use std::{
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::emotes::kitty;
 use crate::{
     handlers::{
         app::State,
@@ -20,6 +21,7 @@ use crate::{
 };
 
 use crate::handlers::interactive::interactive_config;
+use crate::utils::pathing::cache_path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
@@ -47,6 +49,10 @@ pub struct TwitchConfig {
     pub server: String,
     /// The authentication token for the IRC.
     pub token: Option<String>,
+    /// The authentication token for the api
+    pub api: Option<String>,
+    /// The Client-Id for the api
+    pub id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -111,6 +117,12 @@ pub struct FrontendConfig {
     pub blinking_cursor: bool,
     /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
+    /// If twitch emotes should be displayed (requires kitty terminal)
+    pub twitch_emotes: bool,
+    /// If betterttv emotes should be displayed (requires kitty terminal)
+    pub betterttv_emotes: bool,
+    /// If 7tv emotes should be displayed (requires kitty terminal)
+    pub seventv_emotes: bool,
 }
 
 impl Default for TwitchConfig {
@@ -120,6 +132,8 @@ impl Default for TwitchConfig {
             channel: String::new(),
             server: "irc.chat.twitch.tv".to_string(),
             token: None,
+            api: None,
+            id: None,
         }
     }
 }
@@ -152,6 +166,9 @@ impl Default for FrontendConfig {
             cursor_shape: CursorType::default(),
             blinking_cursor: false,
             inverted_scrolling: false,
+            twitch_emotes: false,
+            betterttv_emotes: false,
+            seventv_emotes: false,
         }
     }
 }
@@ -247,6 +264,13 @@ fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
 
 impl CompleteConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
+        let path_str = cache_path("");
+
+        let p = Path::new(&path_str);
+        if !p.exists() {
+            create_dir_all(p).unwrap();
+        }
+
         let path_str = config_path("config.toml");
 
         let p = Path::new(&path_str);
@@ -281,6 +305,20 @@ impl CompleteConfig {
 
                 if t.username.is_empty() || t.channel.is_empty() || check_token.is_empty() {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
+                }
+
+                let check_id = t.id.as_ref().map_or("", |t| t);
+                let check_api = t.api.as_ref().map_or("", |t| t);
+                if config.frontend.twitch_emotes
+                    || config.frontend.betterttv_emotes
+                    || config.frontend.seventv_emotes
+                {
+                    if !kitty::support_kitty().unwrap_or(false) {
+                        bail!("This terminal does not support the graphics protocol, please use a terminal such as kitty or wezterm, or disable emotes.")
+                    }
+                    if check_id.is_empty() || check_api.is_empty() {
+                        bail!("Twitch config section is missing one or more of the following: id, api. They are needed to enable emotes.");
+                    }
                 }
             }
 

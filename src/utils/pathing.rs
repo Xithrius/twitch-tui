@@ -1,3 +1,7 @@
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+
 const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 
 pub fn config_path(file: &str) -> String {
@@ -16,6 +20,41 @@ pub fn config_path(file: &str) -> String {
         ),
         _ => unimplemented!(),
     }
+}
+
+pub fn cache_path(file: &str) -> String {
+    match std::env::consts::OS {
+        "linux" | "macos" => format!(
+            "{}/.cache/{}/{}",
+            std::env::var("HOME").unwrap(),
+            BINARY_NAME,
+            file
+        ),
+        "windows" => format!(
+            "{}\\{}\\{}\\{}",
+            std::env::var("APPDATA").unwrap(),
+            BINARY_NAME,
+            "cache",
+            file
+        ),
+        _ => unimplemented!(),
+    }
+}
+
+pub fn create_temp_file(prefix: &str) -> Result<(File, PathBuf), Box<dyn std::error::Error>> {
+    let (tempfile, pathbuf) = tempfile::Builder::new()
+        .prefix(prefix)
+        .rand_bytes(5)
+        .tempfile()?
+        .keep()?;
+
+    Ok((tempfile, pathbuf))
+}
+
+pub fn save_in_temp_file(buffer: &[u8], file: &mut File) -> Result<(), Box<dyn std::error::Error>> {
+    file.write_all(buffer)?;
+    file.flush()?;
+    Ok(())
 }
 
 #[cfg(test)]

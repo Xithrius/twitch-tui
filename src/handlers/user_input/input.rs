@@ -2,6 +2,7 @@ use regex::Regex;
 use rustyline::{At, Word};
 use tokio::sync::mpsc::Sender;
 
+use crate::emotes::Emotes;
 use crate::{
     handlers::{
         app::{App, State},
@@ -40,7 +41,7 @@ impl<'a, 'b> UserActionAttributes<'a, 'b> {
     }
 }
 
-async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
+async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>, emotes: &mut Emotes) {
     let UserActionAttributes {
         app,
         config,
@@ -59,10 +60,13 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
                 return;
             }
 
-            app.messages.push_front(DataBuilder::user(
+            let mut message = DataBuilder::user(
                 config.twitch.username.to_string(),
                 input_message.to_string(),
-            ));
+            );
+            message.parse_emotes(emotes);
+
+            app.messages.push_front(message);
 
             tx.send(TwitchAction::Privmsg(input_message.to_string()))
                 .await
@@ -111,7 +115,10 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
     }
 }
 
-async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>) {
+async fn handle_insert_type_movements(
+    action: &mut UserActionAttributes<'_, '_>,
+    emotes: &mut Emotes,
+) {
     let UserActionAttributes {
         app,
         config: _,
@@ -174,7 +181,7 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
                     .update(suggestion_buffer.as_str(), suggestion_buffer.len());
             }
         }
-        Key::Enter => handle_insert_enter_key(action).await,
+        Key::Enter => handle_insert_enter_key(action, emotes).await,
         Key::Char(c) => {
             input_buffer.insert(*c, 1);
         }
@@ -220,6 +227,7 @@ pub async fn handle_stateful_user_input(
     app: &mut App,
     config: &mut CompleteConfig,
     tx: Sender<TwitchAction>,
+    emotes: &mut Emotes,
 ) -> Option<TerminalAction> {
     if let Some(Event::Input(key)) = events.next().await {
         handle_user_scroll(app, key);
@@ -228,7 +236,7 @@ pub async fn handle_stateful_user_input(
             State::Insert | State::ChannelSwitch | State::MessageSearch => {
                 let mut action = UserActionAttributes::new(app, config, tx, key);
 
-                handle_insert_type_movements(&mut action).await;
+                handle_insert_type_movements(&mut action, emotes).await;
             }
             _ => match key {
                 Key::Char('c') => {

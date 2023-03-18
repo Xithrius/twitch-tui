@@ -3,11 +3,14 @@ use std::{borrow::Cow, string::ToString};
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
+use log::warn;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
 };
+use unicode_width::UnicodeWidthStr;
 
+use crate::emotes::{load_emote, Emotes, LoadedEmote};
 use crate::{
     handlers::config::{FrontendConfig, Palette, Theme},
     utils::{
@@ -24,11 +27,21 @@ lazy_static! {
 }
 
 #[derive(Debug, Clone)]
+pub struct EmoteData {
+    pub name: String,
+    pub string_position: usize,
+    pub kitty_id: (u32, u32),
+    pub width: u32,
+    pub offset: u32,
+}
+
+#[derive(Debug, Clone)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
     pub system: bool,
     pub payload: String,
+    pub emotes: Vec<EmoteData>,
 }
 
 impl MessageData {
@@ -38,6 +51,7 @@ impl MessageData {
             author,
             system,
             payload,
+            emotes: vec![],
         }
     }
 
@@ -198,6 +212,39 @@ impl MessageData {
         }));
 
         rows
+    }
+
+    pub fn parse_emotes(&mut self, emotes: &mut Emotes) {
+        let mut words: Vec<String> = self.payload.split(' ').map(ToString::to_string).collect();
+
+        let mut position = 1;
+        for word in &mut words {
+            if let Some(filename) = emotes.emotes.get(word) {
+                match load_emote(word, filename, &mut emotes.loaded, emotes.cell_size) {
+                    Ok(LoadedEmote {
+                        hash,
+                        n,
+                        width,
+                        offset,
+                    }) => {
+                        self.emotes.push(EmoteData {
+                            name: word.clone(),
+                            string_position: position,
+                            kitty_id: (hash, n),
+                            width,
+                            offset,
+                        });
+                        *word = "a".repeat(width as usize);
+                    }
+                    Err(err) => {
+                        emotes.emotes.remove(word);
+                        warn!("Unable to load emote {word}: {err:?}");
+                    }
+                }
+            }
+            position += word.width() + 1;
+        }
+        self.payload = words.join(" ");
     }
 }
 
