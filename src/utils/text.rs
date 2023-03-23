@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use rustyline::line_buffer::LineBuffer;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
@@ -11,6 +13,21 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
         .take_while(|(offset, _)| *offset != line_buffer.pos())
         .map(|(_, cluster)| cluster.width())
         .sum()
+}
+
+pub fn split_cow_in_place<'a>(cow: &mut Cow<'a, str>, mid: usize) -> Cow<'a, str> {
+    match *cow {
+        Cow::Owned(ref mut s) => {
+            let s2 = s[mid..].to_string();
+            s.truncate(mid);
+            Cow::Owned(s2)
+        }
+        Cow::Borrowed(s) => {
+            let (s1, s2) = s.split_at(mid);
+            *cow = Cow::Borrowed(s1);
+            Cow::Borrowed(s2)
+        }
+    }
 }
 
 pub enum TitleStyle<'a> {
