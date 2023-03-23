@@ -142,8 +142,8 @@ impl MessageData {
             .format(&frontend_config.date_format)
             .to_string();
 
-        // Add 3 for the " " and ": "
-        let prefix_len = time_sent.len() + self.author.len() + 3;
+        // Add 2 for the " " and ":"
+        let prefix_len = time_sent.len() + self.author.len() + 2;
 
         // Width of the window - window margin on both sides
         let wrap_limit = {
@@ -166,13 +166,15 @@ impl MessageData {
             Span::raw(" "),
             // Author
             Span::styled(&self.author, author_theme),
-            Span::raw(": "),
+            Span::raw(":"),
         ];
 
         let mut next_index = 0;
+
         // Unwrapping is safe because of the empty check above
         let mut first_line = lines.next().unwrap();
         let first_line_msg = split_cow_in_place(&mut first_line, prefix_len - 1);
+
         first_row.extend(highlight(
             first_line_msg,
             &mut next_index,
@@ -183,6 +185,7 @@ impl MessageData {
         ));
 
         let mut rows = vec![Spans(first_row)];
+
         rows.extend(lines.map(|line| {
             Spans(highlight(
                 line,
@@ -193,6 +196,7 @@ impl MessageData {
                 username_theme,
             ))
         }));
+
         rows
     }
 }
