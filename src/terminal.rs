@@ -15,7 +15,7 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::{draw_ui, error::draw_error_ui},
+    ui::{components::dashboard::start::render_dashboard_ui, draw_ui, error::draw_error_ui},
 };
 
 pub async fn ui_driver(
@@ -57,20 +57,21 @@ pub async fn ui_driver(
 
         terminal
             .draw(|frame| {
-                let size = frame.size();
+                // let size = frame.size();
 
-                if size.height < 10 || size.width < 60 {
-                    draw_error_ui(
-                        frame,
-                        &[
-                            "Window to small!",
-                            "Must allow for at least 60x10.",
-                            "Restart and resize.",
-                        ],
-                    );
-                } else {
-                    draw_ui(frame, &mut app, &config);
-                }
+                // if size.height < 10 || size.width < 60 {
+                //     draw_error_ui(
+                //         frame,
+                //         &[
+                //             "Window to small!",
+                //             "Must allow for at least 60x10.",
+                //             "Restart and resize.",
+                //         ],
+                //     );
+                // } else {
+                // draw_ui(frame, &mut app, &config);
+                render_dashboard_ui(frame);
+                // }
             })
             .unwrap();
 
