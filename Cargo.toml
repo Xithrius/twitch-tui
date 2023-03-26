@@ -14,25 +14,25 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 crossterm = "0.26.1"
-tui = { version = "0.19.0", default-features = false, features = [ "crossterm" ] }
-tokio = { version = "1.24.1", features = [ "rt", "macros", "rt-multi-thread" ] }
-clap = { version = "4.1.6", features = [ "derive", "cargo" ] }
-serde = { version = "1.0.155", features = [ "derive" ] }
-serde_json = "1.0.93"
+ratatui = { version = "0.20.1", default-features = false, features = [ "crossterm" ] }
+tokio = { version = "1.26.0", features = [ "rt", "macros", "rt-multi-thread" ] }
+clap = { version = "4.1.13", features = [ "derive", "cargo" ] }
+serde = { version = "1.0.158", features = [ "derive" ] }
+serde_json = "1.0.94"
 unicode-width = "0.1.10"
 unicode-segmentation = "1.10.1"
 chrono = "0.4.24"
 irc = "0.15.0"
-futures = "0.3.26"
-toml = "0.7.2"
+futures = "0.3.27"
+toml = "0.7.3"
 textwrap = "0.16.0"
 rustyline = "10.1.1"
 lazy_static = "1.4.0"
 fuzzy-matcher = "0.3.7"
-regex = "1.7.0"
+regex = "1.7.3"
 color-eyre = "0.6.2"
 log = "0.4.17"
-fern = "0.6.1"
+fern = "0.6.2"
 dialoguer = { version = "0.10.3", default-features = false }
 
 [[bin]]

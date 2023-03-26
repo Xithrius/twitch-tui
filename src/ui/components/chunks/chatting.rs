@@ -1,4 +1,4 @@
-use tui::backend::Backend;
+use ratatui::backend::Backend;
 
 use crate::{
     ui::{

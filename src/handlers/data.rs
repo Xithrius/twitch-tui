@@ -3,7 +3,7 @@ use std::{borrow::Cow, string::ToString};
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use lazy_static::lazy_static;
-use tui::{
+use ratatui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Span, Spans},
 };

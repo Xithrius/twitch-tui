@@ -1,4 +1,4 @@
-use tui::{
+use ratatui::{
     backend::Backend,
     style::{Color, Modifier, Style},
     symbols::DOT,

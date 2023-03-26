@@ -1,4 +1,4 @@
-use tui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 
 pub const BORDER_NAME_DARK: Style = Style {
     fg: Some(Color::White),
