@@ -32,7 +32,7 @@ fuzzy-matcher = "0.3.7"
 regex = "1.7.0"
 color-eyre = "0.6.2"
 log = "0.4.17"
-fern = "0.6.1"
+fern = "0.6.2"
 dialoguer = { version = "0.10.3", default-features = false }
 
 [[bin]]
