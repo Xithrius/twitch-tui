@@ -91,7 +91,7 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         .constraints(v_constraints.as_ref())
         .split(frame.size());
 
-    let layout = LayoutAttributes::new(v_constraints, v_chunks);
+    let layout = LayoutAttributes::new(v_constraints, v_chunks.to_vec());
 
     let general_chunk_height = layout.first_chunk().height as usize - 2;
 
