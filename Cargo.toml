@@ -39,6 +39,7 @@ json = "0.12.4"
 image = "0.24.5"
 base64 = "0.21.0"
 tempfile = "3.4.0"
+anyhow = "1.0.70"
 
 [[bin]]
 bench = false

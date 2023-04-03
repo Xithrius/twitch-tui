@@ -2,44 +2,17 @@ use crate::emotes::downloader::get_emotes;
 use crate::handlers::config::{CompleteConfig, FrontendConfig};
 use crate::handlers::data::EmoteData;
 use crate::utils::pathing::cache_path;
+use anyhow::Result;
 use log::{info, warn};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use tokio::sync::mpsc::Sender;
-use tui::text::{Span, Spans};
+use tui::text::Span;
 use unicode_width::UnicodeWidthStr;
 
 mod downloader;
 pub mod kitty;
-
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-#[derive(Debug)]
-pub enum Error {
-    Reqwest(reqwest::Error),
-    Json(json::JsonError),
-    Io(std::io::Error),
-    Str(String),
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(src: reqwest::Error) -> Self {
-        Self::Reqwest(src)
-    }
-}
-
-impl From<json::JsonError> for Error {
-    fn from(src: json::JsonError) -> Self {
-        Self::Json(src)
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(src: std::io::Error) -> Self {
-        Self::Io(src)
-    }
-}
 
 #[derive(Debug, Copy, Clone)]
 pub struct LoadedEmote {
@@ -88,17 +61,18 @@ pub async fn emotes_setup(
     tx: Sender<Emotes>,
     terminal_cell_size: (u32, u32),
 ) {
-    if !emotes_enabled(&config.frontend) {
-        drop(tx);
-        return;
-    }
     info!("Starting emotes download.");
-    if let Ok(emotes) = Emotes::new(&config, terminal_cell_size).await {
-        info!("Emotes downloaded.");
-        tx.send(emotes).await.unwrap();
+    match Emotes::new(&config, terminal_cell_size).await {
+        Ok(emotes) => {
+            info!("Emotes downloaded.");
+            if let Err(e) = tx.send(emotes).await {
+                warn!("Unable to send emotes to main thread: {e}");
+            }
+        }
+        Err(e) => {
+            warn!("Unable to download emotes: {e}");
+        }
     }
-
-    drop(tx);
 }
 
 pub fn show_emotes(
@@ -110,18 +84,16 @@ pub fn show_emotes(
     span: &mut Span,
     displayed: &mut HashMap<(u32, u32), (u32, u32)>,
 ) {
-    if emotes.is_empty() {
-        return;
-    }
-
     let mut words: Vec<String> = span.content.split(' ').map(ToString::to_string).collect();
     let mut position = 0;
     let mut word_idx = 0;
 
     for emote in emotes {
+        // Emote is on a further row, we can exit now
         if emote.string_position > span_end_position {
             break;
         }
+        // Emote is on a previous row
         if emote.string_position < previous_span_width {
             continue;
         }
@@ -177,7 +149,7 @@ pub fn load_emote(
     filename: &str,
     loaded_emotes: &mut HashMap<String, LoadedEmote>,
     cell_size: (u32, u32),
-) -> Result<LoadedEmote, Box<dyn std::error::Error>> {
+) -> Result<LoadedEmote> {
     if let Some(emote) = loaded_emotes.get_mut(word) {
         emote.n += 1;
         Ok(*emote)
@@ -214,24 +186,4 @@ pub fn reload_emotes(emotes: &Emotes) {
             }
         }
     }
-}
-
-pub fn calculate_emote_position(
-    span: &Spans,
-    payload: &mut String,
-) -> Result<(usize, usize), Error> {
-    let span_width = span.0.iter().map(|s| s.content.width()).sum::<usize>();
-
-    if let Some(last_span) = span.0.last() {
-        let span_end = payload.width() - 1;
-
-        if let Some(str) = payload
-            .trim_end()
-            .strip_suffix(last_span.content.trim_end())
-        {
-            *payload = str.to_string();
-            return Ok((span_width, span_end));
-        }
-    }
-    Err(Error::Str("Error calculating emote position.".to_string()))
 }

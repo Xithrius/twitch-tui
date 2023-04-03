@@ -237,8 +237,8 @@ impl MessageData {
                         *word = "a".repeat(width as usize);
                     }
                     Err(err) => {
+                        warn!("Unable to load emote {word} ({filename}): {err}");
                         emotes.emotes.remove(word);
-                        warn!("Unable to load emote {word}: {err:?}");
                     }
                 }
             }

@@ -14,7 +14,7 @@
 use crate::emotes::kitty::get_terminal_cell_size;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
-use log::info;
+use log::{info, warn};
 use tokio::sync::mpsc;
 
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
@@ -81,11 +81,16 @@ async fn main() -> Result<()> {
 
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
-        let cell_size = get_terminal_cell_size().unwrap();
-
-        tokio::task::spawn(async move {
-            emotes::emotes_setup(cloned_config, emotes_tx, cell_size).await;
-        });
+        match get_terminal_cell_size() {
+            Ok(cell_size) => {
+                tokio::task::spawn(async move {
+                    emotes::emotes_setup(cloned_config, emotes_tx, cell_size).await;
+                });
+            }
+            Err(e) => {
+                warn!("Unable to query terminal for it's dimensions, disabling emotes. {e}");
+            }
+        }
     }
 
     let cloned_config = config.clone();

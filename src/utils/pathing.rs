@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -41,7 +42,7 @@ pub fn cache_path(file: &str) -> String {
     }
 }
 
-pub fn create_temp_file(prefix: &str) -> Result<(File, PathBuf), Box<dyn std::error::Error>> {
+pub fn create_temp_file(prefix: &str) -> Result<(File, PathBuf)> {
     let (tempfile, pathbuf) = tempfile::Builder::new()
         .prefix(prefix)
         .rand_bytes(5)
@@ -51,7 +52,7 @@ pub fn create_temp_file(prefix: &str) -> Result<(File, PathBuf), Box<dyn std::er
     Ok((tempfile, pathbuf))
 }
 
-pub fn save_in_temp_file(buffer: &[u8], file: &mut File) -> Result<(), Box<dyn std::error::Error>> {
+pub fn save_in_temp_file(buffer: &[u8], file: &mut File) -> Result<()> {
     file.write_all(buffer)?;
     file.flush()?;
     Ok(())

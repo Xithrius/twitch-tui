@@ -11,7 +11,7 @@ use std::{
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::emotes::kitty;
+use crate::emotes::{emotes_enabled, kitty};
 use crate::{
     handlers::{
         app::State,
@@ -309,12 +309,10 @@ impl CompleteConfig {
 
                 let check_id = t.id.as_ref().map_or("", |t| t);
                 let check_api = t.api.as_ref().map_or("", |t| t);
-                if config.frontend.twitch_emotes
-                    || config.frontend.betterttv_emotes
-                    || config.frontend.seventv_emotes
-                {
+
+                if emotes_enabled(&config.frontend) {
                     if !kitty::support_kitty().unwrap_or(false) {
-                        bail!("This terminal does not support the graphics protocol, please use a terminal such as kitty or wezterm, or disable emotes.")
+                        bail!("This terminal does not support the graphics protocol, please use a terminal such as Kitty or Wezterm, or disable emotes.")
                     }
                     if check_id.is_empty() || check_api.is_empty() {
                         bail!("Twitch config section is missing one or more of the following: id, api. They are needed to enable emotes.");

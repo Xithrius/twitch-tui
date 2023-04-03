@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::{collections::VecDeque, vec};
 
 use chrono::offset::Local;
+use log::warn;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -14,7 +15,7 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::emotes::{calculate_emote_position, delete_emotes, emotes_enabled, show_emotes};
+use crate::emotes::{delete_emotes, emotes_enabled, show_emotes};
 use crate::{
     handlers::{
         app::{App, State},
@@ -257,29 +258,36 @@ fn get_messages<'a, T: Backend>(
             let mut span = span.clone();
 
             if total_row_height < general_chunk_height {
-                if emotes_enabled(&config.frontend) {
-                    if let Ok((span_width, span_end)) =
-                        calculate_emote_position(&span, &mut payload)
-                    {
-                        if let Some(last_span) = span.0.last_mut() {
+                if !data.emotes.is_empty() {
+                    let span_width: usize = span.0.iter().map(|s| s.content.width()).sum();
+                    if let Some(last_span) = span.0.last_mut() {
+                        if let Some(p) = payload
+                            .trim_end()
+                            .strip_suffix(last_span.content.trim_end())
+                        {
                             show_emotes(
                                 &data.emotes,
                                 span_width + config.frontend.margin as usize + 1
                                     - last_span.content.width(),
-                                payload.width(),
-                                span_end,
+                                p.width(),
+                                payload.width() - 1,
                                 general_chunk_height - total_row_height,
                                 last_span,
                                 displayed_emotes,
                             );
+                            payload = p.to_string();
+                        } else {
+                            warn!("Could not find span content in payload");
                         }
+                    } else {
+                        warn!("Unable to display emote in empty span");
                     }
                 }
 
                 messages.push_front(span);
                 total_row_height += 1;
             } else {
-                if !emotes_enabled(&config.frontend) {
+                if !emotes_enabled(&config.frontend) || displayed_emotes.is_empty() {
                     break 'outer;
                 }
 

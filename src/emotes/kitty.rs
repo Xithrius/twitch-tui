@@ -1,5 +1,6 @@
 use crate::handlers::data::EmoteData;
 use crate::utils::pathing::{create_temp_file, save_in_temp_file};
+use anyhow::{anyhow, Context};
 use base64::Engine;
 use dialoguer::console::{Key, Term};
 use image::codecs::gif::GifDecoder;
@@ -9,15 +10,15 @@ use std::env;
 use std::fs::File;
 use std::io::{BufReader, Write};
 
-pub type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
-
 const KITTY_PREFIX: &str = "twt.tty-graphics-protocol.";
 const ESC: char = '\x1b';
 const PROTOCOL_START: &str = "\x1b_G";
 const PROTOCOL_END: &str = "\x1b\\";
 
+type Result<T = ()> = anyhow::Result<T>;
+
 fn query_terminal(command: &[u8]) -> Result<String> {
-    let c = *command.last().ok_or("")? as char;
+    let c = *command.last().context("Command is empty")? as char;
     let mut stdout = Term::stdout();
     stdout.write_all(command)?;
     stdout.flush()?;
@@ -43,21 +44,23 @@ fn query_terminal(command: &[u8]) -> Result<String> {
 
 pub fn get_terminal_cell_size() -> Result<(u32, u32)> {
     let mut res = query_terminal(format!("{ESC}[14t").as_bytes())?;
-    // Response is in format <height>;<width>t
+
+    // Response is the terminal size in pixels, with format <height>;<width>t
     res.pop();
     let mut values = res.split(';');
-    let height = values
+    let height_px = values
         .next()
-        .ok_or("Invalid response from terminal")?
+        .context("Invalid response from terminal")?
         .parse::<u32>()?;
-    let width = values
+    let width_px = values
         .next()
-        .ok_or("Invalid response from terminal")?
+        .context("Invalid response from terminal")?
         .parse::<u32>()?;
 
-    let size = crossterm::terminal::size()?;
+    // Size of terminal: (columns, rows)
+    let (ncols, nrows) = crossterm::terminal::size()?;
 
-    Ok((width / u32::from(size.0), height / u32::from(size.1)))
+    Ok((width_px / u32::from(ncols), height_px / u32::from(nrows)))
 }
 
 pub fn support_kitty() -> Result<bool> {
@@ -131,7 +134,7 @@ pub fn load(stdout: &mut impl Write, id: u32, path: &str) -> Result<(u32, u32)> 
 
     match image.format() {
         Some(ImageFormat::Gif) => load_animated(stdout, id, image),
-        Some(ImageFormat::WebP) => Err("WebP image format not supported, skipping...".into()),
+        Some(ImageFormat::WebP) => Err(anyhow!("WebP image format is not supported.")),
         Some(_) => {
             let image = image.decode()?.to_rgba8();
             let (width, height) = image.dimensions();
@@ -142,7 +145,7 @@ pub fn load(stdout: &mut impl Write, id: u32, path: &str) -> Result<(u32, u32)> 
             send_graphics_command(stdout, &command, pathbuf.to_str())?;
             Ok((width, height))
         }
-        None => Err("Could not guess image format, skipping...".into()),
+        None => Err(anyhow!("Could not guess image format.")),
     }
 }
 
