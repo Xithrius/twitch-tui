@@ -1,4 +1,4 @@
-use ratatui::{
+use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},

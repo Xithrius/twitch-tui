@@ -1,6 +1,6 @@
 use std::vec;
 
-use ratatui::{
+use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},

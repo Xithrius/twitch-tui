@@ -1,7 +1,7 @@
 use std::string::ToString;
 
-use ratatui::backend::Backend;
 use regex::Regex;
+use tui::backend::Backend;
 
 use crate::{
     ui::{

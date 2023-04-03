@@ -70,7 +70,7 @@ pub async fn ui_driver(
                 //     );
                 // } else {
                 // draw_ui(frame, &mut app, &config);
-                render_dashboard_ui(frame);
+                render_dashboard_ui(frame, &mut app, &config);
                 // }
             })
             .unwrap();

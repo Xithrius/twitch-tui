@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use ratatui::{style::Style, text::Span};
 use rustyline::line_buffer::LineBuffer;
+use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -78,7 +78,7 @@ pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String
 
 #[cfg(test)]
 mod tests {
-    use ratatui::{
+    use tui::{
         style::{Color, Modifier},
         text::Spans,
     };
