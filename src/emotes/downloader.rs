@@ -214,11 +214,11 @@ async fn download_emotes(emotes: EmoteMap) -> HashMap<String, String> {
         .collect()
 }
 
-pub async fn get_emotes(config: &CompleteConfig) -> Result<HashMap<String, String>> {
+pub async fn get_emotes(config: &CompleteConfig, channel: &str) -> Result<HashMap<String, String>> {
     // Reuse the same client and headers for twitch requests
     let twitch_client = get_twitch_client(config)?;
 
-    let channel_id = get_channel_id(&twitch_client, &config.twitch.channel).await?;
+    let channel_id = get_channel_id(&twitch_client, channel).await?;
 
     let mut emotes = HashMap::new();
 

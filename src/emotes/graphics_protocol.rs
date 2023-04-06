@@ -266,16 +266,22 @@ impl Command for Display {
     }
 }
 
+#[derive(Eq, PartialEq)]
 pub struct Clear(pub u32, pub u32);
 
 impl Command for Clear {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        write!(
-            f,
-            gp!("a=d,d=i,i={id},p={pid},q=2;"),
-            id = self.0,
-            pid = self.1,
-        )
+        if *self == Self(0, 0) {
+            // Delete all images
+            write!(f, gp!("a=d,d=A,q=2;"))
+        } else {
+            write!(
+                f,
+                gp!("a=d,d=i,i={id},p={pid},q=2;"),
+                id = self.0,
+                pid = self.1,
+            )
+        }
     }
 
     #[cfg(windows)]

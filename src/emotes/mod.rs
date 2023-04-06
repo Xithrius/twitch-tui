@@ -2,12 +2,14 @@ use crate::emotes::downloader::get_emotes;
 use crate::emotes::graphics_protocol::Size;
 use crate::handlers::config::{CompleteConfig, FrontendConfig};
 use crate::handlers::data::EmoteData;
+use crate::twitch::TwitchAction;
 use crate::utils::pathing::cache_path;
 use anyhow::{Context, Result};
 use log::{info, warn};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
 use tui::text::Span;
 use unicode_width::UnicodeWidthStr;
@@ -42,8 +44,12 @@ pub struct Emotes {
 }
 
 impl Emotes {
-    pub async fn new(config: &CompleteConfig, cell_size: (u32, u32)) -> Result<Self> {
-        let emotes = get_emotes(config).await?;
+    pub async fn new(
+        config: &CompleteConfig,
+        channel: &str,
+        cell_size: (u32, u32),
+    ) -> Result<Self> {
+        let emotes = get_emotes(config, channel).await?;
 
         Ok(Self {
             emotes,
@@ -60,13 +66,14 @@ pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
     frontend.twitch_emotes || frontend.betterttv_emotes || frontend.seventv_emotes
 }
 
-pub async fn emotes_setup(
-    config: CompleteConfig,
-    tx: Sender<Emotes>,
+pub async fn send_emotes(
+    config: &CompleteConfig,
+    tx: &Sender<Emotes>,
+    channel: &str,
     terminal_cell_size: (u32, u32),
 ) {
     info!("Starting emotes download.");
-    match Emotes::new(&config, terminal_cell_size).await {
+    match Emotes::new(config, channel, terminal_cell_size).await {
         Ok(emotes) => {
             info!("Emotes downloaded.");
             if let Err(e) = tx.send(emotes).await {
@@ -75,6 +82,24 @@ pub async fn emotes_setup(
         }
         Err(e) => {
             warn!("Unable to download emotes: {e}");
+        }
+    }
+}
+
+pub async fn emotes(
+    config: CompleteConfig,
+    tx: Sender<Emotes>,
+    mut rx: Receiver<TwitchAction>,
+    terminal_cell_size: (u32, u32),
+) {
+    send_emotes(&config, &tx, &config.twitch.channel, terminal_cell_size).await;
+
+    loop {
+        match rx.recv().await {
+            Ok(TwitchAction::Join(channel)) => {
+                send_emotes(&config, &tx, &channel, terminal_cell_size).await;
+            }
+            Ok(_) | Err(_) => {}
         }
     }
 }
@@ -209,4 +234,12 @@ pub fn reload_emote(emotes: &mut Emotes, name: &str, hash: u32) -> Result<()> {
     graphics_protocol::command(graphics_protocol::Load::new(hash, &cache_path(filename))?)?;
     emotes.loaded.insert(hash);
     Ok(())
+}
+
+pub fn clear_emotes(emotes: &mut Emotes) {
+    graphics_protocol::command(graphics_protocol::Clear(0, 0)).unwrap_or_default();
+    emotes.emotes.clear();
+    emotes.loaded.clear();
+    emotes.info.clear();
+    emotes.displayed.clear();
 }

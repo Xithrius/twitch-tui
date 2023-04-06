@@ -1,6 +1,7 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::broadcast::Sender;
+use tokio::sync::mpsc::Receiver;
 use tui::layout::Rect;
 
 use crate::emotes::Emotes;

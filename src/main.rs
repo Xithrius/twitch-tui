@@ -15,7 +15,7 @@ use crate::emotes::graphics_protocol::get_terminal_cell_size;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
-use tokio::sync::mpsc;
+use tokio::sync::{broadcast, mpsc};
 
 use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
@@ -71,20 +71,21 @@ async fn main() -> Result<()> {
     let app = App::new(&config);
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
-    let (terminal_tx, twitch_rx) = mpsc::channel(100);
+    let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
     info!("Started tokio communication channels.");
 
     if emotes::emotes_enabled(&config.frontend) {
         let cloned_config = config.clone();
+        let twitch_rx = twitch_rx.resubscribe();
 
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
         match get_terminal_cell_size() {
             Ok(cell_size) => {
                 tokio::task::spawn(async move {
-                    emotes::emotes_setup(cloned_config, emotes_tx, cell_size).await;
+                    emotes::emotes(cloned_config, emotes_tx, twitch_rx, cell_size).await;
                 });
             }
             Err(e) => {
