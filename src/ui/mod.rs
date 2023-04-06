@@ -1,6 +1,5 @@
 #![allow(clippy::too_many_lines)]
 
-use std::collections::HashMap;
 use std::{collections::VecDeque, vec};
 
 use chrono::offset::Local;
@@ -15,7 +14,7 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::emotes::{delete_emotes, emotes_enabled, show_emotes};
+use crate::emotes::{delete_emotes, emotes_enabled, show_emotes, Emotes};
 use crate::{
     handlers::{
         app::{App, State},
@@ -81,7 +80,7 @@ pub fn draw_ui<T: Backend>(
     frame: &mut Frame<T>,
     app: &mut App,
     config: &CompleteConfig,
-    displayed_emotes: &mut HashMap<(u32, u32), (u32, u32)>,
+    emotes: &mut Emotes,
 ) {
     // Constraints for different states of the application.
     // Modify this in order to create new layouts.
@@ -104,12 +103,12 @@ pub fn draw_ui<T: Backend>(
 
     if app.messages.len() > config.terminal.maximum_messages {
         for data in app.messages.range(config.terminal.maximum_messages..) {
-            delete_emotes(&data.emotes, displayed_emotes, data.payload.width());
+            delete_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
         }
         app.messages.truncate(config.terminal.maximum_messages);
     }
 
-    let messages = get_messages(frame, app, config, displayed_emotes, &layout);
+    let messages = get_messages(frame, app, config, emotes, &layout);
 
     let current_time = Local::now()
         .format(&config.frontend.date_format)
@@ -197,7 +196,7 @@ fn get_messages<'a, T: Backend>(
     frame: &mut Frame<T>,
     app: &'a App,
     config: &CompleteConfig,
-    displayed_emotes: &mut HashMap<(u32, u32), (u32, u32)>,
+    emotes: &mut Emotes,
     layout: &LayoutAttributes,
 ) -> VecDeque<Spans<'a>> {
     // Accounting for not all heights of rows to be the same due to text wrapping,
@@ -226,7 +225,7 @@ fn get_messages<'a, T: Backend>(
         // Offsetting of messages for scrolling through said messages
         if scroll_offset > 0 {
             scroll_offset -= 1;
-            delete_emotes(&data.emotes, displayed_emotes, data.payload.width());
+            delete_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
 
             continue;
         }
@@ -265,7 +264,7 @@ fn get_messages<'a, T: Backend>(
                             .trim_end()
                             .strip_suffix(last_span.content.trim_end())
                         {
-                            show_emotes(
+                            if let Err(e) = show_emotes(
                                 &data.emotes,
                                 span_width + config.frontend.margin as usize + 1
                                     - last_span.content.width(),
@@ -273,8 +272,10 @@ fn get_messages<'a, T: Backend>(
                                 payload.width() - 1,
                                 general_chunk_height - total_row_height,
                                 last_span,
-                                displayed_emotes,
-                            );
+                                emotes,
+                            ) {
+                                warn!("Could not display emote: {e}");
+                            }
                             payload = p.to_string();
                         } else {
                             warn!("Could not find span content in payload");
@@ -287,18 +288,18 @@ fn get_messages<'a, T: Backend>(
                 messages.push_front(span);
                 total_row_height += 1;
             } else {
-                if !emotes_enabled(&config.frontend) || displayed_emotes.is_empty() {
+                if !emotes_enabled(&config.frontend) || emotes.displayed.is_empty() {
                     break 'outer;
                 }
 
                 // If the current message already had all its emotes deleted, the following messages should
                 // also have had their emotes deleted
-                delete_emotes(&data.emotes, displayed_emotes, payload.width());
+                delete_emotes(&data.emotes, &mut emotes.displayed, payload.width());
                 if !data.emotes.is_empty()
                     && !data
                         .emotes
                         .iter()
-                        .all(|x| !displayed_emotes.contains_key(&x.kitty_id))
+                        .all(|e| !emotes.displayed.contains_key(&(e.id, e.pid)))
                 {
                     break 'outer;
                 }

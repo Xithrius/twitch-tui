@@ -1,7 +1,8 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 
@@ -56,6 +57,20 @@ pub fn save_in_temp_file(buffer: &[u8], file: &mut File) -> Result<()> {
     file.write_all(buffer)?;
     file.flush()?;
     Ok(())
+}
+
+pub fn remove_temp_file(path: &Path) {
+    let _ = fs::remove_file(path);
+}
+
+pub fn pathbuf_try_to_string(pathbuf: &Path) -> Result<String> {
+    pathbuf.to_str().map_or_else(
+        || {
+            remove_temp_file(pathbuf);
+            Err(anyhow!("Could not convert pathbuf to string."))
+        },
+        |str| Ok(str.to_string()),
+    )
 }
 
 #[cfg(test)]

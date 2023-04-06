@@ -11,7 +11,7 @@
     clippy::too_many_lines
 )]
 
-use crate::emotes::kitty::get_terminal_cell_size;
+use crate::emotes::graphics_protocol::get_terminal_cell_size;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};

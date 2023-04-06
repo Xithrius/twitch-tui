@@ -3,7 +3,7 @@ use std::time::Duration;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tui::layout::Rect;
 
-use crate::emotes::{reload_emotes, Emotes};
+use crate::emotes::Emotes;
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     handlers::{
@@ -74,7 +74,8 @@ pub async fn ui_driver(
 
                 if size != terminal_size {
                     terminal_size = size;
-                    reload_emotes(&emotes);
+                    emotes.displayed.clear();
+                    emotes.loaded.clear();
                 }
 
                 if size.height < 10 || size.width < 60 {
@@ -87,7 +88,7 @@ pub async fn ui_driver(
                         ],
                     );
                 } else {
-                    draw_ui(frame, &mut app, &config, &mut emotes.displayed);
+                    draw_ui(frame, &mut app, &config, &mut emotes);
                 }
             })
             .unwrap();

@@ -30,9 +30,8 @@ lazy_static! {
 pub struct EmoteData {
     pub name: String,
     pub string_position: usize,
-    pub kitty_id: (u32, u32),
-    pub width: u32,
-    pub offset: u32,
+    pub id: u32,
+    pub pid: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -220,19 +219,19 @@ impl MessageData {
         let mut position = 1;
         for word in &mut words {
             if let Some(filename) = emotes.emotes.get(word) {
-                match load_emote(word, filename, &mut emotes.loaded, emotes.cell_size) {
-                    Ok(LoadedEmote {
-                        hash,
-                        n,
-                        width,
-                        offset,
-                    }) => {
+                match load_emote(
+                    word,
+                    filename,
+                    &mut emotes.info,
+                    &mut emotes.loaded,
+                    emotes.cell_size,
+                ) {
+                    Ok(LoadedEmote { hash, n, width, .. }) => {
                         self.emotes.push(EmoteData {
                             name: word.clone(),
                             string_position: position,
-                            kitty_id: (hash, n),
-                            width,
-                            offset,
+                            id: hash,
+                            pid: n,
                         });
                         *word = "a".repeat(width as usize);
                     }
