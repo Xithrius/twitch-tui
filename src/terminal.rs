@@ -6,7 +6,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     handlers::{
-        app::App,
+        app::{App, State},
         config::CompleteConfig,
         data::MessageData,
         user_input::{
@@ -15,7 +15,9 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::{components::dashboard::start::render_dashboard_ui, draw_ui, error::draw_error_ui},
+    ui::{
+        components::dashboard::start::render_dashboard_ui, error::render_error_ui, render_chat_ui,
+    },
 };
 
 pub async fn ui_driver(
@@ -41,6 +43,10 @@ pub async fn ui_driver(
     })
     .await;
 
+    if !app.storage.contains("channels", &config.twitch.channel) {
+        app.storage.add("channels", config.twitch.channel.clone());
+    }
+
     let mut terminal = init_terminal(&config.frontend);
 
     terminal.clear().unwrap();
@@ -57,21 +63,23 @@ pub async fn ui_driver(
 
         terminal
             .draw(|frame| {
-                // let size = frame.size();
+                let size = frame.size();
 
-                // if size.height < 10 || size.width < 60 {
-                //     draw_error_ui(
-                //         frame,
-                //         &[
-                //             "Window to small!",
-                //             "Must allow for at least 60x10.",
-                //             "Restart and resize.",
-                //         ],
-                //     );
-                // } else {
-                // draw_ui(frame, &mut app, &config);
-                render_dashboard_ui(frame, &mut app, &config);
-                // }
+                if size.height < 10 || size.width < 60 {
+                    render_error_ui(
+                        frame,
+                        &[
+                            "Window to small!",
+                            "Must allow for at least 60x10.",
+                            "Restart and resize.",
+                        ],
+                    );
+                } else {
+                    match app.get_state() {
+                        State::Start => render_dashboard_ui(frame, &mut app, &config),
+                        _ => render_chat_ui(frame, &mut app, &config),
+                    }
+                }
             })
             .unwrap();
 

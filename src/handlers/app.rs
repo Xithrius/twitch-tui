@@ -19,6 +19,7 @@ const INPUT_BUFFER_LIMIT: usize = 4096;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum State {
+    Start,
     Normal,
     Insert,
     Help,
@@ -47,6 +48,7 @@ impl State {
 impl ToString for State {
     fn to_string(&self) -> String {
         match self {
+            Self::Start => "Start",
             Self::Normal => "Normal",
             Self::Insert => "Insert",
             Self::Help => "Help",

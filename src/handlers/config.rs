@@ -131,7 +131,7 @@ impl Default for TerminalConfig {
             maximum_messages: 150,
             log_file: None,
             verbose: false,
-            start_state: State::Normal,
+            start_state: State::Start,
         }
     }
 }

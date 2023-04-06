@@ -7,7 +7,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn draw_error_ui<T: Backend>(frame: &mut Frame<T>, messages: &[&str]) {
+pub fn render_error_ui<T: Backend>(frame: &mut Frame<T>, messages: &[&str]) {
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(1)])

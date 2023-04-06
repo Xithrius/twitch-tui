@@ -73,7 +73,7 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
     }
 }
 
-pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
+pub fn render_chat_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
     // Constraints for different states of the application.
     // Modify this in order to create new layouts.
     let mut v_constraints = match app.get_state() {
@@ -241,6 +241,6 @@ pub fn draw_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &Complet
         State::ChannelSwitch => {
             components::render_channel_switcher(window, config.storage.channels);
         }
-        State::Normal => {}
+        _ => {}
     }
 }
