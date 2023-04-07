@@ -14,7 +14,10 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::emotes::{delete_emotes, emotes_enabled, show_emotes, Emotes};
+use crate::emotes::{
+    emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
+};
+use crate::ui::components::popups::centered_popup;
 use crate::{
     handlers::{
         app::{App, State},
@@ -103,12 +106,18 @@ pub fn draw_ui<T: Backend>(
 
     if app.messages.len() > config.terminal.maximum_messages {
         for data in app.messages.range(config.terminal.maximum_messages..) {
-            delete_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
+            hide_message_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
         }
         app.messages.truncate(config.terminal.maximum_messages);
     }
 
-    let messages = get_messages(frame, app, config, emotes, &layout);
+    // If we show the help screen, no need to get any messages
+    let messages = if app.get_state() == State::Help {
+        hide_all_emotes(emotes);
+        VecDeque::new()
+    } else {
+        get_messages(frame, app, config, emotes, &layout)
+    };
 
     let current_time = Local::now()
         .format(&config.frontend.date_format)
@@ -217,6 +226,14 @@ fn get_messages<'a, T: Backend>(
 
     let message_chunk_width = h_chunk[0].width as usize;
 
+    let channel_switcher = if app.get_state() == State::ChannelSwitch {
+        Some(centered_popup(frame.size(), frame.size().height))
+    } else {
+        None
+    };
+
+    let is_behind_channel_switcher = |a, b| channel_switcher.map_or(false, |r| is_in_rect(r, a, b));
+
     'outer: for data in &app.messages {
         if app.filters.contaminated(data.payload.clone().as_str()) {
             continue;
@@ -225,7 +242,7 @@ fn get_messages<'a, T: Backend>(
         // Offsetting of messages for scrolling through said messages
         if scroll_offset > 0 {
             scroll_offset -= 1;
-            delete_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
+            hide_message_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
 
             continue;
         }
@@ -258,30 +275,18 @@ fn get_messages<'a, T: Backend>(
 
             if total_row_height < general_chunk_height {
                 if !data.emotes.is_empty() {
-                    let span_width: usize = span.0.iter().map(|s| s.content.width()).sum();
-                    if let Some(last_span) = span.0.last_mut() {
-                        if let Some(p) = payload
-                            .trim_end()
-                            .strip_suffix(last_span.content.trim_end())
-                        {
-                            if let Err(e) = show_emotes(
-                                &data.emotes,
-                                span_width + config.frontend.margin as usize + 1
-                                    - last_span.content.width(),
-                                p.width(),
-                                payload.width() - 1,
-                                general_chunk_height - total_row_height,
-                                last_span,
-                                emotes,
-                            ) {
-                                warn!("Could not display emote: {e}");
-                            }
-                            payload = p.to_string();
-                        } else {
-                            warn!("Could not find span content in payload");
-                        }
-                    } else {
-                        warn!("Unable to display emote in empty span");
+                    let current_row = general_chunk_height - total_row_height;
+                    match show_span_emotes(
+                        &data.emotes,
+                        &mut span,
+                        emotes,
+                        &payload,
+                        config.frontend.margin as usize,
+                        current_row as u16,
+                        is_behind_channel_switcher,
+                    ) {
+                        Ok(p) => payload = p,
+                        Err(e) => warn!("Unable to display some emotes: {e}"),
                     }
                 }
 
@@ -294,7 +299,7 @@ fn get_messages<'a, T: Backend>(
 
                 // If the current message already had all its emotes deleted, the following messages should
                 // also have had their emotes deleted
-                delete_emotes(&data.emotes, &mut emotes.displayed, payload.width());
+                hide_message_emotes(&data.emotes, &mut emotes.displayed, payload.width());
                 if !data.emotes.is_empty()
                     && !data
                         .emotes

@@ -272,8 +272,11 @@ pub struct Clear(pub u32, pub u32);
 impl Command for Clear {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         if *self == Self(0, 0) {
-            // Delete all images
+            // Delete and unload all images
             write!(f, gp!("a=d,d=A,q=2;"))
+        } else if self.0 == 0 {
+            // Delete all images
+            write!(f, gp!("a=d,d=a,q=2;"))
         } else {
             write!(
                 f,

@@ -29,7 +29,7 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct EmoteData {
     pub name: String,
-    pub string_position: usize,
+    pub index_in_message: usize,
     pub id: u32,
     pub pid: u32,
 }
@@ -229,7 +229,7 @@ impl MessageData {
                     Ok(LoadedEmote { hash, n, width, .. }) => {
                         self.emotes.push(EmoteData {
                             name: word.clone(),
-                            string_position: position,
+                            index_in_message: position,
                             id: hash,
                             pid: n,
                         });

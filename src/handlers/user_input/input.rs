@@ -2,7 +2,7 @@ use regex::Regex;
 use rustyline::{At, Word};
 use tokio::sync::broadcast::Sender;
 
-use crate::emotes::{clear_emotes, Emotes};
+use crate::emotes::{unload_all_emotes, Emotes};
 use crate::{
     handlers::{
         app::{App, State},
@@ -97,7 +97,7 @@ fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>, emotes: &m
             }
 
             app.messages.clear();
-            clear_emotes(emotes);
+            unload_all_emotes(emotes);
 
             tx.send(TwitchAction::Join(input_message.to_string()))
                 .unwrap();

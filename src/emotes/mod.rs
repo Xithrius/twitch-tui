@@ -11,7 +11,8 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
-use tui::text::Span;
+use tui::layout::Rect;
+use tui::text::{Span, Spans};
 use unicode_width::UnicodeWidthStr;
 
 mod downloader;
@@ -66,6 +67,11 @@ pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
     frontend.twitch_emotes || frontend.betterttv_emotes || frontend.seventv_emotes
 }
 
+#[inline]
+pub fn is_in_rect(rect: Rect, (x, y): (u16, u16), width: u16) -> bool {
+    y < rect.bottom() && y > rect.top() - 1 && x < rect.right() && x + width > rect.left()
+}
+
 pub async fn send_emotes(
     config: &CompleteConfig,
     tx: &Sender<Emotes>,
@@ -104,43 +110,57 @@ pub async fn emotes(
     }
 }
 
-pub fn show_emotes(
+pub fn show_emotes<F>(
     message_emotes: &Vec<EmoteData>,
-    prefix_width: usize,
-    previous_span_width: usize,
-    span_end_position: usize,
-    row: usize,
     span: &mut Span,
     emotes: &mut Emotes,
-) -> Result<()> {
-    let mut words: Vec<String> = span.content.split(' ').map(ToString::to_string).collect();
-    let mut string_position = 0;
-    let mut word_idx = 0;
+    prefix_width: usize,
+    // Payload start/end index in span content
+    (start, end): (usize, usize),
+    row: u16,
+    hide: F,
+) where
+    F: Fn((u16, u16), u16) -> bool,
+{
+    let mut emotes_pos_in_span = HashSet::new();
 
     for emote in message_emotes {
         // Emote is on a further row, we can exit now
-        if emote.string_position > span_end_position {
+        if emote.index_in_message > end {
             break;
         }
         // Emote is on a previous row
-        if emote.string_position < previous_span_width {
+        if emote.index_in_message < start {
             continue;
         }
 
-        let terminal_position = (
-            (emote.string_position + prefix_width - previous_span_width) as u16,
-            row as u16,
-        );
+        let col = (emote.index_in_message + prefix_width - start) as u16;
 
-        if !emotes.loaded.contains(&emote.id) {
-            reload_emote(emotes, &emote.name, emote.id)?;
+        emotes_pos_in_span.insert(emote.index_in_message - start);
+
+        let info = emotes.info.get(&emote.name).unwrap();
+
+        // Delete emote if we don't need to display it
+        if hide((col, row), info.width as u16) {
+            if let Err(err) =
+                graphics_protocol::command(graphics_protocol::Clear(emote.id, emote.pid))
+            {
+                warn!("Unable to delete emote {}: {err}", emote.name);
+            } else {
+                emotes.displayed.remove(&(emote.id, emote.pid));
+            }
+            continue;
         }
 
-        let info = emotes.info.get(&emote.name).context("Emote not loaded")?;
+        if !emotes.loaded.contains(&emote.id)
+            && reload_emote(&emotes.emotes, &mut emotes.loaded, &emote.name, emote.id).is_err()
+        {
+            continue;
+        }
 
-        if emotes.displayed.get(&(emote.id, emote.pid)) != Some(&terminal_position) {
+        if emotes.displayed.get(&(emote.id, emote.pid)) != Some(&(col, row)) {
             if let Err(err) = graphics_protocol::command(graphics_protocol::Display::new(
-                terminal_position,
+                (col, row),
                 emote.id,
                 emote.pid,
                 info.width,
@@ -150,36 +170,43 @@ pub fn show_emotes(
             }
         }
 
-        // Replace placeholder string in span by spaces.
-        let p = emote.string_position - previous_span_width;
-        while word_idx < words.len() {
-            let word = &mut words[word_idx];
-            word_idx += 1;
-
-            if string_position == p {
-                *word = " ".repeat(info.width as usize);
-                string_position += word.width() + 1;
-                break;
-            }
-            string_position += word.width() + 1;
-        }
-
-        emotes
-            .displayed
-            .insert((emote.id, emote.pid), terminal_position);
+        emotes.displayed.insert((emote.id, emote.pid), (col, row));
     }
-    *span.content.to_mut() = words.join(" ");
 
-    Ok(())
+    update_span_content(span, &emotes_pos_in_span);
 }
 
-pub fn delete_emotes(
+/// Replace span content at emote position with spaces
+pub fn update_span_content(span: &mut Span, positions: &HashSet<usize>) {
+    if positions.is_empty() {
+        return;
+    }
+
+    let mut words: Vec<String> = span.content.split(' ').map(ToString::to_string).collect();
+    let mut string_position = 0;
+    let mut word_idx = 0;
+
+    while word_idx < words.len() {
+        let word = &mut words[word_idx];
+        word_idx += 1;
+
+        if positions.contains(&string_position) {
+            *word = " ".repeat(word.width());
+        }
+
+        string_position += word.width() + 1;
+    }
+
+    *span.content.to_mut() = words.join(" ");
+}
+
+pub fn hide_message_emotes(
     emotes: &Vec<EmoteData>,
     displayed: &mut HashMap<(u32, u32), (u16, u16)>,
     pos: usize,
 ) {
     for emote in emotes {
-        if displayed.contains_key(&(emote.id, emote.pid)) && emote.string_position < pos {
+        if displayed.contains_key(&(emote.id, emote.pid)) && emote.index_in_message < pos {
             if let Err(err) =
                 graphics_protocol::command(graphics_protocol::Clear(emote.id, emote.pid))
             {
@@ -229,17 +256,60 @@ pub fn load_emote(
     }
 }
 
-pub fn reload_emote(emotes: &mut Emotes, name: &str, hash: u32) -> Result<()> {
-    let filename = emotes.emotes.get(name).context("Emote not found")?;
+pub fn reload_emote(
+    emote_list: &HashMap<String, String>,
+    loaded_emotes: &mut HashSet<u32>,
+    name: &str,
+    hash: u32,
+) -> Result<()> {
+    let filename = emote_list.get(name).context("Emote not found")?;
     graphics_protocol::command(graphics_protocol::Load::new(hash, &cache_path(filename))?)?;
-    emotes.loaded.insert(hash);
+    loaded_emotes.insert(hash);
     Ok(())
 }
 
-pub fn clear_emotes(emotes: &mut Emotes) {
+pub fn unload_all_emotes(emotes: &mut Emotes) {
     graphics_protocol::command(graphics_protocol::Clear(0, 0)).unwrap_or_default();
     emotes.emotes.clear();
     emotes.loaded.clear();
     emotes.info.clear();
     emotes.displayed.clear();
+}
+
+pub fn hide_all_emotes(emotes: &mut Emotes) {
+    graphics_protocol::command(graphics_protocol::Clear(0, 1)).unwrap_or_default();
+    emotes.displayed.clear();
+}
+
+pub fn show_span_emotes<F>(
+    message_emotes: &Vec<EmoteData>,
+    span: &mut Spans,
+    emotes: &mut Emotes,
+    payload: &str,
+    margin: usize,
+    current_row: u16,
+    hide: F,
+) -> Result<String>
+where
+    F: Fn((u16, u16), u16) -> bool,
+{
+    let span_width: usize = span.0.iter().map(|s| s.content.width()).sum();
+    let last_span = span.0.last_mut().context("Span is empty")?;
+
+    let p = payload
+        .trim_end()
+        .strip_suffix(last_span.content.trim_end())
+        .context("Unable to find span content in payload")?;
+
+    show_emotes(
+        message_emotes,
+        last_span,
+        emotes,
+        span_width + margin + 1 - last_span.content.width(),
+        (p.width(), payload.width() - 1),
+        current_row,
+        hide,
+    );
+
+    Ok(p.to_string())
 }
