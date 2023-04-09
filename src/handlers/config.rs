@@ -49,10 +49,6 @@ pub struct TwitchConfig {
     pub server: String,
     /// The authentication token for the IRC.
     pub token: Option<String>,
-    /// The authentication token for the api
-    pub api: Option<String>,
-    /// The Client-Id for the api
-    pub id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -132,8 +128,6 @@ impl Default for TwitchConfig {
             channel: String::new(),
             server: "irc.chat.twitch.tv".to_string(),
             token: None,
-            api: None,
-            id: None,
         }
     }
 }
@@ -307,16 +301,11 @@ impl CompleteConfig {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
                 }
 
-                let check_id = t.id.as_ref().map_or("", |t| t);
-                let check_api = t.api.as_ref().map_or("", |t| t);
-
-                if emotes_enabled(&config.frontend) {
-                    if !graphics_protocol::support_graphics_protocol().unwrap_or(false) {
-                        bail!("This terminal does not support the graphics protocol, please use a terminal such as Kitty or Wezterm, or disable emotes.")
-                    }
-                    if check_id.is_empty() || check_api.is_empty() {
-                        bail!("Twitch config section is missing one or more of the following: id, api. They are needed to enable emotes.");
-                    }
+                if emotes_enabled(&config.frontend)
+                    && !graphics_protocol::support_graphics_protocol().unwrap_or(false)
+                {
+                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty or WezTerm, or disable emotes.");
+                    std::process::exit(1);
                 }
             }
 

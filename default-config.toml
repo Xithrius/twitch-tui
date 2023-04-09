@@ -7,10 +7,6 @@ channel = ""
 server = "irc.chat.twitch.tv"
 # OAuth token that authenticates you into Twitch. Acquired through https://twitchapps.com/tmi/.
 token = ""
-# API Token used to download emotes. Acquired throught https://twitchtokengenerator.com.
-api = ""
-# Client-Id used to authenticate with the api. Acquired throught https://twitchtokengenerator.com.
-id = ""
 
 [terminal]
 # The delay in milliseconds between terminal updates.

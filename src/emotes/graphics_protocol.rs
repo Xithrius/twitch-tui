@@ -22,6 +22,8 @@ macro_rules! gp {
     };
 }
 
+/// The temporary files created for the graphics protocol need to have the `tty-graphics-protocol`
+/// string to be deleted by the terminal.
 const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 
 type Result<T = ()> = anyhow::Result<T>;
@@ -293,12 +295,18 @@ impl Command for Clear {
     }
 }
 
+/// Send a csi query to the terminal. The terminal must respond in the format `<ESC>[(a)(r)(c)`,
+/// where `(a)` can be any character, `(r)` is the terminal response, and `(c)` is the last character of the query.
+/// If the terminal does not respond, or responds in a different format, this function will cause an infinite loop.
+/// See [here](https://www.xfree86.org/current/ctlseqs.html) for information about xterm control sequences.
+/// This function will strip the `<ESC>[(a)` and the last char `(c)` and return the response `(r)`.
 fn query_terminal(command: &[u8]) -> Result<String> {
     let c = *command.last().context("Command is empty")? as char;
     let mut stdout = Term::stdout();
     stdout.write_all(command)?;
     stdout.flush()?;
 
+    // Empty stdout buffer until we find the terminal response.
     loop {
         let c = stdout.read_key()?;
         if let Key::UnknownEscSeq(_) = c {
@@ -307,10 +315,10 @@ fn query_terminal(command: &[u8]) -> Result<String> {
     }
 
     let mut response = String::new();
-    while !response.contains(c) {
+    loop {
         match stdout.read_key() {
+            Ok(Key::Char(chr)) if chr == c => break,
             Ok(Key::Char(chr)) => response.push(chr),
-            Ok(Key::UnknownEscSeq(esc)) => response.extend(esc),
             Err(_) => break,
             _ => (),
         }
@@ -319,10 +327,10 @@ fn query_terminal(command: &[u8]) -> Result<String> {
 }
 
 pub fn get_terminal_cell_size() -> Result<(u32, u32)> {
-    let mut res = query_terminal(csi!("14t").as_bytes())?;
+    // Request the terminal size in pixels.
+    let res = query_terminal(csi!("14t").as_bytes())?;
 
-    // Response is the terminal size in pixels, with format <height>;<width>t
-    res.pop();
+    // Response has the format <height>;<width>
     let mut values = res.split(';');
     let height_px = values
         .next()
@@ -339,6 +347,9 @@ pub fn get_terminal_cell_size() -> Result<(u32, u32)> {
     Ok((width_px / u32::from(ncols), height_px / u32::from(nrows)))
 }
 
+/// First check if the terminal is `kitty` or `WezTerm`, theses are the only terminals that fully support the graphics protocol as of 2023-04-09.
+/// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
+/// If we receive the terminal attributes without receiving the response for the graphics protocol, it does not support it.
 pub fn support_graphics_protocol() -> Result<bool> {
     Ok(
         (env::var("TERM")? == "xterm-kitty" || env::var("TERM_PROGRAM")? == "WezTerm")

@@ -1,6 +1,6 @@
 use crate::handlers::config::CompleteConfig;
 use crate::utils::pathing::cache_path;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use futures::StreamExt;
 use log::warn;
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -13,24 +13,43 @@ use tokio::io::AsyncWriteExt;
 // HashMap of emote name, emote filename, emote url
 type EmoteMap = HashMap<String, (String, String)>;
 
-fn get_twitch_client(config: &CompleteConfig) -> Result<Client> {
-    let api_token = config
+async fn get_twitch_client_id(token: &str) -> Result<String> {
+    let client = Client::new();
+
+    let res = client
+        .get("https://id.twitch.tv/oauth2/validate")
+        .header(header::AUTHORIZATION, &format!("OAuth {token}"))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    let json = json::parse(&res.text().await?)?;
+    let client_id = &json["client_id"];
+
+    if let json::JsonValue::String(id) = client_id {
+        Ok(id.clone())
+    } else {
+        Err(anyhow!("Unable to parse client id from twitch response."))
+    }
+}
+
+async fn get_twitch_client(config: &CompleteConfig) -> Result<Client> {
+    let token = config
         .twitch
-        .api
+        .token
         .as_ref()
-        .context("Twitch api token is empty")?;
-    let api_id = config
-        .twitch
-        .id
-        .as_ref()
-        .context("Twitch api id is empty")?;
+        .context("Twitch token is empty")?
+        .strip_prefix("oauth:")
+        .context("token does not start with `oauth:`")?;
+
+    let client_id = get_twitch_client_id(token).await?;
 
     let mut headers = HeaderMap::new();
     headers.insert(
         header::AUTHORIZATION,
-        HeaderValue::from_str(&format!("Bearer {api_token}"))?,
+        HeaderValue::from_str(&format!("Bearer {token}"))?,
     );
-    headers.insert("Client-Id", HeaderValue::from_str(api_id)?);
+    headers.insert("Client-Id", HeaderValue::from_str(&client_id)?);
 
     Ok(Client::builder().default_headers(headers).build()?)
 }
@@ -216,7 +235,7 @@ async fn download_emotes(emotes: EmoteMap) -> HashMap<String, String> {
 
 pub async fn get_emotes(config: &CompleteConfig, channel: &str) -> Result<HashMap<String, String>> {
     // Reuse the same client and headers for twitch requests
-    let twitch_client = get_twitch_client(config)?;
+    let twitch_client = get_twitch_client(config).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 

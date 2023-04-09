@@ -38,24 +38,12 @@ pub(super) fn interactive_config() -> Option<CompleteConfig> {
         .interact_text()
         .unwrap();
 
-    let api: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("API Token: ")
-        .interact_text()
-        .unwrap();
-
-    let id: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("ID: ")
-        .interact_text()
-        .unwrap();
-
     Some(CompleteConfig {
         twitch: TwitchConfig {
             username,
             channel,
             server,
             token: Some(token),
-            api: Some(api),
-            id: Some(id),
         },
         ..Default::default()
     })
