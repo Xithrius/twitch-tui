@@ -15,7 +15,7 @@ categories = ["command-line-utilities"]
 [dependencies]
 crossterm = "0.26.1"
 tui = { package = "ratatui", version = "0.20.1", default-features = false, features = [ "crossterm" ] }
-tokio = { version = "1.24.1", features = [ "rt", "macros", "rt-multi-thread" ] }
+tokio = { version = "1.24.1", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
 clap = { version = "4.1.6", features = [ "derive", "cargo" ] }
 serde = { version = "1.0.155", features = [ "derive" ] }
 serde_json = "1.0.93"
@@ -34,6 +34,12 @@ color-eyre = "0.6.2"
 log = "0.4.17"
 fern = "0.6.1"
 dialoguer = { version = "0.10.3", default-features = false }
+reqwest = "0.11.14"
+json = "0.12.4"
+image = "0.24.5"
+base64 = "0.21.0"
+tempfile = "3.4.0"
+anyhow = "1.0.70"
 
 [[bin]]
 bench = false

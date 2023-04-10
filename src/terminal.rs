@@ -1,8 +1,10 @@
-use std::time::Duration;
-
 use log::{debug, info};
-use tokio::sync::mpsc::{Receiver, Sender};
+use std::time::Duration;
+use tokio::sync::broadcast::Sender;
+use tokio::sync::mpsc::Receiver;
+use tui::layout::Rect;
 
+use crate::emotes::Emotes;
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     handlers::{
@@ -23,6 +25,7 @@ pub async fn ui_driver(
     mut app: App,
     tx: Sender<TwitchAction>,
     mut rx: Receiver<MessageData>,
+    mut erx: Receiver<Emotes>,
 ) {
     info!("Started UI driver.");
 
@@ -45,8 +48,19 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
+    let mut emotes: Emotes = Emotes::default();
+    let mut terminal_size = Rect::default();
+
     loop {
-        if let Ok(info) = rx.try_recv() {
+        if let Ok(e) = erx.try_recv() {
+            emotes = e;
+            for message in &mut app.messages {
+                message.parse_emotes(&mut emotes);
+            }
+        };
+
+        if let Ok(mut info) = rx.try_recv() {
+            info.parse_emotes(&mut emotes);
             app.messages.push_front(info);
 
             // If scrolling is enabled, pad for more messages.
@@ -59,6 +73,12 @@ pub async fn ui_driver(
             .draw(|frame| {
                 let size = frame.size();
 
+                if size != terminal_size {
+                    terminal_size = size;
+                    emotes.displayed.clear();
+                    emotes.loaded.clear();
+                }
+
                 if size.height < 10 || size.width < 60 {
                     draw_error_ui(
                         frame,
@@ -69,13 +89,14 @@ pub async fn ui_driver(
                         ],
                     );
                 } else {
-                    draw_ui(frame, &mut app, &config);
+                    draw_ui(frame, &mut app, &config, &mut emotes);
                 }
             })
             .unwrap();
 
         if matches!(
-            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone()).await,
+            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone(), &mut emotes)
+                .await,
             Some(TerminalAction::Quitting)
         ) {
             quit_terminal(terminal);

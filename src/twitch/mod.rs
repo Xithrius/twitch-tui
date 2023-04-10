@@ -9,7 +9,8 @@ use irc::{
     proto::{Command, Message},
 };
 use log::{debug, info};
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::broadcast::Receiver;
+use tokio::sync::mpsc::Sender;
 
 use crate::{
     handlers::{
@@ -22,7 +23,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TwitchAction {
     Privmsg(String),
     Join(String),
@@ -64,7 +65,7 @@ pub async fn twitch_irc(
         tokio::select! {
             biased;
 
-            Some(action) = rx.recv() => {
+            Ok(action) = rx.recv() => {
                 let current_channel = format!("#{}", config.twitch.channel);
 
                 match action {

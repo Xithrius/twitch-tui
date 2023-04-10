@@ -1,7 +1,8 @@
 use regex::Regex;
 use rustyline::{At, Word};
-use tokio::sync::mpsc::Sender;
+use tokio::sync::broadcast::Sender;
 
+use crate::emotes::{unload_all_emotes, Emotes};
 use crate::{
     handlers::{
         app::{App, State},
@@ -40,7 +41,7 @@ impl<'a, 'b> UserActionAttributes<'a, 'b> {
     }
 }
 
-async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
+fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>, emotes: &mut Emotes) {
     let UserActionAttributes {
         app,
         config,
@@ -59,13 +60,15 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
                 return;
             }
 
-            app.messages.push_front(DataBuilder::user(
+            let mut message = DataBuilder::user(
                 config.twitch.username.to_string(),
                 input_message.to_string(),
-            ));
+            );
+            message.parse_emotes(emotes);
+
+            app.messages.push_front(message);
 
             tx.send(TwitchAction::Privmsg(input_message.to_string()))
-                .await
                 .unwrap();
 
             if let Some(msg) = input_message.strip_prefix('@') {
@@ -94,9 +97,9 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
             }
 
             app.messages.clear();
+            unload_all_emotes(emotes);
 
             tx.send(TwitchAction::Join(input_message.to_string()))
-                .await
                 .unwrap();
 
             config.twitch.channel = input_message.to_string();
@@ -111,7 +114,7 @@ async fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>) {
     }
 }
 
-async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>) {
+fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>, emotes: &mut Emotes) {
     let UserActionAttributes {
         app,
         config: _,
@@ -174,7 +177,7 @@ async fn handle_insert_type_movements(action: &mut UserActionAttributes<'_, '_>)
                     .update(suggestion_buffer.as_str(), suggestion_buffer.len());
             }
         }
-        Key::Enter => handle_insert_enter_key(action).await,
+        Key::Enter => handle_insert_enter_key(action, emotes),
         Key::Char(c) => {
             input_buffer.insert(*c, 1);
         }
@@ -220,6 +223,7 @@ pub async fn handle_stateful_user_input(
     app: &mut App,
     config: &mut CompleteConfig,
     tx: Sender<TwitchAction>,
+    emotes: &mut Emotes,
 ) -> Option<TerminalAction> {
     if let Some(Event::Input(key)) = events.next().await {
         handle_user_scroll(app, key);
@@ -228,7 +232,7 @@ pub async fn handle_stateful_user_input(
             State::Insert | State::ChannelSwitch | State::MessageSearch => {
                 let mut action = UserActionAttributes::new(app, config, tx, key);
 
-                handle_insert_type_movements(&mut action).await;
+                handle_insert_type_movements(&mut action, emotes);
             }
             _ => match key {
                 Key::Char('c') => {
