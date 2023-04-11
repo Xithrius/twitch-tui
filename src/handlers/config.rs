@@ -11,6 +11,7 @@ use std::{
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::emotes::{emotes_enabled, graphics_protocol};
 use crate::{
     handlers::{
         app::State,
@@ -20,6 +21,7 @@ use crate::{
 };
 
 use crate::handlers::interactive::interactive_config;
+use crate::utils::pathing::cache_path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
@@ -111,6 +113,12 @@ pub struct FrontendConfig {
     pub blinking_cursor: bool,
     /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
+    /// If twitch emotes should be displayed (requires kitty terminal)
+    pub twitch_emotes: bool,
+    /// If betterttv emotes should be displayed (requires kitty terminal)
+    pub betterttv_emotes: bool,
+    /// If 7tv emotes should be displayed (requires kitty terminal)
+    pub seventv_emotes: bool,
 }
 
 impl Default for TwitchConfig {
@@ -152,6 +160,9 @@ impl Default for FrontendConfig {
             cursor_shape: CursorType::default(),
             blinking_cursor: false,
             inverted_scrolling: false,
+            twitch_emotes: false,
+            betterttv_emotes: false,
+            seventv_emotes: false,
         }
     }
 }
@@ -247,6 +258,13 @@ fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
 
 impl CompleteConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
+        let path_str = cache_path("");
+
+        let p = Path::new(&path_str);
+        if !p.exists() {
+            create_dir_all(p).unwrap();
+        }
+
         let path_str = config_path("config.toml");
 
         let p = Path::new(&path_str);
@@ -281,6 +299,13 @@ impl CompleteConfig {
 
                 if t.username.is_empty() || t.channel.is_empty() || check_token.is_empty() {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
+                }
+
+                if emotes_enabled(&config.frontend)
+                    && !graphics_protocol::support_graphics_protocol().unwrap_or(false)
+                {
+                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty or WezTerm, or disable emotes.");
+                    std::process::exit(1);
                 }
             }
 

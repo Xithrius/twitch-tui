@@ -18,6 +18,14 @@ Get an OAuth token from [Twitch](https://twitchapps.com/tmi/), and put the value
 
 The environment variable will be used first, even if a token exists in `config.toml`. If one doesn't exist there, your config token will be used.
 
+## Emotes
+
+Use a terminal that fully supports the graphics protocol, such as [kitty](https://sw.kovidgoyal.net/kitty/) or [WezTerm](https://wezfurlong.org/wezterm/).
+
+Enable the emotes by setting `twitch_emotes`, `betterttv_emotes` and/or `seventv_emotes` to `true`.
+
+The emotes will be downloaded to `~/.cache/twt/` on Linux/MacOs and `%appdata%\twt\cache\` on Windows.
+
 ## Run it
 
 Run `twt` in the terminal. For help, `twt --help`.
