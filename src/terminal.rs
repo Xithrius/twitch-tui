@@ -95,7 +95,7 @@ pub async fn ui_driver(
                     );
                 } else {
                     match app.get_state() {
-                        State::Start => render_dashboard_ui(frame, &mut app),
+                        State::Start(_) => render_dashboard_ui(frame, &mut app),
                         _ => render_chat_ui(frame, &mut app, &config, &mut emotes),
                     }
                 }

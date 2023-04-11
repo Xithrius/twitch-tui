@@ -46,7 +46,7 @@ impl ValueEnum for State {
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         Some(PossibleValue::new(match self {
-            Self::Start => "start",
+            Self::Start(_) => "start",
             Self::Normal => "normal",
             Self::Insert => "insert",
             Self::Help => "help",
