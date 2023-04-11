@@ -229,12 +229,32 @@ pub async fn handle_stateful_user_input(
         handle_user_scroll(app, key);
 
         match app.get_state() {
+            State::Start => match key {
+                Key::Ctrl('p') => {
+                    panic!("Manual panic triggered by user.");
+                }
+                Key::Char('?') => app.set_state(State::Help),
+                Key::Char('q') => {
+                    return Some(TerminalAction::Quitting);
+                }
+                Key::Esc => {
+                    app.set_state(State::Normal);
+                }
+                _ => {}
+            },
+            State::Help => {
+                if let Key::Esc = key {
+                    if let Some(previous_state) = app.get_previous_state() {
+                        app.set_state(previous_state);
+                    }
+                }
+            }
             State::Insert | State::ChannelSwitch | State::MessageSearch => {
                 let mut action = UserActionAttributes::new(app, config, tx, key);
 
                 handle_insert_type_movements(&mut action, emotes);
             }
-            _ => match key {
+            State::Normal => match key {
                 Key::Char('c') => {
                     app.set_state(State::Normal);
                 }
@@ -260,6 +280,7 @@ pub async fn handle_stateful_user_input(
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
+                Key::Char('S') => app.set_state(State::Start),
                 Key::Char('?') => app.set_state(State::Help),
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);

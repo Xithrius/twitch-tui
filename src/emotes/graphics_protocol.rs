@@ -12,7 +12,7 @@ use image::{AnimationDecoder, ImageDecoder, ImageFormat};
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::PathBuf;
-use std::{env, fmt, fs};
+use std::{env, fmt, fs, mem};
 
 /// Macro to add the graphics protocol escape sequence around a command.
 /// See <https://sw.kovidgoyal.net/kitty/graphics-protocol/> for documentation of the terminal graphics protocol
@@ -111,7 +111,7 @@ impl Gif {
         // If we had any error, we need to delete the temp files, as the terminal won't do it for us.
         if !err.is_empty() {
             for (path, _) in &frames {
-                let _ = fs::remove_file(path);
+                mem::drop(fs::remove_file(path));
             }
             return Err(anyhow!("Invalid frame in gif."));
         }

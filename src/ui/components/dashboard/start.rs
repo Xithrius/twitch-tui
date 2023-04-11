@@ -7,18 +7,11 @@ use tui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
 
-use crate::{
-    handlers::{app::App, config::CompleteConfig},
-    ui::components::dashboard::DASHBOARD_TITLE,
-};
+use crate::{handlers::app::App, ui::components::dashboard::DASHBOARD_TITLE};
 
 const FIRST_N_ITEMS: std::ops::Range<u32> = 0..5;
 
-pub fn render_dashboard_ui<T: Backend>(
-    frame: &mut Frame<T>,
-    app: &mut App,
-    config: &CompleteConfig,
-) {
+pub fn render_dashboard_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -47,7 +40,7 @@ pub fn render_dashboard_ui<T: Backend>(
         .enumerate()
         .filter_map(|(i, s)| {
             if FIRST_N_ITEMS.contains(&(i as u32)) {
-                Some(ListItem::new(s.clone()))
+                Some(ListItem::new(format!("{}. {s}", i + 1)))
             } else {
                 None
             }
