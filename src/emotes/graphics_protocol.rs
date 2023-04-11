@@ -1,18 +1,19 @@
+use anyhow::{anyhow, Context};
+use base64::{engine::general_purpose::STANDARD, Engine};
+use crossterm::{csi, cursor::MoveTo, queue, Command};
+use dialoguer::console::{Key, Term};
+use image::{codecs::gif::GifDecoder, io::Reader, AnimationDecoder, ImageDecoder, ImageFormat};
+use std::{
+    env, fmt, fs,
+    fs::File,
+    io::{BufReader, Write},
+    mem,
+    path::PathBuf,
+};
+
 use crate::utils::pathing::{
     create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
 };
-use anyhow::{anyhow, Context};
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine;
-use crossterm::{csi, cursor::MoveTo, queue, Command};
-use dialoguer::console::{Key, Term};
-use image::codecs::gif::GifDecoder;
-use image::io::Reader;
-use image::{AnimationDecoder, ImageDecoder, ImageFormat};
-use std::fs::File;
-use std::io::{BufReader, Write};
-use std::path::PathBuf;
-use std::{env, fmt, fs};
 
 /// Macro to add the graphics protocol escape sequence around a command.
 /// See <https://sw.kovidgoyal.net/kitty/graphics-protocol/> for documentation of the terminal graphics protocol
@@ -111,7 +112,7 @@ impl Gif {
         // If we had any error, we need to delete the temp files, as the terminal won't do it for us.
         if !err.is_empty() {
             for (path, _) in &frames {
-                let _ = fs::remove_file(path);
+                mem::drop(fs::remove_file(path));
             }
             return Err(anyhow!("Invalid frame in gif."));
         }

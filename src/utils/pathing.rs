@@ -1,22 +1,26 @@
 use anyhow::{anyhow, Result};
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    fs::remove_file,
+    fs::File,
+    io::Write,
+    mem::drop,
+    path::{Path, PathBuf},
+};
 
 const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 
 pub fn config_path(file: &str) -> String {
-    match std::env::consts::OS {
+    match env::consts::OS {
         "linux" | "macos" => format!(
             "{}/.config/{}/{}",
-            std::env::var("HOME").unwrap(),
+            env::var("HOME").unwrap(),
             BINARY_NAME,
             file
         ),
         "windows" => format!(
             "{}\\{}\\{}",
-            std::env::var("APPDATA").unwrap(),
+            env::var("APPDATA").unwrap(),
             BINARY_NAME,
             file
         ),
@@ -25,16 +29,16 @@ pub fn config_path(file: &str) -> String {
 }
 
 pub fn cache_path(file: &str) -> String {
-    match std::env::consts::OS {
+    match env::consts::OS {
         "linux" | "macos" => format!(
             "{}/.cache/{}/{}",
-            std::env::var("HOME").unwrap(),
+            env::var("HOME").unwrap(),
             BINARY_NAME,
             file
         ),
         "windows" => format!(
             "{}\\{}\\{}\\{}",
-            std::env::var("APPDATA").unwrap(),
+            env::var("APPDATA").unwrap(),
             BINARY_NAME,
             "cache",
             file
@@ -60,7 +64,7 @@ pub fn save_in_temp_file(buffer: &[u8], file: &mut File) -> Result<()> {
 }
 
 pub fn remove_temp_file(path: &Path) {
-    let _ = fs::remove_file(path);
+    drop(remove_file(path));
 }
 
 pub fn pathbuf_try_to_string(pathbuf: &Path) -> Result<String> {
@@ -84,7 +88,7 @@ mod tests {
             config_path("config.toml"),
             format!(
                 "{}\\{}\\config.toml",
-                std::env::var("APPDATA").unwrap(),
+                env::var("APPDATA").unwrap(),
                 BINARY_NAME
             )
         )
@@ -97,7 +101,7 @@ mod tests {
             config_path("config.toml"),
             format!(
                 "{}/.config/{}/config.toml",
-                std::env::var("HOME").unwrap(),
+                env::var("HOME").unwrap(),
                 BINARY_NAME,
             )
         );

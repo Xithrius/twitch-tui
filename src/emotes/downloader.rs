@@ -1,14 +1,14 @@
-use crate::handlers::config::CompleteConfig;
-use crate::utils::pathing::cache_path;
 use anyhow::{anyhow, Context, Result};
 use futures::StreamExt;
 use log::warn;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{header, Client};
-use std::borrow::BorrowMut;
-use std::collections::HashMap;
-use std::path::Path;
+use reqwest::{
+    header::{HeaderMap, HeaderValue, AUTHORIZATION},
+    Client,
+};
+use std::{borrow::BorrowMut, collections::HashMap, path::Path};
 use tokio::io::AsyncWriteExt;
+
+use crate::{handlers::config::CompleteConfig, utils::pathing::cache_path};
 
 // HashMap of emote name, emote filename, emote url
 type EmoteMap = HashMap<String, (String, String)>;
@@ -18,7 +18,7 @@ async fn get_twitch_client_id(token: &str) -> Result<String> {
 
     let res = client
         .get("https://id.twitch.tv/oauth2/validate")
-        .header(header::AUTHORIZATION, &format!("OAuth {token}"))
+        .header(AUTHORIZATION, &format!("OAuth {token}"))
         .send()
         .await?
         .error_for_status()?;
@@ -46,7 +46,7 @@ async fn get_twitch_client(config: &CompleteConfig) -> Result<Client> {
 
     let mut headers = HeaderMap::new();
     headers.insert(
-        header::AUTHORIZATION,
+        AUTHORIZATION,
         HeaderValue::from_str(&format!("Bearer {token}"))?,
     );
     headers.insert("Client-Id", HeaderValue::from_str(&client_id)?);

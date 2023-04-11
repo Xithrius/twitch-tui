@@ -15,6 +15,7 @@ use crate::{
 };
 
 pub mod chunks;
+pub mod dashboard;
 pub mod popups;
 
 pub use chunks::{chatting::render_chat_box, help::render_help_window, states::render_state_tabs};

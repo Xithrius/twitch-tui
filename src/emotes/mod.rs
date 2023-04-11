@@ -1,19 +1,25 @@
-use crate::emotes::downloader::get_emotes;
-use crate::emotes::graphics_protocol::Size;
-use crate::handlers::config::{CompleteConfig, FrontendConfig};
-use crate::handlers::data::EmoteData;
-use crate::twitch::TwitchAction;
-use crate::utils::pathing::cache_path;
 use anyhow::{Context, Result};
 use log::{info, warn};
-use std::collections::hash_map::DefaultHasher;
-use std::collections::{HashMap, HashSet};
-use std::hash::{Hash, Hasher};
-use tokio::sync::broadcast::Receiver;
-use tokio::sync::mpsc::Sender;
-use tui::layout::Rect;
-use tui::text::{Span, Spans};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap, HashSet},
+    hash::{Hash, Hasher},
+};
+use tokio::sync::{broadcast::Receiver, mpsc::Sender};
+use tui::{
+    layout::Rect,
+    text::{Span, Spans},
+};
 use unicode_width::UnicodeWidthStr;
+
+use crate::{
+    emotes::{downloader::get_emotes, graphics_protocol::Size},
+    handlers::{
+        config::{CompleteConfig, FrontendConfig},
+        data::EmoteData,
+    },
+    twitch::TwitchAction,
+    utils::pathing::cache_path,
+};
 
 mod downloader;
 pub mod graphics_protocol;

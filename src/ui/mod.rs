@@ -79,7 +79,7 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
     }
 }
 
-pub fn draw_ui<T: Backend>(
+pub fn render_chat_ui<T: Backend>(
     frame: &mut Frame<T>,
     app: &mut App,
     config: &CompleteConfig,
@@ -197,7 +197,7 @@ pub fn draw_ui<T: Backend>(
         State::ChannelSwitch => {
             components::render_channel_switcher(window, config.storage.channels);
         }
-        State::Normal => {}
+        _ => {}
     }
 }
 

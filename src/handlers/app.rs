@@ -19,6 +19,7 @@ const INPUT_BUFFER_LIMIT: usize = 4096;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum State {
+    Start(Vec<String>),
     Normal,
     Insert,
     Help,
@@ -47,6 +48,7 @@ impl State {
 impl ToString for State {
     fn to_string(&self) -> String {
         match self {
+            Self::Start(_) => "Start",
             Self::Normal => "Normal",
             Self::Insert => "Insert",
             Self::Help => "Help",
@@ -104,6 +106,8 @@ pub struct App {
     pub filters: Filters,
     /// Which window the terminal is currently focused on
     state: State,
+    /// The previous state, if any
+    previous_state: Option<State>,
     /// What the user currently has inputted
     pub input_buffer: LineBuffer,
     /// The current suggestion, if any
@@ -121,6 +125,7 @@ impl App {
             storage: Storage::new("storage.json", &config.storage),
             filters: Filters::new("filters.txt", &config.filters),
             state: config.terminal.start_state.clone(),
+            previous_state: None,
             input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
             buffer_suggestion: None,
             theme: config.frontend.theme.clone(),
@@ -138,11 +143,16 @@ impl App {
         self.scrolling.jump_to(0);
     }
 
+    pub fn get_previous_state(&self) -> Option<State> {
+        self.previous_state.clone()
+    }
+
     pub fn get_state(&self) -> State {
         self.state.clone()
     }
 
     pub fn set_state(&mut self, other: State) {
+        self.previous_state = Some(self.state.clone());
         self.state = other;
     }
 

@@ -10,8 +10,8 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::emotes::{load_emote, Emotes, LoadedEmote};
 use crate::{
+    emotes::{load_emote, Emotes, LoadedEmote},
     handlers::config::{FrontendConfig, Palette, Theme},
     utils::{
         colors::hsl_to_rgb,

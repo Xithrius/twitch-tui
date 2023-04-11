@@ -96,4 +96,8 @@ impl Storage {
             panic!("Attempted to get key {key} from JSON storage.");
         }
     }
+
+    pub fn contains(&self, key: &str, value: &str) -> bool {
+        self.get(key).contains(&value.to_string())
+    }
 }

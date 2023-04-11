@@ -1,14 +1,13 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::broadcast::Sender;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
-use crate::emotes::Emotes;
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
+    emotes::Emotes,
     handlers::{
-        app::App,
+        app::{App, State},
         config::CompleteConfig,
         data::MessageData,
         user_input::{
@@ -17,7 +16,9 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::{draw_ui, error::draw_error_ui},
+    ui::{
+        components::dashboard::start::render_dashboard_ui, error::render_error_ui, render_chat_ui,
+    },
 };
 
 pub async fn ui_driver(
@@ -43,6 +44,10 @@ pub async fn ui_driver(
         tick_rate: Duration::from_millis(config.terminal.tick_delay),
     })
     .await;
+
+    if !app.storage.contains("channels", &config.twitch.channel) {
+        app.storage.add("channels", config.twitch.channel.clone());
+    }
 
     let mut terminal = init_terminal(&config.frontend);
 
@@ -80,7 +85,7 @@ pub async fn ui_driver(
                 }
 
                 if size.height < 10 || size.width < 60 {
-                    draw_error_ui(
+                    render_error_ui(
                         frame,
                         &[
                             "Window to small!",
@@ -89,7 +94,10 @@ pub async fn ui_driver(
                         ],
                     );
                 } else {
-                    draw_ui(frame, &mut app, &config, &mut emotes);
+                    match app.get_state() {
+                        State::Start(_) => render_dashboard_ui(frame, &mut app),
+                        _ => render_chat_ui(frame, &mut app, &config, &mut emotes),
+                    }
                 }
             })
             .unwrap();

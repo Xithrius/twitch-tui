@@ -29,6 +29,7 @@ pub fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> [u8; 3] {
 
     [red as u8, green as u8, blue as u8]
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
