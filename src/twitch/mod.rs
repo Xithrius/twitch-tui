@@ -9,8 +9,7 @@ use irc::{
     proto::{Command, Message},
 };
 use log::{debug, info};
-use tokio::sync::broadcast::Receiver;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 
 use crate::{
     handlers::{

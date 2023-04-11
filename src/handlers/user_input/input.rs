@@ -2,8 +2,8 @@ use regex::Regex;
 use rustyline::{At, Word};
 use tokio::sync::broadcast::Sender;
 
-use crate::emotes::{unload_all_emotes, Emotes};
 use crate::{
+    emotes::{unload_all_emotes, Emotes},
     handlers::{
         app::{App, State},
         config::CompleteConfig,

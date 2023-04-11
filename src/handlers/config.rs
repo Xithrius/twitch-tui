@@ -11,8 +11,8 @@ use std::{
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::emotes::{emotes_enabled, graphics_protocol};
 use crate::{
+    emotes::{emotes_enabled, graphics_protocol},
     handlers::{
         app::State,
         args::{merge_args_into_config, Cli},

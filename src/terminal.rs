@@ -1,12 +1,11 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::broadcast::Sender;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
-use crate::emotes::Emotes;
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
+    emotes::Emotes,
     handlers::{
         app::{App, State},
         config::CompleteConfig,
