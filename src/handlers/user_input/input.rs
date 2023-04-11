@@ -229,7 +229,7 @@ pub async fn handle_stateful_user_input(
         handle_user_scroll(app, key);
 
         match app.get_state() {
-            State::Start(options) => match key {
+            State::Start => match key {
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
@@ -242,9 +242,15 @@ pub async fn handle_stateful_user_input(
                 }
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
-                        if let Some(channel) = options.get(selection as usize) {
+                        let channels = app
+                            .storage
+                            .get("channels")
+                            .drain(0..5)
+                            .collect::<Vec<String>>();
+                        if let Some(channel) = channels.get(selection as usize) {
                             app.set_state(State::Normal);
                             tx.send(TwitchAction::Join(channel.to_string())).unwrap();
+                            config.twitch.channel = channel.to_string();
                         }
                     }
                 }
@@ -288,11 +294,7 @@ pub async fn handle_stateful_user_input(
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
-                Key::Char('S') => {
-                    // app.set_state(State::Start(app.storage.get('channels')))
-                    let previous_channels = app.storage.get("channels");
-                    app.set_state(State::Start(previous_channels));
-                }
+                Key::Char('S') => app.set_state(State::Start),
                 Key::Char('?') => app.set_state(State::Help),
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);

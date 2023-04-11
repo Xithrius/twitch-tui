@@ -40,7 +40,7 @@ pub fn render_dashboard_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App) {
         .enumerate()
         .filter_map(|(i, s)| {
             if FIRST_N_ITEMS.contains(&(i as u32)) {
-                Some(ListItem::new(format!("{}. {s}", i + 1)))
+                Some(ListItem::new(format!("{i}. {s}")))
             } else {
                 None
             }
