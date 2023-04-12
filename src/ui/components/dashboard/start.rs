@@ -57,7 +57,7 @@ fn render_channel_selection_widget<T: Backend>(
 
     frame.render_widget(channel_selection_title, *v_chunks.next().unwrap());
 
-    let items_binding = app.storage.get("channels");
+    let items_binding = app.storage.get_last_n("channels", 5, true);
 
     let items = items_binding
         .iter()
@@ -76,11 +76,22 @@ fn render_channel_selection_widget<T: Backend>(
         })
         .collect::<Vec<ListItem>>();
 
-    let list = List::new(items)
+    let channel_options = List::new(items)
         .style(Style::default().fg(Color::White))
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC));
 
-    frame.render_widget(list, *v_chunks.next().unwrap());
+    frame.render_widget(channel_options, *v_chunks.next().unwrap());
+}
+
+fn render_quit_selection_widget<T: Backend>(frame: &mut Frame<T>, v_chunks: &mut Iter<Rect>) {
+    let quit_option = Paragraph::new(Spans::from(vec![
+        Span::raw("["),
+        Span::styled("q", Style::default().fg(Color::Red)),
+        Span::raw("] "),
+        Span::raw("Quit"),
+    ]));
+
+    frame.render_widget(quit_option, *v_chunks.next().unwrap());
 }
 
 pub fn render_dashboard_ui<T: Backend>(
@@ -95,7 +106,8 @@ pub fn render_dashboard_ui<T: Backend>(
             Constraint::Length(2),
             Constraint::Min(2),
             Constraint::Length(2),
-            Constraint::Min(5),
+            Constraint::Min(6),
+            Constraint::Min(1),
         ])
         .margin(2)
         .split(frame.size());
@@ -105,4 +117,6 @@ pub fn render_dashboard_ui<T: Backend>(
     render_dashboard_title_widget(frame, &mut v_chunks);
 
     render_channel_selection_widget(frame, &mut v_chunks, app, config.twitch.channel.clone());
+
+    render_quit_selection_widget(frame, &mut v_chunks);
 }

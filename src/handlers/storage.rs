@@ -78,7 +78,10 @@ impl Storage {
     pub fn add(&mut self, key: &str, value: String) {
         if ITEM_KEYS.contains(&key) {
             if let Some(item) = self.items.get_mut(&key.to_string()) {
-                if !item.content.contains(&value) && item.enabled {
+                if item.enabled {
+                    if let Some(position) = item.content.iter().position(|x| x == &value) {
+                        item.content.remove(position);
+                    }
                     item.content.push(value);
                 }
             }
@@ -95,6 +98,22 @@ impl Storage {
         } else {
             panic!("Attempted to get key {key} from JSON storage.");
         }
+    }
+
+    pub fn get_last_n(&self, key: &str, n: usize, reverse: bool) -> Vec<String> {
+        let items = self.get(key);
+
+        let mut out = if items.len() <= n {
+            items
+        } else {
+            items[items.len() - n..].to_vec()
+        };
+
+        if reverse {
+            out.reverse();
+        }
+
+        out
     }
 
     pub fn contains(&self, key: &str, value: &str) -> bool {

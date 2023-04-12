@@ -238,19 +238,20 @@ pub async fn handle_stateful_user_input(
                     return Some(TerminalAction::Quitting);
                 }
                 Key::Enter => {
+                    app.clear_messages();
                     app.set_state(State::Normal);
                 }
                 Key::Char(c) => {
+                    app.clear_messages();
+
                     if let Some(selection) = c.to_digit(10) {
-                        let channels = app
-                            .storage
-                            .get("channels")
-                            .drain(0..5)
-                            .collect::<Vec<String>>();
+                        let channels = app.storage.get_last_n("channels", 5, true);
+
                         if let Some(channel) = channels.get(selection as usize) {
                             app.set_state(State::Normal);
                             tx.send(TwitchAction::Join(channel.to_string())).unwrap();
                             config.twitch.channel = channel.to_string();
+                            app.storage.add("channels", channel.to_string());
                         }
                     }
                 }
