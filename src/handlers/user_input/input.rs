@@ -237,7 +237,7 @@ pub async fn handle_stateful_user_input(
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);
                 }
-                Key::Esc => {
+                Key::Enter => {
                     app.set_state(State::Normal);
                 }
                 Key::Char(c) => {

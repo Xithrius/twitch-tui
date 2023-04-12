@@ -17,10 +17,6 @@ use crate::{
 
 const FIRST_N_CHANNELS: std::ops::Range<u32> = 0..5;
 
-fn padded_paragraph(inner_spans: Spans) -> Paragraph {
-    Paragraph::new(vec![Spans::from(vec![]), inner_spans, Spans::from(vec![])])
-}
-
 fn render_dashboard_title_widget<T: Backend>(frame: &mut Frame<T>, v_chunks: &mut Iter<Rect>) {
     let w = Paragraph::new(
         DASHBOARD_TITLE
@@ -40,13 +36,16 @@ fn render_channel_selection_widget<T: Backend>(
     current_channel: String,
 ) {
     let current_channel_title =
-        padded_paragraph(Spans::from(vec![Span::raw("Selected config channel")]));
+        Paragraph::new(Spans::from(vec![Span::raw("Current config channel")]));
 
     frame.render_widget(current_channel_title, *v_chunks.next().unwrap());
 
     let current_channel_selection = Paragraph::new(Spans::from(vec![
         Span::raw("["),
-        Span::styled("ESC".to_string(), Style::default().fg(Color::LightMagenta)),
+        Span::styled(
+            "ENTER".to_string(),
+            Style::default().fg(Color::LightMagenta),
+        ),
         Span::raw("] "),
         Span::raw(current_channel),
     ]));
@@ -92,10 +91,10 @@ pub fn render_dashboard_ui<T: Backend>(
     let v_chunk_binding = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(DASHBOARD_TITLE.len() as u16),
-            Constraint::Length(3),
-            Constraint::Min(3),
-            Constraint::Length(3),
+            Constraint::Min(DASHBOARD_TITLE.len() as u16 + 1),
+            Constraint::Length(2),
+            Constraint::Min(2),
+            Constraint::Length(2),
             Constraint::Min(5),
         ])
         .margin(2)
