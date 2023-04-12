@@ -53,3 +53,10 @@ pub const SYSTEM_CHAT: Style = Style {
     add_modifier: Modifier::BOLD,
     sub_modifier: Modifier::empty(),
 };
+
+pub const DASHBOARD_TITLE_COLOR: Style = Style {
+    fg: Some(Color::Rgb(135, 120, 165)),
+    bg: None,
+    add_modifier: Modifier::empty(),
+    sub_modifier: Modifier::empty(),
+};
