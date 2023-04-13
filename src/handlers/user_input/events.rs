@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use crossterm::event::{self, Event as CEvent, KeyCode, KeyModifiers, MouseEventKind};
+use crossterm::event::{
+    self, Event as CEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind,
+};
 use tokio::{sync::mpsc, time::Instant};
 
 #[derive(Debug, Clone, Copy)]
@@ -68,8 +70,13 @@ impl Events {
 
                 if event::poll(timeout).unwrap() {
                     match event::read() {
-                        Ok(CEvent::Key(key)) => {
-                            let key = match key.code {
+                        Ok(CEvent::Key(KeyEvent {
+                            code,
+                            kind: KeyEventKind::Press,
+                            modifiers,
+                            state: _,
+                        })) => {
+                            let key = match code {
                                 KeyCode::Backspace => Key::Backspace,
                                 KeyCode::Esc => Key::Esc,
                                 KeyCode::Up => Key::Up,
@@ -82,7 +89,7 @@ impl Events {
                                 KeyCode::Insert => Key::Insert,
                                 KeyCode::Tab => Key::Tab,
                                 KeyCode::Enter => Key::Enter,
-                                KeyCode::Char(c) => match key.modifiers {
+                                KeyCode::Char(c) => match modifiers {
                                     KeyModifiers::NONE | KeyModifiers::SHIFT => Key::Char(c),
                                     KeyModifiers::CONTROL => Key::Ctrl(c),
                                     KeyModifiers::ALT => Key::Alt(c),
