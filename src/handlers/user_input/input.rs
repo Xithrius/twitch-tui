@@ -245,7 +245,8 @@ pub async fn handle_stateful_user_input(
                     app.clear_messages();
 
                     if let Some(selection) = c.to_digit(10) {
-                        let channels = app.storage.get_last_n("channels", 5, true);
+                        let mut channels = config.frontend.start_screen_channels.clone();
+                        channels.extend(app.storage.get_last_n("channels", 5, true));
 
                         if let Some(channel) = channels.get(selection as usize) {
                             app.set_state(State::Normal);
