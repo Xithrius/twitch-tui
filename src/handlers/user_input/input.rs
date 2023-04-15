@@ -96,6 +96,8 @@ fn handle_insert_enter_key(action: &mut UserActionAttributes<'_, '_>, emotes: &m
                 return;
             }
 
+            // TODO: if input message is the same as the current config, return to normal state.
+
             app.messages.clear();
             unload_all_emotes(emotes);
 
@@ -242,17 +244,20 @@ pub async fn handle_stateful_user_input(
                     app.set_state(State::Normal);
                 }
                 Key::Char(c) => {
-                    app.clear_messages();
-
                     if let Some(selection) = c.to_digit(10) {
                         let mut channels = config.frontend.start_screen_channels.clone();
                         channels.extend(app.storage.get_last_n("channels", 5, true));
 
                         if let Some(channel) = channels.get(selection as usize) {
                             app.set_state(State::Normal);
-                            tx.send(TwitchAction::Join(channel.to_string())).unwrap();
-                            config.twitch.channel = channel.to_string();
-                            app.storage.add("channels", channel.to_string());
+
+                            // Only clear and switch if new channel isn't the old channel
+                            if channel != &config.twitch.channel {
+                                app.clear_messages();
+                                tx.send(TwitchAction::Join(channel.to_string())).unwrap();
+                                config.twitch.channel = channel.to_string();
+                                app.storage.add("channels", channel.to_string());
+                            }
                         }
                     }
                 }
