@@ -15,7 +15,27 @@ use crate::{
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
 
-const FIRST_N_CHANNELS: std::ops::Range<u32> = 0..5;
+fn create_interactive_list_widget(items: &[String], index_offset: usize) -> List<'_> {
+    List::new(
+        items
+            .iter()
+            .enumerate()
+            .map(|(i, s)| {
+                ListItem::new(Spans::from(vec![
+                    Span::raw("["),
+                    Span::styled(
+                        (i + index_offset).to_string(),
+                        Style::default().fg(Color::LightMagenta),
+                    ),
+                    Span::raw("] "),
+                    Span::raw(s),
+                ]))
+            })
+            .collect::<Vec<ListItem>>(),
+    )
+    .style(Style::default().fg(Color::White))
+    .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+}
 
 fn render_dashboard_title_widget<T: Backend>(frame: &mut Frame<T>, v_chunks: &mut Iter<Rect>) {
     let w = Paragraph::new(
@@ -34,11 +54,12 @@ fn render_channel_selection_widget<T: Backend>(
     v_chunks: &mut Iter<Rect>,
     app: &App,
     current_channel: String,
+    default_channels: &[String],
 ) {
-    let current_channel_title =
-        Paragraph::new(Spans::from(vec![Span::raw("Current config channel")]));
-
-    frame.render_widget(current_channel_title, *v_chunks.next().unwrap());
+    frame.render_widget(
+        Paragraph::new("Currently selected channel"),
+        *v_chunks.next().unwrap(),
+    );
 
     let current_channel_selection = Paragraph::new(Spans::from(vec![
         Span::raw("["),
@@ -52,35 +73,25 @@ fn render_channel_selection_widget<T: Backend>(
 
     frame.render_widget(current_channel_selection, *v_chunks.next().unwrap());
 
-    let channel_selection_title =
-        Paragraph::new(Spans::from(vec![Span::raw("Most recent channels")]));
+    frame.render_widget(
+        Paragraph::new("Configured default channels"),
+        *v_chunks.next().unwrap(),
+    );
 
-    frame.render_widget(channel_selection_title, *v_chunks.next().unwrap());
+    let default_channels_list = create_interactive_list_widget(default_channels, 0);
+
+    frame.render_widget(default_channels_list, *v_chunks.next().unwrap());
+
+    frame.render_widget(
+        Paragraph::new("Most recent channels"),
+        *v_chunks.next().unwrap(),
+    );
 
     let items_binding = app.storage.get_last_n("channels", 5, true);
 
-    let items = items_binding
-        .iter()
-        .enumerate()
-        .filter_map(|(i, s)| {
-            if FIRST_N_CHANNELS.contains(&(i as u32)) {
-                Some(ListItem::new(Spans::from(vec![
-                    Span::raw("["),
-                    Span::styled(i.to_string(), Style::default().fg(Color::LightMagenta)),
-                    Span::raw("] "),
-                    Span::raw(s),
-                ])))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<ListItem>>();
+    let recent_channels = create_interactive_list_widget(&items_binding, default_channels.len());
 
-    let channel_options = List::new(items)
-        .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC));
-
-    frame.render_widget(channel_options, *v_chunks.next().unwrap());
+    frame.render_widget(recent_channels, *v_chunks.next().unwrap());
 }
 
 fn render_quit_selection_widget<T: Backend>(frame: &mut Frame<T>, v_chunks: &mut Iter<Rect>) {
@@ -99,14 +110,23 @@ pub fn render_dashboard_ui<T: Backend>(
     app: &mut App,
     config: &CompleteConfig,
 ) {
+    let recent_channels_len = app.storage.get("channels").len();
+
     let v_chunk_binding = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
+            // Twitch-tui ASCII logo
             Constraint::Min(DASHBOARD_TITLE.len() as u16 + 1),
+            // Currently selected channel title, content
             Constraint::Length(2),
             Constraint::Min(2),
+            // Configured default channels title, content
             Constraint::Length(2),
-            Constraint::Min(6),
+            Constraint::Min(config.frontend.start_screen_channels.len() as u16 + 1),
+            // Recent channel title, content
+            Constraint::Length(2),
+            Constraint::Min(recent_channels_len as u16 + 1),
+            // Quit
             Constraint::Min(1),
         ])
         .margin(2)
@@ -116,7 +136,13 @@ pub fn render_dashboard_ui<T: Backend>(
 
     render_dashboard_title_widget(frame, &mut v_chunks);
 
-    render_channel_selection_widget(frame, &mut v_chunks, app, config.twitch.channel.clone());
+    render_channel_selection_widget(
+        frame,
+        &mut v_chunks,
+        app,
+        config.twitch.channel.clone(),
+        &config.frontend.start_screen_channels.clone(),
+    );
 
     render_quit_selection_widget(frame, &mut v_chunks);
 }
