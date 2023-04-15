@@ -60,6 +60,8 @@ pub async fn twitch_irc(
         .unwrap();
     }
 
+    let mut connected = true;
+
     loop {
         tokio::select! {
             biased;
@@ -100,14 +102,23 @@ pub async fn twitch_irc(
             Some(message) = stream.next() => {
                 match message {
                     Ok(message) => {
+                        if !connected {
+                            tx.send(data_builder.system("Reconnect succcessful.".to_string())).await.unwrap();
+                            connected = true;
+                        }
+
                         if let Some(b) = handle_message_command(message, tx.clone(), data_builder, config.frontend.badges, room_state_startup).await {
                             room_state_startup = b;
                         }
                     }
                     Err(err) => {
+                        connected = false;
+
                         debug!("Twitch connection error encountered: {}, attempting to reconnect.", err);
 
-                        client_stream_reconnect(err, tx.clone(), data_builder, &mut client, &mut stream, &config).await;
+                        (client, stream) = client_stream_reconnect(err, tx.clone(), data_builder, &config).await;
+
+                        tx.send(data_builder.system("Attempting reconnect...".to_string())).await.unwrap();
                     }
                 }
             }

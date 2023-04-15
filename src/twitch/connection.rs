@@ -39,29 +39,24 @@ pub async fn client_stream_reconnect(
     err: Error,
     tx: Sender<MessageData>,
     data_builder: DataBuilder<'_>,
-    client: &mut Client,
-    stream: &mut ClientStream,
     config: &CompleteConfig,
-) {
+) -> (Client, ClientStream) {
     match err {
         PingTimeout => {
-            tx.send(
-                data_builder
-                    .system("Attempting to reconnect due to Twitch ping timeout.".to_string()),
-            )
-            .await
-            .unwrap();
+            tx.send(data_builder.system("Ping to Twitch has timed out.".to_string()))
+                .await
+                .unwrap();
         }
         _ => {
-            tx.send(data_builder.system(
-                format!("Attempting to reconnect due to fatal error: {err:?}").to_string(),
-            ))
-            .await
-            .unwrap();
+            tx.send(data_builder.system(format!("Fatal error: {err:?}").to_string()))
+                .await
+                .unwrap();
         }
     }
 
-    (*client, *stream) = create_client_stream(config.clone()).await;
+    let (client, stream) = create_client_stream(config.clone()).await;
 
     sleep(Duration::from_millis(1000)).await;
+
+    (client, stream)
 }
