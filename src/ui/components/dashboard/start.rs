@@ -57,7 +57,7 @@ fn render_channel_selection_widget<T: Backend>(
     default_channels: &[String],
 ) {
     frame.render_widget(
-        Paragraph::new("Currently selected channel"),
+        Paragraph::new("Currently selected channel").style(Style::default().fg(Color::LightRed)),
         *v_chunks.next().unwrap(),
     );
 
@@ -74,30 +74,39 @@ fn render_channel_selection_widget<T: Backend>(
     frame.render_widget(current_channel_selection, *v_chunks.next().unwrap());
 
     frame.render_widget(
-        Paragraph::new("Configured default channels"),
+        Paragraph::new("Configured default channels").style(Style::default().fg(Color::LightRed)),
         *v_chunks.next().unwrap(),
     );
 
-    let default_channels_list = create_interactive_list_widget(default_channels, 0);
+    if default_channels.is_empty() {
+        frame.render_widget(Paragraph::new("None"), *v_chunks.next().unwrap());
+    } else {
+        let default_channels_widget = create_interactive_list_widget(default_channels, 0);
 
-    frame.render_widget(default_channels_list, *v_chunks.next().unwrap());
+        frame.render_widget(default_channels_widget, *v_chunks.next().unwrap());
+    }
 
     frame.render_widget(
-        Paragraph::new("Most recent channels"),
+        Paragraph::new("Most recent channels").style(Style::default().fg(Color::LightRed)),
         *v_chunks.next().unwrap(),
     );
 
-    let items_binding = app.storage.get_last_n("channels", 5, true);
+    let recent_channels = app.storage.get_last_n("channels", 5, true);
 
-    let recent_channels = create_interactive_list_widget(&items_binding, default_channels.len());
+    if recent_channels.is_empty() {
+        frame.render_widget(Paragraph::new("None"), *v_chunks.next().unwrap());
+    } else {
+        let recent_channels_widget =
+            create_interactive_list_widget(&recent_channels, default_channels.len());
 
-    frame.render_widget(recent_channels, *v_chunks.next().unwrap());
+        frame.render_widget(recent_channels_widget, *v_chunks.next().unwrap());
+    }
 }
 
 fn render_quit_selection_widget<T: Backend>(frame: &mut Frame<T>, v_chunks: &mut Iter<Rect>) {
     let quit_option = Paragraph::new(Spans::from(vec![
         Span::raw("["),
-        Span::styled("q", Style::default().fg(Color::Red)),
+        Span::styled("q", Style::default().fg(Color::LightMagenta)),
         Span::raw("] "),
         Span::raw("Quit"),
     ]));
@@ -110,22 +119,32 @@ pub fn render_dashboard_ui<T: Backend>(
     app: &mut App,
     config: &CompleteConfig,
 ) {
-    let recent_channels_len = app.storage.get("channels").len();
+    let start_screen_channels_len = config.frontend.start_screen_channels.len() as u16;
+
+    let recent_channels_len = app.storage.get("channels").len() as u16;
 
     let v_chunk_binding = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             // Twitch-tui ASCII logo
-            Constraint::Min(DASHBOARD_TITLE.len() as u16 + 1),
+            Constraint::Min(DASHBOARD_TITLE.len() as u16 + 2),
             // Currently selected channel title, content
             Constraint::Length(2),
             Constraint::Min(2),
             // Configured default channels title, content
             Constraint::Length(2),
-            Constraint::Min(config.frontend.start_screen_channels.len() as u16 + 1),
+            Constraint::Min(if start_screen_channels_len == 0 {
+                2
+            } else {
+                start_screen_channels_len + 1
+            }),
             // Recent channel title, content
             Constraint::Length(2),
-            Constraint::Min(recent_channels_len as u16 + 1),
+            Constraint::Min(if recent_channels_len == 0 {
+                2
+            } else {
+                recent_channels_len + 1
+            }),
             // Quit
             Constraint::Min(1),
         ])
