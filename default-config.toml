@@ -16,7 +16,7 @@ maximum_messages = 150
 # The file path to log to.
 log_file = ""
 # The state the application will start in.
-start_state = "normal"
+start_state = "Start"
 
 [storage]
 # If previous channels switched to should be tracked.
@@ -61,3 +61,5 @@ twitch_emotes = false
 betterttv_emotes = false
 # Show 7tv emotes
 seventv_emotes = false
+# Array of channel names as strings to be displayed at start screen.
+start_screen_channels = []

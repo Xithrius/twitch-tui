@@ -1,5 +1,7 @@
 #![allow(clippy::use_self)]
 
+use color_eyre::eyre::{bail, Error, Result};
+use serde::{Deserialize, Serialize};
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File},
@@ -8,20 +10,15 @@ use std::{
     str::FromStr,
 };
 
-use color_eyre::eyre::{bail, Error, Result};
-use serde::{Deserialize, Serialize};
-
 use crate::{
     emotes::{emotes_enabled, graphics_protocol},
     handlers::{
         app::State,
         args::{merge_args_into_config, Cli},
+        interactive::interactive_config,
     },
-    utils::pathing::config_path,
+    utils::pathing::{cache_path, config_path},
 };
-
-use crate::handlers::interactive::interactive_config;
-use crate::utils::pathing::cache_path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
@@ -113,12 +110,14 @@ pub struct FrontendConfig {
     pub blinking_cursor: bool,
     /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
-    /// If twitch emotes should be displayed (requires kitty terminal)
+    /// If twitch emotes should be displayed (requires kitty terminal).
     pub twitch_emotes: bool,
-    /// If betterttv emotes should be displayed (requires kitty terminal)
+    /// If betterttv emotes should be displayed (requires kitty terminal).
     pub betterttv_emotes: bool,
-    /// If 7tv emotes should be displayed (requires kitty terminal)
+    /// If 7tv emotes should be displayed (requires kitty terminal).
     pub seventv_emotes: bool,
+    /// Comma-separated channel names to be displayed at start screen.
+    pub start_screen_channels: Vec<String>,
 }
 
 impl Default for TwitchConfig {
@@ -163,6 +162,7 @@ impl Default for FrontendConfig {
             twitch_emotes: false,
             betterttv_emotes: false,
             seventv_emotes: false,
+            start_screen_channels: vec![],
         }
     }
 }
