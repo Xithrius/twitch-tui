@@ -55,6 +55,8 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
             _ => BORDER_NAME_DARK,
         });
 
-    frame.render_widget(Clear, layout.first_chunk());
-    frame.render_widget(help_table, layout.first_chunk());
+    if let Some(l) = layout {
+        frame.render_widget(Clear, l.first_chunk());
+        frame.render_widget(help_table, l.first_chunk());
+    }
 }

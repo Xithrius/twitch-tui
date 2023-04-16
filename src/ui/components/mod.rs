@@ -21,6 +21,8 @@ pub mod popups;
 pub use chunks::{chatting::render_chat_box, help::render_help_window, states::render_state_tabs};
 pub use popups::channels::render_channel_switcher;
 
+use self::popups::centered_popup;
+
 /// Puts a box for user input at the bottom of the screen,
 /// with an interactive cursor.
 /// `input_validation` checks if the user's input is valid, changes window
@@ -43,11 +45,16 @@ pub fn render_insert_box<T: Backend>(
 
     let cursor_pos = get_cursor_position(buffer);
 
-    let input_rect = if let Some(r) = input_rectangle {
-        r
-    } else {
-        layout.chunks[layout.constraints.len() - (if show_state_tabs { 2 } else { 1 })]
-    };
+    let input_rect = input_rectangle.map_or_else(
+        || {
+            if let Some(l) = layout {
+                l.chunks[l.constraints.len() - (if show_state_tabs { 2 } else { 1 })]
+            } else {
+                centered_popup(frame.size(), frame.size().height)
+            }
+        },
+        |r| r,
+    );
 
     frame.set_cursor(
         (input_rect.x + cursor_pos as u16 + 1)

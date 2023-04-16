@@ -239,6 +239,7 @@ pub async fn handle_stateful_user_input(
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);
                 }
+                Key::Char('s') => app.set_state(State::ChannelSwitch),
                 Key::Enter => {
                     app.clear_messages();
                     app.set_state(State::Normal);
@@ -270,7 +271,20 @@ pub async fn handle_stateful_user_input(
                     }
                 }
             }
-            State::Insert | State::ChannelSwitch | State::MessageSearch => {
+            State::ChannelSwitch => {
+                if matches!(key, Key::Esc) {
+                    if let Some(previous_state) = app.get_previous_state() {
+                        app.set_state(previous_state);
+                    } else {
+                        app.set_state(config.terminal.start_state.clone());
+                    }
+                } else {
+                    let mut action = UserActionAttributes::new(app, config, tx, key);
+
+                    handle_insert_type_movements(&mut action, emotes);
+                }
+            }
+            State::Insert | State::MessageSearch => {
                 let mut action = UserActionAttributes::new(app, config, tx, key);
 
                 handle_insert_type_movements(&mut action, emotes);

@@ -14,15 +14,15 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::emotes::{
-    emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
-};
-use crate::ui::components::popups::centered_popup;
 use crate::{
+    emotes::{
+        emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
+    },
     handlers::{
         app::{App, State},
         config::{CompleteConfig, Theme},
     },
+    ui::components::popups::centered_popup,
     utils::{
         styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
         text::{title_spans, TitleStyle},
@@ -59,7 +59,7 @@ impl LayoutAttributes {
 pub struct WindowAttributes<'a, 'b, 'c, T: Backend> {
     frame: &'a mut Frame<'b, T>,
     app: &'c mut App,
-    layout: LayoutAttributes,
+    layout: Option<LayoutAttributes>,
     show_state_tabs: bool,
 }
 
@@ -67,7 +67,7 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
     pub fn new(
         frame: &'a mut Frame<'b, T>,
         app: &'c mut App,
-        layout: LayoutAttributes,
+        layout: Option<LayoutAttributes>,
         show_state_tabs: bool,
     ) -> Self {
         Self {
@@ -175,7 +175,7 @@ pub fn render_chat_ui<T: Backend>(
         components::render_state_tabs(frame, &layout, &app.get_state());
     }
 
-    let window = WindowAttributes::new(frame, app, layout, config.frontend.state_tabs);
+    let window = WindowAttributes::new(frame, app, Some(layout), config.frontend.state_tabs);
 
     match window.app.get_state() {
         // States of the application that require a chunk of the main window

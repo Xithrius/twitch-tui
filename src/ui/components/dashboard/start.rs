@@ -10,8 +10,14 @@ use tui::{
 };
 
 use crate::{
-    handlers::{app::App, config::CompleteConfig},
-    ui::components::dashboard::DASHBOARD_TITLE,
+    handlers::{
+        app::{App, State},
+        config::CompleteConfig,
+    },
+    ui::{
+        components::{dashboard::DASHBOARD_TITLE, render_channel_switcher},
+        WindowAttributes,
+    },
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
 
@@ -164,4 +170,11 @@ pub fn render_dashboard_ui<T: Backend>(
     );
 
     render_quit_selection_widget(frame, &mut v_chunks);
+
+    if Some(State::Start) == app.get_previous_state() {
+        render_channel_switcher(
+            WindowAttributes::new(frame, app, None, config.frontend.state_tabs),
+            config.storage.channels,
+        );
+    }
 }

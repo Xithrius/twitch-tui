@@ -93,11 +93,13 @@ pub async fn ui_driver(
                             "Restart and resize.",
                         ],
                     );
+                } else if app.get_state() == State::Start
+                    || (Some(State::Start) == app.get_previous_state()
+                        && State::ChannelSwitch == app.get_state())
+                {
+                    render_dashboard_ui(frame, &mut app, &config);
                 } else {
-                    match app.get_state() {
-                        State::Start => render_dashboard_ui(frame, &mut app, &config),
-                        _ => render_chat_ui(frame, &mut app, &config, &mut emotes),
-                    }
+                    render_chat_ui(frame, &mut app, &config, &mut emotes);
                 }
             })
             .unwrap();
