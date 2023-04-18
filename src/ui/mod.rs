@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_lines)]
-
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},

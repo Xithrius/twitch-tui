@@ -17,7 +17,9 @@ use crate::{
     },
     twitch::TwitchAction,
     ui::{
-        components::dashboard::render_dashboard_ui, error::render_error_ui, render::render_chat_ui,
+        components::{render_dashboard_ui, render_debug_ui},
+        error::render_error_ui,
+        render::render_chat_ui,
     },
 };
 
@@ -93,11 +95,13 @@ pub async fn ui_driver(
                             "Restart and resize.",
                         ],
                     );
-                } else if app.get_state() == State::Start
-                    || (Some(State::Start) == app.get_previous_state()
+                } else if app.get_state() == State::Dashboard
+                    || (Some(State::Dashboard) == app.get_previous_state()
                         && State::ChannelSwitch == app.get_state())
                 {
                     render_dashboard_ui(frame, &mut app, &config);
+                } else if app.get_state() == State::Debug {
+                    render_debug_ui(frame, &mut app, &config);
                 } else {
                     render_chat_ui(frame, &mut app, &config, &mut emotes);
                 }

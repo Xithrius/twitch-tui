@@ -1,5 +1,3 @@
-#![allow(clippy::use_self)]
-
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -116,8 +114,8 @@ pub struct FrontendConfig {
     pub betterttv_emotes: bool,
     /// If 7tv emotes should be displayed (requires kitty terminal).
     pub seventv_emotes: bool,
-    /// Comma-separated channel names to be displayed at start screen.
-    pub start_screen_channels: Vec<String>,
+    /// Channels to be displayed in the dashboard.
+    pub dashboard_channels: Vec<String>,
 }
 
 impl Default for TwitchConfig {
@@ -138,7 +136,7 @@ impl Default for TerminalConfig {
             maximum_messages: 150,
             log_file: None,
             verbose: false,
-            start_state: State::Start,
+            start_state: State::Dashboard,
         }
     }
 }
@@ -162,7 +160,7 @@ impl Default for FrontendConfig {
             twitch_emotes: false,
             betterttv_emotes: false,
             seventv_emotes: false,
-            start_screen_channels: vec![],
+            dashboard_channels: vec![],
         }
     }
 }
@@ -179,12 +177,12 @@ pub enum CursorType {
 impl FromStr for CursorType {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<CursorType, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "line" => Ok(CursorType::Line),
-            "underscore" => Ok(CursorType::UnderScore),
-            "block" => Ok(CursorType::Block),
-            _ => Ok(CursorType::User),
+            "line" => Ok(Self::Line),
+            "underscore" => Ok(Self::UnderScore),
+            "block" => Ok(Self::Block),
+            _ => Ok(Self::User),
         }
     }
 }
@@ -276,11 +274,11 @@ impl CompleteConfig {
                 persist_config(p, &config)?;
                 Ok(config)
             } else {
-                persist_config(p, &CompleteConfig::default())?;
+                persist_config(p, &Self::default())?;
                 bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
             }
         } else if let Ok(config_contents) = read_to_string(p) {
-            let mut config: CompleteConfig = toml::from_str(config_contents.as_str()).unwrap();
+            let mut config: Self = toml::from_str(config_contents.as_str()).unwrap();
 
             merge_args_into_config(&mut config, cli);
 

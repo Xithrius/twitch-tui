@@ -125,7 +125,7 @@ pub fn render_dashboard_ui<T: Backend>(
     app: &mut App,
     config: &CompleteConfig,
 ) {
-    let start_screen_channels_len = config.frontend.start_screen_channels.len() as u16;
+    let dashboard_channels_len = config.frontend.dashboard_channels.len() as u16;
 
     let recent_channels_len = app.storage.get("channels").len() as u16;
 
@@ -139,10 +139,10 @@ pub fn render_dashboard_ui<T: Backend>(
             Constraint::Min(2),
             // Configured default channels title, content
             Constraint::Length(2),
-            Constraint::Min(if start_screen_channels_len == 0 {
+            Constraint::Min(if dashboard_channels_len == 0 {
                 2
             } else {
-                start_screen_channels_len + 1
+                dashboard_channels_len + 1
             }),
             // Recent channel title, content
             Constraint::Length(2),
@@ -166,12 +166,12 @@ pub fn render_dashboard_ui<T: Backend>(
         &mut v_chunks,
         app,
         config.twitch.channel.clone(),
-        &config.frontend.start_screen_channels.clone(),
+        &config.frontend.dashboard_channels.clone(),
     );
 
     render_quit_selection_widget(frame, &mut v_chunks);
 
-    if Some(State::Start) == app.get_previous_state() {
+    if Some(State::Dashboard) == app.get_previous_state() {
         render_channel_switcher(
             WindowAttributes::new(frame, app, None, config.frontend.state_tabs),
             config.storage.channels,

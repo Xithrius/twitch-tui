@@ -22,10 +22,7 @@ use crate::{
     },
     ui::{
         components::{
-            channel_switcher::render_channel_switcher,
-            chatting::render_chat_box,
-            help::render_help_window,
-            state_tabs::render_state_tabs,
+            render_channel_switcher, render_chat_box, render_help_window, render_state_tabs,
             utils::{input_boxes::render_insert_box, popups::centered_popup},
         },
         LayoutAttributes, WindowAttributes,

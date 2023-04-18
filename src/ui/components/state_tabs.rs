@@ -10,7 +10,7 @@ use tui::{
 use crate::{handlers::app::State, ui::LayoutAttributes};
 
 const TABS_TO_RENDER: [State; 7] = [
-    State::Start,
+    State::Dashboard,
     State::Normal,
     State::Insert,
     State::Help,

@@ -231,7 +231,7 @@ pub async fn handle_stateful_user_input(
         handle_user_scroll(app, key);
 
         match app.get_state() {
-            State::Start => match key {
+            State::Dashboard => match key {
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
@@ -246,7 +246,7 @@ pub async fn handle_stateful_user_input(
                 }
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
-                        let mut channels = config.frontend.start_screen_channels.clone();
+                        let mut channels = config.frontend.dashboard_channels.clone();
                         channels.extend(app.storage.get_last_n("channels", 5, true));
 
                         if let Some(channel) = channels.get(selection as usize) {
@@ -293,7 +293,8 @@ pub async fn handle_stateful_user_input(
                 Key::Char('c') => app.set_state(State::Normal),
                 Key::Char('s') => app.set_state(State::ChannelSwitch),
                 Key::Ctrl('f') => app.set_state(State::MessageSearch),
-                Key::Ctrl('S') => app.set_state(State::Start),
+                Key::Ctrl('s') => app.set_state(State::Dashboard),
+                Key::Ctrl('d') => app.set_state(State::Debug),
                 Key::Char('?') => app.set_state(State::Help),
                 Key::Char('i') | Key::Insert => app.set_state(State::Insert),
                 Key::Char('@' | '/') => {
