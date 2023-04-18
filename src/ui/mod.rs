@@ -1,32 +1,12 @@
 #![allow(clippy::too_many_lines)]
 
-use std::{collections::VecDeque, vec};
-
-use chrono::offset::Local;
-use log::warn;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    layout::{Constraint, Rect},
     terminal::Frame,
-    text::{Span, Spans, Text},
-    widgets::{Block, Borders, List, ListItem},
 };
-use unicode_width::UnicodeWidthStr;
 
-use crate::{
-    emotes::{
-        emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
-    },
-    handlers::{
-        app::{App, State},
-        config::{CompleteConfig, Theme},
-    },
-    utils::{
-        styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
-        text::{title_spans, TitleStyle},
-    },
-};
+use crate::handlers::app::App;
 
 pub mod components;
 pub mod error;

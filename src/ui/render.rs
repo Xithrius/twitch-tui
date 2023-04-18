@@ -1,3 +1,41 @@
+use std::collections::VecDeque;
+
+use chrono::Local;
+use log::warn;
+use tui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Span, Spans, Text},
+    widgets::{Block, Borders, List, ListItem},
+    Frame,
+};
+use unicode_width::UnicodeWidthStr;
+
+use crate::{
+    emotes::{
+        emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
+    },
+    handlers::{
+        app::{App, State},
+        config::{CompleteConfig, Theme},
+    },
+    ui::{
+        components::{
+            channel_switcher::render_channel_switcher,
+            chatting::render_chat_box,
+            help::render_help_window,
+            state_tabs::render_state_tabs,
+            utils::{input_boxes::render_insert_box, popups::centered_popup},
+        },
+        LayoutAttributes, WindowAttributes,
+    },
+    utils::{
+        styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
+        text::{title_spans, TitleStyle},
+    },
+};
+
 pub fn render_chat_ui<T: Backend>(
     frame: &mut Frame<T>,
     app: &mut App,
@@ -91,18 +129,18 @@ pub fn render_chat_ui<T: Backend>(
     frame.render_widget(list, layout.first_chunk());
 
     if config.frontend.state_tabs {
-        components::render_state_tabs(frame, &layout, &app.get_state());
+        render_state_tabs(frame, &layout, &app.get_state());
     }
 
     let window = WindowAttributes::new(frame, app, Some(layout), config.frontend.state_tabs);
 
     match window.app.get_state() {
         // States of the application that require a chunk of the main window
-        State::Insert => components::render_chat_box(window, config.storage.mentions),
+        State::Insert => render_chat_box(window, config.storage.mentions),
         State::MessageSearch => {
             let checking_func = |s: String| -> bool { !s.is_empty() };
 
-            components::render_insert_box(
+            render_insert_box(
                 window,
                 "Message Search",
                 None,
@@ -112,9 +150,9 @@ pub fn render_chat_ui<T: Backend>(
         }
 
         // States that require popups
-        State::Help => components::render_help_window(window),
+        State::Help => render_help_window(window),
         State::ChannelSwitch => {
-            components::render_channel_switcher(window, config.storage.channels);
+            render_channel_switcher(window, config.storage.channels);
         }
         _ => {}
     }

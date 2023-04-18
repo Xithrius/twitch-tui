@@ -1,21 +1,13 @@
 use std::string::ToString;
 
 use regex::Regex;
-use tui::{
-    backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-};
+use tui::backend::Backend;
 
 use crate::{
-    ui::{components::render_insert_box, statics::NAME_RESTRICTION_REGEX, WindowAttributes},
+    ui::components::utils::{input_boxes::render_insert_box, popups::centered_popup},
+    ui::{statics::NAME_RESTRICTION_REGEX, WindowAttributes},
     utils::text::first_similarity,
 };
-
-const HORIZONTAL_CONSTRAINTS: [Constraint; 3] = [
-    Constraint::Percentage(15),
-    Constraint::Percentage(70),
-    Constraint::Percentage(15),
-];
 
 pub fn render_channel_switcher<T: Backend>(window: WindowAttributes<T>, channel_suggestions: bool) {
     let WindowAttributes {

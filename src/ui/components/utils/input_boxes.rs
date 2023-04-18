@@ -1,3 +1,17 @@
+use tui::{
+    backend::Backend,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Clear, Paragraph},
+};
+
+use crate::{
+    handlers::app::State,
+    ui::{components::utils::popups::centered_popup, WindowAttributes},
+    utils::text::{get_cursor_position, title_spans, TitleStyle},
+};
+
 /// Puts a box for user input at the bottom of the screen,
 /// with an interactive cursor.
 /// `input_validation` checks if the user's input is valid, changes window

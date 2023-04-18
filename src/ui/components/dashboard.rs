@@ -15,7 +15,7 @@ use crate::{
         config::CompleteConfig,
     },
     ui::{
-        components::{dashboard::DASHBOARD_TITLE, render_channel_switcher},
+        components::channel_switcher::render_channel_switcher, statics::DASHBOARD_TITLE,
         WindowAttributes,
     },
     utils::styles::DASHBOARD_TITLE_COLOR,

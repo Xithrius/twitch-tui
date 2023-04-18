@@ -2,7 +2,7 @@ use tui::backend::Backend;
 
 use crate::{
     ui::{
-        components::render_insert_box,
+        components::utils::input_boxes::render_insert_box,
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
         WindowAttributes,
     },
