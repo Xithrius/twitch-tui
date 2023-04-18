@@ -276,7 +276,7 @@ pub async fn handle_stateful_user_input(
                     if let Some(previous_state) = app.get_previous_state() {
                         app.set_state(previous_state);
                     } else {
-                        app.set_state(config.terminal.start_state.clone());
+                        app.set_state(State::Normal);
                     }
                 } else {
                     let mut action = UserActionAttributes::new(app, config, tx, key);
@@ -290,40 +290,36 @@ pub async fn handle_stateful_user_input(
                 handle_insert_type_movements(&mut action, emotes);
             }
             State::Normal => match key {
-                Key::Char('c') => {
-                    app.set_state(State::Normal);
-                }
-                Key::Char('s') => {
-                    app.set_state(State::ChannelSwitch);
-                }
-                Key::Ctrl('f') => {
-                    app.set_state(State::MessageSearch);
-                }
-                Key::Ctrl('t') => {
-                    app.filters.toggle();
-                }
-                Key::Ctrl('r') => {
-                    app.filters.reverse();
-                }
-                Key::Char('i') | Key::Insert => {
-                    app.set_state(State::Insert);
-                }
+                Key::Char('c') => app.set_state(State::Normal),
+                Key::Char('s') => app.set_state(State::ChannelSwitch),
+                Key::Ctrl('f') => app.set_state(State::MessageSearch),
+                Key::Ctrl('S') => app.set_state(State::Start),
+                Key::Char('?') => app.set_state(State::Help),
+                Key::Char('i') | Key::Insert => app.set_state(State::Insert),
                 Key::Char('@' | '/') => {
                     app.set_state(State::Insert);
                     app.input_buffer.update(&key.to_string(), 1);
                 }
-                Key::Ctrl('p') => {
-                    panic!("Manual panic triggered by user.");
-                }
-                Key::Char('S') => app.set_state(State::Start),
-                Key::Char('?') => app.set_state(State::Help),
+                Key::Ctrl('t') => app.filters.toggle(),
+                Key::Ctrl('r') => app.filters.reverse(),
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);
                 }
                 Key::Esc => {
                     app.scrolling.jump_to(0);
-
                     app.set_state(State::Normal);
+                }
+                _ => {}
+            },
+            State::Debug => match key {
+                Key::Char('q') => return Some(TerminalAction::Quitting),
+                Key::Esc => {
+                    if let Some(previous_state) = app.get_previous_state() {
+                        app.set_state(previous_state);
+                    } else {
+                        app.set_state(State::Normal);
+                    }
                 }
                 _ => {}
             },

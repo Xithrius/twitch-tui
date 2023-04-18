@@ -52,6 +52,7 @@ impl ValueEnum for State {
             Self::Help => "help",
             Self::ChannelSwitch => "channel",
             Self::MessageSearch => "search",
+            Self::Debug => "debug",
         }))
     }
 }

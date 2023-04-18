@@ -1,14 +1,4 @@
-use tui::layout::{Constraint, Direction, Layout, Rect};
-
-pub mod channels;
-
-const HORIZONTAL_CONSTRAINTS: [Constraint; 3] = [
-    Constraint::Percentage(15),
-    Constraint::Percentage(70),
-    Constraint::Percentage(15),
-];
-
-pub fn centered_popup(size: Rect, terminal_height: u16) -> Rect {
+pub fn centered_popup(size: Rect, terminal_height: u16, h_constraints: &[Constraint]) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -23,6 +13,6 @@ pub fn centered_popup(size: Rect, terminal_height: u16) -> Rect {
 
     Layout::default()
         .direction(Direction::Horizontal)
-        .constraints(HORIZONTAL_CONSTRAINTS.as_ref())
+        .constraints(h_constraints.as_ref())
         .split(popup_layout[1])[1]
 }

@@ -79,4 +79,12 @@ lazy_static! {
 
     // https://www.reddit.com/r/Twitch/comments/32w5b2/username_requirements/
     pub static ref NAME_RESTRICTION_REGEX: &'static str = "^[a-zA-Z0-9_]{4,25}$";
+
+    pub static ref DASHBOARD_TITLE: Vec<&'static str> = vec![
+        "   __           _ __       __          __        _ ",
+        "  / /__      __(_) /______/ /_        / /___  __(_)",
+        " / __/ | /| / / / __/ ___/ __ \\______/ __/ / / / / ",
+        "/ /_ | |/ |/ / / /_/ /__/ / / /_____/ /_/ /_/ / /  ",
+        "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   "
+    ];
 }

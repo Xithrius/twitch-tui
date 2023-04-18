@@ -25,6 +25,7 @@ pub enum State {
     Help,
     ChannelSwitch,
     MessageSearch,
+    Debug,
 }
 
 impl State {
@@ -54,6 +55,7 @@ impl ToString for State {
             Self::Help => "Help",
             Self::ChannelSwitch => "Channel",
             Self::MessageSearch => "Search",
+            Self::Debug => "Debug",
         }
         .to_string()
     }

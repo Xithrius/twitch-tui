@@ -9,12 +9,14 @@ use tui::{
 
 use crate::{handlers::app::State, ui::LayoutAttributes};
 
-const TABS_TO_RENDER: [State; 5] = [
+const TABS_TO_RENDER: [State; 7] = [
+    State::Start,
     State::Normal,
     State::Insert,
     State::Help,
     State::ChannelSwitch,
     State::MessageSearch,
+    State::Debug,
 ];
 
 pub fn render_state_tabs<T: Backend>(
