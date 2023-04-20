@@ -1,8 +1,10 @@
 use std::{
     cmp::{Eq, PartialEq},
     collections::VecDeque,
+    str::FromStr,
 };
 
+use color_eyre::eyre::{bail, Error, Result};
 use rustyline::line_buffer::LineBuffer;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +18,7 @@ use crate::handlers::{
 const INPUT_BUFFER_LIMIT: usize = 4096;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum State {
     Dashboard,
     Normal,
@@ -56,6 +59,29 @@ impl ToString for State {
             Self::Debug => "Debug",
         }
         .to_string()
+    }
+}
+
+impl FromStr for State {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "dashboard" | "start" => Ok(Self::Dashboard),
+            "normal" | "default" => Ok(Self::Normal),
+            "insert" | "input" => Ok(Self::Insert),
+            "help" => Ok(Self::Help),
+            "channelswitch" | "channels" => Ok(Self::ChannelSwitch),
+            "messagesearch" | "search" => Ok(Self::MessageSearch),
+            "debug" => Ok(Self::Debug),
+            _ => bail!(""),
+        }
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::Dashboard
     }
 }
 
