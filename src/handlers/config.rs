@@ -1,5 +1,6 @@
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
+use serde_with::DeserializeFromStr;
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File},
@@ -165,7 +166,7 @@ impl Default for FrontendConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum CursorType {
     User,
@@ -193,7 +194,7 @@ impl Default for CursorType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Palette {
     Pastel,
@@ -221,11 +222,13 @@ impl FromStr for Palette {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Theme {
     Dark,
     Light,
+
+    #[allow(dead_code)]
     Custom,
 }
 

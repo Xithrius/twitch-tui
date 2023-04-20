@@ -51,13 +51,13 @@ impl State {
 impl ToString for State {
     fn to_string(&self) -> String {
         match self {
-            Self::Dashboard => "Dashboard",
-            Self::Normal => "Normal",
-            Self::Insert => "Insert",
-            Self::Help => "Help",
-            Self::ChannelSwitch => "Channel",
-            Self::MessageSearch => "Search",
-            Self::Debug => "Debug",
+            Self::Dashboard => "dashboard",
+            Self::Normal => "normal",
+            Self::Insert => "input",
+            Self::Help => "help",
+            Self::ChannelSwitch => "channel",
+            Self::MessageSearch => "search",
+            Self::Debug => "debug",
         }
         .to_string()
     }
