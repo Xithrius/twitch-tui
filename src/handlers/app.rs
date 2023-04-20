@@ -6,7 +6,8 @@ use std::{
 
 use color_eyre::eyre::{bail, Error, Result};
 use rustyline::line_buffer::LineBuffer;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use serde_with::DeserializeFromStr;
 
 use crate::handlers::{
     config::{CompleteConfig, Theme},
@@ -17,7 +18,7 @@ use crate::handlers::{
 
 const INPUT_BUFFER_LIMIT: usize = 4096;
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
 #[serde(rename_all = "lowercase")]
 pub enum State {
     Dashboard,
@@ -74,7 +75,7 @@ impl FromStr for State {
             "channelswitch" | "channels" => Ok(Self::ChannelSwitch),
             "messagesearch" | "search" => Ok(Self::MessageSearch),
             "debug" => Ok(Self::Debug),
-            _ => bail!(""),
+            _ => bail!("Could not match start state"),
         }
     }
 }

@@ -15,11 +15,7 @@ fn render_config_values_widget<T: Backend>(frame: &mut Frame<T>, v_chunks: &mut 
     frame.render_widget(w, *v_chunks.next().unwrap());
 }
 
-pub fn render_debug_ui<T: Backend>(frame: &mut Frame<T>, app: &mut App, config: &CompleteConfig) {
-    let dashboard_channels_len = config.frontend.dashboard_channels.len() as u16;
-
-    let recent_channels_len = app.storage.get("channels").len() as u16;
-
+pub fn render_debug_ui<T: Backend>(frame: &mut Frame<T>, _app: &mut App, _config: &CompleteConfig) {
     let v_chunk_binding = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
