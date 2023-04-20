@@ -1010,8 +1010,7 @@ dependencies = [
 [[package]]
 name = "image"
 version = "0.24.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "527909aa81e20ac3a44803521443a765550f09b5130c2c2fa1ea59c2f8f50a3a"
+source = "git+https://github.com/Nogesma/image#4bd97d5561439da5dc724b7d0dc2e0f9a3e4cecb"
 dependencies = [
  "bytemuck",
  "byteorder",
@@ -1140,12 +1139,6 @@ checksum = "445dde2150c55e483f3d8416706b97ec8e8237c307e5b7b4b8dd15e6af2a0730"
 dependencies = [
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "json"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 
 [[package]]
 name = "lazy_static"
@@ -2213,7 +2206,6 @@ dependencies = [
  "fuzzy-matcher",
  "image",
  "irc",
- "json",
  "lazy_static",
  "log",
  "ratatui",

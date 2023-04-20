@@ -32,6 +32,19 @@ pub struct EmoteData {
     pub index_in_message: usize,
     pub id: u32,
     pub pid: u32,
+    pub layer: u16,
+}
+
+impl EmoteData {
+    pub const fn new(emote: &LoadedEmote, name: String, idx: usize, layer: u16) -> Self {
+        Self {
+            name,
+            index_in_message: idx,
+            id: emote.hash,
+            pid: emote.n,
+            layer,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -213,37 +226,64 @@ impl MessageData {
         rows
     }
 
+    /// Splits the payload by spaces, then check every word to see if they match an emote.
+    /// If they do, tell the terminal to load the emote, and replace the word by `'a' * emote_width`,
+    /// which will later be replaced by spaces.
+    /// Some emotes can stack on top of each others, in this case we remove the word entirely from the payload.
     pub fn parse_emotes(&mut self, emotes: &mut Emotes) {
-        let mut words: Vec<String> = self.payload.split(' ').map(ToString::to_string).collect();
-
         let mut position = 1;
-        for word in &mut words {
-            if let Some(filename) = emotes.emotes.get(word) {
-                match load_emote(
-                    word,
-                    filename,
-                    &mut emotes.info,
-                    &mut emotes.loaded,
-                    emotes.cell_size,
-                ) {
-                    Ok(LoadedEmote { hash, n, width, .. }) => {
-                        self.emotes.push(EmoteData {
-                            name: word.clone(),
-                            index_in_message: position,
-                            id: hash,
-                            pid: n,
-                        });
-                        *word = "a".repeat(width as usize);
-                    }
-                    Err(err) => {
-                        warn!("Unable to load emote {word} ({filename}): {err}");
-                        emotes.emotes.remove(word);
+        let mut last_emote_pos = 0;
+
+        self.payload = self
+            .payload
+            .split(' ')
+            .filter_map(|word| {
+                if let Some((filename, zero_width)) = emotes.emotes.get(word) {
+                    match load_emote(
+                        word,
+                        filename,
+                        *zero_width,
+                        &mut emotes.info,
+                        &mut emotes.loaded,
+                        emotes.cell_size,
+                    ) {
+                        Ok(loaded_emote) => {
+                            if loaded_emote.overlay {
+                                // Check if last word is emote.
+                                if let Some(emote) = self.emotes.last() {
+                                    if last_emote_pos == position {
+                                        self.emotes.push(EmoteData::new(
+                                            &loaded_emote,
+                                            word.to_string(),
+                                            emote.index_in_message,
+                                            emote.layer + 1,
+                                        ));
+                                        return None;
+                                    }
+                                }
+                            }
+                            self.emotes.push(EmoteData::new(
+                                &loaded_emote,
+                                word.to_string(),
+                                position,
+                                0,
+                            ));
+
+                            position += loaded_emote.width as usize + 1;
+                            last_emote_pos = position;
+                            return Some("a".repeat(loaded_emote.width as usize));
+                        }
+                        Err(err) => {
+                            warn!("Unable to load emote {word} ({filename}): {err}");
+                            emotes.emotes.remove(word);
+                        }
                     }
                 }
-            }
-            position += word.width() + 1;
-        }
-        self.payload = words.join(" ");
+                position += word.width() + 1;
+                Some(word.to_string())
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
     }
 }
 

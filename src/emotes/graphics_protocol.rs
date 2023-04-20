@@ -2,7 +2,11 @@ use anyhow::{anyhow, Context};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use crossterm::{csi, cursor::MoveTo, queue, Command};
 use dialoguer::console::{Key, Term};
-use image::{codecs::gif::GifDecoder, io::Reader, AnimationDecoder, ImageDecoder, ImageFormat};
+use image::{
+    codecs::{gif::GifDecoder, webp::WebPDecoder},
+    io::Reader,
+    AnimationDecoder, ImageDecoder, ImageFormat, Rgba,
+};
 use std::{
     env, fmt, fs,
     fs::File,
@@ -11,8 +15,11 @@ use std::{
     path::PathBuf,
 };
 
-use crate::utils::pathing::{
-    create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
+use crate::{
+    handlers::data::EmoteData,
+    utils::pathing::{
+        create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
+    },
 };
 
 /// Macro to add the graphics protocol escape sequence around a command.
@@ -33,14 +40,14 @@ pub trait Size {
     fn size(&self) -> (u32, u32);
 }
 
-pub struct Static {
+pub struct StaticImage {
     id: u32,
     width: u32,
     height: u32,
     path: PathBuf,
 }
 
-impl Static {
+impl StaticImage {
     pub fn new(id: u32, image: Reader<BufReader<File>>) -> Result<Self> {
         let image = image.decode()?.to_rgba8();
         let (width, height) = image.dimensions();
@@ -59,7 +66,7 @@ impl Static {
     }
 }
 
-impl Command for Static {
+impl Command for StaticImage {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         write!(
             f,
@@ -77,22 +84,21 @@ impl Command for Static {
     }
 }
 
-impl Size for Static {
+impl Size for StaticImage {
     fn size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 }
 
-pub struct Gif {
+pub struct AnimatedImage {
     id: u32,
     width: u32,
     height: u32,
     frames: Vec<(PathBuf, u32)>,
 }
 
-impl Gif {
-    pub fn new(id: u32, image: Reader<BufReader<File>>) -> Result<Self> {
-        let decoder = GifDecoder::new(image.into_inner())?;
+impl AnimatedImage {
+    pub fn new<'a>(id: u32, decoder: impl ImageDecoder<'a> + AnimationDecoder<'a>) -> Result<Self> {
         let (width, height) = decoder.dimensions();
         let frames = decoder.into_frames().collect_frames()?;
         let iter = frames.iter();
@@ -130,7 +136,7 @@ impl Gif {
     }
 }
 
-impl Command for Gif {
+impl Command for AnimatedImage {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         if self.frames.is_empty() {
             return Err(fmt::Error);
@@ -179,27 +185,43 @@ impl Command for Gif {
     }
 }
 
-impl Size for Gif {
+impl Size for AnimatedImage {
     fn size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 }
 
 pub enum Load {
-    Static(Static),
-    Gif(Gif),
+    Static(StaticImage),
+    Animated(AnimatedImage),
 }
 
 impl Load {
     pub fn new(id: u32, path: &str) -> Result<Self> {
         let path = std::path::PathBuf::from(path);
-        let image = Reader::open(path)?.with_guessed_format()?;
+        let image = Reader::open(&path)?.with_guessed_format()?;
 
         match image.format() {
             None => Err(anyhow!("Could not guess image format.")),
-            Some(ImageFormat::WebP) => Err(anyhow!("WebP image format is not supported.")),
-            Some(ImageFormat::Gif) => Ok(Self::Gif(Gif::new(id, image)?)),
-            Some(_) => Ok(Self::Static(Static::new(id, image)?)),
+            Some(ImageFormat::WebP) => {
+                let mut decoder = WebPDecoder::new(image.into_inner())?;
+
+                if decoder.has_animation() {
+                    // Some animated webp images have a default white background color
+                    // We replace it by a transparent background
+                    decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
+                    Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
+                } else {
+                    let image = Reader::open(&path)?.with_guessed_format()?;
+
+                    Ok(Self::Static(StaticImage::new(id, image)?))
+                }
+            }
+            Some(ImageFormat::Gif) => {
+                let decoder = GifDecoder::new(image.into_inner())?;
+                Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
+            }
+            Some(_) => Ok(Self::Static(StaticImage::new(id, image)?)),
         }
     }
 }
@@ -208,7 +230,7 @@ impl Command for Load {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         match self {
             Self::Static(s) => s.write_ansi(f),
-            Self::Gif(g) => g.write_ansi(f),
+            Self::Animated(a) => a.write_ansi(f),
         }
     }
 
@@ -222,29 +244,36 @@ impl Size for Load {
     fn size(&self) -> (u32, u32) {
         match self {
             Self::Static(s) => s.size(),
-            Self::Gif(g) => g.size(),
+            Self::Animated(a) => a.size(),
         }
     }
 }
 
 pub struct Display {
-    id: u32,
-    pid: u32,
-    width: u32,
-    offset: u32,
     x: u16,
     y: u16,
+    id: u32,
+    pid: u32,
+    width: u16,
+    offset: u16,
+    layer: u16,
 }
 
 impl Display {
-    pub const fn new((x, y): (u16, u16), id: u32, pid: u32, width: u32, offset: u32) -> Self {
+    pub const fn new(
+        (x, y): (u16, u16),
+        EmoteData { id, pid, layer, .. }: &EmoteData,
+        width: u16,
+        offset: u16,
+    ) -> Self {
         Self {
-            id,
-            pid,
-            width,
-            offset,
             x,
             y,
+            id: *id,
+            pid: *pid,
+            width,
+            offset,
+            layer: *layer,
         }
     }
 }
@@ -255,11 +284,12 @@ impl Command for Display {
         // r=1: Set height to 1 row
         write!(
             f,
-            gp!("a=p,i={id},p={pid},r=1,c={width},X={offset},q=2;"),
+            gp!("a=p,i={id},p={pid},r=1,c={width},X={offset},z={z},q=2;"),
             id = self.id,
             pid = self.pid,
             width = self.width,
-            offset = self.offset
+            offset = self.offset,
+            z = self.layer
         )
     }
 
@@ -327,7 +357,7 @@ fn query_terminal(command: &[u8]) -> Result<String> {
     Ok(response)
 }
 
-pub fn get_terminal_cell_size() -> Result<(u32, u32)> {
+pub fn get_terminal_cell_size() -> Result<(u16, u16)> {
     // Request the terminal size in pixels.
     let res = query_terminal(csi!("14t").as_bytes())?;
 
@@ -336,16 +366,16 @@ pub fn get_terminal_cell_size() -> Result<(u32, u32)> {
     let height_px = values
         .next()
         .context("Invalid response from terminal")?
-        .parse::<u32>()?;
+        .parse::<u16>()?;
     let width_px = values
         .next()
         .context("Invalid response from terminal")?
-        .parse::<u32>()?;
+        .parse::<u16>()?;
 
     // Size of terminal: (columns, rows)
     let (ncols, nrows) = crossterm::terminal::size()?;
 
-    Ok((width_px / u32::from(ncols), height_px / u32::from(nrows)))
+    Ok((width_px / ncols, height_px / nrows))
 }
 
 /// First check if the terminal is `kitty` or `WezTerm`, theses are the only terminals that fully support the graphics protocol as of 2023-04-09.
