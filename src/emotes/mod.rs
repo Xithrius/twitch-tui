@@ -31,30 +31,32 @@ pub struct LoadedEmote {
     /// Number of emotes that have been displayed
     pub n: u32,
     /// Width in cells of the emote
-    pub width: u32,
+    pub width: u16,
     /// Offset is the difference between the emote width in pixels, and the edge of the next cell
-    pub offset: u32,
+    pub offset: u16,
+    /// If the emote should be displayed over the previous emote, if no text is between them.
+    pub overlay: bool,
 }
 
 #[derive(Default, Debug)]
 pub struct Emotes {
-    /// Map of emote name, filename
-    pub emotes: HashMap<String, String>,
+    /// Map of emote name, filename, and if the emote is an overlay
+    pub emotes: HashMap<String, (String, bool)>,
     /// Emotes currently loaded
     pub loaded: HashSet<u32>,
     /// Info about loaded emotes
     pub info: HashMap<String, LoadedEmote>,
     /// Emotes currently displayed: (id, placement id), (col, row)
     pub displayed: HashMap<(u32, u32), (u16, u16)>,
-    /// Terminal cell size in pixels:  (width, height)
-    pub cell_size: (u32, u32),
+    /// Terminal cell size in pixels: (width, height)
+    pub cell_size: (u16, u16),
 }
 
 impl Emotes {
     pub async fn new(
         config: &CompleteConfig,
         channel: &str,
-        cell_size: (u32, u32),
+        cell_size: (u16, u16),
     ) -> Result<Self> {
         let emotes = get_emotes(config, channel).await?;
 
@@ -82,7 +84,7 @@ pub async fn send_emotes(
     config: &CompleteConfig,
     tx: &Sender<Emotes>,
     channel: &str,
-    terminal_cell_size: (u32, u32),
+    terminal_cell_size: (u16, u16),
 ) {
     info!("Starting emotes download.");
     match Emotes::new(config, channel, terminal_cell_size).await {
@@ -102,7 +104,7 @@ pub async fn emotes(
     config: CompleteConfig,
     tx: Sender<Emotes>,
     mut rx: Receiver<TwitchAction>,
-    terminal_cell_size: (u32, u32),
+    terminal_cell_size: (u16, u16),
 ) {
     send_emotes(&config, &tx, &config.twitch.channel, terminal_cell_size).await;
 
@@ -144,10 +146,15 @@ pub fn show_emotes<F>(
 
         emotes_pos_in_span.insert(emote.index_in_message - start);
 
-        let info = emotes.info.get(&emote.name).unwrap();
+        let info = if let Some(info) = emotes.info.get(&emote.name) {
+            info
+        } else {
+            warn!("Unable to get info of emote {}", emote.name);
+            continue;
+        };
 
         // Delete emote if we don't need to display it
-        if hide((col, row), info.width as u16) {
+        if hide((col, row), info.width) {
             if let Err(err) =
                 graphics_protocol::command(graphics_protocol::Clear(emote.id, emote.pid))
             {
@@ -164,11 +171,11 @@ pub fn show_emotes<F>(
             continue;
         }
 
+        // Only send a command if the emote changed position
         if emotes.displayed.get(&(emote.id, emote.pid)) != Some(&(col, row)) {
             if let Err(err) = graphics_protocol::command(graphics_protocol::Display::new(
                 (col, row),
-                emote.id,
-                emote.pid,
+                emote,
                 info.width,
                 info.offset,
             )) {
@@ -227,9 +234,10 @@ pub fn hide_message_emotes(
 pub fn load_emote(
     word: &str,
     filename: &str,
+    overlay: bool,
     info: &mut HashMap<String, LoadedEmote>,
     loaded: &mut HashSet<u32>,
-    (cell_w, cell_h): (u32, u32),
+    (cell_w, cell_h): (u16, u16),
 ) -> Result<LoadedEmote> {
     if let Some(emote) = info.get_mut(word) {
         emote.n += 1;
@@ -241,19 +249,22 @@ pub fn load_emote(
 
         // Tells the terminal to load the image for later use
         let loaded_image = graphics_protocol::Load::new(hash, &cache_path(filename))?;
-        let (mut width_px, height_px) = loaded_image.size();
+        let (width_px, height_px) = loaded_image.size();
         graphics_protocol::command(loaded_image)?;
 
+        let mut width_px = width_px as f32;
+        let cell_w = u32::from(cell_w);
         // Resize width to fit image in 1 cell of height
-        width_px = (width_px as f32 * cell_h as f32 / height_px as f32).ceil() as u32;
+        width_px = (width_px * f32::from(cell_h) / height_px as f32).ceil();
         // Offset the image on the left side, otherwise the terminal will stretch it
-        let offset = (width_px % cell_w).abs_diff(cell_w) % cell_w;
-        let width_cell = (width_px as f32 / cell_w as f32).ceil() as u32;
+        let offset = ((width_px as u32 % cell_w).abs_diff(cell_w) % cell_w) as u16;
+        let width_cell = (width_px / cell_w as f32).ceil() as u16;
         let emote = LoadedEmote {
             hash,
             n: 1,
             width: width_cell,
             offset,
+            overlay,
         };
 
         info.insert(word.to_string(), emote);
@@ -263,12 +274,12 @@ pub fn load_emote(
 }
 
 pub fn reload_emote(
-    emote_list: &HashMap<String, String>,
+    emote_list: &HashMap<String, (String, bool)>,
     loaded_emotes: &mut HashSet<u32>,
     name: &str,
     hash: u32,
 ) -> Result<()> {
-    let filename = emote_list.get(name).context("Emote not found")?;
+    let (filename, _) = emote_list.get(name).context("Emote not found")?;
     graphics_protocol::command(graphics_protocol::Load::new(hash, &cache_path(filename))?)?;
     loaded_emotes.insert(hash);
     Ok(())
