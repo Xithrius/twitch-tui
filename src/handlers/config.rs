@@ -8,6 +8,7 @@ use std::{
     path::Path,
     str::FromStr,
 };
+use tui::widgets::BorderType;
 
 use crate::{
     emotes::{emotes_enabled, graphics_protocol},
@@ -117,6 +118,8 @@ pub struct FrontendConfig {
     pub seventv_emotes: bool,
     /// Comma-separated channel names to be displayed at start screen.
     pub start_screen_channels: Vec<String>,
+    /// A border wrapper around `BorderType`.
+    pub border_type: Border,
 }
 
 impl Default for TwitchConfig {
@@ -162,35 +165,8 @@ impl Default for FrontendConfig {
             betterttv_emotes: false,
             seventv_emotes: false,
             start_screen_channels: vec![],
+            border_type: Border::default(),
         }
-    }
-}
-
-#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum CursorType {
-    User,
-    Line,
-    Block,
-    UnderScore,
-}
-
-impl FromStr for CursorType {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "line" => Ok(Self::Line),
-            "underscore" => Ok(Self::UnderScore),
-            "block" => Ok(Self::Block),
-            _ => Ok(Self::User),
-        }
-    }
-}
-
-impl Default for CursorType {
-    fn default() -> Self {
-        Self::User
     }
 }
 
@@ -214,10 +190,11 @@ impl FromStr for Palette {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+            "pastel" => Ok(Self::Pastel),
             "vibrant" => Ok(Self::Vibrant),
             "warm" => Ok(Self::Warm),
             "cool" => Ok(Self::Cool),
-            _ => Ok(Self::Pastel),
+            _ => bail!("Palette '{}' cannot be deserialized", s),
         }
     }
 }
@@ -243,8 +220,78 @@ impl FromStr for Theme {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+            "dark" => Ok(Self::Dark),
             "light" => Ok(Self::Light),
-            _ => Ok(Self::Dark),
+            _ => bail!("Theme '{}' cannot be deserialized", s),
+        }
+    }
+}
+
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum CursorType {
+    User,
+    Line,
+    Block,
+    UnderScore,
+}
+
+impl Default for CursorType {
+    fn default() -> Self {
+        Self::User
+    }
+}
+
+impl FromStr for CursorType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "user" => Ok(Self::User),
+            "line" => Ok(Self::Line),
+            "underscore" => Ok(Self::UnderScore),
+            "block" => Ok(Self::Block),
+            _ => bail!("Cursor type of '{}' cannot be deserialized", s),
+        }
+    }
+}
+
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum Border {
+    Plain,
+    Rounded,
+    Double,
+    Thick,
+}
+
+impl Default for Border {
+    fn default() -> Self {
+        Self::Plain
+    }
+}
+
+impl FromStr for Border {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "plain" => Ok(Self::Plain),
+            "rounded" => Ok(Self::Rounded),
+            "double" => Ok(Self::Double),
+            "thick" => Ok(Self::Thick),
+            _ => bail!("Border '{}' cannot be deserialized", s),
+        }
+    }
+}
+
+impl From<Border> for BorderType {
+    fn from(val: Border) -> Self {
+        match val {
+            Border::Plain => Self::Plain,
+            Border::Rounded => Self::Rounded,
+            Border::Double => Self::Double,
+            Border::Thick => Self::Thick,
         }
     }
 }

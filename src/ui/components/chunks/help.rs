@@ -25,6 +25,7 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
         app,
         layout,
         show_state_tabs: _,
+        border_type,
     } = window;
 
     let mut rows = vec![];
@@ -47,7 +48,12 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
 
     let help_table = Table::new(rows)
         .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
-        .block(Block::default().borders(Borders::ALL).title("[ Keybinds ]"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("[ Keybinds ]")
+                .border_type(border_type.into()),
+        )
         .widths(&TABLE_CONSTRAINTS)
         .column_spacing(2)
         .style(match app.theme {

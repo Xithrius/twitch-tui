@@ -173,7 +173,13 @@ pub fn render_dashboard_ui<T: Backend>(
 
     if Some(State::Dashboard) == app.get_previous_state() {
         render_channel_switcher(
-            WindowAttributes::new(frame, app, None, config.frontend.state_tabs),
+            WindowAttributes::new(
+                frame,
+                app,
+                None,
+                config.frontend.state_tabs,
+                config.frontend.border_type.clone(),
+            ),
             config.storage.channels,
         );
     }

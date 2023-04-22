@@ -39,6 +39,7 @@ pub fn render_insert_box<T: Backend>(
         layout,
         app,
         show_state_tabs,
+        border_type,
     } = window;
 
     let buffer = &app.input_buffer;
@@ -93,13 +94,14 @@ pub fn render_insert_box<T: Backend>(
     .block(
         Block::default()
             .borders(Borders::ALL)
+            .border_type(border_type.into())
+            .border_style(Style::default().fg(status_color))
             .title(title_spans(
                 &binding,
                 Style::default()
                     .fg(status_color)
                     .add_modifier(Modifier::BOLD),
-            ))
-            .border_style(Style::default().fg(status_color)),
+            )),
     )
     .scroll((
         0,
