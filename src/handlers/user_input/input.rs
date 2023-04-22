@@ -231,7 +231,7 @@ pub async fn handle_stateful_user_input(
         handle_user_scroll(app, key);
 
         match app.get_state() {
-            State::Start => match key {
+            State::Dashboard => match key {
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
@@ -315,7 +315,7 @@ pub async fn handle_stateful_user_input(
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
-                Key::Char('S') => app.set_state(State::Start),
+                Key::Char('S') => app.set_state(State::Dashboard),
                 Key::Char('?') => app.set_state(State::Help),
                 Key::Char('q') => {
                     return Some(TerminalAction::Quitting);

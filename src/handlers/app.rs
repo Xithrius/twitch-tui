@@ -1,12 +1,13 @@
-#![allow(clippy::use_self)]
-
 use std::{
     cmp::{Eq, PartialEq},
     collections::VecDeque,
+    str::FromStr,
 };
 
+use color_eyre::eyre::{bail, Error, Result};
 use rustyline::line_buffer::LineBuffer;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use serde_with::DeserializeFromStr;
 
 use crate::handlers::{
     config::{CompleteConfig, Theme},
@@ -17,9 +18,9 @@ use crate::handlers::{
 
 const INPUT_BUFFER_LIMIT: usize = 4096;
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
 pub enum State {
-    Start,
+    Dashboard,
     Normal,
     Insert,
     Help,
@@ -45,10 +46,16 @@ impl State {
     }
 }
 
+impl Default for State {
+    fn default() -> Self {
+        Self::Dashboard
+    }
+}
+
 impl ToString for State {
     fn to_string(&self) -> String {
         match self {
-            Self::Start => "Start",
+            Self::Dashboard => "Dashboard",
             Self::Normal => "Normal",
             Self::Insert => "Insert",
             Self::Help => "Help",
@@ -56,6 +63,22 @@ impl ToString for State {
             Self::MessageSearch => "Search",
         }
         .to_string()
+    }
+}
+
+impl FromStr for State {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "dashboard" | "dash" | "start" => Ok(Self::Dashboard),
+            "normal" | "default" | "chat" => Ok(Self::Normal),
+            "insert" | "input" => Ok(Self::Insert),
+            "help" | "commands" => Ok(Self::Help),
+            "channelswitcher" | "channels" => Ok(Self::ChannelSwitch),
+            "messagesearch" | "search" => Ok(Self::MessageSearch),
+            _ => bail!("State '{}' cannot be deserialized", s),
+        }
     }
 }
 

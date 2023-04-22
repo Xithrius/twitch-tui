@@ -1,7 +1,6 @@
-#![allow(clippy::use_self)]
-
 use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
+use serde_with::DeserializeFromStr;
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File},
@@ -138,7 +137,7 @@ impl Default for TerminalConfig {
             maximum_messages: 150,
             log_file: None,
             verbose: false,
-            start_state: State::Start,
+            start_state: State::default(),
         }
     }
 }
@@ -167,7 +166,7 @@ impl Default for FrontendConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum CursorType {
     User,
@@ -179,12 +178,12 @@ pub enum CursorType {
 impl FromStr for CursorType {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<CursorType, Self::Err> {
-        match s {
-            "line" => Ok(CursorType::Line),
-            "underscore" => Ok(CursorType::UnderScore),
-            "block" => Ok(CursorType::Block),
-            _ => Ok(CursorType::User),
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "line" => Ok(Self::Line),
+            "underscore" => Ok(Self::UnderScore),
+            "block" => Ok(Self::Block),
+            _ => Ok(Self::User),
         }
     }
 }
@@ -195,7 +194,7 @@ impl Default for CursorType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Palette {
     Pastel,
@@ -214,7 +213,7 @@ impl FromStr for Palette {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.to_lowercase().as_str() {
             "vibrant" => Ok(Self::Vibrant),
             "warm" => Ok(Self::Warm),
             "cool" => Ok(Self::Cool),
@@ -223,11 +222,13 @@ impl FromStr for Palette {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Theme {
     Dark,
     Light,
+
+    #[allow(dead_code)]
     Custom,
 }
 
@@ -241,7 +242,7 @@ impl FromStr for Theme {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.to_lowercase().as_str() {
             "light" => Ok(Self::Light),
             _ => Ok(Self::Dark),
         }
@@ -276,7 +277,7 @@ impl CompleteConfig {
                 persist_config(p, &config)?;
                 Ok(config)
             } else {
-                persist_config(p, &CompleteConfig::default())?;
+                persist_config(p, &Self::default())?;
                 bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
             }
         } else if let Ok(config_contents) = read_to_string(p) {

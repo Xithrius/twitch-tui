@@ -114,7 +114,10 @@ impl MessageData {
                 .chars()
                 .zip(*start_index..)
                 .map(|(c, i)| {
-                    if search_highlight.binary_search(&(i.saturating_sub(1))).is_ok() {
+                    if search_highlight
+                        .binary_search(&(i.saturating_sub(1)))
+                        .is_ok()
+                    {
                         Span::styled(c.to_string(), search_theme)
                     } else if username_highlight.binary_search(&i).is_ok() {
                         Span::styled(c.to_string(), username_theme)
