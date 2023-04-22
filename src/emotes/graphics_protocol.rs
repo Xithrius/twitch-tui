@@ -5,7 +5,7 @@ use dialoguer::console::{Key, Term};
 use image::{
     codecs::{gif::GifDecoder, webp::WebPDecoder},
     io::Reader,
-    AnimationDecoder, ImageDecoder, ImageFormat, Rgba,
+    AnimationDecoder, ImageDecoder, ImageFormat,
 };
 use std::{
     env, fmt, fs,
@@ -204,12 +204,14 @@ impl Load {
         match image.format() {
             None => Err(anyhow!("Could not guess image format.")),
             Some(ImageFormat::WebP) => {
-                let mut decoder = WebPDecoder::new(image.into_inner())?;
+                let decoder = WebPDecoder::new(image.into_inner())?;
 
                 if decoder.has_animation() {
                     // Some animated webp images have a default white background color
                     // We replace it by a transparent background
-                    decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
+                    // TODO: uncomment this line once PR below is merged.
+                    // https://github.com/image-rs/image/pull/1907
+                    // decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
                     Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
                 } else {
                     let image = Reader::open(&path)?.with_guessed_format()?;
