@@ -10,7 +10,13 @@ This book is still under construction, so some sections might still be missing. 
 
 This application has vim and emacs inspired keybinds. That means you will start out in visual mode.
 
-To enter insert mode, press `i`. To drop back to visual mode, press `esc`.
+The default start screen is the dashboard. This can be configured with `start_state` in the config file.
+
+To go to a channel, either hit `Enter` or an integer between square brackets to go to the corresponding channel.
+
+To enter insert mode after getting into a channel, press `i`. To drop back to visual mode, press `esc`.
+
+You can go back to the dashboard by hitting `S` (`Shift + s`).
 
 Insert modes at this time are message search (`Ctrl + f`), channel swapper (`s`), and the previously mentioned insert mode (`i`).
 

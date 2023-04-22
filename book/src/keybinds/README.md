@@ -2,5 +2,6 @@
 
 All of the keybinds are in this section.
 
-- [Normal mode](normal.md)
-- [Insert mode](insert.md)
+- [Dashboard](dashboard.md)
+- [Normal](normal.md)
+- [Insert mode(s)](insert.md)

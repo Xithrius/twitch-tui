@@ -1,25 +1,20 @@
-# Normal mode keybinds
+# Normal mode keybind map
 
-This is the mode you enter when the application first starts up.
-
-Navigation to different modes are also explained here.
+Can be the start state by configuring `start_state` in the config to either `"normal"` or `"default"`.
 
 <table>
 <tr>
 <td> <b>Key</b>
 <td> <b> Description</b>
 <tr>
-<td> c
-<td> Go to the chat window chat.
-<tr>
 <td> i
-<td> Enter message insert mode for sending messages. Exit this mode with `Esc`.
+<td> Enter message insert (chat) mode for sending messages. Exit this mode with `Esc`.
 <tr>
 <td> @
-<td> Enter insert mode with the mention symbol `@` already existing.
+<td> Enter insert (chat) mode with the mention symbol `@` already existing.
 <tr>
 <td> /
-<td> Enter insert mode with the command symbol `/` already existing.
+<td> Enter insert (chat) mode with the command symbol `/` already existing.
 <tr>
 <td> ?
 <td> Have the keybinds popup window appear.
@@ -29,6 +24,9 @@ Navigation to different modes are also explained here.
 <tr>
 <td> s
 <td> Open a popup window to switch channels.
+<tr>
+<td> S
+<td> Go to the dashboard screen.
 <tr>
 <td> Ctrl + f
 <td> Enter message search mode, which highlights messages in the main window which match the query.

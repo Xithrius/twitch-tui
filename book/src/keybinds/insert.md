@@ -1,4 +1,4 @@
-# Insert mode keybinds
+# Insert mode(s) keybind map
 
 Message sending and searching, along with channel swapping keybinds are explained in this section.
 
