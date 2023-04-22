@@ -280,7 +280,10 @@ impl CompleteConfig {
                 bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
             }
         } else if let Ok(config_contents) = read_to_string(p) {
-            let mut config: CompleteConfig = toml::from_str(config_contents.as_str()).unwrap();
+            let mut config: Self = match toml::from_str(&config_contents) {
+                Ok(c) => c,
+                Err(err) => bail!("Config could not be processed. Error: {:?}", err.message()),
+            };
 
             merge_args_into_config(&mut config, cli);
 
