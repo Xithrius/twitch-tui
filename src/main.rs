@@ -60,7 +60,7 @@ fn initialize_logging(config: &CompleteConfig) {
 async fn main() -> Result<()> {
     color_eyre::install().unwrap();
 
-    let config = CompleteConfig::new(Cli::parse())
+    let (config, raw_config) = CompleteConfig::new(Cli::parse())
         .wrap_err("Configuration error.")
         .unwrap();
 
@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
 
     info!("Logging system initialised");
 
-    let app = App::new(&config);
+    let app = App::new(&config, raw_config);
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = broadcast::channel(100);

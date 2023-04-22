@@ -8,6 +8,7 @@ use std::{
     path::Path,
     str::FromStr,
 };
+use toml::Table;
 use tui::widgets::BorderType;
 
 use crate::{
@@ -296,16 +297,18 @@ impl From<Border> for BorderType {
     }
 }
 
-fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
+fn persist_config(path: &Path, config: &CompleteConfig) -> Result<Option<Table>> {
     let toml_string = toml::to_string(&config)?;
     let mut file = File::create(path)?;
+
     file.write_all(toml_string.as_bytes())?;
     drop(file);
-    Ok(())
+
+    Ok(toml_string.parse::<Table>().ok())
 }
 
 impl CompleteConfig {
-    pub fn new(cli: Cli) -> Result<Self, Error> {
+    pub fn new(cli: Cli) -> Result<(Self, Option<Table>), Error> {
         let path_str = cache_path("");
 
         let p = Path::new(&path_str);
@@ -321,14 +324,17 @@ impl CompleteConfig {
             create_dir_all(p.parent().unwrap()).unwrap();
 
             if let Some(config) = interactive_config() {
-                persist_config(p, &config)?;
-                Ok(config)
+                let raw_config = persist_config(p, &config)?;
+
+                Ok((config, raw_config))
             } else {
                 persist_config(p, &Self::default())?;
                 bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
             }
-        } else if let Ok(config_contents) = read_to_string(p) {
-            let mut config: Self = match toml::from_str(&config_contents) {
+        } else if let Ok(file_content) = read_to_string(p) {
+            let raw_config = file_content.parse::<Table>().ok();
+
+            let mut config: Self = match toml::from_str(&file_content) {
                 Ok(c) => c,
                 Err(err) => bail!("Config could not be processed. Error: {:?}", err.message()),
             };
@@ -363,7 +369,7 @@ impl CompleteConfig {
             // Channel names for the IRC connection can only be in lowercase.
             config.twitch.channel = config.twitch.channel.to_lowercase();
 
-            Ok(config)
+            Ok((config, raw_config))
         } else {
             bail!(
                 "Configuration could not be read correctly. See the following link for the example config: {}",

@@ -22,7 +22,7 @@ use crate::{
         app::{App, State},
         config::{CompleteConfig, FrontendConfig, Theme},
     },
-    ui::components::popups::centered_popup,
+    ui::components::{chunks::debug::render_debug_window, popups::centered_popup},
     utils::{
         styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
         text::{title_spans, TitleStyle},
@@ -96,11 +96,32 @@ pub fn render_chat_ui<T: Backend>(
         v_constraints.push(Constraint::Length(1));
     }
 
+    let h_chunk_binding = if app.debug.is_visible() {
+        let h_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(frame.size());
+
+        render_debug_window(
+            frame,
+            h_chunks[1],
+            app.debug.clone(),
+            config.frontend.clone(),
+        );
+
+        h_chunks
+    } else {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(100)])
+            .split(frame.size())
+    };
+
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(config.frontend.margin)
         .constraints(v_constraints.as_ref())
-        .split(frame.size());
+        .split(h_chunk_binding[0]);
 
     let layout = LayoutAttributes::new(v_constraints, v_chunks.to_vec());
 

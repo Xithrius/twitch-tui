@@ -8,6 +8,7 @@ use color_eyre::eyre::{bail, Error, Result};
 use rustyline::line_buffer::LineBuffer;
 use serde::Serialize;
 use serde_with::DeserializeFromStr;
+use toml::Table;
 
 use crate::handlers::{
     config::{CompleteConfig, Theme},
@@ -120,29 +121,54 @@ impl Scrolling {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct DebugWindow {
+    visible: bool,
+    pub raw_config: Option<Table>,
+}
+
+impl DebugWindow {
+    const fn new(visible: bool, raw_config: Option<Table>) -> Self {
+        Self {
+            visible,
+            raw_config,
+        }
+    }
+
+    pub const fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    pub fn toggle(&mut self) {
+        self.visible = !self.visible;
+    }
+}
+
 pub struct App {
-    /// History of recorded messages (time, username, message, etc.)
+    /// History of recorded messages (time, username, message, etc).
     pub messages: VecDeque<MessageData>,
     /// Data loaded in from a JSON file.
     pub storage: Storage,
-    /// Messages to be filtered out
+    /// Messages to be filtered out.
     pub filters: Filters,
-    /// Which window the terminal is currently focused on
+    /// Which window the terminal is currently focused on.
     state: State,
-    /// The previous state, if any
+    /// The previous state, if any.
     previous_state: Option<State>,
-    /// What the user currently has inputted
+    /// What the user currently has inputted.
     pub input_buffer: LineBuffer,
-    /// The current suggestion, if any
+    /// The current suggestion, if any.
     pub buffer_suggestion: Option<String>,
-    /// Interactions with scrolling of the application
+    /// Interactions with scrolling of the application.
     pub scrolling: Scrolling,
-    /// The theme selected by the user
+    /// The theme selected by the user.
     pub theme: Theme,
+    /// If the debug window is visible.
+    pub debug: DebugWindow,
 }
 
 impl App {
-    pub fn new(config: &CompleteConfig) -> Self {
+    pub fn new(config: &CompleteConfig, raw_config: Option<Table>) -> Self {
         Self {
             messages: VecDeque::with_capacity(config.terminal.maximum_messages),
             storage: Storage::new("storage.json", &config.storage),
@@ -153,6 +179,7 @@ impl App {
             buffer_suggestion: None,
             theme: config.frontend.theme.clone(),
             scrolling: Scrolling::new(config.frontend.inverted_scrolling),
+            debug: DebugWindow::new(false, raw_config),
         }
     }
 

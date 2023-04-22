@@ -15,7 +15,9 @@ use crate::{
         config::CompleteConfig,
     },
     ui::{
-        components::{dashboard::DASHBOARD_TITLE, render_channel_switcher},
+        components::{
+            chunks::debug::render_debug_window, dashboard::DASHBOARD_TITLE, render_channel_switcher,
+        },
         WindowAttributes,
     },
     utils::styles::DASHBOARD_TITLE_COLOR,
@@ -129,6 +131,20 @@ pub fn render_dashboard_ui<T: Backend>(
 
     let recent_channels_len = app.storage.get("channels").len() as u16;
 
+    let h_chunk_binding = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(1), Constraint::Percentage(50)])
+        .split(frame.size());
+
+    if app.debug.is_visible() {
+        render_debug_window(
+            frame,
+            h_chunk_binding[1],
+            app.debug.clone(),
+            config.frontend.clone(),
+        );
+    }
+
     let v_chunk_binding = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -155,7 +171,7 @@ pub fn render_dashboard_ui<T: Backend>(
             Constraint::Min(1),
         ])
         .margin(2)
-        .split(frame.size());
+        .split(h_chunk_binding[0]);
 
     let mut v_chunks = v_chunk_binding.iter();
 

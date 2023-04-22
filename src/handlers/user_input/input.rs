@@ -235,10 +235,9 @@ pub async fn handle_stateful_user_input(
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
+                Key::Ctrl('d') => app.debug.toggle(),
                 Key::Char('?') => app.set_state(State::Help),
-                Key::Char('q') => {
-                    return Some(TerminalAction::Quitting);
-                }
+                Key::Char('q') => return Some(TerminalAction::Quitting),
                 Key::Char('s') => app.set_state(State::ChannelSwitch),
                 Key::Enter => {
                     app.clear_messages();
@@ -290,36 +289,21 @@ pub async fn handle_stateful_user_input(
                 handle_insert_type_movements(&mut action, emotes);
             }
             State::Normal => match key {
-                Key::Char('c') => {
-                    app.set_state(State::Normal);
-                }
-                Key::Char('s') => {
-                    app.set_state(State::ChannelSwitch);
-                }
-                Key::Ctrl('f') => {
-                    app.set_state(State::MessageSearch);
-                }
-                Key::Ctrl('t') => {
-                    app.filters.toggle();
-                }
-                Key::Ctrl('r') => {
-                    app.filters.reverse();
-                }
-                Key::Char('i') | Key::Insert => {
-                    app.set_state(State::Insert);
-                }
+                Key::Char('c') => app.set_state(State::Normal),
+                Key::Char('s') => app.set_state(State::ChannelSwitch),
+                Key::Ctrl('f') => app.set_state(State::MessageSearch),
+                Key::Ctrl('d') => app.debug.toggle(),
+                Key::Ctrl('t') => app.filters.toggle(),
+                Key::Ctrl('r') => app.filters.reverse(),
+                Key::Char('i') | Key::Insert => app.set_state(State::Insert),
                 Key::Char('@' | '/') => {
                     app.set_state(State::Insert);
                     app.input_buffer.update(&key.to_string(), 1);
                 }
-                Key::Ctrl('p') => {
-                    panic!("Manual panic triggered by user.");
-                }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('S') => app.set_state(State::Dashboard),
                 Key::Char('?') => app.set_state(State::Help),
-                Key::Char('q') => {
-                    return Some(TerminalAction::Quitting);
-                }
+                Key::Char('q') => return Some(TerminalAction::Quitting),
                 Key::Esc => {
                     app.scrolling.jump_to(0);
 
