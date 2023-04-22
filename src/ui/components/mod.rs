@@ -38,8 +38,7 @@ pub fn render_insert_box<T: Backend>(
         frame,
         layout,
         app,
-        show_state_tabs,
-        border_type,
+        frontend,
     } = window;
 
     let buffer = &app.input_buffer;
@@ -49,7 +48,7 @@ pub fn render_insert_box<T: Backend>(
     let input_rect = input_rectangle.map_or_else(
         || {
             if let Some(l) = layout {
-                l.chunks[l.constraints.len() - (if show_state_tabs { 2 } else { 1 })]
+                l.chunks[l.constraints.len() - (if frontend.state_tabs { 2 } else { 1 })]
             } else {
                 centered_popup(frame.size(), frame.size().height)
             }
@@ -94,7 +93,7 @@ pub fn render_insert_box<T: Backend>(
     .block(
         Block::default()
             .borders(Borders::ALL)
-            .border_type(border_type.into())
+            .border_type(frontend.border_type.into())
             .border_style(Style::default().fg(status_color))
             .title(title_spans(
                 &binding,

@@ -24,8 +24,7 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
         frame,
         app,
         layout,
-        show_state_tabs: _,
-        border_type,
+        frontend,
     } = window;
 
     let mut rows = vec![];
@@ -52,7 +51,7 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
             Block::default()
                 .borders(Borders::ALL)
                 .title("[ Keybinds ]")
-                .border_type(border_type.into()),
+                .border_type(frontend.border_type.into()),
         )
         .widths(&TABLE_CONSTRAINTS)
         .column_spacing(2)

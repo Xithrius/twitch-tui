@@ -20,7 +20,7 @@ use crate::{
     },
     handlers::{
         app::{App, State},
-        config::{Border, CompleteConfig, Theme},
+        config::{CompleteConfig, FrontendConfig, Theme},
     },
     ui::components::popups::centered_popup,
     utils::{
@@ -60,8 +60,7 @@ pub struct WindowAttributes<'a, 'b, 'c, T: Backend> {
     frame: &'a mut Frame<'b, T>,
     app: &'c mut App,
     layout: Option<LayoutAttributes>,
-    show_state_tabs: bool,
-    border_type: Border,
+    frontend: FrontendConfig,
 }
 
 impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
@@ -69,15 +68,13 @@ impl<'a, 'b, 'c, T: Backend> WindowAttributes<'a, 'b, 'c, T> {
         frame: &'a mut Frame<'b, T>,
         app: &'c mut App,
         layout: Option<LayoutAttributes>,
-        show_state_tabs: bool,
-        border_type: Border,
+        frontend: FrontendConfig,
     ) -> Self {
         Self {
             frame,
             app,
             layout,
-            show_state_tabs,
-            border_type,
+            frontend,
         }
     }
 }
@@ -179,13 +176,7 @@ pub fn render_chat_ui<T: Backend>(
         components::render_state_tabs(frame, &layout, &app.get_state());
     }
 
-    let window = WindowAttributes::new(
-        frame,
-        app,
-        Some(layout),
-        config.frontend.state_tabs,
-        config.frontend.border_type.clone(),
-    );
+    let window = WindowAttributes::new(frame, app, Some(layout), config.frontend.clone());
 
     match window.app.get_state() {
         // States of the application that require a chunk of the main window
