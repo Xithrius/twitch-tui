@@ -114,7 +114,7 @@ impl MessageData {
                 .chars()
                 .zip(*start_index..)
                 .map(|(c, i)| {
-                    if search_highlight.binary_search(&i).is_ok() {
+                    if search_highlight.binary_search(&(i.saturating_sub(1))).is_ok() {
                         Span::styled(c.to_string(), search_theme)
                     } else if username_highlight.binary_search(&i).is_ok() {
                         Span::styled(c.to_string(), username_theme)
@@ -148,7 +148,7 @@ impl MessageData {
             .map(|name| {
                 self.payload
                     .match_indices(name)
-                    .flat_map(move |(index, _)| index..(index + name.len()))
+                    .flat_map(move |(index, _)| index + 1..=(index + name.len()))
                     .collect::<Vec<usize>>()
             })
             .unwrap_or_default();
