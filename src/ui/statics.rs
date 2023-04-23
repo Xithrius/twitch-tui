@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 
-use crate::handlers::app::State;
+use crate::handlers::state::State;
 
 lazy_static! {
     pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["State", "Keybind", "Description"];

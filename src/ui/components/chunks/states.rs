@@ -7,7 +7,7 @@ use tui::{
     Frame,
 };
 
-use crate::{handlers::app::State, ui::LayoutAttributes};
+use crate::{handlers::state::State, ui::LayoutAttributes};
 
 const TABS_TO_RENDER: [State; 5] = [
     State::Normal,

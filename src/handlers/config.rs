@@ -14,9 +14,9 @@ use tui::widgets::BorderType;
 use crate::{
     emotes::{emotes_enabled, graphics_protocol},
     handlers::{
-        app::State,
         args::{merge_args_into_config, Cli},
         interactive::interactive_config,
+        state::State,
     },
     utils::pathing::{cache_path, config_path},
 };
@@ -119,7 +119,7 @@ pub struct FrontendConfig {
     pub seventv_emotes: bool,
     /// Comma-separated channel names to be displayed at start screen.
     pub start_screen_channels: Vec<String>,
-    /// A border wrapper around `BorderType`.
+    /// A border wrapper around [`BorderType`].
     pub border_type: Border,
 }
 

@@ -7,9 +7,10 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     emotes::Emotes,
     handlers::{
-        app::{App, State},
+        app::App,
         config::CompleteConfig,
         data::MessageData,
+        state::State,
         user_input::{
             events::{Config, Events, Key},
             input::{handle_stateful_user_input, TerminalAction},

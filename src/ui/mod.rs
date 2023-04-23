@@ -19,8 +19,9 @@ use crate::{
         emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
     },
     handlers::{
-        app::{App, State},
+        app::App,
         config::{CompleteConfig, FrontendConfig, Theme},
+        state::State,
     },
     ui::components::{chunks::debug::render_debug_window, popups::centered_popup},
     utils::{

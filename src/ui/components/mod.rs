@@ -9,7 +9,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::app::State,
+    handlers::state::State,
     ui::WindowAttributes,
     utils::text::{get_cursor_position, title_spans, TitleStyle},
 };

@@ -10,10 +10,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::{
-        app::{App, State},
-        config::CompleteConfig,
-    },
+    handlers::{app::App, config::CompleteConfig, state::State},
     ui::{
         components::{
             chunks::debug::render_debug_window, dashboard::DASHBOARD_TITLE, render_channel_switcher,

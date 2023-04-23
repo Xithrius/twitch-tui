@@ -5,9 +5,10 @@ use tokio::sync::broadcast::Sender;
 use crate::{
     emotes::{unload_all_emotes, Emotes},
     handlers::{
-        app::{App, State},
+        app::App,
         config::CompleteConfig,
         data::DataBuilder,
+        state::State,
         user_input::events::{Event, Events, Key},
     },
     twitch::TwitchAction,

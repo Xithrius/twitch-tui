@@ -1,8 +1,8 @@
 use clap::{builder::PossibleValue, Parser, ValueEnum};
 
 use crate::handlers::{
-    app::State,
     config::{CompleteConfig, Palette, Theme},
+    state::State,
 };
 
 impl ValueEnum for Palette {
