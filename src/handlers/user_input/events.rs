@@ -40,13 +40,13 @@ impl ToString for Key {
     }
 }
 
-pub enum Event<I> {
-    Input(I),
+pub enum Event {
+    Input(Key),
     Tick,
 }
 
 pub struct Events {
-    rx: mpsc::Receiver<Event<Key>>,
+    rx: mpsc::Receiver<Event>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -131,7 +131,7 @@ impl Events {
         Self { rx }
     }
 
-    pub async fn next(&mut self) -> Option<Event<Key>> {
+    pub async fn next(&mut self) -> Option<Event> {
         self.rx.recv().await
     }
 }

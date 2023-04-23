@@ -44,7 +44,7 @@ title_shown = true
 # The amount of space between the chat window and the terminal border.
 margin = 0
 # Show twitch badges next to usernames.
-badges = true
+badges = false
 # The theme of the frontend, dark (default), or light.
 theme = "dark"
 # If the user's name appears in chat, highlight it.

@@ -17,6 +17,7 @@ use crate::{
 
 pub enum TerminalAction {
     Quitting,
+    BackOneLayer,
 }
 
 struct UserActionAttributes<'a, 'b> {
@@ -236,7 +237,7 @@ pub async fn handle_stateful_user_input(
                 Key::Ctrl('p') => {
                     panic!("Manual panic triggered by user.");
                 }
-                Key::Ctrl('d') => app.debug.toggle(),
+                // Key::Ctrl('d') => app.debug.toggle(),
                 Key::Char('?') => app.set_state(State::Help),
                 Key::Char('q') => return Some(TerminalAction::Quitting),
                 Key::Char('s') => app.set_state(State::ChannelSwitch),
@@ -293,7 +294,7 @@ pub async fn handle_stateful_user_input(
                 Key::Char('c') => app.set_state(State::Normal),
                 Key::Char('s') => app.set_state(State::ChannelSwitch),
                 Key::Ctrl('f') => app.set_state(State::MessageSearch),
-                Key::Ctrl('d') => app.debug.toggle(),
+                // Key::Ctrl('d') => app.debug.toggle(),
                 Key::Ctrl('t') => app.filters.toggle(),
                 Key::Ctrl('r') => app.filters.reverse(),
                 Key::Char('i') | Key::Insert => app.set_state(State::Insert),

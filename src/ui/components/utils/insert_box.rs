@@ -6,51 +6,28 @@ use tui::{
     style::{Color, Modifier, Style},
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, Paragraph},
+    Frame,
 };
 
 use crate::{
-    handlers::state::State,
-    ui::{components::utils::centered_popup, WindowAttributes},
+    handlers::{config::SharedCompleteConfig, state::State},
+    ui::components::utils::centered_rect,
     utils::text::{get_cursor_position, title_spans, TitleStyle},
 };
 
-/// Puts a box for user input at the bottom of the screen,
-/// with an interactive cursor.
-/// `input_validation` checks if the user's input is valid, changes window
-/// theme to red if invalid, default otherwise.
-pub fn render_insert_box<T: Backend>(
-    window: WindowAttributes<T>,
+pub fn render_insert_box<B: Backend>(
+    f: &mut Frame<B>,
+    area: Rect,
+    config: SharedCompleteConfig,
     box_title: &str,
-    input_rectangle: Option<Rect>,
     suggestion: Option<String>,
     input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
 ) {
-    let WindowAttributes {
-        frame,
-        layout,
-        app,
-        frontend,
-    } = window;
-
-    let buffer = &app.input_buffer;
-
     let cursor_pos = get_cursor_position(buffer);
 
-    let input_rect = input_rectangle.map_or_else(
-        || {
-            if let Some(l) = layout {
-                l.chunks[l.constraints.len() - (if frontend.state_tabs { 2 } else { 1 })]
-            } else {
-                centered_popup(frame.size(), frame.size().height)
-            }
-        },
-        |r| r,
-    );
-
-    frame.set_cursor(
-        (input_rect.x + cursor_pos as u16 + 1)
-            .min(input_rect.x + input_rect.width.saturating_sub(2)),
-        input_rect.y + 1,
+    f.set_cursor(
+        (area.x + cursor_pos as u16 + 1).min(area.x + area.width.saturating_sub(2)),
+        area.y + 1,
     );
 
     let current_input = buffer.as_str();
@@ -93,16 +70,13 @@ pub fn render_insert_box<T: Backend>(
                     .add_modifier(Modifier::BOLD),
             )),
     )
-    .scroll((
-        0,
-        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
-    ));
+    .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
 
-    if matches!(app.get_state(), State::ChannelSwitch) {
-        frame.render_widget(Clear, input_rect);
-    }
+    // if matches!(app.get_state(), State::ChannelSwitch) {
+    //     frame.render_widget(Clear, area);
+    // }
 
-    frame.render_widget(paragraph, input_rect);
+    f.render_widget(paragraph, area);
 
-    app.buffer_suggestion = suggestion;
+    // app.buffer_suggestion = suggestion;
 }

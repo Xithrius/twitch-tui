@@ -1,5 +1,6 @@
 use tui::{
     backend::Backend,
+    layout::Rect,
     style::{Color, Modifier, Style},
     symbols::DOT,
     text::Spans,
@@ -7,7 +8,7 @@ use tui::{
     Frame,
 };
 
-use crate::{handlers::state::State, ui::LayoutAttributes};
+use crate::handlers::state::State;
 
 const TABS_TO_RENDER: [State; 5] = [
     State::Normal,
@@ -17,11 +18,7 @@ const TABS_TO_RENDER: [State; 5] = [
     State::MessageSearch,
 ];
 
-pub fn render_state_tabs<T: Backend>(
-    frame: &mut Frame<T>,
-    layout: &LayoutAttributes,
-    current_state: &State,
-) {
+pub fn render_state_tabs<T: Backend>(f: &mut Frame<T>, area: Rect, current_state: &State) {
     let tab_titles = TABS_TO_RENDER
         .iter()
         .map(|t| Spans::from(t.to_string()))
@@ -44,5 +41,5 @@ pub fn render_state_tabs<T: Backend>(
                 .unwrap(),
         );
 
-    frame.render_widget(tabs, layout.last_chunk());
+    f.render_widget(tabs, area);
 }

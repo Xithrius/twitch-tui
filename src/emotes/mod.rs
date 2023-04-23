@@ -38,7 +38,7 @@ pub struct LoadedEmote {
     pub overlay: bool,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Emotes {
     /// Map of emote name, filename, and if the emote is an overlay
     pub emotes: HashMap<String, (String, bool)>,

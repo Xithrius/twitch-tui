@@ -1,17 +1,14 @@
 use tui::{
     backend::Backend,
-    layout::Constraint,
+    layout::{Constraint, Rect},
     style::{Modifier, Style},
     widgets::{Block, Borders, Cell, Clear, Row, Table},
+    Frame,
 };
 
 use crate::{
-    handlers::config::Theme,
-    ui::{
-        statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
-        WindowAttributes,
-    },
-    utils::styles::{self, BORDER_NAME_DARK, BORDER_NAME_LIGHT},
+    ui::statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
+    utils::styles::COLUMN_TITLE,
 };
 
 // Once a solution is found to calculate constraints,
@@ -19,14 +16,7 @@ use crate::{
 const TABLE_CONSTRAINTS: [Constraint; 3] =
     [Constraint::Min(11), Constraint::Min(8), Constraint::Min(38)];
 
-pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
-    let WindowAttributes {
-        frame,
-        app,
-        layout,
-        frontend,
-    } = window;
-
+pub fn render_help_window<T: Backend>(f: &mut Frame<T>, area: Rect) {
     let mut rows = vec![];
 
     for (s, v) in HELP_KEYBINDS.iter() {
@@ -46,22 +36,17 @@ pub fn render_help_window<T: Backend>(window: WindowAttributes<T>) {
     }
 
     let help_table = Table::new(rows)
-        .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(styles::COLUMN_TITLE))
+        .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(COLUMN_TITLE))
         .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("[ Keybinds ]")
-                .border_type(frontend.border_type.into()),
+            Block::default().borders(Borders::ALL).title("[ Keybinds ]"), // .border_type(frontend.border_type.into()),
         )
         .widths(&TABLE_CONSTRAINTS)
-        .column_spacing(2)
-        .style(match app.theme {
-            Theme::Light => BORDER_NAME_LIGHT,
-            _ => BORDER_NAME_DARK,
-        });
+        .column_spacing(2);
+    // .style(match app.theme {
+    //     Theme::Light => BORDER_NAME_LIGHT,
+    //     _ => BORDER_NAME_DARK,
+    // });
 
-    if let Some(l) = layout {
-        frame.render_widget(Clear, l.first_chunk());
-        frame.render_widget(help_table, l.first_chunk());
-    }
+    f.render_widget(Clear, area);
+    f.render_widget(help_table, area);
 }

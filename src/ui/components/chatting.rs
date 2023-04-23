@@ -4,19 +4,11 @@ use crate::{
     ui::{
         components::utils::render_insert_box,
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
-        WindowAttributes,
     },
     utils::text::first_similarity,
 };
 
-pub fn render_chat_box<T: Backend>(window: WindowAttributes<T>, mention_suggestions: bool) {
-    let WindowAttributes {
-        frame: _,
-        app,
-        layout: _,
-        frontend: _,
-    } = &window;
-
+pub fn render_chat_box<T: Backend>(mention_suggestions: bool) {
     let input_buffer = &app.input_buffer;
 
     let current_input = input_buffer.to_string();

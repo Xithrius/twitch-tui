@@ -1,10 +1,10 @@
-use std::{collections::VecDeque, vec};
+use std::{collections::VecDeque, rc::Rc, vec};
 
 use chrono::offset::Local;
 use log::warn;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
     text::{Span, Spans, Text},
@@ -21,13 +21,9 @@ use crate::{
         config::{CompleteConfig, Theme},
         state::State,
     },
-    ui::{
-        components::{
-            render_channel_switcher, render_chat_box, render_debug_window, render_help_window,
-            render_state_tabs,
-            utils::{centered_popup, render_insert_box},
-        },
-        LayoutAttributes, WindowAttributes,
+    ui::components::{
+        render_chat_box, render_help_window, render_state_tabs,
+        utils::{centered_rect, render_insert_box},
     },
     utils::{
         styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
@@ -52,34 +48,16 @@ pub fn render_chat_ui<T: Backend>(
         v_constraints.push(Constraint::Length(1));
     }
 
-    let h_chunk_binding = if app.debug.is_visible() {
-        let h_chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-            .split(frame.size());
+    let h_chunk_binding = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(100)])
+        .split(frame.size());
 
-        render_debug_window(
-            frame,
-            h_chunks[1],
-            app.debug.clone(),
-            config.frontend.clone(),
-        );
-
-        h_chunks
-    } else {
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(100)])
-            .split(frame.size())
-    };
-
-    let v_chunks = Layout::default()
+    let v_chunks: Rc<[Rect]> = Layout::default()
         .direction(Direction::Vertical)
         .margin(config.frontend.margin)
         .constraints(v_constraints.as_ref())
         .split(h_chunk_binding[0]);
-
-    let layout = LayoutAttributes::new(v_constraints, v_chunks.to_vec());
 
     if app.messages.len() > config.terminal.maximum_messages {
         for data in app.messages.range(config.terminal.maximum_messages..) {
@@ -93,7 +71,7 @@ pub fn render_chat_ui<T: Backend>(
         hide_all_emotes(emotes);
         VecDeque::new()
     } else {
-        get_messages(frame, app, config, emotes, &layout)
+        get_messages(frame, app, config, emotes, v_chunks)
     };
 
     let current_time = Local::now()
@@ -147,36 +125,32 @@ pub fn render_chat_ui<T: Backend>(
         )
         .style(Style::default().fg(Color::White));
 
-    frame.render_widget(list, layout.first_chunk());
+    frame.render_widget(list, v_chunks[0]);
 
-    if config.frontend.state_tabs {
-        render_state_tabs(frame, &layout, &app.get_state());
-    }
+    // if config.frontend.state_tabs {
+    //     render_state_tabs(frame, &layout, &app.get_state());
+    // }
 
-    let window = WindowAttributes::new(frame, app, Some(layout), config.frontend.clone());
+    // match window.app.get_state() {
+    //     // States of the application that require a chunk of the main window
+    //     State::Insert => render_chat_box(window, config.storage.mentions),
+    //     State::MessageSearch => {
+    //         let checking_func = |s: String| -> bool { !s.is_empty() };
 
-    match window.app.get_state() {
-        // States of the application that require a chunk of the main window
-        State::Insert => render_chat_box(window, config.storage.mentions),
-        State::MessageSearch => {
-            let checking_func = |s: String| -> bool { !s.is_empty() };
+    //         render_insert_box(
+    //             window,
+    //             "Message Search",
+    //             None,
+    //             None,
+    //             Some(Box::new(checking_func)),
+    //         );
+    //     }
 
-            render_insert_box(
-                window,
-                "Message Search",
-                None,
-                None,
-                Some(Box::new(checking_func)),
-            );
-        }
-
-        // States that require popups
-        State::Help => render_help_window(window),
-        State::ChannelSwitch => {
-            render_channel_switcher(window, config.storage.channels);
-        }
-        _ => {}
-    }
+    //     // States that require popups
+    //     State::Help => render_help_window(window),
+    //     // State::ChannelSwitch => app.components.channel_switcher.draw(frame),
+    //     _ => {}
+    // }
 }
 
 fn get_messages<'a, T: Backend>(
@@ -184,7 +158,7 @@ fn get_messages<'a, T: Backend>(
     app: &'a App,
     config: &CompleteConfig,
     emotes: &mut Emotes,
-    layout: &LayoutAttributes,
+    v_chunks: Rc<[Rect]>,
 ) -> VecDeque<Spans<'a>> {
     // Accounting for not all heights of rows to be the same due to text wrapping,
     // so extra space needs to be used in order to scroll correctly.
@@ -194,7 +168,7 @@ fn get_messages<'a, T: Backend>(
 
     let mut scroll_offset = app.scrolling.get_offset();
 
-    let general_chunk_height = layout.first_chunk().height as usize - 2;
+    let general_chunk_height = v_chunks[0].height as usize - 2;
 
     // Horizontal chunks represents the list within the main chat window.
     let h_chunk = Layout::default()
@@ -205,7 +179,7 @@ fn get_messages<'a, T: Backend>(
     let message_chunk_width = h_chunk[0].width as usize;
 
     let channel_switcher = if app.get_state() == State::ChannelSwitch {
-        Some(centered_popup(frame.size(), frame.size().height))
+        Some(centered_rect(60, 20, frame.size()))
     } else {
         None
     };

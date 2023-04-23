@@ -2,10 +2,12 @@ use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use std::{
+    cell::RefCell,
     env,
     fs::{create_dir_all, read_to_string, File},
     io::Write,
     path::Path,
+    rc::Rc,
     str::FromStr,
 };
 use toml::Table;
@@ -20,6 +22,8 @@ use crate::{
     },
     utils::pathing::{cache_path, config_path},
 };
+
+pub type SharedCompleteConfig = Rc<RefCell<CompleteConfig>>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]

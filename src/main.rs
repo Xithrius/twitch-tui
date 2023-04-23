@@ -68,11 +68,11 @@ async fn main() -> Result<()> {
 
     info!("Logging system initialised");
 
-    let app = App::new(&config, raw_config);
-
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
+
+    let app = App::new(config.clone(), raw_config, terminal_tx);
 
     info!("Started tokio communication channels.");
 
@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
         twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
     });
 
-    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, emotes_rx).await;
+    terminal::ui_driver(cloned_config, app, terminal_rx, emotes_rx).await;
 
     std::process::exit(0)
 }
