@@ -1,7 +1,5 @@
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
-pub mod channels;
-
 const HORIZONTAL_CONSTRAINTS: [Constraint; 3] = [
     Constraint::Percentage(15),
     Constraint::Percentage(70),

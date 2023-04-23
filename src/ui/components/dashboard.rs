@@ -12,13 +12,19 @@ use tui::{
 use crate::{
     handlers::{app::App, config::CompleteConfig, state::State},
     ui::{
-        components::{
-            chunks::debug::render_debug_window, dashboard::DASHBOARD_TITLE, render_channel_switcher,
-        },
+        components::{render_channel_switcher, render_debug_window},
         WindowAttributes,
     },
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
+
+const DASHBOARD_TITLE: [&str; 5] = [
+    "   __           _ __       __          __        _ ",
+    "  / /__      __(_) /______/ /_        / /___  __(_)",
+    " / __/ | /| / / / __/ ___/ __ \\______/ __/ / / / / ",
+    "/ /_ | |/ |/ / / /_/ /__/ / / /_____/ /_/ /_/ / /  ",
+    "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   ",
+];
 
 fn create_interactive_list_widget(items: &[String], index_offset: usize) -> List<'_> {
     List::new(

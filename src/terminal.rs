@@ -18,7 +18,8 @@ use crate::{
     },
     twitch::TwitchAction,
     ui::{
-        components::dashboard::start::render_dashboard_ui, error::render_error_ui, render_chat_ui,
+        components::{render_dashboard_ui, render_error_ui},
+        render::render_chat_ui,
     },
 };
 

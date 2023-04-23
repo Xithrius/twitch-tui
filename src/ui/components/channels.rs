@@ -5,7 +5,7 @@ use tui::backend::Backend;
 
 use crate::{
     ui::{
-        components::{popups::centered_popup, render_insert_box},
+        components::utils::{centered_popup, render_insert_box},
         statics::NAME_RESTRICTION_REGEX,
         WindowAttributes,
     },
