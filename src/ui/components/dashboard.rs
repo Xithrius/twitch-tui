@@ -10,6 +10,7 @@ use tui::{
 };
 
 use crate::{
+    emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
         storage::{SharedStorage, Storage},
@@ -158,7 +159,7 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         let area = area.map_or_else(|| f.size(), |a| a);
 
         let start_screen_channels_len =

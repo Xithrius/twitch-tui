@@ -61,14 +61,14 @@ pub async fn ui_driver(
     loop {
         if let Ok(e) = erx.try_recv() {
             emotes = e;
-            for message in &mut app.messages {
-                message.parse_emotes(&mut emotes);
+            for message in app.messages.borrow().iter() {
+                message.clone().parse_emotes(&mut emotes);
             }
         };
 
         if let Ok(mut info) = rx.try_recv() {
             info.parse_emotes(&mut emotes);
-            app.messages.push_front(info);
+            app.messages.borrow_mut().push_front(info);
 
             // If scrolling is enabled, pad for more messages.
             if app.scrolling.get_offset() > 0 {

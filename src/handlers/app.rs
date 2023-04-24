@@ -24,11 +24,13 @@ use crate::{
 
 use super::{storage::SharedStorage, user_input::events::Key};
 
+pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
+
 pub struct App {
     /// All the available components.
     pub components: Components,
     /// History of recorded messages (time, username, message, etc).
-    pub messages: VecDeque<MessageData>,
+    pub messages: SharedMessages,
     /// Data loaded in from a JSON file.
     pub storage: SharedStorage,
     /// Messages to be filtered out.
@@ -62,11 +64,15 @@ impl App {
             &shared_config_borrow.storage,
         )));
 
-        let components = Components::new(&shared_config, raw_config, tx, storage.clone());
+        let messages: SharedMessages = Rc::new(RefCell::new(VecDeque::with_capacity(
+            shared_config_borrow.terminal.maximum_messages,
+        )));
+
+        let components = Components::new(&shared_config, tx, storage.clone(), messages.clone());
 
         Self {
             components,
-            messages: VecDeque::with_capacity(shared_config_borrow.terminal.maximum_messages),
+            messages,
             storage,
             filters: Filters::new("filters.txt", &shared_config_borrow.filters),
             state: shared_config_borrow.terminal.start_state.clone(),
@@ -82,13 +88,13 @@ impl App {
         let size = f.size();
 
         if size.height < 10 || size.width < 60 {
-            self.components.error.draw(f, Some(size));
+            self.components.error.draw(f, Some(size), None);
         } else {
             // TODO: Change to macro
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None),
-                State::Normal(_) => todo!(),
-                State::Help => self.components.help.draw(f, None),
+                State::Dashboard => self.components.dashboard.draw(f, None, None),
+                State::Normal(_) => self.components.chat.draw(f, None, None),
+                State::Help => self.components.help.draw(f, None, None),
                 State::ChannelSwitch => self.components.channel_switcher.draw(f, emotes),
             }
         }
@@ -121,7 +127,7 @@ impl App {
     }
 
     pub fn clear_messages(&mut self) {
-        self.messages.clear();
+        self.messages.borrow_mut().clear();
 
         self.scrolling.jump_to(0);
     }

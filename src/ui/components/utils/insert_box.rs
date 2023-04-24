@@ -64,7 +64,7 @@ impl InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         let component_area = area.map_or_else(|| centered_rect(60, 20, f.size()), |a| a);
 
         let cursor_pos = get_cursor_position(&self.input);

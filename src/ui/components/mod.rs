@@ -20,7 +20,9 @@ use toml::Table;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
+    emotes::{Emotes, SharedEmotes},
     handlers::{
+        app::SharedMessages,
         config::SharedCompleteConfig,
         storage::SharedStorage,
         user_input::{
@@ -33,7 +35,7 @@ use crate::{
 
 pub trait Component {
     #[allow(unused_variables)]
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         let component_area = area.map_or_else(|| f.size(), |a| a);
 
         todo!()
@@ -70,17 +72,17 @@ pub struct Components {
 impl Components {
     pub fn new(
         config: &SharedCompleteConfig,
-        raw_config: Option<Table>,
         tx: Sender<TwitchAction>,
         storage: SharedStorage,
+        messages: SharedMessages,
     ) -> Self {
         Self {
             error: ErrorWidget::new(config.clone()),
-            chat: ChatWidget::new(config.clone(), tx.clone()),
+            chat: ChatWidget::new(config.clone(), tx.clone(), messages),
             dashboard: DashboardWidget::new(config.clone(), storage),
-            debug: DebugWidget::new(config.clone(), raw_config),
+            debug: DebugWidget::new(config.clone()),
             help: HelpWidget::new(config.clone()),
-            channel_switcher: ChannelSwitcherWidget::new(config.clone(), tx.clone()),
+            channel_switcher: ChannelSwitcherWidget::new(config.clone(), tx),
         }
     }
 }

@@ -1,4 +1,3 @@
-use toml::Table as TomlTable;
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
@@ -8,6 +7,7 @@ use tui::{
 };
 
 use crate::{
+    emotes::Emotes,
     handlers::config::SharedCompleteConfig,
     utils::text::{title_spans, TitleStyle},
 };
@@ -17,15 +17,13 @@ use super::Component;
 #[derive(Debug, Clone)]
 pub struct DebugWidget {
     config: SharedCompleteConfig,
-    raw_config: Option<TomlTable>,
     focused: bool,
 }
 
 impl DebugWidget {
-    pub fn new(config: SharedCompleteConfig, raw_config: Option<TomlTable>) -> Self {
+    pub fn new(config: SharedCompleteConfig) -> Self {
         Self {
             config,
-            raw_config,
             focused: false,
         }
     }
@@ -40,27 +38,30 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
-        let mut rows = vec![];
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, _emotes: Option<Emotes>) {
+        // TODO: Add more debug stuff
+        let config = self.config.borrow();
 
-        if let Some(mut raw) = self.raw_config.clone() {
-            // To avoid getting the user's token leaked in front of others.
-            raw.remove("twitch");
+        let rows = vec![Row::new(vec!["Current channel", &config.twitch.channel])];
 
-            for item in raw.iter() {
-                rows.push(Row::new(vec![item.0.to_string()]));
-                let inner_map = item.1.as_table();
-                if let Some(inner) = inner_map {
-                    for inner_item in inner.iter() {
-                        rows.push(Row::new(vec![
-                            " ".to_string(),
-                            inner_item.0.to_string(),
-                            inner_item.1.to_string(),
-                        ]));
-                    }
-                }
-            }
-        }
+        // if let Some(mut raw) = self.raw_config.clone() {
+        //     // To avoid getting the user's token leaked in front of others.
+        //     raw.remove("twitch");
+
+        //     for item in raw.iter() {
+        //         rows.push(Row::new(vec![item.0.to_string()]));
+        //         let inner_map = item.1.as_table();
+        //         if let Some(inner) = inner_map {
+        //             for inner_item in inner.iter() {
+        //                 rows.push(Row::new(vec![
+        //                     " ".to_string(),
+        //                     inner_item.0.to_string(),
+        //                     inner_item.1.to_string(),
+        //                 ]));
+        //             }
+        //         }
+        //     }
+        // }
 
         let title_binding = [TitleStyle::Single("Debug")];
 
@@ -74,11 +75,7 @@ impl Component for DebugWidget {
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .widths(&[
-                Constraint::Length(10),
-                Constraint::Length(25),
-                Constraint::Min(50),
-            ]);
+            .widths(&[Constraint::Length(10), Constraint::Length(10)]);
 
         f.render_widget(table, area.unwrap());
     }

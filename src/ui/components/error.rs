@@ -7,7 +7,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::handlers::config::SharedCompleteConfig;
+use crate::{emotes::Emotes, handlers::config::SharedCompleteConfig};
 
 use super::Component;
 
@@ -29,7 +29,7 @@ impl ErrorWidget {
 }
 
 impl Component for ErrorWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         let area = area.map_or_else(|| f.size(), |a| a);
 
         let paragraph = Paragraph::new(

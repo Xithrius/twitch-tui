@@ -7,6 +7,7 @@ use tui::{
 };
 
 use crate::{
+    emotes::Emotes,
     handlers::config::SharedCompleteConfig,
     ui::statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
     utils::styles::COLUMN_TITLE,
@@ -30,7 +31,7 @@ impl HelpWidget {
 }
 
 impl Component for HelpWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         let area = area.map_or_else(|| f.size(), |a| a);
 
         let mut rows = vec![];
