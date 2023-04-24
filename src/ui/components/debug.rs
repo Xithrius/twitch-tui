@@ -14,29 +14,6 @@ use crate::{
 
 use super::Component;
 
-// #[derive(Debug, PartialEq, Clone)]
-// pub struct DebugWindow {
-//     visible: bool,
-//     pub raw_config: Option<Table>,
-// }
-
-// impl DebugWindow {
-//     const fn new(visible: bool, raw_config: Option<Table>) -> Self {
-//         Self {
-//             visible,
-//             raw_config,
-//         }
-//     }
-
-//     pub const fn is_visible(&self) -> bool {
-//         self.visible
-//     }
-
-//     pub fn toggle(&mut self) {
-//         self.visible = !self.visible;
-//     }
-// }
-
 #[derive(Debug, Clone)]
 pub struct DebugWidget {
     config: SharedCompleteConfig,

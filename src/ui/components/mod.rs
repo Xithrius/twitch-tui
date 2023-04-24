@@ -8,7 +8,7 @@ mod state_tabs;
 pub mod utils;
 
 pub use channel_switcher::ChannelSwitcherWidget;
-pub use chatting::render_chat_box;
+// pub use chatting::render_chat_box;
 pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
@@ -22,7 +22,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 use crate::{
     handlers::{
         config::SharedCompleteConfig,
-        storage::Storage,
+        storage::{SharedStorage, Storage},
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -50,12 +50,12 @@ pub trait Component {
     }
 }
 
-pub struct Components<'a> {
+pub struct Components {
     // Error window(s)
     pub error: ErrorWidget,
 
     // Full window widgets
-    pub dashboard: DashboardWidget<'a>,
+    pub dashboard: DashboardWidget,
     // pub chat: ChatWidget,
     pub debug: DebugWidget,
 
@@ -63,16 +63,16 @@ pub struct Components<'a> {
     pub channel_switcher: ChannelSwitcherWidget,
 }
 
-impl Components<'_> {
+impl Components {
     pub fn new(
         config: &SharedCompleteConfig,
         raw_config: Option<Table>,
         tx: Sender<TwitchAction>,
-        storage: Storage,
+        storage: SharedStorage,
     ) -> Self {
         Self {
             error: ErrorWidget::new(config.clone()),
-            dashboard: DashboardWidget::new(config.clone(), &storage),
+            dashboard: DashboardWidget::new(config.clone(), storage),
             debug: DebugWidget::new(config.clone(), raw_config),
             channel_switcher: ChannelSwitcherWidget::new(config.clone(), tx),
         }

@@ -1,5 +1,3 @@
-use crate::handlers::config::SharedCompleteConfig;
-
 pub struct Scrolling {
     /// Offset of scroll
     offset: usize,

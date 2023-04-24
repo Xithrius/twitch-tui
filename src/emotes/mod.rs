@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 use log::{info, warn};
 use std::{
+    cell::RefCell,
     collections::{hash_map::DefaultHasher, HashMap, HashSet},
     hash::{Hash, Hasher},
+    rc::Rc,
 };
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tui::{
@@ -37,6 +39,8 @@ pub struct LoadedEmote {
     /// If the emote should be displayed over the previous emote, if no text is between them.
     pub overlay: bool,
 }
+
+pub type SharedEmotes = Rc<RefCell<Emotes>>;
 
 #[derive(Default, Debug, Clone)]
 pub struct Emotes {

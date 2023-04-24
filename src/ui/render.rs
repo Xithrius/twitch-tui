@@ -21,10 +21,7 @@ use crate::{
         config::{CompleteConfig, Theme},
         state::State,
     },
-    ui::components::{
-        render_chat_box, render_help_window, render_state_tabs,
-        utils::{centered_rect, render_insert_box},
-    },
+    ui::components::{render_help_window, render_state_tabs, utils::centered_rect},
     utils::{
         styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
         text::{title_spans, TitleStyle},
@@ -71,7 +68,7 @@ pub fn render_chat_ui<T: Backend>(
         hide_all_emotes(emotes);
         VecDeque::new()
     } else {
-        get_messages(frame, app, config, emotes, v_chunks)
+        get_messages(frame, app, config, emotes, v_chunks.clone())
     };
 
     let current_time = Local::now()

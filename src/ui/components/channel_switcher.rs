@@ -101,7 +101,7 @@ impl ChannelSwitcherWidget {
         f.render_widget(paragraph, area);
     }
 
-    pub fn event(&mut self, event: Event) -> Option<TerminalAction> {
+    pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Ctrl('f') | Key::Right => {
@@ -188,7 +188,7 @@ impl ChannelSwitcherWidget {
                 }
                 Key::Ctrl('q') => return Some(TerminalAction::Quitting),
                 Key::Char(c) => {
-                    self.input.insert(c, 1);
+                    self.input.insert(*c, 1);
                 }
                 Key::Esc => {
                     self.input.update("", 0);

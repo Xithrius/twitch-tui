@@ -1,4 +1,4 @@
-use std::{collections::HashMap, slice::Iter};
+use std::slice::Iter;
 
 use tui::{
     backend::Backend,
@@ -11,10 +11,8 @@ use tui::{
 
 use crate::{
     handlers::{
-        app::App,
-        config::{CompleteConfig, SharedCompleteConfig},
-        state::State,
-        storage::Storage,
+        config::SharedCompleteConfig,
+        storage::{SharedStorage, Storage},
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -33,19 +31,23 @@ const DASHBOARD_TITLE: [&str; 5] = [
 ];
 
 #[derive(Debug)]
-pub struct DashboardWidget<'a> {
+pub struct DashboardWidget {
     config: SharedCompleteConfig,
-    storage: &'a Storage,
+    storage: SharedStorage,
 }
 
-impl<'a> DashboardWidget<'a> {
-    pub fn new(config: SharedCompleteConfig, storage: &'a Storage) -> Self {
+impl DashboardWidget {
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
         Self { config, storage }
     }
 }
 
-impl<'a> DashboardWidget<'a> {
-    fn create_interactive_list_widget(&self, items: &'a [String], index_offset: usize) -> List<'_> {
+impl DashboardWidget {
+    fn create_interactive_list_widget<'a>(
+        &'a self,
+        items: &'a [String],
+        index_offset: usize,
+    ) -> List<'_> {
         List::new(
             items
                 .iter()
@@ -127,7 +129,7 @@ impl<'a> DashboardWidget<'a> {
             *v_chunks.next().unwrap(),
         );
 
-        let recent_channels = self.storage.get_last_n("channels", 5, true);
+        let recent_channels = self.storage.borrow().get_last_n("channels", 5, true);
 
         if recent_channels.is_empty() {
             frame.render_widget(Paragraph::new("None"), *v_chunks.next().unwrap());
@@ -155,14 +157,14 @@ impl<'a> DashboardWidget<'a> {
     }
 }
 
-impl<'a> Component for DashboardWidget<'a> {
+impl Component for DashboardWidget {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
         let area = area.map_or_else(|| f.size(), |a| a);
 
         let start_screen_channels_len =
             self.config.borrow().frontend.start_screen_channels.len() as u16;
 
-        let recent_channels_len = self.storage.get("channels").len() as u16;
+        let recent_channels_len = self.storage.borrow().get("channels").len() as u16;
 
         let v_chunk_binding = Layout::default()
             .direction(Direction::Vertical)
@@ -207,8 +209,39 @@ impl<'a> Component for DashboardWidget<'a> {
     }
 
     fn event(&mut self, event: Event) -> Option<TerminalAction> {
-        if matches!(event, Event::Input(Key::Char('q'))) {
-            return Some(TerminalAction::Quitting);
+        if let Event::Input(key) = event {
+            match key {
+                Key::Ctrl('p') => {
+                    panic!("Manual panic triggered by user.");
+                }
+                // Key::Ctrl('d') => app.debug.toggle(),
+                // Key::Char('?') => app.set_state(State::Help),
+                Key::Char('q') => return Some(TerminalAction::Quitting),
+                // Key::Char('s') => app.set_state(State::ChannelSwitch),
+                // Key::Enter => {
+                //     app.clear_messages();
+                //     app.set_state(State::Normal);
+                // }
+                // Key::Char(c) => {
+                //     if let Some(selection) = c.to_digit(10) {
+                //         let mut channels = config.frontend.start_screen_channels.clone();
+                //         channels.extend(app.storage.get_last_n("channels", 5, true));
+
+                //         if let Some(channel) = channels.get(selection as usize) {
+                //             app.set_state(State::Normal);
+
+                // Only clear and switch if new channel isn't the old channel
+                //             if channel != &config.twitch.channel {
+                //                 app.clear_messages();
+                //                 tx.send(TwitchAction::Join(channel.to_string())).unwrap();
+                //                 config.twitch.channel = channel.to_string();
+                //                 app.storage.add("channels", channel.to_string());
+                //             }
+                //         }
+                //     }
+                // }
+                _ => {}
+            }
         }
 
         None

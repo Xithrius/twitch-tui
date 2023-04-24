@@ -1,5 +1,5 @@
 use log::{debug, info};
-use std::{borrow::Borrow, time::Duration};
+use std::{cell::RefMut, time::Duration};
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
@@ -10,6 +10,7 @@ use crate::{
         app::App,
         config::CompleteConfig,
         data::MessageData,
+        storage::SharedStorage,
         user_input::{
             events::{Config, Events, Key},
             input::TerminalAction,
@@ -20,7 +21,7 @@ use crate::{
 
 pub async fn ui_driver(
     config: CompleteConfig,
-    mut app: App<'_>,
+    mut app: App,
     mut rx: Receiver<MessageData>,
     mut erx: Receiver<Emotes>,
 ) {
@@ -41,8 +42,14 @@ pub async fn ui_driver(
     })
     .await;
 
-    if !app.storage.contains("channels", &config.twitch.channel) {
-        app.storage.add("channels", config.twitch.channel.clone());
+    if !app
+        .storage
+        .borrow()
+        .contains("channels", &config.twitch.channel)
+    {
+        app.storage
+            .borrow_mut()
+            .add("channels", config.twitch.channel.clone());
     }
 
     let mut terminal = init_terminal(&config.frontend);
@@ -83,7 +90,7 @@ pub async fn ui_driver(
                         if let Some(previous_state) = app.get_previous_state() {
                             app.set_state(previous_state);
                         } else {
-                            app.set_state(config.borrow().terminal.start_state.clone());
+                            app.set_state(config.terminal.start_state.clone());
                         }
                     }
                 }

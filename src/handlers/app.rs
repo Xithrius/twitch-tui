@@ -22,13 +22,15 @@ use crate::{
     },
 };
 
-pub struct App<'a> {
+use super::storage::SharedStorage;
+
+pub struct App {
     /// All the available components.
-    pub components: Components<'a>,
+    pub components: Components,
     /// History of recorded messages (time, username, message, etc).
     pub messages: VecDeque<MessageData>,
     /// Data loaded in from a JSON file.
-    pub storage: Storage,
+    pub storage: SharedStorage,
     /// Messages to be filtered out.
     pub filters: Filters,
     /// Which window the terminal is currently focused on.
@@ -45,7 +47,7 @@ pub struct App<'a> {
     pub theme: Theme,
 }
 
-impl App<'_> {
+impl App {
     pub fn new(
         config: CompleteConfig,
         raw_config: Option<Table>,
@@ -55,9 +57,12 @@ impl App<'_> {
 
         let shared_config_borrow = shared_config.borrow();
 
-        let storage = Storage::new("storage.json", &shared_config_borrow.storage);
+        let storage = Rc::new(RefCell::new(Storage::new(
+            "storage.json",
+            &shared_config_borrow.storage,
+        )));
 
-        let components = Components::new(&shared_config, raw_config, tx, storage);
+        let components = Components::new(&shared_config, raw_config, tx, storage.clone());
 
         Self {
             components,
@@ -104,13 +109,13 @@ impl App<'_> {
             State::Normal => todo!(),
             State::Insert => todo!(),
             State::Help => todo!(),
-            State::ChannelSwitch => self.components.channel_switcher.event(event),
+            State::ChannelSwitch => self.components.channel_switcher.event(&event),
             State::MessageSearch => todo!(),
         }
     }
 
     pub fn cleanup(&self) {
-        self.storage.dump_data();
+        self.storage.borrow().dump_data();
     }
 
     pub fn clear_messages(&mut self) {
