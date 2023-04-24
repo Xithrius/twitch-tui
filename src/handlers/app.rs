@@ -95,24 +95,25 @@ impl App {
     }
 
     pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        // Global keybinds
         if let Event::Input(key) = event {
-            #[allow(clippy::single_match)]
             match key {
-                Key::Ctrl('d') => self.components.debug.toggle_focus(),
-                _ => {}
-            }
-
-            None
-        } else {
-            // TODO: Change to macro
-            match self.state {
-                State::Dashboard => self.components.dashboard.event(event),
-                State::Normal(_) => self.components.chat.event(event),
-                State::Help => self.components.help.event(event),
-                State::ChannelSwitch => self.components.channel_switcher.event(event),
+                // Global keybinds
+                Key::Ctrl('d') => {
+                    self.components.debug.toggle_focus();
+                }
+                _ => {
+                    // TODO: Change to macro
+                    return match self.state {
+                        State::Dashboard => self.components.dashboard.event(event),
+                        State::Normal(_) => self.components.chat.event(event),
+                        State::Help => self.components.help.event(event),
+                        State::ChannelSwitch => self.components.channel_switcher.event(event),
+                    };
+                }
             }
         }
+
+        None
     }
 
     pub fn cleanup(&self) {

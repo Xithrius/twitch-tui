@@ -47,7 +47,7 @@ impl State {
     pub const fn in_insert_mode(&self) -> bool {
         match self {
             Self::Normal(mode) => mode.is_some(),
-            State::ChannelSwitch => true,
+            Self::ChannelSwitch => true,
             _ => false,
         }
     }
