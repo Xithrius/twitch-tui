@@ -10,13 +10,7 @@ use tui::{
 
 use crate::handlers::state::State;
 
-const TABS_TO_RENDER: [State; 5] = [
-    State::Normal,
-    State::Insert,
-    State::Help,
-    State::ChannelSwitch,
-    State::MessageSearch,
-];
+const TABS_TO_RENDER: [State; 3] = [State::Normal(None), State::Help, State::ChannelSwitch];
 
 pub fn render_state_tabs<T: Backend>(f: &mut Frame<T>, area: Rect, current_state: &State) {
     let tab_titles = TABS_TO_RENDER

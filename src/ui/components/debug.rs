@@ -8,7 +8,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::config::{FrontendConfig, SharedCompleteConfig},
+    handlers::config::SharedCompleteConfig,
     utils::text::{title_spans, TitleStyle},
 };
 
@@ -18,7 +18,7 @@ use super::Component;
 pub struct DebugWidget {
     config: SharedCompleteConfig,
     raw_config: Option<TomlTable>,
-    visible: bool,
+    focused: bool,
 }
 
 impl DebugWidget {
@@ -26,8 +26,16 @@ impl DebugWidget {
         Self {
             config,
             raw_config,
-            visible: false,
+            focused: false,
         }
+    }
+
+    pub fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    pub fn toggle_focus(&mut self) {
+        self.focused = !self.focused;
     }
 }
 

@@ -22,7 +22,7 @@ use crate::{
     },
 };
 
-use super::storage::SharedStorage;
+use super::{storage::SharedStorage, user_input::events::Key};
 
 pub struct App {
     /// All the available components.
@@ -84,33 +84,34 @@ impl App {
         if size.height < 10 || size.width < 60 {
             self.components.error.draw(f, Some(size));
         } else {
+            // TODO: Change to macro
             match self.state {
-                State::Dashboard => todo!(),
-                State::Normal => todo!(),
-                State::Insert => todo!(),
-                State::Help => todo!(),
+                State::Dashboard => self.components.dashboard.draw(f, None),
+                State::Normal(_) => todo!(),
+                State::Help => self.components.help.draw(f, None),
                 State::ChannelSwitch => self.components.channel_switcher.draw(f, emotes),
-                State::MessageSearch => todo!(),
             }
         }
-        // } else if app.get_state() == State::Dashboard
-        //     || (Some(State::Dashboard) == app.get_previous_state()
-        //         && State::ChannelSwitch == app.get_state())
-        // {
-        //     render_dashboard_ui(f, &mut app, &config);
-        // } else {
-        //     render_chat_ui(f, &mut app, &config, &mut emotes);
-        // }
     }
 
-    pub fn event(&mut self, event: Event) -> Option<TerminalAction> {
-        match self.state {
-            State::Dashboard => todo!(),
-            State::Normal => todo!(),
-            State::Insert => todo!(),
-            State::Help => todo!(),
-            State::ChannelSwitch => self.components.channel_switcher.event(&event),
-            State::MessageSearch => todo!(),
+    pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        // Global keybinds
+        if let Event::Input(key) = event {
+            #[allow(clippy::single_match)]
+            match key {
+                Key::Ctrl('d') => self.components.debug.toggle_focus(),
+                _ => {}
+            }
+
+            None
+        } else {
+            // TODO: Change to macro
+            match self.state {
+                State::Dashboard => self.components.dashboard.event(event),
+                State::Normal(_) => self.components.chat.event(event),
+                State::Help => self.components.help.event(event),
+                State::ChannelSwitch => self.components.channel_switcher.event(event),
+            }
         }
     }
 

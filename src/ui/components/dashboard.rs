@@ -208,7 +208,7 @@ impl Component for DashboardWidget {
         self.render_quit_selection_widget(f, &mut v_chunks);
     }
 
-    fn event(&mut self, event: Event) -> Option<TerminalAction> {
+    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Ctrl('p') => {

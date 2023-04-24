@@ -5,6 +5,8 @@ use crate::handlers::{
     state::State,
 };
 
+use super::state::NormalMode;
+
 impl ValueEnum for Palette {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::Pastel, Self::Vibrant, Self::Warm, Self::Cool]
@@ -36,22 +38,20 @@ impl ValueEnum for Theme {
 impl ValueEnum for State {
     fn value_variants<'a>() -> &'a [Self] {
         &[
-            Self::Normal,
-            Self::Insert,
+            // Self::Normal(None),
+            // Self::Normal(Some(NormalMode::Insert)),
+            // Self::Normal(Some(NormalMode::Search)),
             Self::Help,
             Self::ChannelSwitch,
-            Self::MessageSearch,
         ]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         Some(PossibleValue::new(match self {
             Self::Dashboard => "start",
-            Self::Normal => "normal",
-            Self::Insert => "insert",
+            Self::Normal(_) => "normal",
             Self::Help => "help",
             Self::ChannelSwitch => "channel",
-            Self::MessageSearch => "search",
         }))
     }
 }

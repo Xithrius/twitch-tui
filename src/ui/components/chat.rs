@@ -26,7 +26,38 @@ use crate::{
     utils::text::{first_similarity, get_cursor_position, title_spans, TitleStyle},
 };
 
-use super::utils::centered_rect;
+#[derive(Debug)]
+pub struct ChatWidget {
+    config: SharedCompleteConfig,
+    tx: Sender<TwitchAction>,
+}
+
+impl ChatWidget {
+    pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
+        Self { config, tx }
+    }
+}
+
+impl Component for ChatWidget {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+        let component_area = area.map_or_else(|| f.size(), |a| a);
+
+        todo!()
+    }
+
+    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if let Event::Input(key) = event {
+            match key {
+                Key::Char('q') => return Some(TerminalAction::Quitting),
+                Key::Esc => return Some(TerminalAction::BackOneLayer),
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                _ => {}
+            }
+        }
+
+        None
+    }
+}
 
 // pub fn render_chat_box<T: Backend>(mention_suggestions: bool) {
 //     let input_buffer = &app.input_buffer;

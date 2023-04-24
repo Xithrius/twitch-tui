@@ -65,11 +65,7 @@ impl InputWidget {
 
 impl Component for InputWidget {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
-        let component_area = if let Some(a) = area {
-            a
-        } else {
-            centered_rect(60, 20, f.size())
-        };
+        let component_area = area.map_or_else(|| centered_rect(60, 20, f.size()), |a| a);
 
         let cursor_pos = get_cursor_position(&self.input);
 
@@ -110,7 +106,7 @@ impl Component for InputWidget {
         f.render_widget(paragraph, component_area);
     }
 
-    fn event(&mut self, event: Event) -> Option<TerminalAction> {
+    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Ctrl('f') | Key::Right => {
@@ -198,7 +194,7 @@ impl Component for InputWidget {
                 // }
                 Key::Ctrl('q') => return Some(TerminalAction::Quitting),
                 Key::Char(c) => {
-                    self.input.insert(c, 1);
+                    self.input.insert(*c, 1);
                 }
                 Key::Esc => {
                     self.input.update("", 0);

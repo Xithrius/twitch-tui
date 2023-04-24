@@ -1,6 +1,6 @@
 use log::{debug, info};
-use std::{cell::RefMut, time::Duration};
-use tokio::sync::{broadcast::Sender, mpsc::Receiver};
+use std::time::Duration;
+use tokio::sync::mpsc::Receiver;
 use tui::layout::Rect;
 
 use crate::{
@@ -10,13 +10,11 @@ use crate::{
         app::App,
         config::CompleteConfig,
         data::MessageData,
-        storage::SharedStorage,
         user_input::{
             events::{Config, Events, Key},
             input::TerminalAction,
         },
     },
-    twitch::TwitchAction,
 };
 
 pub async fn ui_driver(
@@ -79,7 +77,7 @@ pub async fn ui_driver(
         }
 
         if let Some(event) = events.next().await {
-            if let Some(action) = app.event(event) {
+            if let Some(action) = app.event(&event) {
                 match action {
                     TerminalAction::Quitting => {
                         quit_terminal(terminal);

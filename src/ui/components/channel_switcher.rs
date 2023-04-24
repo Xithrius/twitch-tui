@@ -66,7 +66,6 @@ impl ChannelSwitcherWidget {
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>, emotes: Emotes) {
         self.emotes = Some(emotes);
 
-        // let area = area.map_or_else(|| centered_rect(60, 20, f.size()), |a| a);
         let area = centered_rect(60, 20, f.size());
 
         let cursor_pos = get_cursor_position(&self.input);

@@ -19,9 +19,9 @@ use crate::{
     handlers::{
         app::App,
         config::{CompleteConfig, Theme},
-        state::State,
+        state::{NormalMode, State},
     },
-    ui::components::{render_help_window, render_state_tabs, utils::centered_rect},
+    ui::components::utils::centered_rect,
     utils::{
         styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
         text::{title_spans, TitleStyle},
@@ -37,7 +37,7 @@ pub fn render_chat_ui<T: Backend>(
     // Constraints for different states of the application.
     // Modify this in order to create new layouts.
     let mut v_constraints = match app.get_state() {
-        State::Insert | State::MessageSearch => vec![Constraint::Min(1), Constraint::Length(3)],
+        // State::Insert | State::MessageSearch => vec![Constraint::Min(1), Constraint::Length(3)],
         _ => vec![Constraint::Min(1)],
     };
 
@@ -209,7 +209,7 @@ fn get_messages<'a, T: Backend>(
                 None
             } else {
                 match app.get_state() {
-                    State::MessageSearch => Some(app.input_buffer.as_str()),
+                    State::Normal(Some(NormalMode::Search)) => Some(app.input_buffer.as_str()),
                     _ => None,
                 }
             },

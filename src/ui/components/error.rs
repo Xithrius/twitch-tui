@@ -30,6 +30,8 @@ impl ErrorWidget {
 
 impl Component for ErrorWidget {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+        let area = area.map_or_else(|| f.size(), |a| a);
+
         let paragraph = Paragraph::new(
             WINDOW_SIZE_ERROR_MESSAGE
                 .iter()
@@ -40,7 +42,6 @@ impl Component for ErrorWidget {
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Center);
 
-        // TODO: Make this a non-unwrap statement.
-        f.render_widget(paragraph, area.unwrap());
+        f.render_widget(paragraph, area);
     }
 }
