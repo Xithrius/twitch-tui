@@ -1,117 +1,80 @@
-use std::vec;
+mod channel_switcher;
+mod chatting;
+mod dashboard;
+mod debug;
+mod error;
+mod help;
+mod state_tabs;
+pub mod utils;
 
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, Clear, Paragraph},
-};
+pub use channel_switcher::ChannelSwitcherWidget;
+// pub use chatting::render_chat_box;
+pub use dashboard::DashboardWidget;
+pub use debug::DebugWidget;
+pub use error::ErrorWidget;
+pub use help::render_help_window;
+pub use state_tabs::render_state_tabs;
+
+use tokio::sync::broadcast::Sender;
+use toml::Table;
+use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
-    handlers::app::State,
-    ui::WindowAttributes,
-    utils::text::{get_cursor_position, title_spans, TitleStyle},
+    handlers::{
+        config::SharedCompleteConfig,
+        storage::{SharedStorage, Storage},
+        user_input::{
+            events::{Event, Key},
+            input::TerminalAction,
+        },
+    },
+    twitch::TwitchAction,
 };
 
-pub mod chunks;
-pub mod dashboard;
-pub mod popups;
-
-pub use chunks::{chatting::render_chat_box, help::render_help_window, states::render_state_tabs};
-pub use popups::channels::render_channel_switcher;
-
-use self::popups::centered_popup;
-
-/// Puts a box for user input at the bottom of the screen,
-/// with an interactive cursor.
-/// `input_validation` checks if the user's input is valid, changes window
-/// theme to red if invalid, default otherwise.
-pub fn render_insert_box<T: Backend>(
-    window: WindowAttributes<T>,
-    box_title: &str,
-    input_rectangle: Option<Rect>,
-    suggestion: Option<String>,
-    input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
-) {
-    let WindowAttributes {
-        frame,
-        layout,
-        app,
-        frontend,
-    } = window;
-
-    let buffer = &app.input_buffer;
-
-    let cursor_pos = get_cursor_position(buffer);
-
-    let input_rect = input_rectangle.map_or_else(
-        || {
-            if let Some(l) = layout {
-                l.chunks[l.constraints.len() - (if frontend.state_tabs { 2 } else { 1 })]
-            } else {
-                centered_popup(frame.size(), frame.size().height)
-            }
-        },
-        |r| r,
-    );
-
-    frame.set_cursor(
-        (input_rect.x + cursor_pos as u16 + 1)
-            .min(input_rect.x + input_rect.width.saturating_sub(2)),
-        input_rect.y + 1,
-    );
-
-    let current_input = buffer.as_str();
-
-    let valid_input =
-        input_validation.map_or(true, |check_func| check_func(current_input.to_string()));
-
-    let binding = [TitleStyle::Single(box_title)];
-
-    let status_color = if valid_input {
-        Color::Green
-    } else {
-        Color::Red
-    };
-
-    let paragraph = Paragraph::new(Spans::from(vec![
-        Span::raw(current_input),
-        Span::styled(
-            suggestion
-                .clone()
-                .map_or_else(String::new, |suggestion_buffer| {
-                    if suggestion_buffer.len() > current_input.len() {
-                        suggestion_buffer[current_input.len()..].to_string()
-                    } else {
-                        String::new()
-                    }
-                }),
-            Style::default().add_modifier(Modifier::DIM),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(frontend.border_type.into())
-            .border_style(Style::default().fg(status_color))
-            .title(title_spans(
-                &binding,
-                Style::default()
-                    .fg(status_color)
-                    .add_modifier(Modifier::BOLD),
-            )),
-    )
-    .scroll((
-        0,
-        ((cursor_pos + 3) as u16).saturating_sub(input_rect.width),
-    ));
-
-    if matches!(app.get_state(), State::ChannelSwitch) {
-        frame.render_widget(Clear, input_rect);
+pub trait Component {
+    #[allow(unused_variables)]
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>) {
+        todo!()
     }
 
-    frame.render_widget(paragraph, input_rect);
+    fn event(&mut self, event: Event) -> Option<TerminalAction> {
+        if matches!(event, Event::Input(Key::Char('q'))) {
+            return Some(TerminalAction::Quitting);
+        } else if let Event::Input(key) = event {
+            match key {
+                _ => todo!(),
+            }
+        }
 
-    app.buffer_suggestion = suggestion;
+        None
+    }
+}
+
+pub struct Components {
+    // Error window(s)
+    pub error: ErrorWidget,
+
+    // Full window widgets
+    pub dashboard: DashboardWidget,
+    // pub chat: ChatWidget,
+    pub debug: DebugWidget,
+
+    // Popup widgets
+    pub channel_switcher: ChannelSwitcherWidget,
+}
+
+impl Components {
+    pub fn new(
+        config: &SharedCompleteConfig,
+        raw_config: Option<Table>,
+        tx: Sender<TwitchAction>,
+        storage: SharedStorage,
+    ) -> Self {
+        Self {
+            error: ErrorWidget::new(config.clone()),
+            dashboard: DashboardWidget::new(config.clone(), storage),
+            debug: DebugWidget::new(config.clone(), raw_config),
+            channel_switcher: ChannelSwitcherWidget::new(config.clone(), tx),
+        }
+    }
 }

@@ -1,5 +1,5 @@
 use log::{debug, info};
-use std::time::Duration;
+use std::{cell::RefMut, time::Duration};
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
@@ -7,24 +7,21 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     emotes::Emotes,
     handlers::{
-        app::{App, State},
+        app::App,
         config::CompleteConfig,
         data::MessageData,
+        storage::SharedStorage,
         user_input::{
             events::{Config, Events, Key},
-            input::{handle_stateful_user_input, TerminalAction},
+            input::TerminalAction,
         },
     },
     twitch::TwitchAction,
-    ui::{
-        components::dashboard::start::render_dashboard_ui, error::render_error_ui, render_chat_ui,
-    },
 };
 
 pub async fn ui_driver(
-    mut config: CompleteConfig,
+    config: CompleteConfig,
     mut app: App,
-    tx: Sender<TwitchAction>,
     mut rx: Receiver<MessageData>,
     mut erx: Receiver<Emotes>,
 ) {
@@ -45,8 +42,14 @@ pub async fn ui_driver(
     })
     .await;
 
-    if !app.storage.contains("channels", &config.twitch.channel) {
-        app.storage.add("channels", config.twitch.channel.clone());
+    if !app
+        .storage
+        .borrow()
+        .contains("channels", &config.twitch.channel)
+    {
+        app.storage
+            .borrow_mut()
+            .add("channels", config.twitch.channel.clone());
     }
 
     let mut terminal = init_terminal(&config.frontend);
@@ -54,6 +57,7 @@ pub async fn ui_driver(
     terminal.clear().unwrap();
 
     let mut emotes: Emotes = Emotes::default();
+
     let mut terminal_size = Rect::default();
 
     loop {
@@ -74,9 +78,28 @@ pub async fn ui_driver(
             }
         }
 
+        if let Some(event) = events.next().await {
+            if let Some(action) = app.event(event) {
+                match action {
+                    TerminalAction::Quitting => {
+                        quit_terminal(terminal);
+
+                        break;
+                    }
+                    TerminalAction::BackOneLayer => {
+                        if let Some(previous_state) = app.get_previous_state() {
+                            app.set_state(previous_state);
+                        } else {
+                            app.set_state(config.terminal.start_state.clone());
+                        }
+                    }
+                }
+            }
+        }
+
         terminal
-            .draw(|frame| {
-                let size = frame.size();
+            .draw(|f| {
+                let size = f.size();
 
                 if size != terminal_size {
                     terminal_size = size;
@@ -84,35 +107,9 @@ pub async fn ui_driver(
                     emotes.loaded.clear();
                 }
 
-                if size.height < 10 || size.width < 60 {
-                    render_error_ui(
-                        frame,
-                        &[
-                            "Window to small!",
-                            "Must allow for at least 60x10.",
-                            "Restart and resize.",
-                        ],
-                    );
-                } else if app.get_state() == State::Dashboard
-                    || (Some(State::Dashboard) == app.get_previous_state()
-                        && State::ChannelSwitch == app.get_state())
-                {
-                    render_dashboard_ui(frame, &mut app, &config);
-                } else {
-                    render_chat_ui(frame, &mut app, &config, &mut emotes);
-                }
+                app.draw(f, emotes.clone());
             })
             .unwrap();
-
-        if matches!(
-            handle_stateful_user_input(&mut events, &mut app, &mut config, tx.clone(), &mut emotes)
-                .await,
-            Some(TerminalAction::Quitting)
-        ) {
-            quit_terminal(terminal);
-
-            break;
-        }
     }
 
     app.cleanup();

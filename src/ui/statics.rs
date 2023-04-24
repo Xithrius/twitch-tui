@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 
-use crate::handlers::app::State;
+use crate::handlers::state::State;
 
 lazy_static! {
     pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["State", "Keybind", "Description"];
@@ -73,6 +73,8 @@ lazy_static! {
         "vips",
         "w",
     ];
+
+    pub static ref LINE_BUFFER_CAPACITY: usize = 4096;
 
     // https://discuss.dev.twitch.tv/t/irc-bot-and-message-lengths/23327/4
     pub static ref TWITCH_MESSAGE_LIMIT: usize = 500;

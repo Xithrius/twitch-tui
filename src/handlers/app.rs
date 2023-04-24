@@ -1,154 +1,36 @@
-use std::{
-    cmp::{Eq, PartialEq},
-    collections::VecDeque,
-    str::FromStr,
-};
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
-use color_eyre::eyre::{bail, Error, Result};
 use rustyline::line_buffer::LineBuffer;
-use serde::Serialize;
-use serde_with::DeserializeFromStr;
+use tokio::sync::broadcast::Sender;
 use toml::Table;
+use tui::{backend::Backend, Frame};
 
-use crate::handlers::{
-    config::{CompleteConfig, Theme},
-    data::MessageData,
-    filters::Filters,
-    storage::Storage,
+use crate::{
+    emotes::Emotes,
+    handlers::{
+        config::{CompleteConfig, Theme},
+        data::MessageData,
+        filters::Filters,
+        state::State,
+        storage::Storage,
+        user_input::{events::Event, input::TerminalAction, scrolling::Scrolling},
+    },
+    twitch::TwitchAction,
+    ui::{
+        components::{Component, Components},
+        statics::LINE_BUFFER_CAPACITY,
+    },
 };
 
-const INPUT_BUFFER_LIMIT: usize = 4096;
-
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
-pub enum State {
-    Dashboard,
-    Normal,
-    Insert,
-    Help,
-    ChannelSwitch,
-    MessageSearch,
-}
-
-impl State {
-    pub const fn in_insert_mode(&self) -> bool {
-        matches!(
-            self,
-            Self::Insert | Self::ChannelSwitch | Self::MessageSearch
-        )
-    }
-
-    /// What general category the state can be identified with.
-    pub fn category(&self) -> String {
-        if self.in_insert_mode() {
-            "Insert modes".to_string()
-        } else {
-            self.to_string()
-        }
-    }
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self::Dashboard
-    }
-}
-
-impl ToString for State {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Dashboard => "Dashboard",
-            Self::Normal => "Normal",
-            Self::Insert => "Insert",
-            Self::Help => "Help",
-            Self::ChannelSwitch => "Channel",
-            Self::MessageSearch => "Search",
-        }
-        .to_string()
-    }
-}
-
-impl FromStr for State {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "dashboard" | "dash" | "start" => Ok(Self::Dashboard),
-            "normal" | "default" | "chat" => Ok(Self::Normal),
-            "insert" | "input" => Ok(Self::Insert),
-            "help" | "commands" => Ok(Self::Help),
-            "channelswitcher" | "channels" => Ok(Self::ChannelSwitch),
-            "messagesearch" | "search" => Ok(Self::MessageSearch),
-            _ => bail!("State '{}' cannot be deserialized", s),
-        }
-    }
-}
-
-pub struct Scrolling {
-    /// Offset of scroll
-    offset: usize,
-    /// If the scrolling is currently inverted
-    inverted: bool,
-}
-
-impl Scrolling {
-    pub const fn new(inverted: bool) -> Self {
-        Self {
-            offset: 0,
-            inverted,
-        }
-    }
-
-    /// Scrolling upwards, towards the start of the chat
-    pub fn up(&mut self) {
-        self.offset += 1;
-    }
-
-    /// Scrolling downwards, towards the most recent message(s)
-    pub fn down(&mut self) {
-        self.offset = self.offset.saturating_sub(1);
-    }
-
-    pub const fn inverted(&self) -> bool {
-        self.inverted
-    }
-
-    pub fn jump_to(&mut self, index: usize) {
-        self.offset = index;
-    }
-
-    pub const fn get_offset(&self) -> usize {
-        self.offset
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct DebugWindow {
-    visible: bool,
-    pub raw_config: Option<Table>,
-}
-
-impl DebugWindow {
-    const fn new(visible: bool, raw_config: Option<Table>) -> Self {
-        Self {
-            visible,
-            raw_config,
-        }
-    }
-
-    pub const fn is_visible(&self) -> bool {
-        self.visible
-    }
-
-    pub fn toggle(&mut self) {
-        self.visible = !self.visible;
-    }
-}
+use super::storage::SharedStorage;
 
 pub struct App {
+    /// All the available components.
+    pub components: Components,
     /// History of recorded messages (time, username, message, etc).
     pub messages: VecDeque<MessageData>,
     /// Data loaded in from a JSON file.
-    pub storage: Storage,
+    pub storage: SharedStorage,
     /// Messages to be filtered out.
     pub filters: Filters,
     /// Which window the terminal is currently focused on.
@@ -163,28 +45,77 @@ pub struct App {
     pub scrolling: Scrolling,
     /// The theme selected by the user.
     pub theme: Theme,
-    /// If the debug window is visible.
-    pub debug: DebugWindow,
 }
 
 impl App {
-    pub fn new(config: &CompleteConfig, raw_config: Option<Table>) -> Self {
+    pub fn new(
+        config: CompleteConfig,
+        raw_config: Option<Table>,
+        tx: Sender<TwitchAction>,
+    ) -> Self {
+        let shared_config = Rc::new(RefCell::new(config));
+
+        let shared_config_borrow = shared_config.borrow();
+
+        let storage = Rc::new(RefCell::new(Storage::new(
+            "storage.json",
+            &shared_config_borrow.storage,
+        )));
+
+        let components = Components::new(&shared_config, raw_config, tx, storage.clone());
+
         Self {
-            messages: VecDeque::with_capacity(config.terminal.maximum_messages),
-            storage: Storage::new("storage.json", &config.storage),
-            filters: Filters::new("filters.txt", &config.filters),
-            state: config.terminal.start_state.clone(),
+            components,
+            messages: VecDeque::with_capacity(shared_config_borrow.terminal.maximum_messages),
+            storage,
+            filters: Filters::new("filters.txt", &shared_config_borrow.filters),
+            state: shared_config_borrow.terminal.start_state.clone(),
             previous_state: None,
-            input_buffer: LineBuffer::with_capacity(INPUT_BUFFER_LIMIT),
+            input_buffer: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
-            theme: config.frontend.theme.clone(),
-            scrolling: Scrolling::new(config.frontend.inverted_scrolling),
-            debug: DebugWindow::new(false, raw_config),
+            theme: shared_config_borrow.frontend.theme.clone(),
+            scrolling: Scrolling::new(shared_config_borrow.frontend.inverted_scrolling),
+        }
+    }
+
+    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>, emotes: Emotes) {
+        let size = f.size();
+
+        if size.height < 10 || size.width < 60 {
+            self.components.error.draw(f, Some(size));
+        } else {
+            match self.state {
+                State::Dashboard => todo!(),
+                State::Normal => todo!(),
+                State::Insert => todo!(),
+                State::Help => todo!(),
+                State::ChannelSwitch => self.components.channel_switcher.draw(f, emotes),
+                State::MessageSearch => todo!(),
+            }
+        }
+        // } else if app.get_state() == State::Dashboard
+        //     || (Some(State::Dashboard) == app.get_previous_state()
+        //         && State::ChannelSwitch == app.get_state())
+        // {
+        //     render_dashboard_ui(f, &mut app, &config);
+        // } else {
+        //     render_chat_ui(f, &mut app, &config, &mut emotes);
+        // }
+    }
+
+    pub fn event(&mut self, event: Event) -> Option<TerminalAction> {
+        match self.state {
+            State::Dashboard => todo!(),
+            State::Normal => todo!(),
+            State::Insert => todo!(),
+            State::Help => todo!(),
+            State::ChannelSwitch => self.components.channel_switcher.event(&event),
+            State::MessageSearch => todo!(),
         }
     }
 
     pub fn cleanup(&self) {
-        self.storage.dump_data();
+        self.storage.borrow().dump_data();
     }
 
     pub fn clear_messages(&mut self) {
@@ -209,19 +140,5 @@ impl App {
     #[allow(dead_code)]
     pub fn rotate_theme(&mut self) {
         todo!("Rotate through different themes")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_no_scroll_overflow_not_inverted() {
-        let mut scroll = Scrolling::new(false);
-        assert_eq!(scroll.get_offset(), 0);
-
-        scroll.down();
-        assert_eq!(scroll.get_offset(), 0);
     }
 }

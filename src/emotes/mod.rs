@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 use log::{info, warn};
 use std::{
+    cell::RefCell,
     collections::{hash_map::DefaultHasher, HashMap, HashSet},
     hash::{Hash, Hasher},
+    rc::Rc,
 };
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tui::{
@@ -38,7 +40,9 @@ pub struct LoadedEmote {
     pub overlay: bool,
 }
 
-#[derive(Default, Debug)]
+pub type SharedEmotes = Rc<RefCell<Emotes>>;
+
+#[derive(Default, Debug, Clone)]
 pub struct Emotes {
     /// Map of emote name, filename, and if the emote is an overlay
     pub emotes: HashMap<String, (String, bool)>,

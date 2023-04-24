@@ -1,8 +1,10 @@
 use std::{
+    cell::RefCell,
     collections::HashMap,
     fs::{read_to_string, File},
     io::Write,
     path::Path,
+    rc::Rc,
 };
 
 use lazy_static::lazy_static;
@@ -14,6 +16,7 @@ lazy_static! {
     pub static ref ITEM_KEYS: Vec<&'static str> = vec!["channels", "mentions"];
 }
 
+pub type SharedStorage = Rc<RefCell<Storage>>;
 type StorageMap = HashMap<String, StorageItem>;
 
 #[derive(Debug)]

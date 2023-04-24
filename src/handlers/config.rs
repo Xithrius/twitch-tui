@@ -2,10 +2,12 @@ use color_eyre::eyre::{bail, Error, Result};
 use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use std::{
+    cell::RefCell,
     env,
     fs::{create_dir_all, read_to_string, File},
     io::Write,
     path::Path,
+    rc::Rc,
     str::FromStr,
 };
 use toml::Table;
@@ -14,12 +16,14 @@ use tui::widgets::BorderType;
 use crate::{
     emotes::{emotes_enabled, graphics_protocol},
     handlers::{
-        app::State,
         args::{merge_args_into_config, Cli},
         interactive::interactive_config,
+        state::State,
     },
     utils::pathing::{cache_path, config_path},
 };
+
+pub type SharedCompleteConfig = Rc<RefCell<CompleteConfig>>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
@@ -119,7 +123,7 @@ pub struct FrontendConfig {
     pub seventv_emotes: bool,
     /// Comma-separated channel names to be displayed at start screen.
     pub start_screen_channels: Vec<String>,
-    /// A border wrapper around `BorderType`.
+    /// A border wrapper around [`BorderType`].
     pub border_type: Border,
 }
 
