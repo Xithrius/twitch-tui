@@ -48,14 +48,13 @@ use crate::{
 
 use super::{
     utils::{centered_rect, InputWidget},
-    ChannelSwitcherWidget,
+    ChannelSwitcherWidget, ChatInputWidget,
 };
 
 pub struct ChatWidget {
     config: SharedCompleteConfig,
-    tx: Sender<TwitchAction>,
     messages: SharedMessages,
-    chat_input: InputWidget,
+    chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
     filters: SharedFilters,
     // theme: Theme,
@@ -64,16 +63,15 @@ pub struct ChatWidget {
 impl ChatWidget {
     pub fn new(
         config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
+        tx: &Sender<TwitchAction>,
         messages: SharedMessages,
         filters: SharedFilters,
     ) -> Self {
-        let chat_input = InputWidget::new(config.clone(), "Chat");
-        let channel_input = ChannelSwitcherWidget::new(config.clone());
+        let chat_input = ChatInputWidget::new(config.clone(), tx.clone());
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
 
         Self {
             config,
-            tx,
             messages,
             chat_input,
             channel_input,
@@ -319,35 +317,9 @@ impl Component for ChatWidget {
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             if self.chat_input.is_focused() {
-                match key {
-                    Key::Enter => {
-                        self.tx
-                            .send(TwitchAction::Privmsg(self.chat_input.to_string()))
-                            .unwrap();
-                    }
-                    Key::Esc => {
-                        self.chat_input.toggle_focus();
-                    }
-                    _ => {
-                        self.chat_input.event(event);
-                    }
-                }
+                self.chat_input.event(event);
             } else if self.channel_input.is_focused() {
-                match key {
-                    Key::Enter => {
-                        self.tx
-                            .send(TwitchAction::Join(self.channel_input.to_string()))
-                            .unwrap();
-
-                        self.channel_input.toggle_focus();
-                    }
-                    Key::Esc => {
-                        self.channel_input.toggle_focus();
-                    }
-                    _ => {
-                        self.channel_input.event(event);
-                    }
-                }
+                self.channel_input.event(event);
             } else {
                 match key {
                     Key::Char('i') => self.chat_input.toggle_focus(),

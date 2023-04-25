@@ -15,18 +15,18 @@ use crate::{
 
 use super::{utils::InputWidget, Component};
 
-pub struct ChannelSwitcherWidget {
+pub struct ChatInputWidget {
     _config: SharedCompleteConfig,
-    input: InputWidget,
     tx: Sender<TwitchAction>,
+    input: InputWidget,
 }
 
-impl ChannelSwitcherWidget {
+impl ChatInputWidget {
     pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
         Self {
             _config: config.clone(),
-            input: InputWidget::new(config, "Channel switcher"),
             tx,
+            input: InputWidget::new(config, "Chat"),
         }
     }
 
@@ -39,13 +39,13 @@ impl ChannelSwitcherWidget {
     }
 }
 
-impl ToString for ChannelSwitcherWidget {
+impl ToString for ChatInputWidget {
     fn to_string(&self) -> String {
         self.input.to_string()
     }
 }
 
-impl Component for ChannelSwitcherWidget {
+impl Component for ChatInputWidget {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         self.input.draw(f, area, emotes);
     }
@@ -55,10 +55,10 @@ impl Component for ChannelSwitcherWidget {
             match key {
                 Key::Enter => {
                     self.tx
-                        .send(TwitchAction::Join(self.input.to_string()))
+                        .send(TwitchAction::Privmsg(self.input.to_string()))
                         .unwrap();
 
-                    self.input.toggle_focus();
+                    self.input.update("");
                 }
                 Key::Esc => {
                     self.input.toggle_focus();

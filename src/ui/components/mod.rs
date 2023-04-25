@@ -1,14 +1,17 @@
 mod channel_switcher;
 mod chat;
+mod chat_input;
 mod dashboard;
 mod debug;
 mod error;
 mod help;
 mod state_tabs;
+
 pub mod utils;
 
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
+pub use chat_input::ChatInputWidget;
 pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
@@ -16,11 +19,10 @@ pub use help::HelpWidget;
 pub use state_tabs::render_state_tabs;
 
 use tokio::sync::broadcast::Sender;
-use toml::Table;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
-    emotes::{Emotes, SharedEmotes},
+    emotes::Emotes,
     handlers::{
         app::SharedMessages,
         config::SharedCompleteConfig,
@@ -77,7 +79,7 @@ impl Components {
     ) -> Self {
         Self {
             error: ErrorWidget::new(config.clone()),
-            chat: ChatWidget::new(config.clone(), tx.clone(), messages, filters),
+            chat: ChatWidget::new(config.clone(), &tx, messages, filters),
             dashboard: DashboardWidget::new(config.clone(), tx, storage),
             debug: DebugWidget::new(config.clone()),
             help: HelpWidget::new(config.clone()),
