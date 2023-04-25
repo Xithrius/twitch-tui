@@ -1,5 +1,3 @@
-use std::{borrow::BorrowMut, cell::RefCell, rc::Rc};
-
 use rustyline::{line_buffer::LineBuffer, At, Word};
 use tokio::sync::broadcast::Sender;
 use tui::{
@@ -31,7 +29,6 @@ use crate::{
 pub struct InputWidget {
     config: SharedCompleteConfig,
     tx: Sender<TwitchAction>,
-    emotes: Option<SharedEmotes>,
     input: LineBuffer,
     title: String,
     // TODO: Implement input buffer validation function
@@ -41,24 +38,12 @@ pub struct InputWidget {
 }
 
 impl InputWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
-        emotes: Option<SharedEmotes>,
-        title: String,
-    ) -> Self {
+    pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>, title: &str) -> Self {
         Self {
             config,
             tx,
-            emotes,
             input: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
-            title,
-        }
-    }
-
-    pub fn update_emotes(&mut self, emotes: Emotes) {
-        if let Some(shared_emotes) = self.emotes.borrow_mut() {
-            *shared_emotes = Rc::new(RefCell::new(emotes));
+            title: title.to_string(),
         }
     }
 }
@@ -77,7 +62,7 @@ impl Component for InputWidget {
 
         let current_input = self.input.as_str();
 
-        let binding = [TitleStyle::Single("Channel Switcher")];
+        let binding = [TitleStyle::Single(&self.title)];
 
         let status_color = Color::Green;
 

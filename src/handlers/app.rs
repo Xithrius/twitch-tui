@@ -93,9 +93,8 @@ impl App {
             // TODO: Change to macro
             match self.state {
                 State::Dashboard => self.components.dashboard.draw(f, None, None),
-                State::Normal(_) => self.components.chat.draw(f, None, None),
+                State::Normal(_) => self.components.chat.draw(f, None, Some(emotes)),
                 State::Help => self.components.help.draw(f, None, None),
-                State::ChannelSwitch => self.components.channel_switcher.draw(f, emotes),
             }
         }
     }
@@ -113,7 +112,6 @@ impl App {
                         State::Dashboard => self.components.dashboard.event(event),
                         State::Normal(_) => self.components.chat.event(event),
                         State::Help => self.components.help.event(event),
-                        State::ChannelSwitch => self.components.channel_switcher.event(event),
                     };
                 }
             }

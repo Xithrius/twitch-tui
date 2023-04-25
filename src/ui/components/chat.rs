@@ -1,4 +1,5 @@
 use std::{
+    cell::Ref,
     collections::{HashMap, VecDeque},
     rc::Rc,
 };
@@ -25,7 +26,7 @@ use crate::{
     handlers::{
         app::SharedMessages,
         config::{SharedCompleteConfig, Theme},
-        data::DataBuilder,
+        data::{DataBuilder, MessageData},
         state::{NormalMode, State},
         user_input::{
             events::{Event, Key},
@@ -43,14 +44,18 @@ use crate::{
     },
 };
 
-use super::utils::centered_rect;
+use super::{
+    utils::{centered_rect, InputWidget},
+    ChannelSwitcherWidget,
+};
 
 #[derive(Debug)]
 pub struct ChatWidget {
     config: SharedCompleteConfig,
     tx: Sender<TwitchAction>,
     messages: SharedMessages,
-    emotes: Option<SharedEmotes>,
+    chat_input: InputWidget,
+    channel_input: ChannelSwitcherWidget,
     // filters: SharedFilters,
     // theme: Theme,
 }
@@ -61,20 +66,25 @@ impl ChatWidget {
         tx: Sender<TwitchAction>,
         messages: SharedMessages,
     ) -> Self {
+        let chat_input = InputWidget::new(config.clone(), tx.clone(), "Chat");
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
+
         Self {
             config,
             tx,
             messages,
-            emotes: None,
+            chat_input,
+            channel_input,
         }
     }
 
     pub fn get_messages<'a, B: Backend>(
         &self,
         frame: &mut Frame<B>,
-        v_chunks: Rc<[Rect]>,
+        v_chunks: &Rc<[Rect]>,
         scroll_offset: usize,
-        input: LineBuffer,
+        messages_data: &'a VecDeque<MessageData>,
+        mut emotes: Emotes,
     ) -> VecDeque<Spans<'a>> {
         // Accounting for not all heights of rows to be the same due to text wrapping,
         // so extra space needs to be used in order to scroll correctly.
@@ -104,7 +114,6 @@ impl ChatWidget {
         let is_behind_channel_switcher = |_a, _b| false;
 
         let config = self.config.borrow();
-        let messages_data = self.messages.borrow();
 
         'outer: for data in messages_data.iter() {
             // if app.filters.contaminated(data.payload.clone().as_str()) {
@@ -154,7 +163,7 @@ impl ChatWidget {
                         match show_span_emotes(
                             &data.emotes,
                             &mut span,
-                            &mut self.emotes.as_ref().unwrap().borrow_mut(),
+                            &mut emotes,
                             &payload,
                             self.config.borrow().frontend.margin as usize,
                             current_row as u16,
@@ -169,28 +178,19 @@ impl ChatWidget {
                     total_row_height += 1;
                 } else {
                     if !emotes_enabled(&self.config.borrow().frontend)
-                        || self.emotes.as_ref().unwrap().borrow().displayed.is_empty()
+                        || emotes.displayed.is_empty()
                     {
                         break 'outer;
                     }
 
                     // If the current message already had all its emotes deleted, the following messages should
                     // also have had their emotes deleted
-                    hide_message_emotes(
-                        &data.emotes,
-                        &mut self.emotes.clone().unwrap().borrow_mut().displayed,
-                        payload.width(),
-                    );
+                    hide_message_emotes(&data.emotes, &mut emotes.displayed, payload.width());
                     if !data.emotes.is_empty()
-                        && !data.emotes.iter().all(|e| {
-                            !self
-                                .emotes
-                                .clone()
-                                .unwrap()
-                                .borrow()
-                                .displayed
-                                .contains_key(&(e.id, e.pid))
-                        })
+                        && !data
+                            .emotes
+                            .iter()
+                            .all(|e| !emotes.displayed.contains_key(&(e.id, e.pid)))
                     {
                         break 'outer;
                     }
@@ -205,7 +205,6 @@ impl ChatWidget {
             }
         }
 
-        // TODO: fix
         messages
     }
 }
@@ -220,11 +219,11 @@ impl Component for ChatWidget {
 
         let v_chunks: Rc<[Rect]> = Layout::default()
             .direction(Direction::Vertical)
-            .margin(self.config.borrow().frontend.margin.clone())
+            .margin(self.config.borrow().frontend.margin)
             .constraints([Constraint::Min(1)])
             .split(area);
 
-        if self.messages.borrow().len() > self.config.borrow().terminal.maximum_messages.clone() {
+        if self.messages.borrow().len() > self.config.borrow().terminal.maximum_messages {
             for data in self
                 .messages
                 .borrow()
@@ -245,10 +244,9 @@ impl Component for ChatWidget {
         //     get_messages(f, config, emotes, v_chunks.clone())
         // };
 
-        // TODO: Remove this after making [`InputComponent`] a reality
-        let input = LineBuffer::with_capacity(4096);
+        let messages_data = self.messages.clone().borrow().to_owned();
 
-        let messages = self.get_messages(f, v_chunks.clone(), 0, input);
+        let messages = self.get_messages(f, &v_chunks, 0, &messages_data, emotes);
 
         let current_time = Local::now()
             .format(&config.frontend.date_format)

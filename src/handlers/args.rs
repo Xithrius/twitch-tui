@@ -42,7 +42,6 @@ impl ValueEnum for State {
             // Self::Normal(Some(NormalMode::Insert)),
             // Self::Normal(Some(NormalMode::Search)),
             Self::Help,
-            Self::ChannelSwitch,
         ]
     }
 
@@ -51,7 +50,6 @@ impl ValueEnum for State {
             Self::Dashboard => "start",
             Self::Normal(_) => "normal",
             Self::Help => "help",
-            Self::ChannelSwitch => "channel",
         }))
     }
 }

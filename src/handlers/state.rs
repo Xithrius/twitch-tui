@@ -40,14 +40,12 @@ pub enum State {
     Dashboard,
     Normal(Option<NormalMode>),
     Help,
-    ChannelSwitch,
 }
 
 impl State {
     pub const fn in_insert_mode(&self) -> bool {
         match self {
             Self::Normal(mode) => mode.is_some(),
-            Self::ChannelSwitch => true,
             _ => false,
         }
     }
@@ -76,7 +74,6 @@ impl ToString for State {
                 .as_ref()
                 .map_or("Normal".to_string(), |m| format!("Normal[{m:?}]")),
             Self::Help => "Help".to_string(),
-            Self::ChannelSwitch => "Channel".to_string(),
         }
     }
 }
@@ -87,12 +84,8 @@ impl FromStr for State {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "normal" | "default" | "chat" => Ok(Self::Normal(None)),
-            "insert" | "input" => Ok(Self::Normal(Some(NormalMode::Insert))),
-            "messagesearch" | "search" => Ok(Self::Normal(Some(NormalMode::Search))),
-
             "dashboard" | "dash" | "start" => Ok(Self::Dashboard),
             "help" | "commands" => Ok(Self::Help),
-            "channelswitcher" | "channels" => Ok(Self::ChannelSwitch),
             _ => bail!("State '{}' cannot be deserialized", s),
         }
     }
