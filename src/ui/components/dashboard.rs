@@ -245,6 +245,7 @@ impl Component for DashboardWidget {
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Char('s') => self.channel_input.toggle_focus(),
                 Key::Enter => return Some(TerminalAction::SwitchState(State::Normal)),
+                Key::Char('?') => return Some(TerminalAction::SwitchState(State::Help)),
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
                         let mut channels =
