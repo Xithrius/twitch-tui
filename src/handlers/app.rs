@@ -2,7 +2,6 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use rustyline::line_buffer::LineBuffer;
 use tokio::sync::broadcast::Sender;
-use toml::Table;
 use tui::{backend::Backend, Frame};
 
 use crate::{
@@ -22,7 +21,7 @@ use crate::{
     },
 };
 
-use super::{storage::SharedStorage, user_input::events::Key};
+use super::{filters::SharedFilters, storage::SharedStorage, user_input::events::Key};
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
@@ -34,7 +33,7 @@ pub struct App {
     /// Data loaded in from a JSON file.
     pub storage: SharedStorage,
     /// Messages to be filtered out.
-    pub filters: Filters,
+    pub filters: SharedFilters,
     /// Which window the terminal is currently focused on.
     state: State,
     /// The previous state, if any.
@@ -49,32 +48,38 @@ pub struct App {
     pub theme: Theme,
 }
 
+macro_rules! shared {
+    ($expression:expr) => {
+        Rc::new(RefCell::new($expression))
+    };
+}
+
 impl App {
-    pub fn new(
-        config: CompleteConfig,
-        raw_config: Option<Table>,
-        tx: Sender<TwitchAction>,
-    ) -> Self {
-        let shared_config = Rc::new(RefCell::new(config));
+    pub fn new(config: CompleteConfig, tx: Sender<TwitchAction>) -> Self {
+        let shared_config = shared!(config);
 
         let shared_config_borrow = shared_config.borrow();
 
-        let storage = Rc::new(RefCell::new(Storage::new(
-            "storage.json",
-            &shared_config_borrow.storage,
-        )));
+        let storage = shared!(Storage::new("storage.json", &shared_config_borrow.storage));
+        let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters,));
 
-        let messages: SharedMessages = Rc::new(RefCell::new(VecDeque::with_capacity(
+        let messages = shared!(VecDeque::with_capacity(
             shared_config_borrow.terminal.maximum_messages,
-        )));
+        ));
 
-        let components = Components::new(&shared_config, tx, storage.clone(), messages.clone());
+        let components = Components::new(
+            &shared_config,
+            tx,
+            storage.clone(),
+            filters.clone(),
+            messages.clone(),
+        );
 
         Self {
             components,
             messages,
             storage,
-            filters: Filters::new("filters.txt", &shared_config_borrow.filters),
+            filters,
             state: shared_config_borrow.terminal.start_state.clone(),
             previous_state: None,
             input_buffer: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),

@@ -2,6 +2,7 @@ use std::{
     cell::Ref,
     collections::{HashMap, VecDeque},
     rc::Rc,
+    slice::Iter,
 };
 
 use chrono::Local;
@@ -20,13 +21,14 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     emotes::{
-        emotes_enabled, hide_all_emotes, hide_message_emotes, show_span_emotes, Emotes,
+        emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
         SharedEmotes,
     },
     handlers::{
         app::SharedMessages,
         config::{SharedCompleteConfig, Theme},
         data::{DataBuilder, MessageData},
+        filters::SharedFilters,
         state::{NormalMode, State},
         user_input::{
             events::{Event, Key},
@@ -49,14 +51,13 @@ use super::{
     ChannelSwitcherWidget,
 };
 
-#[derive(Debug)]
 pub struct ChatWidget {
     config: SharedCompleteConfig,
     tx: Sender<TwitchAction>,
     messages: SharedMessages,
     chat_input: InputWidget,
     channel_input: ChannelSwitcherWidget,
-    // filters: SharedFilters,
+    filters: SharedFilters,
     // theme: Theme,
 }
 
@@ -65,9 +66,10 @@ impl ChatWidget {
         config: SharedCompleteConfig,
         tx: Sender<TwitchAction>,
         messages: SharedMessages,
+        filters: SharedFilters,
     ) -> Self {
-        let chat_input = InputWidget::new(config.clone(), tx.clone(), "Chat");
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
+        let chat_input = InputWidget::new(config.clone(), "Chat");
+        let channel_input = ChannelSwitcherWidget::new(config.clone());
 
         Self {
             config,
@@ -75,13 +77,14 @@ impl ChatWidget {
             messages,
             chat_input,
             channel_input,
+            filters,
         }
     }
 
     pub fn get_messages<'a, B: Backend>(
         &self,
         frame: &mut Frame<B>,
-        v_chunks: &Rc<[Rect]>,
+        area: Rect,
         scroll_offset: usize,
         messages_data: &'a VecDeque<MessageData>,
         mut emotes: Emotes,
@@ -92,7 +95,7 @@ impl ChatWidget {
 
         let mut messages = VecDeque::new();
 
-        let general_chunk_height = v_chunks[0].height as usize - 2;
+        let general_chunk_height = area.height as usize - 2;
 
         // Horizontal chunks represents the list within the main chat window.
         let h_chunk = Layout::default()
@@ -102,23 +105,25 @@ impl ChatWidget {
 
         let message_chunk_width = h_chunk[0].width as usize;
 
-        // let channel_switcher = if app.get_state() == State::ChannelSwitch {
-        //     Some(centered_rect(60, 20, frame.size()))
-        // } else {
-        //     None
-        // };
+        let channel_switcher = if self.channel_input.is_focused() {
+            Some(centered_rect(60, 20, frame.size()))
+        } else {
+            None
+        };
 
-        // let is_behind_channel_switcher =
-        //     |a, b| channel_switcher.map_or(false, |r| is_in_rect(r, a, b));
-
-        let is_behind_channel_switcher = |_a, _b| false;
+        let is_behind_channel_switcher =
+            |a, b| channel_switcher.map_or(false, |r| is_in_rect(r, a, b));
 
         let config = self.config.borrow();
 
         'outer: for data in messages_data.iter() {
-            // if app.filters.contaminated(data.payload.clone().as_str()) {
-            //     continue;
-            // }
+            if self
+                .filters
+                .borrow()
+                .contaminated(data.payload.clone().as_str())
+            {
+                continue;
+            }
 
             // Offsetting of messages for scrolling through said messages
             if scroll_offset > 0 {
@@ -213,15 +218,26 @@ impl Component for ChatWidget {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
         // TODO: Don't let this be a thing
         let mut emotes = emotes.unwrap();
+
         let config = self.config.borrow();
 
         let area = area.map_or_else(|| f.size(), |a| a);
 
-        let v_chunks: Rc<[Rect]> = Layout::default()
+        let mut v_constraints = vec![Constraint::Min(1)];
+
+        if self.chat_input.is_focused() {
+            v_constraints.push(Constraint::Length(3));
+        }
+
+        let v_chunks_binding = Layout::default()
             .direction(Direction::Vertical)
             .margin(self.config.borrow().frontend.margin)
-            .constraints([Constraint::Min(1)])
+            .constraints(v_constraints)
             .split(area);
+
+        let mut v_chunks: Iter<Rect> = v_chunks_binding.iter();
+
+        let first_v_chunk = v_chunks.next().unwrap();
 
         if self.messages.borrow().len() > self.config.borrow().terminal.maximum_messages {
             for data in self
@@ -236,17 +252,9 @@ impl Component for ChatWidget {
                 .truncate(self.config.borrow().terminal.maximum_messages);
         }
 
-        // If we show the help screen, no need to get any messages
-        // let messages = if app.get_state() == State::Help {
-        //     hide_all_emotes(&mut emotes);
-        //     VecDeque::new()
-        // } else {
-        //     get_messages(f, config, emotes, v_chunks.clone())
-        // };
-
         let messages_data = self.messages.clone().borrow().to_owned();
 
-        let messages = self.get_messages(f, &v_chunks, 0, &messages_data, emotes);
+        let messages = self.get_messages(f, *first_v_chunk, 0, &messages_data, emotes.clone());
 
         let current_time = Local::now()
             .format(&config.frontend.date_format)
@@ -255,20 +263,20 @@ impl Component for ChatWidget {
         let spans = [
             TitleStyle::Combined("Time", &current_time),
             TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
-            // TitleStyle::Custom(Span::styled(
-            //     if app.filters.reversed() {
-            //         "retliF"
-            //     } else {
-            //         "Filter"
-            //     },
-            //     Style::default()
-            //         .add_modifier(Modifier::BOLD)
-            //         .fg(if app.filters.enabled() {
-            //             Color::Green
-            //         } else {
-            //             Color::Red
-            //         }),
-            // )),
+            TitleStyle::Custom(Span::styled(
+                if self.filters.borrow().reversed() {
+                    "retliF"
+                } else {
+                    "Filter"
+                },
+                Style::default().add_modifier(Modifier::BOLD).fg(
+                    if self.filters.borrow().enabled() {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    },
+                ),
+            )),
         ];
 
         let chat_title = if self.config.borrow().frontend.title_shown {
@@ -298,43 +306,57 @@ impl Component for ChatWidget {
             )
             .style(Style::default().fg(Color::White));
 
-        f.render_widget(list, v_chunks[0]);
+        f.render_widget(list, *first_v_chunk);
 
-        // if config.frontend.state_tabs {
-        //     render_state_tabs(frame, &layout, &app.get_state());
-        // }
-
-        // match window.app.get_state() {
-        //     // States of the application that require a chunk of the main window
-        //     State::Insert => render_chat_box(window, config.storage.mentions),
-        //     State::MessageSearch => {
-        //         let checking_func = |s: String| -> bool { !s.is_empty() };
-
-        //         render_insert_box(
-        //             window,
-        //             "Message Search",
-        //             None,
-        //             None,
-        //             Some(Box::new(checking_func)),
-        //         );
-        //     }
-
-        //     // States that require popups
-        //     State::Help => render_help_window(window),
-        //     // State::ChannelSwitch => app.components.channel_switcher.draw(frame),
-        //     _ => {}
-        // }
-
-        // todo!()
+        if self.chat_input.is_focused() {
+            self.chat_input
+                .draw(f, v_chunks.next().copied(), Some(emotes));
+        } else if self.channel_input.is_focused() {
+            self.channel_input.draw(f, None, None);
+        }
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            match key {
-                Key::Char('q') => return Some(TerminalAction::Quitting),
-                Key::Esc => return Some(TerminalAction::BackOneLayer),
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                _ => {}
+            if self.chat_input.is_focused() {
+                match key {
+                    Key::Enter => {
+                        self.tx
+                            .send(TwitchAction::Privmsg(self.chat_input.to_string()))
+                            .unwrap();
+                    }
+                    Key::Esc => {
+                        self.chat_input.toggle_focus();
+                    }
+                    _ => {
+                        self.chat_input.event(event);
+                    }
+                }
+            } else if self.channel_input.is_focused() {
+                match key {
+                    Key::Enter => {
+                        self.tx
+                            .send(TwitchAction::Join(self.channel_input.to_string()))
+                            .unwrap();
+
+                        self.channel_input.toggle_focus();
+                    }
+                    Key::Esc => {
+                        self.channel_input.toggle_focus();
+                    }
+                    _ => {
+                        self.channel_input.event(event);
+                    }
+                }
+            } else {
+                match key {
+                    Key::Char('i') => self.chat_input.toggle_focus(),
+                    Key::Char('s') => self.channel_input.toggle_focus(),
+                    Key::Char('q') => return Some(TerminalAction::Quit),
+                    Key::Esc => return Some(TerminalAction::BackOneLayer),
+                    Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                    _ => {}
+                }
             }
         }
 

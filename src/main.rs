@@ -60,7 +60,7 @@ fn initialize_logging(config: &CompleteConfig) {
 async fn main() -> Result<()> {
     color_eyre::install().unwrap();
 
-    let (config, raw_config) = CompleteConfig::new(Cli::parse())
+    let config = CompleteConfig::new(Cli::parse())
         .wrap_err("Configuration error.")
         .unwrap();
 
@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
-    let app = App::new(config.clone(), raw_config, terminal_tx);
+    let app = App::new(config.clone(), terminal_tx);
 
     info!("Started tokio communication channels.");
 

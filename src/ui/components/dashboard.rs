@@ -1,5 +1,6 @@
 use std::slice::Iter;
 
+use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -19,6 +20,7 @@ use crate::{
             input::TerminalAction,
         },
     },
+    twitch::TwitchAction,
     ui::components::Component,
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
@@ -34,12 +36,21 @@ const DASHBOARD_TITLE: [&str; 5] = [
 #[derive(Debug)]
 pub struct DashboardWidget {
     config: SharedCompleteConfig,
+    tx: Sender<TwitchAction>,
     storage: SharedStorage,
 }
 
 impl DashboardWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
-        Self { config, storage }
+    pub fn new(
+        config: SharedCompleteConfig,
+        tx: Sender<TwitchAction>,
+        storage: SharedStorage,
+    ) -> Self {
+        Self {
+            config,
+            tx,
+            storage,
+        }
     }
 }
 
@@ -217,7 +228,7 @@ impl Component for DashboardWidget {
                 }
                 // Key::Ctrl('d') => app.debug.toggle(),
                 // Key::Char('?') => app.set_state(State::Help),
-                Key::Char('q') => return Some(TerminalAction::Quitting),
+                Key::Char('q') => return Some(TerminalAction::Quit),
                 // Key::Char('s') => app.set_state(State::ChannelSwitch),
                 // Key::Enter => {
                 //     app.clear_messages();

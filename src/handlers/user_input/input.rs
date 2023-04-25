@@ -16,7 +16,7 @@
 // };
 
 pub enum TerminalAction {
-    Quitting,
+    Quit,
     BackOneLayer,
 }
 

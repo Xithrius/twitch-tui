@@ -24,6 +24,7 @@ use crate::{
     handlers::{
         app::SharedMessages,
         config::SharedCompleteConfig,
+        filters::SharedFilters,
         storage::SharedStorage,
         user_input::{
             events::{Event, Key},
@@ -44,7 +45,7 @@ pub trait Component {
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
-                Key::Char('q') => return Some(TerminalAction::Quitting),
+                Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Esc => return Some(TerminalAction::BackOneLayer),
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 _ => {}
@@ -64,9 +65,6 @@ pub struct Components {
     pub dashboard: DashboardWidget,
     pub debug: DebugWidget,
     pub help: HelpWidget,
-
-    // Popup widgets
-    pub channel_switcher: ChannelSwitcherWidget,
 }
 
 impl Components {
@@ -74,15 +72,15 @@ impl Components {
         config: &SharedCompleteConfig,
         tx: Sender<TwitchAction>,
         storage: SharedStorage,
+        filters: SharedFilters,
         messages: SharedMessages,
     ) -> Self {
         Self {
             error: ErrorWidget::new(config.clone()),
-            chat: ChatWidget::new(config.clone(), tx.clone(), messages),
-            dashboard: DashboardWidget::new(config.clone(), storage),
+            chat: ChatWidget::new(config.clone(), tx.clone(), messages, filters),
+            dashboard: DashboardWidget::new(config.clone(), tx, storage),
             debug: DebugWidget::new(config.clone()),
             help: HelpWidget::new(config.clone()),
-            channel_switcher: ChannelSwitcherWidget::new(config.clone(), tx),
         }
     }
 }

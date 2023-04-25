@@ -1,6 +1,6 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
 use crate::{
@@ -15,6 +15,7 @@ use crate::{
             input::TerminalAction,
         },
     },
+    twitch::TwitchAction,
 };
 
 pub async fn ui_driver(
@@ -79,7 +80,7 @@ pub async fn ui_driver(
         if let Some(event) = events.next().await {
             if let Some(action) = app.event(&event) {
                 match action {
-                    TerminalAction::Quitting => {
+                    TerminalAction::Quit => {
                         quit_terminal(terminal);
 
                         break;

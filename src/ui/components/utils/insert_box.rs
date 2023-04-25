@@ -25,12 +25,11 @@ use crate::{
     utils::text::{get_cursor_position, title_spans, TitleStyle},
 };
 
-#[derive(Debug)]
 pub struct InputWidget {
     config: SharedCompleteConfig,
-    tx: Sender<TwitchAction>,
     input: LineBuffer,
     title: String,
+    focused: bool,
     // TODO: Implement input buffer validation function
     // input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
     // TODO: Suggestions
@@ -38,13 +37,27 @@ pub struct InputWidget {
 }
 
 impl InputWidget {
-    pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>, title: &str) -> Self {
+    pub fn new(config: SharedCompleteConfig, title: &str) -> Self {
         Self {
             config,
-            tx,
             input: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
             title: title.to_string(),
+            focused: false,
         }
+    }
+
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    pub fn toggle_focus(&mut self) {
+        self.focused = !self.focused;
+    }
+}
+
+impl ToString for InputWidget {
+    fn to_string(&self) -> String {
+        self.input.to_string()
     }
 }
 
@@ -177,7 +190,7 @@ impl Component for InputWidget {
                 //     app.clear_messages();
                 // }
                 // }
-                Key::Ctrl('q') => return Some(TerminalAction::Quitting),
+                Key::Ctrl('q') => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1);
                 }

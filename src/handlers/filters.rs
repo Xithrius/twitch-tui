@@ -1,8 +1,10 @@
-use std::fs::read_to_string;
+use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
 use regex::Regex;
 
 use crate::{handlers::config::FiltersConfig, utils::pathing::config_path};
+
+pub type SharedFilters = Rc<RefCell<Filters>>;
 
 #[derive(Debug, Clone)]
 pub struct Filters {
