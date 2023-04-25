@@ -1,11 +1,14 @@
 use tui::style::{Color, Modifier, Style};
 
+#[allow(dead_code)]
 pub const BORDER_NAME_DARK: Style = Style {
     fg: Some(Color::White),
     bg: None,
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
 };
+
+#[allow(dead_code)]
 pub const BORDER_NAME_LIGHT: Style = Style {
     fg: Some(Color::Black),
     bg: None,

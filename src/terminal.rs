@@ -93,7 +93,7 @@ pub async fn ui_driver(
                         }
                     }
                     TerminalAction::SwitchState(state) => {
-                        if let State::Normal(_) = state {
+                        if state == State::Normal {
                             unload_all_emotes(&mut emotes);
                             app.clear_messages();
                         }

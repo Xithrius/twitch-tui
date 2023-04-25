@@ -61,7 +61,7 @@ impl Component for ChannelSwitcherWidget {
 
                     self.input.toggle_focus();
 
-                    return Some(TerminalAction::SwitchState(State::Normal(None)));
+                    return Some(TerminalAction::SwitchState(State::Normal));
                 }
                 Key::Esc => {
                     self.input.toggle_focus();

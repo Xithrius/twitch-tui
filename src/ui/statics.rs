@@ -1,11 +1,10 @@
 use lazy_static::lazy_static;
 
-use crate::handlers::state::{NormalMode, State};
-
 lazy_static! {
     pub static ref HELP_COLUMN_TITLES: Vec<&'static str> = vec!["State", "Keybind", "Description"];
-    pub static ref HELP_KEYBINDS: Vec<(State, Vec<(&'static str, &'static str)>)> = vec![
-        (State::Normal(None), vec![
+    pub static ref HELP_KEYBINDS: Vec<(&'static str, Vec<(&'static str, &'static str)>)> = vec![
+        // TODO: Dashboard keybinds
+        ("Normal mode", vec![
             ("c", "Main chat window"),
             ("i", "Insert mode"),
             ("@", "Insert mode with mention symbol"),
@@ -17,7 +16,7 @@ lazy_static! {
             ("q", "Quit"),
             ("Esc", "Go back a window layer")
         ]),
-        (State::Normal(Some(NormalMode::Insert)), vec![
+        ("Insert modes", vec![
             ("Tab", "Fill in suggestion, if available"),
             ("Enter", "Confirm the input text to go through"),
             ("Ctrl + f", "Move cursor to the right"),

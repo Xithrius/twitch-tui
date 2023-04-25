@@ -8,32 +8,38 @@ use tui::{
     Frame,
 };
 
-use crate::handlers::state::State;
+use crate::handlers::{config::SharedCompleteConfig, state::State};
 
-const TABS_TO_RENDER: [State; 2] = [State::Normal(None), State::Help];
+const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help];
 
-pub fn render_state_tabs<T: Backend>(f: &mut Frame<T>, area: Rect, current_state: &State) {
-    let tab_titles = TABS_TO_RENDER
-        .iter()
-        .map(|t| Spans::from(t.to_string()))
-        .collect();
+#[derive(Debug, Clone)]
+pub struct StateTabsWidget {
+    _config: SharedCompleteConfig,
+}
 
-    let tabs = Tabs::new(tab_titles)
-        .block(Block::default())
-        .style(Style::default().fg(Color::Gray).add_modifier(Modifier::DIM))
-        .highlight_style(
-            Style::default()
-                .fg(Color::Yellow)
-                .remove_modifier(Modifier::DIM)
-                .add_modifier(Modifier::UNDERLINED),
-        )
-        .divider(DOT)
-        .select(
-            TABS_TO_RENDER
-                .iter()
-                .position(|s| s == current_state)
-                .unwrap(),
-        );
+impl StateTabsWidget {
+    pub fn new(config: SharedCompleteConfig) -> Self {
+        Self { _config: config }
+    }
 
-    f.render_widget(tabs, area);
+    pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, state: &State) {
+        let tab_titles = TABS_TO_RENDER
+            .iter()
+            .map(|t| Spans::from(t.to_string()))
+            .collect();
+
+        let tabs = Tabs::new(tab_titles)
+            .block(Block::default())
+            .style(Style::default().fg(Color::Gray).add_modifier(Modifier::DIM))
+            .highlight_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .remove_modifier(Modifier::DIM)
+                    .add_modifier(Modifier::UNDERLINED),
+            )
+            .divider(DOT)
+            .select(TABS_TO_RENDER.iter().position(|s| s == state).unwrap());
+
+        f.render_widget(tabs, area.unwrap());
+    }
 }

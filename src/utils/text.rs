@@ -61,6 +61,8 @@ pub fn title_spans<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span
 }
 
 /// Within an array of strings, find the first partial or full match, if any.
+#[allow(dead_code)]
+// TODO: Implement suggestions for new widgets
 pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String> {
     possibilities
         .iter()

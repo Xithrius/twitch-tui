@@ -35,18 +35,13 @@ impl ValueEnum for Theme {
 
 impl ValueEnum for State {
     fn value_variants<'a>() -> &'a [Self] {
-        &[
-            // Self::Normal(None),
-            // Self::Normal(Some(NormalMode::Insert)),
-            // Self::Normal(Some(NormalMode::Search)),
-            Self::Help,
-        ]
+        &[Self::Dashboard, Self::Normal, Self::Help]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         Some(PossibleValue::new(match self {
             Self::Dashboard => "start",
-            Self::Normal(_) => "normal",
+            Self::Normal => "normal",
             Self::Help => "help",
         }))
     }

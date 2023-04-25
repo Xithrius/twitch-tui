@@ -2,7 +2,11 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use rustyline::line_buffer::LineBuffer;
 use tokio::sync::broadcast::Sender;
-use tui::{backend::Backend, Frame};
+use tui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout},
+    Frame,
+};
 
 use crate::{
     emotes::Emotes,
@@ -21,13 +25,18 @@ use crate::{
     },
 };
 
-use super::{filters::SharedFilters, storage::SharedStorage, user_input::events::Key};
+use super::{
+    config::SharedCompleteConfig, filters::SharedFilters, storage::SharedStorage,
+    user_input::events::Key,
+};
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
 pub struct App {
     /// All the available components.
     pub components: Components,
+    /// A config for the app and components to share.
+    pub config: SharedCompleteConfig,
     /// History of recorded messages (time, username, message, etc).
     pub messages: SharedMessages,
     /// Data loaded in from a JSON file.
@@ -75,6 +84,7 @@ impl App {
 
         Self {
             components,
+            config: shared_config.clone(),
             messages,
             storage,
             filters,
@@ -87,17 +97,32 @@ impl App {
     }
 
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>, emotes: Emotes) {
-        let size = f.size();
+        let mut size = f.size();
+
+        if self.config.borrow().frontend.state_tabs {
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
+                .split(f.size());
+
+            size = layout[0];
+
+            self.components.tabs.draw(f, Some(layout[1]), &self.state);
+        }
 
         if size.height < 10 || size.width < 60 {
-            self.components.error.draw(f, Some(size), None);
+            self.components.error.draw(f, Some(f.size()), None);
         } else {
             // TODO: Change to macro
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None, None),
-                State::Normal(_) => self.components.chat.draw(f, None, Some(emotes)),
-                State::Help => self.components.help.draw(f, None, None),
+                State::Dashboard => self.components.dashboard.draw(f, Some(size), None),
+                State::Normal => self.components.chat.draw(f, Some(size), Some(emotes)),
+                State::Help => self.components.help.draw(f, Some(size), None),
             }
+        }
+
+        if self.components.debug.is_focused() {
+            self.components.debug.draw(f, None, None);
         }
     }
 
@@ -112,7 +137,7 @@ impl App {
                     // TODO: Change to macro
                     return match self.state {
                         State::Dashboard => self.components.dashboard.event(event),
-                        State::Normal(_) => self.components.chat.event(event),
+                        State::Normal => self.components.chat.event(event),
                         State::Help => self.components.help.event(event),
                     };
                 }

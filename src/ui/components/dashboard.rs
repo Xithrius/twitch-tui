@@ -244,7 +244,7 @@ impl Component for DashboardWidget {
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Char('s') => self.channel_input.toggle_focus(),
-                Key::Enter => return Some(TerminalAction::SwitchState(State::Normal(None))),
+                Key::Enter => return Some(TerminalAction::SwitchState(State::Normal)),
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
                         let mut channels =
@@ -265,7 +265,7 @@ impl Component for DashboardWidget {
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
 
-                            return Some(TerminalAction::SwitchState(State::Normal(None)));
+                            return Some(TerminalAction::SwitchState(State::Normal));
                         }
                     }
                 }

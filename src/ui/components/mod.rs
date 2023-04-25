@@ -16,7 +16,7 @@ pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
 pub use help::HelpWidget;
-pub use state_tabs::render_state_tabs;
+pub use state_tabs::StateTabsWidget;
 
 use tokio::sync::broadcast::Sender;
 use tui::{backend::Backend, layout::Rect, Frame};
@@ -62,6 +62,9 @@ pub struct Components {
     // Error window(s)
     pub error: ErrorWidget,
 
+    // Tabs
+    pub tabs: StateTabsWidget,
+
     // Full window widgets
     pub chat: ChatWidget,
     pub dashboard: DashboardWidget,
@@ -79,6 +82,7 @@ impl Components {
     ) -> Self {
         Self {
             error: ErrorWidget::new(),
+            tabs: StateTabsWidget::new(config.clone()),
             chat: ChatWidget::new(config.clone(), &tx, messages, filters),
             dashboard: DashboardWidget::new(config.clone(), tx, storage),
             debug: DebugWidget::new(config.clone()),

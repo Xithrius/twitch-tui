@@ -40,7 +40,7 @@ impl Component for HelpWidget {
             for (i, (key, desc)) in v.iter().enumerate() {
                 rows.push(Row::new(vec![
                     if i == 0 {
-                        Cell::from(s.category())
+                        Cell::from((*s).to_string())
                             .style(Style::default().add_modifier(Modifier::BOLD))
                     } else {
                         Cell::from("")

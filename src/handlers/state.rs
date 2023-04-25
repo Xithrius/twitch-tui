@@ -38,26 +38,8 @@ impl FromStr for NormalMode {
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
 pub enum State {
     Dashboard,
-    Normal(Option<NormalMode>),
+    Normal,
     Help,
-}
-
-impl State {
-    pub const fn in_insert_mode(&self) -> bool {
-        match self {
-            Self::Normal(mode) => mode.is_some(),
-            _ => false,
-        }
-    }
-
-    /// What general category the state can be identified with.
-    pub fn category(&self) -> String {
-        if self.in_insert_mode() {
-            "Insert modes".to_string()
-        } else {
-            self.to_string()
-        }
-    }
 }
 
 impl Default for State {
@@ -69,12 +51,11 @@ impl Default for State {
 impl ToString for State {
     fn to_string(&self) -> String {
         match self {
-            Self::Dashboard => "Dashboard".to_string(),
-            Self::Normal(mode) => mode
-                .as_ref()
-                .map_or("Normal".to_string(), |m| format!("Normal[{m:?}]")),
-            Self::Help => "Help".to_string(),
+            Self::Dashboard => "Dashboard",
+            Self::Normal => "Normal",
+            Self::Help => "Help",
         }
+        .to_string()
     }
 }
 
@@ -83,7 +64,7 @@ impl FromStr for State {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "normal" | "default" | "chat" => Ok(Self::Normal(None)),
+            "normal" | "default" | "chat" => Ok(Self::Normal),
             "dashboard" | "dash" | "start" => Ok(Self::Dashboard),
             "help" | "commands" => Ok(Self::Help),
             _ => bail!("State '{}' cannot be deserialized", s),
