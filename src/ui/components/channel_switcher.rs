@@ -5,6 +5,7 @@ use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
+        state::State,
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -59,6 +60,8 @@ impl Component for ChannelSwitcherWidget {
                         .unwrap();
 
                     self.input.toggle_focus();
+
+                    return Some(TerminalAction::SwitchState(State::Normal(None)));
                 }
                 Key::Esc => {
                     self.input.toggle_focus();

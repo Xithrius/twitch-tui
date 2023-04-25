@@ -12,7 +12,7 @@ use crate::{
         filters::Filters,
         state::State,
         storage::Storage,
-        user_input::{events::Event, input::TerminalAction, scrolling::Scrolling},
+        user_input::{events::Event, input::TerminalAction},
     },
     twitch::TwitchAction,
     ui::{
@@ -42,8 +42,6 @@ pub struct App {
     pub input_buffer: LineBuffer,
     /// The current suggestion, if any.
     pub buffer_suggestion: Option<String>,
-    /// Interactions with scrolling of the application.
-    pub scrolling: Scrolling,
     /// The theme selected by the user.
     pub theme: Theme,
 }
@@ -85,7 +83,6 @@ impl App {
             input_buffer: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
             theme: shared_config_borrow.frontend.theme.clone(),
-            scrolling: Scrolling::new(shared_config_borrow.frontend.inverted_scrolling),
         }
     }
 
@@ -132,13 +129,14 @@ impl App {
     pub fn clear_messages(&mut self) {
         self.messages.borrow_mut().clear();
 
-        self.scrolling.jump_to(0);
+        self.components.chat.scroll_offset.jump_to(0);
     }
 
     pub fn get_previous_state(&self) -> Option<State> {
         self.previous_state.clone()
     }
 
+    #[allow(dead_code)]
     pub fn get_state(&self) -> State {
         self.state.clone()
     }

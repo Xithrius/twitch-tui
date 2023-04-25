@@ -1,13 +1,13 @@
 use tui::{
     backend::Backend,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Rect},
     style::{Color, Style},
     terminal::Frame,
     text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::{emotes::Emotes, handlers::config::SharedCompleteConfig};
+use crate::emotes::Emotes;
 
 use super::Component;
 
@@ -18,18 +18,16 @@ const WINDOW_SIZE_ERROR_MESSAGE: [&str; 3] = [
 ];
 
 #[derive(Debug, Clone)]
-pub struct ErrorWidget {
-    config: SharedCompleteConfig,
-}
+pub struct ErrorWidget;
 
 impl ErrorWidget {
-    pub const fn new(config: SharedCompleteConfig) -> Self {
-        Self { config }
+    pub const fn new() -> Self {
+        Self
     }
 }
 
 impl Component for ErrorWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, _emotes: Option<Emotes>) {
         let area = area.map_or_else(|| f.size(), |a| a);
 
         let paragraph = Paragraph::new(

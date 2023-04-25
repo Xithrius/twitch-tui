@@ -13,18 +13,16 @@ impl Scrolling {
         }
     }
 
-    /// Scrolling upwards, towards the start of the chat
-    pub fn up(&mut self) {
-        self.offset += 1;
-    }
-
-    /// Scrolling downwards, towards the most recent message(s)
-    pub fn down(&mut self) {
-        self.offset = self.offset.saturating_sub(1);
-    }
-
     pub const fn inverted(&self) -> bool {
         self.inverted
+    }
+
+    pub fn up(&mut self) {
+        self.offset = self.offset.saturating_add(1);
+    }
+
+    pub fn down(&mut self) {
+        self.offset = self.offset.saturating_sub(1);
     }
 
     pub fn jump_to(&mut self, index: usize) {

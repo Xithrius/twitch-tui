@@ -1,21 +1,21 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::{broadcast::Sender, mpsc::Receiver};
+use tokio::sync::mpsc::Receiver;
 use tui::layout::Rect;
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::Emotes,
+    emotes::{unload_all_emotes, Emotes},
     handlers::{
         app::App,
         config::CompleteConfig,
         data::MessageData,
+        state::State,
         user_input::{
             events::{Config, Events, Key},
             input::TerminalAction,
         },
     },
-    twitch::TwitchAction,
 };
 
 pub async fn ui_driver(
@@ -72,8 +72,8 @@ pub async fn ui_driver(
             app.messages.borrow_mut().push_front(info);
 
             // If scrolling is enabled, pad for more messages.
-            if app.scrolling.get_offset() > 0 {
-                app.scrolling.up();
+            if app.components.chat.scroll_offset.get_offset() > 0 {
+                app.components.chat.scroll_offset.up();
             }
         }
 
@@ -91,6 +91,14 @@ pub async fn ui_driver(
                         } else {
                             app.set_state(config.terminal.start_state.clone());
                         }
+                    }
+                    TerminalAction::SwitchState(state) => {
+                        if let State::Normal(_) = state {
+                            unload_all_emotes(&mut emotes);
+                            app.clear_messages();
+                        }
+
+                        app.set_state(state);
                     }
                 }
             }

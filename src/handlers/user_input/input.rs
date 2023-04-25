@@ -15,9 +15,12 @@
 //     ui::statics::{NAME_RESTRICTION_REGEX, TWITCH_MESSAGE_LIMIT},
 // };
 
+use crate::handlers::state::State;
+
 pub enum TerminalAction {
     Quit,
     BackOneLayer,
+    SwitchState(State),
 }
 
 // struct UserActionAttributes<'a, 'b> {

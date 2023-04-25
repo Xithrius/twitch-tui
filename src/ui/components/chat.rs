@@ -1,55 +1,38 @@
-use std::{
-    cell::Ref,
-    collections::{HashMap, VecDeque},
-    rc::Rc,
-    slice::Iter,
-};
+use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
 use log::warn;
-use rustyline::{line_buffer::LineBuffer, At, Word};
 use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans, Text},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    emotes::{
-        emotes_enabled, hide_all_emotes, hide_message_emotes, is_in_rect, show_span_emotes, Emotes,
-        SharedEmotes,
-    },
+    emotes::{emotes_enabled, hide_message_emotes, is_in_rect, show_span_emotes, Emotes},
     handlers::{
         app::SharedMessages,
-        config::{SharedCompleteConfig, Theme},
-        data::{DataBuilder, MessageData},
+        config::SharedCompleteConfig,
+        data::MessageData,
         filters::SharedFilters,
-        state::{NormalMode, State},
+        state::State,
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
+            scrolling::Scrolling,
         },
     },
     twitch::TwitchAction,
-    ui::{
-        components::Component,
-        statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
-    },
-    utils::{
-        styles::{BORDER_NAME_DARK, BORDER_NAME_LIGHT},
-        text::{first_similarity, get_cursor_position, title_spans, TitleStyle},
-    },
+    ui::components::Component,
+    utils::text::{title_spans, TitleStyle},
 };
 
-use super::{
-    utils::{centered_rect, InputWidget},
-    ChannelSwitcherWidget, ChatInputWidget,
-};
+use super::{utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget};
 
 pub struct ChatWidget {
     config: SharedCompleteConfig,
@@ -57,6 +40,7 @@ pub struct ChatWidget {
     chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
     filters: SharedFilters,
+    pub scroll_offset: Scrolling,
     // theme: Theme,
 }
 
@@ -69,6 +53,7 @@ impl ChatWidget {
     ) -> Self {
         let chat_input = ChatInputWidget::new(config.clone(), tx.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
+        let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
         Self {
             config,
@@ -76,6 +61,7 @@ impl ChatWidget {
             chat_input,
             channel_input,
             filters,
+            scroll_offset,
         }
     }
 
@@ -83,7 +69,6 @@ impl ChatWidget {
         &self,
         frame: &mut Frame<B>,
         area: Rect,
-        scroll_offset: usize,
         messages_data: &'a VecDeque<MessageData>,
         mut emotes: Emotes,
     ) -> VecDeque<Spans<'a>> {
@@ -94,6 +79,8 @@ impl ChatWidget {
         let mut messages = VecDeque::new();
 
         let general_chunk_height = area.height as usize - 2;
+
+        let mut scroll = self.scroll_offset.get_offset();
 
         // Horizontal chunks represents the list within the main chat window.
         let h_chunk = Layout::default()
@@ -124,11 +111,11 @@ impl ChatWidget {
             }
 
             // Offsetting of messages for scrolling through said messages
-            if scroll_offset > 0 {
-                // scroll_offset -= 1;
-                // hide_message_emotes(&data.emotes, self.emotes.borrow_mut().displayed, data.payload.width());
-                let mut map = HashMap::new();
-                hide_message_emotes(&data.emotes, &mut map, data.payload.width());
+            if scroll > 0 {
+                scroll -= 1;
+                hide_message_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
+                // let mut map = HashMap::new();
+                // hide_message_emotes(&data.emotes, &mut map, data.payload.width());
 
                 continue;
             }
@@ -252,7 +239,7 @@ impl Component for ChatWidget {
 
         let messages_data = self.messages.clone().borrow().to_owned();
 
-        let messages = self.get_messages(f, *first_v_chunk, 0, &messages_data, emotes.clone());
+        let messages = self.get_messages(f, *first_v_chunk, &messages_data, emotes.clone());
 
         let current_time = Local::now()
             .format(&config.frontend.date_format)
@@ -316,6 +303,9 @@ impl Component for ChatWidget {
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            let limit =
+                self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
+
             if self.chat_input.is_focused() {
                 self.chat_input.event(event);
             } else if self.channel_input.is_focused() {
@@ -324,9 +314,34 @@ impl Component for ChatWidget {
                 match key {
                     Key::Char('i') => self.chat_input.toggle_focus(),
                     Key::Char('s') => self.channel_input.toggle_focus(),
+                    Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
+                    Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
+                    Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
                     Key::Char('q') => return Some(TerminalAction::Quit),
-                    Key::Esc => return Some(TerminalAction::BackOneLayer),
+                    Key::Esc => {
+                        if self.scroll_offset.get_offset() == 0 {
+                            return Some(TerminalAction::BackOneLayer);
+                        }
+
+                        self.scroll_offset.jump_to(0);
+                    }
                     Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                    Key::ScrollUp => {
+                        if limit {
+                            self.scroll_offset.up();
+                        } else if self.scroll_offset.inverted() {
+                            self.scroll_offset.down();
+                        }
+                    }
+                    Key::ScrollDown => {
+                        if self.scroll_offset.inverted() {
+                            if limit {
+                                self.scroll_offset.up();
+                            }
+                        } else {
+                            self.scroll_offset.down();
+                        }
+                    }
                     _ => {}
                 }
             }

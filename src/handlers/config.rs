@@ -10,7 +10,6 @@ use std::{
     rc::Rc,
     str::FromStr,
 };
-use toml::Table;
 use tui::widgets::BorderType;
 
 use crate::{

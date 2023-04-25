@@ -31,7 +31,7 @@ impl HelpWidget {
 }
 
 impl Component for HelpWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, _emotes: Option<Emotes>) {
         let area = area.map_or_else(|| f.size(), |a| a);
 
         let mut rows = vec![];

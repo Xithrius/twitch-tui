@@ -14,7 +14,8 @@ use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
-        storage::{SharedStorage, Storage},
+        state::State,
+        storage::SharedStorage,
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -25,6 +26,8 @@ use crate::{
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
 
+use super::ChannelSwitcherWidget;
+
 const DASHBOARD_TITLE: [&str; 5] = [
     "   __           _ __       __          __        _ ",
     "  / /__      __(_) /______/ /_        / /___  __(_)",
@@ -33,11 +36,13 @@ const DASHBOARD_TITLE: [&str; 5] = [
     "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   ",
 ];
 
-#[derive(Debug)]
+const CHANNEL_LIST_AMOUNT: u16 = 5;
+
 pub struct DashboardWidget {
     config: SharedCompleteConfig,
     tx: Sender<TwitchAction>,
     storage: SharedStorage,
+    channel_input: ChannelSwitcherWidget,
 }
 
 impl DashboardWidget {
@@ -46,10 +51,13 @@ impl DashboardWidget {
         tx: Sender<TwitchAction>,
         storage: SharedStorage,
     ) -> Self {
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
+
         Self {
             config,
             tx,
             storage,
+            channel_input,
         }
     }
 }
@@ -178,30 +186,32 @@ impl Component for DashboardWidget {
 
         let recent_channels_len = self.storage.borrow().get("channels").len() as u16;
 
+        let channel_list_constrainer = |l: u16| -> u16 {
+            if l == 0 {
+                2
+            } else if l <= CHANNEL_LIST_AMOUNT {
+                l + 1
+            } else {
+                CHANNEL_LIST_AMOUNT + 1
+            }
+        };
+
         let v_chunk_binding = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 // Twitch-tui ASCII logo
-                Constraint::Min(DASHBOARD_TITLE.len() as u16 + 2),
+                Constraint::Length(DASHBOARD_TITLE.len() as u16 + 2),
                 // Currently selected channel title, content
                 Constraint::Length(2),
-                Constraint::Min(2),
+                Constraint::Length(2),
                 // Configured default channels title, content
                 Constraint::Length(2),
-                Constraint::Min(if start_screen_channels_len == 0 {
-                    2
-                } else {
-                    start_screen_channels_len + 1
-                }),
+                Constraint::Length(channel_list_constrainer(start_screen_channels_len)),
                 // Recent channel title, content
                 Constraint::Length(2),
-                Constraint::Min(if recent_channels_len == 0 {
-                    2
-                } else {
-                    recent_channels_len + 1
-                }),
+                Constraint::Length(channel_list_constrainer(recent_channels_len)),
                 // Quit
-                Constraint::Min(1),
+                Constraint::Length(1),
             ])
             .margin(2)
             .split(area);
@@ -218,40 +228,47 @@ impl Component for DashboardWidget {
         );
 
         self.render_quit_selection_widget(f, &mut v_chunks);
+
+        if self.channel_input.is_focused() {
+            self.channel_input.draw(f, None, emotes);
+        }
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            if self.channel_input.is_focused() {
+                return self.channel_input.event(event);
+            }
+
             match key {
-                Key::Ctrl('p') => {
-                    panic!("Manual panic triggered by user.");
-                }
-                // Key::Ctrl('d') => app.debug.toggle(),
-                // Key::Char('?') => app.set_state(State::Help),
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => return Some(TerminalAction::Quit),
-                // Key::Char('s') => app.set_state(State::ChannelSwitch),
-                // Key::Enter => {
-                //     app.clear_messages();
-                //     app.set_state(State::Normal);
-                // }
-                // Key::Char(c) => {
-                //     if let Some(selection) = c.to_digit(10) {
-                //         let mut channels = config.frontend.start_screen_channels.clone();
-                //         channels.extend(app.storage.get_last_n("channels", 5, true));
+                Key::Char('s') => self.channel_input.toggle_focus(),
+                Key::Enter => return Some(TerminalAction::SwitchState(State::Normal(None))),
+                Key::Char(c) => {
+                    if let Some(selection) = c.to_digit(10) {
+                        let mut channels =
+                            self.config.borrow().frontend.start_screen_channels.clone();
+                        channels.extend(self.storage.borrow().get_last_n(
+                            "channels",
+                            CHANNEL_LIST_AMOUNT as usize,
+                            true,
+                        ));
 
-                //         if let Some(channel) = channels.get(selection as usize) {
-                //             app.set_state(State::Normal);
+                        if let Some(channel) = channels.get(selection as usize) {
+                            self.tx
+                                .send(TwitchAction::Join(channel.to_string()))
+                                .unwrap();
 
-                // Only clear and switch if new channel isn't the old channel
-                //             if channel != &config.twitch.channel {
-                //                 app.clear_messages();
-                //                 tx.send(TwitchAction::Join(channel.to_string())).unwrap();
-                //                 config.twitch.channel = channel.to_string();
-                //                 app.storage.add("channels", channel.to_string());
-                //             }
-                //         }
-                //     }
-                // }
+                            self.config.borrow_mut().twitch.channel = channel.to_string();
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", channel.to_string());
+
+                            return Some(TerminalAction::SwitchState(State::Normal(None)));
+                        }
+                    }
+                }
                 _ => {}
             }
         }

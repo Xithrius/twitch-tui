@@ -5,8 +5,6 @@ use crate::handlers::{
     state::State,
 };
 
-use super::state::NormalMode;
-
 impl ValueEnum for Palette {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::Pastel, Self::Vibrant, Self::Warm, Self::Cool]

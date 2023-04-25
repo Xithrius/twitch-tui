@@ -78,7 +78,7 @@ impl Components {
         messages: SharedMessages,
     ) -> Self {
         Self {
-            error: ErrorWidget::new(config.clone()),
+            error: ErrorWidget::new(),
             chat: ChatWidget::new(config.clone(), &tx, messages, filters),
             dashboard: DashboardWidget::new(config.clone(), tx, storage),
             debug: DebugWidget::new(config.clone()),
