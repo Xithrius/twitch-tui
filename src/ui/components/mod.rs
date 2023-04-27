@@ -5,6 +5,7 @@ mod dashboard;
 mod debug;
 mod error;
 mod help;
+mod message_search;
 mod state_tabs;
 
 pub mod utils;
@@ -16,6 +17,7 @@ pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
 pub use help::HelpWidget;
+pub use message_search::MessageSearchWidget;
 pub use state_tabs::StateTabsWidget;
 
 use tokio::sync::broadcast::Sender;

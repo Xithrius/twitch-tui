@@ -29,7 +29,10 @@ use crate::{
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
-    ui::components::{utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component},
+    ui::components::{
+        utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component,
+        MessageSearchWidget,
+    },
     utils::text::{title_spans, TitleStyle},
 };
 
@@ -38,6 +41,7 @@ pub struct ChatWidget {
     messages: SharedMessages,
     chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
+    search_input: MessageSearchWidget,
     filters: SharedFilters,
     pub scroll_offset: Scrolling,
     // theme: Theme,
@@ -53,6 +57,7 @@ impl ChatWidget {
     ) -> Self {
         let chat_input = ChatInputWidget::new(config.clone(), tx.clone(), storage.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
+        let search_input = MessageSearchWidget::new(config.clone());
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
         Self {
@@ -60,6 +65,7 @@ impl ChatWidget {
             messages,
             chat_input,
             channel_input,
+            search_input,
             filters,
             scroll_offset,
         }
@@ -126,18 +132,16 @@ impl ChatWidget {
                 None
             };
 
+            let search = self.search_input.to_string();
+
             let spans = data.to_spans(
                 &self.config.borrow().frontend,
                 message_chunk_width,
-                // if input.is_empty() {
-                //     None
-                // } else {
-                //     match app.get_state() {
-                //         State::Normal(Some(NormalMode::Search)) => Some(app.input_buffer.as_str()),
-                //         _ => None,
-                //     }
-                // },
-                None,
+                if self.search_input.is_focused() {
+                    Some(&search)
+                } else {
+                    None
+                },
                 username_highlight,
             );
 
@@ -208,7 +212,7 @@ impl Component for ChatWidget {
 
         let mut v_constraints = vec![Constraint::Min(1)];
 
-        if self.chat_input.is_focused() {
+        if self.chat_input.is_focused() || self.search_input.is_focused() {
             v_constraints.push(Constraint::Length(3));
         }
 
@@ -297,6 +301,9 @@ impl Component for ChatWidget {
         } else if self.channel_input.is_focused() {
             self.channel_input
                 .draw(f, centered_rect(60, 20, f.size()), None);
+        } else if self.search_input.is_focused() {
+            self.search_input
+                .draw(f, v_chunks.next().copied().unwrap(), None);
         }
     }
 
@@ -309,10 +316,13 @@ impl Component for ChatWidget {
                 self.chat_input.event(event);
             } else if self.channel_input.is_focused() {
                 self.channel_input.event(event);
+            } else if self.search_input.is_focused() {
+                self.search_input.event(event);
             } else {
                 match key {
                     Key::Char('i') => self.chat_input.toggle_focus(),
                     Key::Char('s') => self.channel_input.toggle_focus(),
+                    Key::Ctrl('f') => self.search_input.toggle_focus(),
                     Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
                     Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
