@@ -9,11 +9,12 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::config::SharedCompleteConfig,
-    ui::statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
+    ui::{
+        components::Component,
+        statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
+    },
     utils::styles::COLUMN_TITLE,
 };
-
-use super::Component;
 
 // Once a solution is found to calculate constraints, this will be removed.
 const TABLE_CONSTRAINTS: [Constraint; 3] =

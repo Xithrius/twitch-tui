@@ -22,11 +22,9 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::components::Component,
+    ui::components::{ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
-
-use super::ChannelSwitcherWidget;
 
 const DASHBOARD_TITLE: [&str; 5] = [
     "   __           _ __       __          __        _ ",

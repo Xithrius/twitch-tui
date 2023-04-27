@@ -28,11 +28,9 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::components::Component,
+    ui::components::{utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component},
     utils::text::{title_spans, TitleStyle},
 };
-
-use super::{utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget};
 
 pub struct ChatWidget {
     config: SharedCompleteConfig,

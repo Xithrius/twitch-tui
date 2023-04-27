@@ -7,9 +7,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::emotes::Emotes;
-
-use super::Component;
+use crate::{emotes::Emotes, ui::components::Component};
 
 const WINDOW_SIZE_ERROR_MESSAGE: [&str; 3] = [
     "Window to small!",

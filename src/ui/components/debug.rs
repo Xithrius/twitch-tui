@@ -9,10 +9,9 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::config::SharedCompleteConfig,
+    ui::components::Component,
     utils::text::{title_spans, TitleStyle},
 };
-
-use super::Component;
 
 #[derive(Debug, Clone)]
 pub struct DebugWidget {

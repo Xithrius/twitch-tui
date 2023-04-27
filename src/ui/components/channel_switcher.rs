@@ -12,9 +12,8 @@ use crate::{
         },
     },
     twitch::TwitchAction,
+    ui::components::{utils::InputWidget, Component},
 };
-
-use super::{utils::InputWidget, Component};
 
 pub struct ChannelSwitcherWidget {
     _config: SharedCompleteConfig,
