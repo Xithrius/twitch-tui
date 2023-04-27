@@ -25,13 +25,9 @@ pub struct ChatInputWidget {
 
 impl ChatInputWidget {
     pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
-        let input = InputWidget::new(
-            config.clone(),
-            "Chat",
-            Some(Box::new(|s: String| -> bool {
-                s.len() < *TWITCH_MESSAGE_LIMIT
-            })),
-        );
+        let input_validator = Box::new(|s: String| -> bool { s.len() < *TWITCH_MESSAGE_LIMIT });
+
+        let input = InputWidget::new(config.clone(), "Chat", Some(input_validator), None);
 
         Self {
             _config: config,
@@ -80,6 +76,21 @@ impl Component for ChatInputWidget {
                 }
             }
         }
+
+        // if let Some(msg) = input_message.strip_prefix('@') {
+        //     app.storage.add("mentions", msg.to_string());
+        // }
+
+        // let mut possible_command = String::new();
+
+        // input_message.clone_into(&mut possible_command);
+
+        // input_message.update("", 0);
+
+        // if possible_command.as_str() == "/clear" {
+        //     app.clear_messages();
+        // }
+        // }
 
         None
     }

@@ -49,7 +49,7 @@ impl DashboardWidget {
         tx: Sender<TwitchAction>,
         storage: SharedStorage,
     ) -> Self {
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
 
         Self {
             config,

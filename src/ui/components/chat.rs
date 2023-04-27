@@ -21,6 +21,7 @@ use crate::{
         data::MessageData,
         filters::SharedFilters,
         state::State,
+        storage::SharedStorage,
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -47,10 +48,11 @@ impl ChatWidget {
         config: SharedCompleteConfig,
         tx: &Sender<TwitchAction>,
         messages: SharedMessages,
+        storage: &SharedStorage,
         filters: SharedFilters,
     ) -> Self {
         let chat_input = ChatInputWidget::new(config.clone(), tx.clone());
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone());
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
         Self {

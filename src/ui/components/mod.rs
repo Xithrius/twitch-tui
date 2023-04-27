@@ -81,7 +81,7 @@ impl Components {
         Self {
             error: ErrorWidget::new(),
             tabs: StateTabsWidget::new(config.clone()),
-            chat: ChatWidget::new(config.clone(), &tx, messages, filters),
+            chat: ChatWidget::new(config.clone(), &tx, messages, &storage, filters),
             dashboard: DashboardWidget::new(config.clone(), tx, storage),
             debug: DebugWidget::new(config.clone()),
             help: HelpWidget::new(config.clone()),

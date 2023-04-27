@@ -3,6 +3,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
+    text::{Span, Spans},
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
@@ -11,6 +12,7 @@ use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
+        storage::SharedStorage,
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -21,6 +23,7 @@ use crate::{
 };
 
 pub type InputValidator = Box<dyn Fn(String) -> bool>;
+pub type InputSuggester = Box<dyn Fn(SharedStorage, String) -> Option<String>>;
 
 pub struct InputWidget {
     config: SharedCompleteConfig,
@@ -28,8 +31,7 @@ pub struct InputWidget {
     title: String,
     focused: bool,
     input_validator: Option<InputValidator>,
-    // TODO: Suggestions
-    // suggestion: Option<String>,
+    input_suggester: Option<(SharedStorage, InputSuggester)>,
 }
 
 impl InputWidget {
@@ -37,6 +39,7 @@ impl InputWidget {
         config: SharedCompleteConfig,
         title: &str,
         input_validator: Option<InputValidator>,
+        input_suggester: Option<(SharedStorage, InputSuggester)>,
     ) -> Self {
         Self {
             config,
@@ -44,6 +47,7 @@ impl InputWidget {
             title: title.to_string(),
             focused: false,
             input_validator,
+            input_suggester,
         }
     }
 
@@ -91,20 +95,42 @@ impl Component for InputWidget {
             Color::Red
         };
 
-        let paragraph = Paragraph::new(current_input)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into())
-                    .border_style(Style::default().fg(status_color))
-                    .title(title_spans(
-                        &binding,
-                        Style::default()
-                            .fg(status_color)
-                            .add_modifier(Modifier::BOLD),
-                    )),
-            )
-            .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
+        let suggestion = if self.config.borrow().storage.channels {
+            if let Some((storage, suggester)) = &self.input_suggester {
+                suggester(storage.clone(), self.input.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let paragraph = Paragraph::new(Spans::from(vec![
+            Span::raw(current_input),
+            Span::styled(
+                suggestion.map_or_else(String::new, |suggestion_buffer| {
+                    if suggestion_buffer.len() > current_input.len() {
+                        suggestion_buffer[current_input.len()..].to_string()
+                    } else {
+                        String::new()
+                    }
+                }),
+                Style::default().add_modifier(Modifier::DIM),
+            ),
+        ]))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(self.config.borrow().frontend.border_type.clone().into())
+                .border_style(Style::default().fg(status_color))
+                .title(title_spans(
+                    &binding,
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD),
+                )),
+        )
+        .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
 
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
@@ -152,50 +178,18 @@ impl Component for InputWidget {
                 Key::Backspace | Key::Delete => {
                     self.input.backspace(1);
                 }
-                // Key::Tab => {
-                //     let suggestion = app.buffer_suggestion.clone();
-
-                //     if let Some(suggestion_buffer) = suggestion {
-                //         app.self.input
-                //             .update(suggestion_buffer.as_str(), suggestion_buffer.len());
-                //     }
-                // }
-                // TODO: Have enter key be based off of some input widget attribute
-                // Key::Enter => {
-                // let input_message = &mut self.input;
-
-                // if input_message.is_empty() || input_message.len() > *TWITCH_MESSAGE_LIMIT {
-                //     return None;
-                // }
-
-                // let mut message = DataBuilder::user(
-                //     self.config.borrow().twitch.username.to_string(),
-                //     input_message.to_string(),
-                // );
-                // if let Some(mut emotes) = self.emotes.clone() {
-                //     message.parse_emotes(&mut emotes);
-                // }
-
-                // app.messages.push_front(message);
-
-                // self.tx
-                //     .send(TwitchAction::Privmsg(input_message.to_string()))
-                //     .unwrap();
-
-                // if let Some(msg) = input_message.strip_prefix('@') {
-                //     app.storage.add("mentions", msg.to_string());
-                // }
-
-                // let mut possible_command = String::new();
-
-                // input_message.clone_into(&mut possible_command);
-
-                // input_message.update("", 0);
-
-                // if possible_command.as_str() == "/clear" {
-                //     app.clear_messages();
-                // }
-                // }
+                Key::Tab => {
+                    // TODO: Have this be a shared suggestion so it doesn't have to run twice
+                    if self.config.borrow().storage.channels {
+                        if let Some((storage, suggester)) = &self.input_suggester {
+                            if let Some(suggestion) =
+                                suggester(storage.clone(), self.input.to_string())
+                            {
+                                self.input.update(&suggestion, suggestion.len());
+                            }
+                        }
+                    }
+                }
                 Key::Ctrl('q') => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1);

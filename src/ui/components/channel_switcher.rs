@@ -7,6 +7,7 @@ use crate::{
     handlers::{
         config::SharedCompleteConfig,
         state::State,
+        storage::SharedStorage,
         user_input::{
             events::{Event, Key},
             input::TerminalAction,
@@ -17,28 +18,50 @@ use crate::{
         components::{utils::InputWidget, Component},
         statics::NAME_RESTRICTION_REGEX,
     },
+    utils::text::first_similarity,
 };
 
 pub struct ChannelSwitcherWidget {
-    _config: SharedCompleteConfig,
+    config: SharedCompleteConfig,
+    storage: SharedStorage,
     input: InputWidget,
     tx: Sender<TwitchAction>,
 }
 
 impl ChannelSwitcherWidget {
-    pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
+    pub fn new(
+        config: SharedCompleteConfig,
+        tx: Sender<TwitchAction>,
+        storage: SharedStorage,
+    ) -> Self {
+        let input_validator = Box::new(|s: String| -> bool {
+            Regex::new(&NAME_RESTRICTION_REGEX)
+                .unwrap()
+                .is_match(s.as_str())
+        });
+
+        let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
+            first_similarity(
+                &storage
+                    .borrow()
+                    .get("channels")
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<String>>(),
+                &s,
+            )
+        });
+
         let input = InputWidget::new(
             config.clone(),
             "Channel switcher",
-            Some(Box::new(|s: String| -> bool {
-                Regex::new(&NAME_RESTRICTION_REGEX)
-                    .unwrap()
-                    .is_match(s.as_str())
-            })),
+            Some(input_validator),
+            Some((storage.clone(), input_suggester)),
         );
 
         Self {
-            _config: config,
+            config,
+            storage,
             input,
             tx,
         }
@@ -69,11 +92,23 @@ impl Component for ChannelSwitcherWidget {
             match key {
                 Key::Enter => {
                     if self.input.is_valid() {
+                        let current_input = self.input.to_string();
+
                         self.tx
-                            .send(TwitchAction::Join(self.input.to_string()))
+                            .send(TwitchAction::Join(current_input.clone()))
                             .unwrap();
 
                         self.input.toggle_focus();
+
+                        if self.config.borrow().storage.channels {
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", current_input.clone());
+                        }
+
+                        self.config.borrow_mut().twitch.channel = current_input;
+
+                        self.input.update("");
 
                         return Some(TerminalAction::SwitchState(State::Normal));
                     }
