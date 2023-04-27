@@ -4,7 +4,7 @@ use rustyline::line_buffer::LineBuffer;
 use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
 
@@ -111,18 +111,25 @@ impl App {
         }
 
         if size.height < 10 || size.width < 60 {
-            self.components.error.draw(f, Some(f.size()), None);
+            self.components.error.draw(f, f.size(), None);
         } else {
             // TODO: Change to macro
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, Some(size), None),
-                State::Normal => self.components.chat.draw(f, Some(size), Some(emotes)),
-                State::Help => self.components.help.draw(f, Some(size), None),
+                State::Dashboard => self.components.dashboard.draw(f, size, None),
+                State::Normal => self.components.chat.draw(f, size, Some(emotes)),
+                State::Help => self.components.help.draw(f, size, None),
             }
         }
 
         if self.components.debug.is_focused() {
-            self.components.debug.draw(f, None, None);
+            let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
+
+            let rect = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(new_rect)[1];
+
+            self.components.debug.draw(f, rect, None);
         }
     }
 

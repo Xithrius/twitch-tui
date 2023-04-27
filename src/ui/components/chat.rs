@@ -198,13 +198,11 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         // TODO: Don't let this be a thing
         let mut emotes = emotes.unwrap();
 
         let config = self.config.borrow();
-
-        let area = area.map_or_else(|| f.size(), |a| a);
 
         let mut v_constraints = vec![Constraint::Min(1)];
 
@@ -293,9 +291,10 @@ impl Component for ChatWidget {
 
         if self.chat_input.is_focused() {
             self.chat_input
-                .draw(f, v_chunks.next().copied(), Some(emotes));
+                .draw(f, v_chunks.next().copied().unwrap(), Some(emotes));
         } else if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None, None);
+            self.channel_input
+                .draw(f, centered_rect(60, 20, f.size()), None);
         }
     }
 

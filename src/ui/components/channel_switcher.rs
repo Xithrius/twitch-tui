@@ -46,7 +46,7 @@ impl ToString for ChannelSwitcherWidget {
 }
 
 impl Component for ChannelSwitcherWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         self.input.draw(f, area, emotes);
     }
 

@@ -16,10 +16,7 @@ use crate::{
             input::TerminalAction,
         },
     },
-    ui::{
-        components::{utils::centered_rect, Component},
-        statics::LINE_BUFFER_CAPACITY,
-    },
+    ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
     utils::text::{get_cursor_position, title_spans, TitleStyle},
 };
 
@@ -64,15 +61,12 @@ impl ToString for InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, _emotes: Option<Emotes>) {
-        let component_area = area.map_or_else(|| centered_rect(60, 20, f.size()), |a| a);
-
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
         let cursor_pos = get_cursor_position(&self.input);
 
         f.set_cursor(
-            (component_area.x + cursor_pos as u16 + 1)
-                .min(component_area.x + component_area.width.saturating_sub(2)),
-            component_area.y + 1,
+            (area.x + cursor_pos as u16 + 1).min(area.x + area.width.saturating_sub(2)),
+            area.y + 1,
         );
 
         let current_input = self.input.as_str();
@@ -94,16 +88,10 @@ impl Component for InputWidget {
                             .add_modifier(Modifier::BOLD),
                     )),
             )
-            .scroll((
-                0,
-                ((cursor_pos + 3) as u16).saturating_sub(component_area.width),
-            ));
+            .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
 
-        if area.is_some() {
-            f.render_widget(Clear, component_area);
-        }
-
-        f.render_widget(paragraph, component_area);
+        f.render_widget(Clear, area);
+        f.render_widget(paragraph, area);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

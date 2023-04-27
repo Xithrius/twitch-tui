@@ -38,9 +38,7 @@ use crate::{
 
 pub trait Component {
     #[allow(unused_variables)]
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
-        let component_area = area.map_or_else(|| f.size(), |a| a);
-
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         todo!()
     }
 

@@ -1,6 +1,6 @@
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Clear, Row, Table},
     Frame,
@@ -37,21 +37,7 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, _emotes: Option<Emotes>) {
-        let area = area.map_or_else(
-            || {
-                let rect = f.size();
-
-                let new_rect = Rect::new(rect.x, rect.y + 1, rect.width - 1, rect.height - 2);
-
-                Layout::default()
-                    .direction(Direction::Horizontal)
-                    .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-                    .split(new_rect)[1]
-            },
-            |a| a,
-        );
-
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
         // TODO: Add more debug stuff
         let config = self.config.borrow();
 

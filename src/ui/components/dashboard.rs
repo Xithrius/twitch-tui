@@ -22,7 +22,7 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::components::{ChannelSwitcherWidget, Component},
+    ui::components::{utils::centered_rect, ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
 
@@ -176,9 +176,7 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, emotes: Option<Emotes>) {
-        let area = area.map_or_else(|| f.size(), |a| a);
-
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         let start_screen_channels_len =
             self.config.borrow().frontend.start_screen_channels.len() as u16;
 
@@ -228,7 +226,8 @@ impl Component for DashboardWidget {
         self.render_quit_selection_widget(f, &mut v_chunks);
 
         if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None, emotes);
+            self.channel_input
+                .draw(f, centered_rect(60, 20, f.size()), emotes);
         }
     }
 
