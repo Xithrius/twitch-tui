@@ -113,7 +113,6 @@ impl App {
         if size.height < 10 || size.width < 60 {
             self.components.error.draw(f, f.size(), None);
         } else {
-            // TODO: Change to macro
             match self.state {
                 State::Dashboard => self.components.dashboard.draw(f, size, None),
                 State::Normal => self.components.chat.draw(f, size, Some(emotes)),
@@ -141,7 +140,6 @@ impl App {
                     self.components.debug.toggle_focus();
                 }
                 _ => {
-                    // TODO: Change to macro
                     return match self.state {
                         State::Dashboard => self.components.dashboard.event(event),
                         State::Normal => self.components.chat.event(event),

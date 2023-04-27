@@ -1,3 +1,4 @@
+use regex::Regex;
 use tokio::sync::broadcast::Sender;
 use tui::{backend::Backend, layout::Rect, Frame};
 
@@ -12,7 +13,10 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::components::{utils::InputWidget, Component},
+    ui::{
+        components::{utils::InputWidget, Component},
+        statics::NAME_RESTRICTION_REGEX,
+    },
 };
 
 pub struct ChannelSwitcherWidget {
@@ -23,9 +27,19 @@ pub struct ChannelSwitcherWidget {
 
 impl ChannelSwitcherWidget {
     pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
+        let input = InputWidget::new(
+            config.clone(),
+            "Channel switcher",
+            Some(Box::new(|s: String| -> bool {
+                Regex::new(&NAME_RESTRICTION_REGEX)
+                    .unwrap()
+                    .is_match(s.as_str())
+            })),
+        );
+
         Self {
-            _config: config.clone(),
-            input: InputWidget::new(config, "Channel switcher"),
+            _config: config,
+            input,
             tx,
         }
     }
@@ -54,13 +68,15 @@ impl Component for ChannelSwitcherWidget {
         if let Event::Input(key) = event {
             match key {
                 Key::Enter => {
-                    self.tx
-                        .send(TwitchAction::Join(self.input.to_string()))
-                        .unwrap();
+                    if self.input.is_valid() {
+                        self.tx
+                            .send(TwitchAction::Join(self.input.to_string()))
+                            .unwrap();
 
-                    self.input.toggle_focus();
+                        self.input.toggle_focus();
 
-                    return Some(TerminalAction::SwitchState(State::Normal));
+                        return Some(TerminalAction::SwitchState(State::Normal));
+                    }
                 }
                 Key::Esc => {
                     self.input.toggle_focus();

@@ -20,24 +20,30 @@ use crate::{
     utils::text::{get_cursor_position, title_spans, TitleStyle},
 };
 
+pub type InputValidator = Box<dyn Fn(String) -> bool>;
+
 pub struct InputWidget {
     config: SharedCompleteConfig,
     input: LineBuffer,
     title: String,
     focused: bool,
-    // TODO: Implement input buffer validation function
-    // input_validation: Option<Box<dyn FnOnce(String) -> bool>>,
+    input_validator: Option<InputValidator>,
     // TODO: Suggestions
     // suggestion: Option<String>,
 }
 
 impl InputWidget {
-    pub fn new(config: SharedCompleteConfig, title: &str) -> Self {
+    pub fn new(
+        config: SharedCompleteConfig,
+        title: &str,
+        input_validator: Option<InputValidator>,
+    ) -> Self {
         Self {
             config,
             input: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
             title: title.to_string(),
             focused: false,
+            input_validator,
         }
     }
 
@@ -51,6 +57,12 @@ impl InputWidget {
 
     pub fn toggle_focus(&mut self) {
         self.focused = !self.focused;
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.input_validator
+            .as_ref()
+            .map_or(true, |validator| validator(self.input.to_string()))
     }
 }
 
@@ -73,7 +85,11 @@ impl Component for InputWidget {
 
         let binding = [TitleStyle::Single(&self.title)];
 
-        let status_color = Color::Green;
+        let status_color = if self.is_valid() {
+            Color::Green
+        } else {
+            Color::Red
+        };
 
         let paragraph = Paragraph::new(current_input)
             .block(

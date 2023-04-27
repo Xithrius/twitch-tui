@@ -11,21 +11,32 @@ use crate::{
         },
     },
     twitch::TwitchAction,
-    ui::components::{utils::InputWidget, Component},
+    ui::{
+        components::{utils::InputWidget, Component},
+        statics::TWITCH_MESSAGE_LIMIT,
+    },
 };
 
 pub struct ChatInputWidget {
     _config: SharedCompleteConfig,
-    tx: Sender<TwitchAction>,
     input: InputWidget,
+    tx: Sender<TwitchAction>,
 }
 
 impl ChatInputWidget {
     pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
+        let input = InputWidget::new(
+            config.clone(),
+            "Chat",
+            Some(Box::new(|s: String| -> bool {
+                s.len() < *TWITCH_MESSAGE_LIMIT
+            })),
+        );
+
         Self {
-            _config: config.clone(),
+            _config: config,
             tx,
-            input: InputWidget::new(config, "Chat"),
+            input,
         }
     }
 
@@ -53,11 +64,13 @@ impl Component for ChatInputWidget {
         if let Event::Input(key) = event {
             match key {
                 Key::Enter => {
-                    self.tx
-                        .send(TwitchAction::Privmsg(self.input.to_string()))
-                        .unwrap();
+                    if self.input.is_valid() {
+                        self.tx
+                            .send(TwitchAction::Privmsg(self.input.to_string()))
+                            .unwrap();
 
-                    self.input.update("");
+                        self.input.update("");
+                    }
                 }
                 Key::Esc => {
                     self.input.toggle_focus();
