@@ -61,9 +61,11 @@ pub fn title_spans<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span
 }
 
 /// Within an array of strings, find the first partial or full match, if any.
-#[allow(dead_code)]
-// TODO: Implement suggestions for new widgets
 pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String> {
+    if search.is_empty() {
+        return None;
+    }
+
     possibilities
         .iter()
         .filter(|s| s.starts_with(search))
@@ -121,6 +123,15 @@ mod tests {
         ));
 
         assert_eq!(s.width(), "[ Time: Some time ]".len());
+    }
+
+    #[test]
+    fn test_first_similarity_no_search_no_output() {
+        let v = vec!["asdf".to_string()];
+
+        let output = first_similarity(&v, "");
+
+        assert_eq!(output, None);
     }
 
     #[test]

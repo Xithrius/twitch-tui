@@ -16,8 +16,9 @@ use crate::{
         filters::Filters,
         state::State,
         storage::Storage,
-        user_input::{events::Event, input::TerminalAction},
+        user_input::events::Event,
     },
+    terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
         components::{Component, Components},

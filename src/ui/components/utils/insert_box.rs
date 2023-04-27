@@ -13,11 +13,9 @@ use crate::{
     handlers::{
         config::SharedCompleteConfig,
         storage::SharedStorage,
-        user_input::{
-            events::{Event, Key},
-            input::TerminalAction,
-        },
+        user_input::events::{Event, Key},
     },
+    terminal::TerminalAction,
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
     utils::text::{get_cursor_position, title_spans, TitleStyle},
 };

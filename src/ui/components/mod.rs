@@ -28,11 +28,9 @@ use crate::{
         config::SharedCompleteConfig,
         filters::SharedFilters,
         storage::SharedStorage,
-        user_input::{
-            events::{Event, Key},
-            input::TerminalAction,
-        },
+        user_input::events::{Event, Key},
     },
+    terminal::TerminalAction,
     twitch::TwitchAction,
 };
 

@@ -11,12 +11,16 @@ use crate::{
         config::CompleteConfig,
         data::MessageData,
         state::State,
-        user_input::{
-            events::{Config, Events, Key},
-            input::TerminalAction,
-        },
+        user_input::events::{Config, Events, Key},
     },
 };
+
+pub enum TerminalAction {
+    Quit,
+    BackOneLayer,
+    SwitchState(State),
+    ClearMessages,
+}
 
 pub async fn ui_driver(
     config: CompleteConfig,
@@ -99,6 +103,9 @@ pub async fn ui_driver(
                         }
 
                         app.set_state(state);
+                    }
+                    TerminalAction::ClearMessages => {
+                        app.clear_messages();
                     }
                 }
             }

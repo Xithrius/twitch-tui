@@ -16,11 +16,9 @@ use crate::{
         config::SharedCompleteConfig,
         state::State,
         storage::SharedStorage,
-        user_input::{
-            events::{Event, Key},
-            input::TerminalAction,
-        },
+        user_input::events::{Event, Key},
     },
+    terminal::TerminalAction,
     twitch::TwitchAction,
     ui::components::{utils::centered_rect, ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,

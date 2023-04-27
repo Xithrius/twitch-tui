@@ -5,34 +5,74 @@ use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
-        user_input::{
-            events::{Event, Key},
-            input::TerminalAction,
-        },
+        storage::SharedStorage,
+        user_input::events::{Event, Key},
     },
+    terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
         components::{utils::InputWidget, Component},
-        statics::TWITCH_MESSAGE_LIMIT,
+        statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
+    utils::text::first_similarity,
 };
 
 pub struct ChatInputWidget {
-    _config: SharedCompleteConfig,
+    config: SharedCompleteConfig,
+    storage: SharedStorage,
     input: InputWidget,
     tx: Sender<TwitchAction>,
 }
 
 impl ChatInputWidget {
-    pub fn new(config: SharedCompleteConfig, tx: Sender<TwitchAction>) -> Self {
+    pub fn new(
+        config: SharedCompleteConfig,
+        tx: Sender<TwitchAction>,
+        storage: SharedStorage,
+    ) -> Self {
         let input_validator = Box::new(|s: String| -> bool { s.len() < *TWITCH_MESSAGE_LIMIT });
 
-        let input = InputWidget::new(config.clone(), "Chat", Some(input_validator), None);
+        let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
+            s.chars()
+                .next()
+                .and_then(|start_character| match start_character {
+                    '/' => {
+                        let possible_suggestion = first_similarity(
+                            &COMMANDS
+                                .iter()
+                                .map(ToString::to_string)
+                                .collect::<Vec<String>>(),
+                            &s[1..],
+                        );
+
+                        let default_suggestion = possible_suggestion.clone();
+
+                        possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
+                    }
+                    '@' => {
+                        let possible_suggestion =
+                            first_similarity(&storage.borrow().get("mentions"), &s[1..]);
+
+                        let default_suggestion = possible_suggestion.clone();
+
+                        possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
+                    }
+                    _ => None,
+                })
+        });
+
+        let input = InputWidget::new(
+            config.clone(),
+            "Chat",
+            Some(input_validator),
+            Some((storage.clone(), input_suggester)),
+        );
 
         Self {
-            _config: config,
-            tx,
+            config,
+            storage,
             input,
+            tx,
         }
     }
 
@@ -61,11 +101,25 @@ impl Component for ChatInputWidget {
             match key {
                 Key::Enter => {
                     if self.input.is_valid() {
+                        let current_input = self.input.to_string();
+
                         self.tx
-                            .send(TwitchAction::Privmsg(self.input.to_string()))
+                            .send(TwitchAction::Privmsg(current_input.clone()))
                             .unwrap();
 
                         self.input.update("");
+
+                        if let Some(message) = current_input.strip_prefix('@') {
+                            if self.config.borrow().storage.mentions {
+                                self.storage
+                                    .borrow_mut()
+                                    .add("mentions", message.to_string());
+                            }
+                        } else if let Some(message) = current_input.strip_prefix('/') {
+                            if message == "clear" {
+                                return Some(TerminalAction::ClearMessages);
+                            }
+                        }
                     }
                 }
                 Key::Esc => {
@@ -76,21 +130,6 @@ impl Component for ChatInputWidget {
                 }
             }
         }
-
-        // if let Some(msg) = input_message.strip_prefix('@') {
-        //     app.storage.add("mentions", msg.to_string());
-        // }
-
-        // let mut possible_command = String::new();
-
-        // input_message.clone_into(&mut possible_command);
-
-        // input_message.update("", 0);
-
-        // if possible_command.as_str() == "/clear" {
-        //     app.clear_messages();
-        // }
-        // }
 
         None
     }

@@ -24,10 +24,10 @@ use crate::{
         storage::SharedStorage,
         user_input::{
             events::{Event, Key},
-            input::TerminalAction,
             scrolling::Scrolling,
         },
     },
+    terminal::TerminalAction,
     twitch::TwitchAction,
     ui::components::{utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component},
     utils::text::{title_spans, TitleStyle},
@@ -51,7 +51,7 @@ impl ChatWidget {
         storage: &SharedStorage,
         filters: SharedFilters,
     ) -> Self {
-        let chat_input = ChatInputWidget::new(config.clone(), tx.clone());
+        let chat_input = ChatInputWidget::new(config.clone(), tx.clone(), storage.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
