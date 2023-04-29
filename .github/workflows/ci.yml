@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 env:
@@ -15,22 +15,57 @@ jobs:
 
       matrix:
         include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-
-          - os: macos-latest
-            target: x86_64-apple-darwin
+          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-latest, use-cross: true }
+          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-latest, use-cross: true }
+          - { target: arm-unknown-linux-musleabihf, os: ubuntu-latest, use-cross: true }
+          - { target: i686-unknown-linux-gnu      , os: ubuntu-latest, use-cross: true }
+          - { target: i686-unknown-linux-musl     , os: ubuntu-latest, use-cross: true }
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-latest, use-cross: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-latest, use-cross: true }
+          - { target: i686-pc-windows-msvc        , os: windows-latest                 }
+          - { target: x86_64-pc-windows-gnu       , os: windows-latest                 }
+          - { target: x86_64-pc-windows-msvc      , os: windows-latest                 }
+          - { target: x86_64-apple-darwin         , os: macos-latest                   }
 
     name: Build & Test (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
 
     env:
+      BUILD_CMD: cargo
       RA_TARGET: ${{ matrix.target }}
+      OPENSSL_DIR: /opt/openssl
+      CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+      CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_AR: arm-linux-gnueabihf-ar
+      CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_RUNNER: qemu-arm -L /usr/arm-linux-gnueabihf
 
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Install prerequisites
+        shell: bash
+        run: |
+          case ${{ matrix.target }} in
+            arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
+            aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
+          esac
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use-cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+
+      - name: Overwrite build command env variable
+        if: matrix.use-cross
+        shell: bash
+        run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
