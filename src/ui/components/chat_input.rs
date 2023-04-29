@@ -99,6 +99,9 @@ impl Component for ChatInputWidget {
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
+                Key::ShiftEnter => {
+                    self.input.append("\n");
+                }
                 Key::Enter => {
                     if self.input.is_valid() {
                         let current_input = self.input.to_string();

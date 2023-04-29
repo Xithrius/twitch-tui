@@ -20,6 +20,7 @@ pub enum Key {
     Insert,
     Tab,
     Enter,
+    ShiftEnter,
     Char(char),
     Ctrl(char),
     Alt(char),
@@ -88,7 +89,10 @@ impl Events {
                                 KeyCode::Delete => Key::Delete,
                                 KeyCode::Insert => Key::Insert,
                                 KeyCode::Tab => Key::Tab,
-                                KeyCode::Enter => Key::Enter,
+                                KeyCode::Enter => match modifiers {
+                                    KeyModifiers::SHIFT => Key::ShiftEnter,
+                                    _ => Key::Enter,
+                                },
                                 KeyCode::Char(c) => match modifiers {
                                     KeyModifiers::NONE | KeyModifiers::SHIFT => Key::Char(c),
                                     KeyModifiers::CONTROL => Key::Ctrl(c),

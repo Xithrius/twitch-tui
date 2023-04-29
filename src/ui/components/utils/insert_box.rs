@@ -53,6 +53,13 @@ impl InputWidget {
         self.input.update(s, 0);
     }
 
+    pub fn append(&mut self, s: &str) {
+        self.input.update(
+            &format!("{}{}", self.input.as_str(), s),
+            self.input.pos() + s.len() - 1,
+        );
+    }
+
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
