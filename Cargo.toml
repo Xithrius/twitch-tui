@@ -38,7 +38,7 @@ reqwest = { version = "0.11.14", features = ["json"]}
 image = "0.24.6"
 base64 = "0.21.0"
 tempfile = "3.4.0"
-anyhow = "1.0.70"
+anyhow = "1.0.71"
 serde_with = "2.3.2"
 
 [[bin]]
