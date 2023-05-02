@@ -1,7 +1,6 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use rustyline::line_buffer::LineBuffer;
-use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -19,7 +18,6 @@ use crate::{
         user_input::events::Event,
     },
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::{
         components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
@@ -63,7 +61,7 @@ macro_rules! shared {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig, tx: Sender<TwitchAction>) -> Self {
+    pub fn new(config: CompleteConfig) -> Self {
         let shared_config = shared!(config);
 
         let shared_config_borrow = shared_config.borrow();
@@ -77,7 +75,6 @@ impl App {
 
         let components = Components::new(
             &shared_config,
-            tx,
             storage.clone(),
             filters.clone(),
             messages.clone(),

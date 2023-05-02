@@ -1,12 +1,10 @@
 use regex::Regex;
-use tokio::sync::broadcast::Sender;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
-        state::State,
         storage::SharedStorage,
         user_input::events::{Event, Key},
     },
@@ -23,15 +21,10 @@ pub struct ChannelSwitcherWidget {
     config: SharedCompleteConfig,
     storage: SharedStorage,
     input: InputWidget,
-    tx: Sender<TwitchAction>,
 }
 
 impl ChannelSwitcherWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
-        storage: SharedStorage,
-    ) -> Self {
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
         let input_validator = Box::new(|s: String| -> bool {
             Regex::new(&NAME_RESTRICTION_REGEX)
                 .unwrap()
@@ -61,7 +54,6 @@ impl ChannelSwitcherWidget {
             config,
             storage,
             input,
-            tx,
         }
     }
 
@@ -92,9 +84,8 @@ impl Component for ChannelSwitcherWidget {
                     if self.input.is_valid() {
                         let current_input = self.input.to_string();
 
-                        self.tx
-                            .send(TwitchAction::Join(current_input.clone()))
-                            .unwrap();
+                        let action =
+                            TerminalAction::Enter(TwitchAction::Join(current_input.clone()));
 
                         self.input.toggle_focus();
 
@@ -108,7 +99,7 @@ impl Component for ChannelSwitcherWidget {
 
                         self.input.update("");
 
-                        return Some(TerminalAction::SwitchState(State::Normal));
+                        return Some(action);
                     }
                 }
                 Key::Esc => {

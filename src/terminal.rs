@@ -1,6 +1,6 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
 use crate::{
@@ -9,10 +9,11 @@ use crate::{
     handlers::{
         app::App,
         config::CompleteConfig,
-        data::MessageData,
+        data::{DataBuilder, MessageData},
         state::State,
         user_input::events::{Config, Events, Key},
     },
+    twitch::TwitchAction,
 };
 
 pub enum TerminalAction {
@@ -20,11 +21,13 @@ pub enum TerminalAction {
     BackOneLayer,
     SwitchState(State),
     ClearMessages,
+    Enter(TwitchAction),
 }
 
 pub async fn ui_driver(
     config: CompleteConfig,
     mut app: App,
+    tx: Sender<TwitchAction>,
     mut rx: Receiver<MessageData>,
     mut erx: Receiver<Emotes>,
 ) {
@@ -107,6 +110,25 @@ pub async fn ui_driver(
                     TerminalAction::ClearMessages => {
                         app.clear_messages();
                     }
+                    TerminalAction::Enter(action) => match action {
+                        TwitchAction::Privmsg(message) => {
+                            let mut message_data = DataBuilder::user(
+                                config.twitch.username.to_string(),
+                                message.to_string(),
+                            );
+
+                            message_data.parse_emotes(&mut emotes);
+
+                            app.messages.borrow_mut().push_front(message_data);
+
+                            tx.send(TwitchAction::Privmsg(message)).unwrap();
+                        }
+                        TwitchAction::Join(channel) => {
+                            app.clear_messages();
+
+                            tx.send(TwitchAction::Join(channel)).unwrap();
+                        }
+                    },
                 }
             }
         }

@@ -20,7 +20,6 @@ pub use help::HelpWidget;
 pub use message_search::MessageSearchWidget;
 pub use state_tabs::StateTabsWidget;
 
-use tokio::sync::broadcast::Sender;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
@@ -33,7 +32,6 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::TwitchAction,
 };
 
 pub trait Component {
@@ -73,7 +71,6 @@ pub struct Components {
 impl Components {
     pub fn new(
         config: &SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,
@@ -81,8 +78,8 @@ impl Components {
         Self {
             error: ErrorWidget::new(),
             tabs: StateTabsWidget::new(config.clone()),
-            chat: ChatWidget::new(config.clone(), &tx, messages, &storage, filters),
-            dashboard: DashboardWidget::new(config.clone(), tx, storage),
+            chat: ChatWidget::new(config.clone(), messages, &storage, filters),
+            dashboard: DashboardWidget::new(config.clone(), storage),
             debug: DebugWidget::new(config.clone()),
             help: HelpWidget::new(config.clone()),
         }

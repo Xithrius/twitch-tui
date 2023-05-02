@@ -1,6 +1,5 @@
 use std::slice::Iter;
 
-use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -36,22 +35,16 @@ const CHANNEL_LIST_AMOUNT: u16 = 5;
 
 pub struct DashboardWidget {
     config: SharedCompleteConfig,
-    tx: Sender<TwitchAction>,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
 }
 
 impl DashboardWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
-        storage: SharedStorage,
-    ) -> Self {
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
 
         Self {
             config,
-            tx,
             storage,
             channel_input,
         }
@@ -252,16 +245,15 @@ impl Component for DashboardWidget {
                         ));
 
                         if let Some(channel) = channels.get(selection as usize) {
-                            self.tx
-                                .send(TwitchAction::Join(channel.to_string()))
-                                .unwrap();
+                            let action =
+                                TerminalAction::Enter(TwitchAction::Join(channel.to_string()));
 
                             self.config.borrow_mut().twitch.channel = channel.to_string();
                             self.storage
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
 
-                            return Some(TerminalAction::SwitchState(State::Normal));
+                            return Some(action);
                         }
                     }
                 }

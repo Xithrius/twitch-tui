@@ -1,4 +1,3 @@
-use tokio::sync::broadcast::Sender;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
@@ -21,15 +20,10 @@ pub struct ChatInputWidget {
     config: SharedCompleteConfig,
     storage: SharedStorage,
     input: InputWidget,
-    tx: Sender<TwitchAction>,
 }
 
 impl ChatInputWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
-        storage: SharedStorage,
-    ) -> Self {
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
         let input_validator = Box::new(|s: String| -> bool { s.len() < *TWITCH_MESSAGE_LIMIT });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
@@ -72,7 +66,6 @@ impl ChatInputWidget {
             config,
             storage,
             input,
-            tx,
         }
     }
 
@@ -103,9 +96,8 @@ impl Component for ChatInputWidget {
                     if self.input.is_valid() {
                         let current_input = self.input.to_string();
 
-                        self.tx
-                            .send(TwitchAction::Privmsg(current_input.clone()))
-                            .unwrap();
+                        let action =
+                            TerminalAction::Enter(TwitchAction::Privmsg(current_input.clone()));
 
                         self.input.update("");
 
@@ -120,6 +112,8 @@ impl Component for ChatInputWidget {
                                 return Some(TerminalAction::ClearMessages);
                             }
                         }
+
+                        return Some(action);
                     }
                 }
                 Key::Esc => {

@@ -2,7 +2,6 @@ use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
 use log::warn;
-use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -28,7 +27,6 @@ use crate::{
         },
     },
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::components::{
         utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component,
         MessageSearchWidget,
@@ -50,13 +48,12 @@ pub struct ChatWidget {
 impl ChatWidget {
     pub fn new(
         config: SharedCompleteConfig,
-        tx: &Sender<TwitchAction>,
         messages: SharedMessages,
         storage: &SharedStorage,
         filters: SharedFilters,
     ) -> Self {
-        let chat_input = ChatInputWidget::new(config.clone(), tx.clone(), storage.clone());
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
+        let chat_input = ChatInputWidget::new(config.clone(), storage.clone());
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
@@ -313,11 +310,11 @@ impl Component for ChatWidget {
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
             if self.chat_input.is_focused() {
-                self.chat_input.event(event);
+                self.chat_input.event(event)
             } else if self.channel_input.is_focused() {
-                self.channel_input.event(event);
+                self.channel_input.event(event)
             } else if self.search_input.is_focused() {
-                self.search_input.event(event);
+                self.search_input.event(event)
             } else {
                 match key {
                     Key::Char('i') => self.chat_input.toggle_focus(),
@@ -354,62 +351,11 @@ impl Component for ChatWidget {
                     }
                     _ => {}
                 }
-            }
-        }
 
-        None
+                None
+            }
+        } else {
+            None
+        }
     }
 }
-
-// pub fn render_chat_box<T: Backend>(mention_suggestions: bool) {
-//     let input_buffer = &app.input_buffer;
-
-//     let current_input = input_buffer.to_string();
-
-//     let suggestion = if mention_suggestions {
-//         input_buffer
-//             .chars()
-//             .next()
-//             .and_then(|start_character| match start_character {
-//                 '/' => {
-//                     let possible_suggestion = first_similarity(
-//                         &COMMANDS
-//                             .iter()
-//                             .map(ToString::to_string)
-//                             .collect::<Vec<String>>(),
-//                         &current_input[1..],
-//                     );
-
-//                     let default_suggestion = possible_suggestion.clone();
-
-//                     possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
-//                 }
-//                 '@' => {
-//                     let possible_suggestion =
-//                         first_similarity(&app.storage.get("mentions"), &current_input[1..]);
-
-//                     let default_suggestion = possible_suggestion.clone();
-
-//                     possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
-//                 }
-//                 _ => None,
-//             })
-//     } else {
-//         None
-//     };
-
-//     render_insert_box(
-//         window,
-//         format!(
-//             "Message Input: {} / {}",
-//             current_input.len(),
-//             *TWITCH_MESSAGE_LIMIT
-//         )
-//         .as_str(),
-//         None,
-//         suggestion,
-//         Some(Box::new(|s: String| -> bool {
-//             s.len() < *TWITCH_MESSAGE_LIMIT
-//         })),
-//     );
-// }
