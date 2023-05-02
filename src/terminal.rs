@@ -48,16 +48,6 @@ pub async fn ui_driver(
     })
     .await;
 
-    if !app
-        .storage
-        .borrow()
-        .contains("channels", &config.twitch.channel)
-    {
-        app.storage
-            .borrow_mut()
-            .add("channels", config.twitch.channel.clone());
-    }
-
     let mut terminal = init_terminal(&config.frontend);
 
     terminal.clear().unwrap();

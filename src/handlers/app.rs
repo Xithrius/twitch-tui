@@ -10,23 +10,18 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::{
-        config::{CompleteConfig, Theme},
+        config::{CompleteConfig, SharedCompleteConfig, Theme},
         data::MessageData,
-        filters::Filters,
+        filters::{Filters, SharedFilters},
         state::State,
-        storage::Storage,
-        user_input::events::Event,
+        storage::{SharedStorage, Storage},
+        user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
     ui::{
         components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
     },
-};
-
-use super::{
-    config::SharedCompleteConfig, filters::SharedFilters, storage::SharedStorage,
-    user_input::events::Key,
 };
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
@@ -62,12 +57,20 @@ macro_rules! shared {
 
 impl App {
     pub fn new(config: CompleteConfig) -> Self {
-        let shared_config = shared!(config);
+        let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
 
         let storage = shared!(Storage::new("storage.json", &shared_config_borrow.storage));
-        let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters,));
+
+        if !storage
+            .borrow()
+            .contains("channels", &config.twitch.channel)
+        {
+            storage.borrow_mut().add("channels", config.twitch.channel);
+        }
+
+        let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters));
 
         let messages = shared!(VecDeque::with_capacity(
             shared_config_borrow.terminal.maximum_messages,
