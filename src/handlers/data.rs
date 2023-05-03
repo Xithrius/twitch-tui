@@ -13,6 +13,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     emotes::{load_emote, Emotes, LoadedEmote},
     handlers::config::{FrontendConfig, Palette, Theme},
+    ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::hsl_to_rgb,
         styles::{
@@ -189,10 +190,16 @@ impl MessageData {
         }
         let mut lines = wrapped_message.into_iter();
 
+        let username_alignment = if frontend_config.right_align_usernames {
+            *NAME_MAX_CHARACTERS - self.author.len() + 1
+        } else {
+            1
+        };
+
         let mut first_row = vec![
             // Datetime
             Span::styled(time_sent, datetime_theme),
-            Span::raw(" "),
+            Span::raw(" ".repeat(username_alignment)),
             // Author
             Span::styled(&self.author, author_theme),
             Span::raw(":"),

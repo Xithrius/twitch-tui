@@ -67,3 +67,5 @@ seventv_emotes = false
 start_screen_channels = []
 # What the style of the border should be.
 border_type = "plain"
+# If the usernames should be aligned to the right instead of the left.
+right_align_usernames = false

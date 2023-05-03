@@ -124,6 +124,8 @@ pub struct FrontendConfig {
     pub start_screen_channels: Vec<String>,
     /// A border wrapper around [`BorderType`].
     pub border_type: Border,
+    /// If the usernames should be aligned to the right.
+    pub right_align_usernames: bool,
 }
 
 impl Default for TwitchConfig {
@@ -170,6 +172,7 @@ impl Default for FrontendConfig {
             seventv_emotes: false,
             start_screen_channels: vec![],
             border_type: Border::default(),
+            right_align_usernames: false,
         }
     }
 }

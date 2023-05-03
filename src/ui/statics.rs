@@ -79,5 +79,6 @@ lazy_static! {
     pub static ref TWITCH_MESSAGE_LIMIT: usize = 500;
 
     // https://www.reddit.com/r/Twitch/comments/32w5b2/username_requirements/
+    pub static ref NAME_MAX_CHARACTERS: usize = 25;
     pub static ref NAME_RESTRICTION_REGEX: &'static str = "^[a-zA-Z0-9_]{4,25}$";
 }
