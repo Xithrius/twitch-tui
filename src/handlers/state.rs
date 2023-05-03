@@ -51,9 +51,9 @@ impl Default for State {
 impl ToString for State {
     fn to_string(&self) -> String {
         match self {
-            Self::Dashboard => "Dashboard",
-            Self::Normal => "Normal",
-            Self::Help => "Help",
+            Self::Dashboard => "dashboard",
+            Self::Normal => "normal",
+            Self::Help => "help",
         }
         .to_string()
     }

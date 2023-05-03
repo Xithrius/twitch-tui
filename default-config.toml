@@ -16,7 +16,7 @@ maximum_messages = 150
 # The file path to log to.
 log_file = ""
 # The state the application will start in.
-start_state = "Start"
+start_state = "dashboard"
 
 [storage]
 # If previous channels switched to should be tracked.
@@ -57,11 +57,13 @@ cursor_shape = "block"
 blinking_cursor = false
 # If the scrolling should be inverted.
 inverted_scrolling = false
-# Show twitch emotes
+# Show twitch emotes.
 twitch_emotes = false
-# Show betterttv emotes
+# Show betterttv emotes.
 betterttv_emotes = false
-# Show 7tv emotes
+# Show 7tv emotes.
 seventv_emotes = false
 # Array of channel names as strings to be displayed at start screen.
 start_screen_channels = []
+# What the style of the border should be.
+border_type = "plain"
