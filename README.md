@@ -1,12 +1,10 @@
-<h1 align="center">twitch-tui</h1>
+<div align="center">
 
-<p align="center">Twitch chat in the terminal.</p>
+# twitch-tui
 
-<h1 align="center">
+Twitch chat in the terminal.
 
 [![crates][s1]][l1] [![CI][s2]][l2] [![pre-commit.ci status][s3]][l3] [![lines of code][s4]][l4] [![unsafe][s5]][l5]
-
-</h1>
 
 [s1]: https://img.shields.io/crates/v/twitch-tui.svg
 [l1]: https://crates.io/crates/twitch-tui
@@ -19,9 +17,9 @@
 [s5]: https://img.shields.io/badge/unsafe-forbidden-success.svg
 [l5]: https://github.com/rust-secure-code/safety-dance/
 
-<h1 align="center">
 <img src="assets/preview.png" />
-</h1>
+
+</div>
 
 ## Feature list
 
