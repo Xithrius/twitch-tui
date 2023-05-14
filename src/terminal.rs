@@ -117,6 +117,8 @@ pub async fn ui_driver(
                             app.clear_messages();
 
                             tx.send(TwitchAction::Join(channel)).unwrap();
+
+                            app.set_state(State::Normal);
                         }
                     },
                 }
