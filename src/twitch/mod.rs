@@ -1,7 +1,7 @@
 mod badges;
 mod connection;
 
-use std::collections::HashMap;
+use std::{borrow::Borrow, collections::HashMap};
 
 use futures::StreamExt;
 use irc::{
@@ -15,6 +15,7 @@ use crate::{
     handlers::{
         config::CompleteConfig,
         data::{DataBuilder, MessageData},
+        state::State,
     },
     twitch::{
         badges::retrieve_user_badges,
@@ -34,6 +35,21 @@ pub async fn twitch_irc(
     mut rx: Receiver<TwitchAction>,
 ) {
     info!("Spawned Twitch IRC thread.");
+
+    // If the dashboard is the start state, wait until the user has selected
+    // a channel before connecting to Twitch's IRC.
+    if config.borrow().terminal.start_state == State::Dashboard {
+        debug!("Waiting for user to select channel from debug screen");
+
+        loop {
+            if let Ok(TwitchAction::Join(channel)) = rx.recv().await {
+                config.twitch.channel = channel;
+
+                debug!("User has selected channel from start screen");
+                break;
+            }
+        }
+    }
 
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
@@ -85,8 +101,6 @@ pub async fn twitch_irc(
                         // Leave previous channel
                         if let Err(err) = sender.send_part(current_channel) {
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap();
-                        } else {
-                            tx.send(data_builder.twitch(format!("Joined {channel_list}"))).await.unwrap();
                         }
 
                         // Join specified channel
@@ -167,6 +181,11 @@ async fn handle_message_command(
         }
         Command::NOTICE(ref _target, ref msg) => {
             tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
+        }
+        Command::JOIN(ref channel, _, _) => {
+            tx.send(data_builder.twitch(format!("Joined {}", *channel)))
+                .await
+                .unwrap();
         }
         Command::Raw(ref cmd, ref _items) => {
             match cmd.as_ref() {

@@ -49,9 +49,7 @@ impl DashboardWidget {
             channel_input,
         }
     }
-}
 
-impl DashboardWidget {
     fn create_interactive_list_widget<'a>(
         &'a self,
         items: &'a [String],
@@ -78,9 +76,9 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
-    fn render_dashboard_title_widget<T: Backend>(
+    fn render_dashboard_title_widget<B: Backend>(
         &self,
-        frame: &mut Frame<T>,
+        frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
     ) {
         let w = Paragraph::new(
@@ -94,9 +92,9 @@ impl DashboardWidget {
         frame.render_widget(w, *v_chunks.next().unwrap());
     }
 
-    fn render_channel_selection_widget<T: Backend>(
+    fn render_channel_selection_widget<B: Backend>(
         &self,
-        frame: &mut Frame<T>,
+        frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
         current_channel: String,
         default_channels: &[String],
@@ -150,9 +148,9 @@ impl DashboardWidget {
         }
     }
 
-    fn render_quit_selection_widget<T: Backend>(
+    fn render_quit_selection_widget<B: Backend>(
         &self,
-        frame: &mut Frame<T>,
+        frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
     ) {
         let quit_option = Paragraph::new(Spans::from(vec![
@@ -232,7 +230,13 @@ impl Component for DashboardWidget {
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Char('s') => self.channel_input.toggle_focus(),
-                Key::Enter => return Some(TerminalAction::SwitchState(State::Normal)),
+                Key::Enter => {
+                    let action = TerminalAction::Enter(TwitchAction::Join(
+                        self.config.borrow().twitch.channel.clone(),
+                    ));
+
+                    return Some(action);
+                }
                 Key::Char('?') => return Some(TerminalAction::SwitchState(State::Help)),
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
