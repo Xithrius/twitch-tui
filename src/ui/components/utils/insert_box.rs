@@ -81,7 +81,7 @@ impl ToString for InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
         let cursor_pos = get_cursor_position(&self.input);
 
         f.set_cursor(

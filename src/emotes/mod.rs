@@ -69,6 +69,19 @@ impl Emotes {
             cell_size,
         })
     }
+
+    pub fn clear(&mut self) {
+        graphics_protocol::command(graphics_protocol::Clear(0, 1)).unwrap_or_default();
+        self.displayed.clear();
+    }
+
+    pub fn unload(&mut self) {
+        graphics_protocol::command(graphics_protocol::Clear(0, 0)).unwrap_or_default();
+        self.emotes.clear();
+        self.loaded.clear();
+        self.info.clear();
+        self.displayed.clear();
+    }
 }
 
 #[inline]
@@ -284,20 +297,6 @@ pub fn reload_emote(
     graphics_protocol::command(graphics_protocol::Load::new(hash, &cache_path(filename))?)?;
     loaded_emotes.insert(hash);
     Ok(())
-}
-
-pub fn unload_all_emotes(emotes: &mut Emotes) {
-    graphics_protocol::command(graphics_protocol::Clear(0, 0)).unwrap_or_default();
-    emotes.emotes.clear();
-    emotes.loaded.clear();
-    emotes.info.clear();
-    emotes.displayed.clear();
-}
-
-#[allow(dead_code)]
-pub fn hide_all_emotes(emotes: &mut Emotes) {
-    graphics_protocol::command(graphics_protocol::Clear(0, 1)).unwrap_or_default();
-    emotes.displayed.clear();
 }
 
 pub fn show_span_emotes<F>(

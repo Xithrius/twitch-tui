@@ -47,6 +47,8 @@ pub struct App {
     pub buffer_suggestion: Option<String>,
     /// The theme selected by the user.
     pub theme: Theme,
+    /// Emotes
+    pub emotes: Emotes,
 }
 
 macro_rules! shared {
@@ -94,10 +96,11 @@ impl App {
             input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
             theme: shared_config_borrow.frontend.theme.clone(),
+            emotes: Emotes::default(),
         }
     }
 
-    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>, emotes: Emotes) {
+    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let mut size = f.size();
 
         if self.config.borrow().frontend.state_tabs {
@@ -116,7 +119,7 @@ impl App {
         } else {
             match self.state {
                 State::Dashboard => self.components.dashboard.draw(f, size, None),
-                State::Normal => self.components.chat.draw(f, size, Some(emotes)),
+                State::Normal => self.components.chat.draw(f, size, Some(&mut self.emotes)),
                 State::Help => self.components.help.draw(f, size, None),
             }
         }
@@ -158,6 +161,7 @@ impl App {
     }
 
     pub fn clear_messages(&mut self) {
+        self.emotes.clear();
         self.messages.borrow_mut().clear();
 
         self.components.chat.scroll_offset.jump_to(0);
@@ -173,6 +177,7 @@ impl App {
     }
 
     pub fn set_state(&mut self, other: State) {
+        self.emotes.clear();
         self.previous_state = Some(self.state.clone());
         self.state = other;
     }

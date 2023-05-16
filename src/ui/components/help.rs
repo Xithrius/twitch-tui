@@ -32,7 +32,7 @@ impl HelpWidget {
 }
 
 impl Component for HelpWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
         let mut rows = vec![];
 
         for (s, v) in HELP_KEYBINDS.iter() {
