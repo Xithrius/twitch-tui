@@ -19,7 +19,7 @@ use crate::{
     },
     twitch::{
         badges::retrieve_user_badges,
-        connection::{client_stream_reconnect, create_client_stream},
+        connection::{client_stream_reconnect, wait_client_stream},
     },
 };
 
@@ -54,7 +54,8 @@ pub async fn twitch_irc(
     let data_builder = DataBuilder::new(&config.frontend.date_format);
     let mut room_state_startup = false;
 
-    let (mut client, mut stream) = create_client_stream(config.clone()).await;
+    let (mut client, mut stream) =
+        wait_client_stream(tx.clone(), data_builder, config.clone()).await;
 
     let sender = client.sender();
 
@@ -132,7 +133,6 @@ pub async fn twitch_irc(
 
                         (client, stream) = client_stream_reconnect(err, tx.clone(), data_builder, &config).await;
 
-                        tx.send(data_builder.system("Attempting reconnect...".to_string())).await.unwrap();
                     }
                 }
             }
