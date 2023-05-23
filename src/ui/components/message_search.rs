@@ -52,7 +52,7 @@ impl ToString for MessageSearchWidget {
 }
 
 impl Component for MessageSearchWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         self.input.draw(f, area, emotes);
     }
 

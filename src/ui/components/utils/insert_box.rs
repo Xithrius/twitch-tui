@@ -30,6 +30,7 @@ pub struct InputWidget {
     focused: bool,
     input_validator: Option<InputValidator>,
     input_suggester: Option<(SharedStorage, InputSuggester)>,
+    suggestion: Option<String>,
 }
 
 impl InputWidget {
@@ -46,6 +47,7 @@ impl InputWidget {
             focused: false,
             input_validator,
             input_suggester,
+            suggestion: None,
         }
     }
 
@@ -75,7 +77,7 @@ impl ToString for InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
         let cursor_pos = get_cursor_position(&self.input);
 
         f.set_cursor(
@@ -93,7 +95,7 @@ impl Component for InputWidget {
             Color::Red
         };
 
-        let suggestion = if self.config.borrow().storage.channels {
+        self.suggestion = if self.config.borrow().storage.channels {
             if let Some((storage, suggester)) = &self.input_suggester {
                 suggester(storage.clone(), self.input.to_string())
             } else {
@@ -106,13 +108,15 @@ impl Component for InputWidget {
         let paragraph = Paragraph::new(Spans::from(vec![
             Span::raw(current_input),
             Span::styled(
-                suggestion.map_or_else(String::new, |suggestion_buffer| {
-                    if suggestion_buffer.len() > current_input.len() {
-                        suggestion_buffer[current_input.len()..].to_string()
-                    } else {
-                        String::new()
-                    }
-                }),
+                self.suggestion
+                    .as_ref()
+                    .map_or_else(String::new, |suggestion_buffer| {
+                        if suggestion_buffer.len() > current_input.len() {
+                            suggestion_buffer[current_input.len()..].to_string()
+                        } else {
+                            String::new()
+                        }
+                    }),
                 Style::default().add_modifier(Modifier::DIM),
             ),
         ]))
@@ -177,14 +181,9 @@ impl Component for InputWidget {
                     self.input.backspace(1);
                 }
                 Key::Tab => {
-                    // TODO: Have this be a shared suggestion so it doesn't have to run twice
                     if self.config.borrow().storage.channels {
-                        if let Some((storage, suggester)) = &self.input_suggester {
-                            if let Some(suggestion) =
-                                suggester(storage.clone(), self.input.to_string())
-                            {
-                                self.input.update(&suggestion, suggestion.len());
-                            }
+                        if let Some(suggestion) = &self.suggestion {
+                            self.input.update(suggestion, suggestion.len());
                         }
                     }
                 }

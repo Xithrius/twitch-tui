@@ -165,7 +165,7 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         let start_screen_channels_len =
             self.config.borrow().frontend.start_screen_channels.len() as u16;
 

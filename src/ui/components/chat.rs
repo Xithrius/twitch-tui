@@ -201,7 +201,7 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         // TODO: Don't let this be a thing
         let mut emotes = emotes.unwrap();
 

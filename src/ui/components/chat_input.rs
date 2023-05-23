@@ -86,7 +86,7 @@ impl ToString for ChatInputWidget {
 }
 
 impl Component for ChatInputWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
         self.input.draw(f, area, emotes);
     }
 
