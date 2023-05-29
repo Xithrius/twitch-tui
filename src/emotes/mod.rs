@@ -8,7 +8,7 @@ use std::{
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tui::{
     layout::Rect,
-    text::{Span, Spans},
+    text::{Line, Span},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -302,7 +302,7 @@ pub fn hide_all_emotes(emotes: &mut Emotes) {
 
 pub fn show_span_emotes<F>(
     message_emotes: &Vec<EmoteData>,
-    span: &mut Spans,
+    line: &mut Line,
     emotes: &mut Emotes,
     payload: &str,
     margin: usize,
@@ -312,8 +312,8 @@ pub fn show_span_emotes<F>(
 where
     F: Fn((u16, u16), u16) -> bool,
 {
-    let span_width: usize = span.0.iter().map(|s| s.content.width()).sum();
-    let last_span = span.0.last_mut().context("Span is empty")?;
+    let span_width: usize = line.spans.iter().map(|s| s.content.width()).sum();
+    let last_span = line.spans.last_mut().context("Span is empty")?;
 
     let p = payload
         .trim_end()

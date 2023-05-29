@@ -3,7 +3,7 @@ use tui::{
     layout::{Alignment, Rect},
     style::{Color, Style},
     terminal::Frame,
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
 
@@ -29,8 +29,8 @@ impl Component for ErrorWidget {
         let paragraph = Paragraph::new(
             WINDOW_SIZE_ERROR_MESSAGE
                 .iter()
-                .map(|&s| Spans::from(vec![Span::raw(s)]))
-                .collect::<Vec<Spans>>(),
+                .map(|&s| Line::from(vec![Span::raw(s)]))
+                .collect::<Vec<Line>>(),
         )
         .block(Block::default().borders(Borders::NONE))
         .style(Style::default().fg(Color::White))

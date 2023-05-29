@@ -3,7 +3,7 @@ use tui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     symbols::DOT,
-    text::Spans,
+    text::Line,
     widgets::{Block, Tabs},
     Frame,
 };
@@ -28,7 +28,7 @@ impl StateTabsWidget {
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, state: &State) {
         let tab_titles = TABS_TO_RENDER
             .iter()
-            .map(|t| Spans::from(capitalize_first_char(&t.to_string())))
+            .map(|t| Line::from(capitalize_first_char(&t.to_string())))
             .collect();
 
         let tabs = Tabs::new(tab_titles)

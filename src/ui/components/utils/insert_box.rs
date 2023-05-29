@@ -3,7 +3,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
@@ -17,7 +17,7 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
-    utils::text::{get_cursor_position, title_spans, TitleStyle},
+    utils::text::{get_cursor_position, title_line, TitleStyle},
 };
 
 pub type InputValidator = Box<dyn Fn(String) -> bool>;
@@ -105,7 +105,7 @@ impl Component for InputWidget {
             None
         };
 
-        let paragraph = Paragraph::new(Spans::from(vec![
+        let paragraph = Paragraph::new(Line::from(vec![
             Span::raw(current_input),
             Span::styled(
                 self.suggestion
@@ -125,7 +125,7 @@ impl Component for InputWidget {
                 .borders(Borders::ALL)
                 .border_type(self.config.borrow().frontend.border_type.clone().into())
                 .border_style(Style::default().fg(status_color))
-                .title(title_spans(
+                .title(title_line(
                     &binding,
                     Style::default()
                         .fg(status_color)

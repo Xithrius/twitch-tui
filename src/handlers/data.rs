@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 use log::warn;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -89,13 +89,13 @@ impl MessageData {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_spans(
+    pub fn to_vec(
         &self,
         frontend_config: &FrontendConfig,
         width: usize,
         search_highlight: Option<&str>,
         username_highlight: Option<&str>,
-    ) -> Vec<Spans> {
+    ) -> Vec<Line> {
         #[inline]
         fn highlight<'s>(
             line: Cow<'s, str>,
@@ -111,7 +111,7 @@ impl MessageData {
             }
 
             // Slow path
-            let spans = line
+            let lines = line
                 .chars()
                 .zip(*start_index..)
                 .map(|(c, i)| {
@@ -128,7 +128,7 @@ impl MessageData {
                 })
                 .collect();
             *start_index += line.len();
-            spans
+            lines
         }
 
         // Theme styles
@@ -220,10 +220,10 @@ impl MessageData {
             username_theme,
         ));
 
-        let mut rows = vec![Spans(first_row)];
+        let mut rows = vec![Line::from(first_row)];
 
         rows.extend(lines.map(|line| {
-            Spans(highlight(
+            Line::from(highlight(
                 line,
                 &mut next_index,
                 &search_highlight,

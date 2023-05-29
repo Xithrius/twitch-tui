@@ -5,7 +5,7 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
 };
 
@@ -60,7 +60,7 @@ impl DashboardWidget {
                 .iter()
                 .enumerate()
                 .map(|(i, s)| {
-                    ListItem::new(Spans::from(vec![
+                    ListItem::new(Line::from(vec![
                         Span::raw("["),
                         Span::styled(
                             (i + index_offset).to_string(),
@@ -84,8 +84,8 @@ impl DashboardWidget {
         let w = Paragraph::new(
             DASHBOARD_TITLE
                 .iter()
-                .map(|&s| Spans::from(vec![Span::raw(s)]))
-                .collect::<Vec<Spans>>(),
+                .map(|&s| Line::from(vec![Span::raw(s)]))
+                .collect::<Vec<Line>>(),
         )
         .style(DASHBOARD_TITLE_COLOR);
 
@@ -105,7 +105,7 @@ impl DashboardWidget {
             *v_chunks.next().unwrap(),
         );
 
-        let current_channel_selection = Paragraph::new(Spans::from(vec![
+        let current_channel_selection = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled(
                 "ENTER".to_string(),
@@ -153,7 +153,7 @@ impl DashboardWidget {
         frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
     ) {
-        let quit_option = Paragraph::new(Spans::from(vec![
+        let quit_option = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled("q", Style::default().fg(Color::LightMagenta)),
             Span::raw("] "),

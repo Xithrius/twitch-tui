@@ -10,7 +10,7 @@ use crate::{
     emotes::Emotes,
     handlers::config::SharedCompleteConfig,
     ui::components::Component,
-    utils::text::{title_spans, TitleStyle},
+    utils::text::{title_line, TitleStyle},
 };
 
 #[derive(Debug, Clone)]
@@ -48,7 +48,7 @@ impl Component for DebugWidget {
         let table = Table::new(rows)
             .block(
                 Block::default()
-                    .title(title_spans(
+                    .title(title_line(
                         &title_binding,
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                     ))

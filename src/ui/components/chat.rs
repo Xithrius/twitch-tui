@@ -6,7 +6,7 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Span, Spans, Text},
+    text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem},
     Frame,
 };
@@ -31,7 +31,7 @@ use crate::{
         utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component,
         MessageSearchWidget,
     },
-    utils::text::{title_spans, TitleStyle},
+    utils::text::{title_line, TitleStyle},
 };
 
 pub struct ChatWidget {
@@ -74,7 +74,7 @@ impl ChatWidget {
         area: Rect,
         messages_data: &'a VecDeque<MessageData>,
         mut emotes: Emotes,
-    ) -> VecDeque<Spans<'a>> {
+    ) -> VecDeque<Line<'a>> {
         // Accounting for not all heights of rows to be the same due to text wrapping,
         // so extra space needs to be used in order to scroll correctly.
         let mut total_row_height: usize = 0;
@@ -131,7 +131,7 @@ impl ChatWidget {
 
             let search = self.search_input.to_string();
 
-            let spans = data.to_spans(
+            let lines = data.to_vec(
                 &self.config.borrow().frontend,
                 message_chunk_width,
                 if self.search_input.is_focused() {
@@ -145,7 +145,7 @@ impl ChatWidget {
             let mut payload = " ".to_string();
             payload.push_str(&data.payload);
 
-            for span in spans.iter().rev() {
+            for span in lines.iter().rev() {
                 let mut span = span.clone();
 
                 if total_row_height < general_chunk_height {
@@ -192,7 +192,7 @@ impl ChatWidget {
         // Padding with empty rows so chat can go from bottom to top.
         if general_chunk_height > total_row_height {
             for _ in 0..(general_chunk_height - total_row_height) {
-                messages.push_front(Spans::from(vec![Span::raw("")]));
+                messages.push_front(Line::from(vec![Span::raw("")]));
             }
         }
 
@@ -264,12 +264,12 @@ impl Component for ChatWidget {
         ];
 
         let chat_title = if self.config.borrow().frontend.title_shown {
-            Spans::from(title_spans(
+            Line::from(title_line(
                 &spans,
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))
         } else {
-            Spans::default()
+            Line::default()
         };
 
         let mut final_messages = vec![];
