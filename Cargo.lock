@@ -2297,6 +2297,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
 
 [[package]]
+name = "twitch-irc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "chrono",
+ "color-eyre",
+ "fern",
+ "futures",
+ "image",
+ "irc",
+ "log",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tempfile",
+ "tokio",
+ "toml 0.7.4",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
 name = "twitch-tui"
 version = "2.3.0"
 dependencies = [
