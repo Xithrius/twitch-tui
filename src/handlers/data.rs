@@ -180,7 +180,7 @@ impl MessageData {
             // Add 1 for the border line
             let window_margin = usize::from(frontend_config.margin) + 1;
             width - window_margin * 2
-        };
+        } - 1;
 
         let prefix = " ".repeat(prefix_len);
         let opts = textwrap::Options::new(wrap_limit).initial_indent(&prefix);
