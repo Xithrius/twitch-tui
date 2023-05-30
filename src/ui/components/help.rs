@@ -22,12 +22,12 @@ const TABLE_CONSTRAINTS: [Constraint; 3] =
 
 #[derive(Debug, Clone)]
 pub struct HelpWidget {
-    _config: SharedCompleteConfig,
+    config: SharedCompleteConfig,
 }
 
 impl HelpWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
-        Self { _config: config }
+        Self { config }
     }
 }
 
@@ -55,7 +55,10 @@ impl Component for HelpWidget {
         let help_table = Table::new(rows)
             .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(COLUMN_TITLE))
             .block(
-                Block::default().borders(Borders::ALL).title("[ Keybinds ]"), // .border_type(frontend.border_type.into()),
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("[ Keybinds ]")
+                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
             .widths(&TABLE_CONSTRAINTS)
             .column_spacing(2);

@@ -21,6 +21,7 @@ use crate::{
 };
 
 pub type InputValidator = Box<dyn Fn(String) -> bool>;
+pub type VisualValidator = Box<dyn Fn(String) -> String>;
 pub type InputSuggester = Box<dyn Fn(SharedStorage, String) -> Option<String>>;
 
 pub struct InputWidget {
@@ -29,6 +30,7 @@ pub struct InputWidget {
     title: String,
     focused: bool,
     input_validator: Option<InputValidator>,
+    visual_indicator: Option<VisualValidator>,
     input_suggester: Option<(SharedStorage, InputSuggester)>,
     suggestion: Option<String>,
 }
@@ -38,6 +40,7 @@ impl InputWidget {
         config: SharedCompleteConfig,
         title: &str,
         input_validator: Option<InputValidator>,
+        visual_indicator: Option<VisualValidator>,
         input_suggester: Option<(SharedStorage, InputSuggester)>,
     ) -> Self {
         Self {
@@ -46,6 +49,7 @@ impl InputWidget {
             title: title.to_string(),
             focused: false,
             input_validator,
+            visual_indicator,
             input_suggester,
             suggestion: None,
         }
@@ -105,7 +109,18 @@ impl Component for InputWidget {
             None
         };
 
-        let paragraph = Paragraph::new(Line::from(vec![
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_style(Style::default().fg(status_color))
+            .title(title_line(
+                &binding,
+                Style::default()
+                    .fg(status_color)
+                    .add_modifier(Modifier::BOLD),
+            ));
+
+        let paragraph_lines = Line::from(vec![
             Span::raw(current_input),
             Span::styled(
                 self.suggestion
@@ -119,23 +134,36 @@ impl Component for InputWidget {
                     }),
                 Style::default().add_modifier(Modifier::DIM),
             ),
-        ]))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(self.config.borrow().frontend.border_type.clone().into())
-                .border_style(Style::default().fg(status_color))
-                .title(title_line(
-                    &binding,
-                    Style::default()
-                        .fg(status_color)
-                        .add_modifier(Modifier::BOLD),
-                )),
-        )
-        .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
+        ]);
+
+        let paragraph = Paragraph::new(paragraph_lines)
+            .block(block)
+            .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
 
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
+
+        if let Some(visual) = &self.visual_indicator {
+            let contents = visual(self.input.to_string());
+
+            let title = [TitleStyle::Single(&contents)];
+
+            let bottom_block = Block::default()
+                .title(title_line(
+                    &title,
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD),
+                ))
+                .title_on_bottom()
+                .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+                .border_type(self.config.borrow().frontend.border_type.clone().into());
+
+            // This is only supposed to render on the very bottom line of the area.
+            // If some rendering breaks for input boxes, this is a possible source.
+            let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+            f.render_widget(bottom_block, rect);
+        }
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

@@ -12,7 +12,7 @@ use crate::{
     twitch::TwitchAction,
     ui::{
         components::{utils::InputWidget, Component},
-        statics::NAME_RESTRICTION_REGEX,
+        statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
     utils::text::first_similarity,
 };
@@ -31,6 +31,10 @@ impl ChannelSwitcherWidget {
                 .is_match(s.as_str())
         });
 
+        // Intuitively, a user will hit the username length limit rather than not hitting 4 characters.
+        let visual_indicator =
+            Box::new(|s: String| -> String { format!("{} / {}", s.len(), *NAME_MAX_CHARACTERS) });
+
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
             first_similarity(
                 &storage
@@ -47,6 +51,7 @@ impl ChannelSwitcherWidget {
             config.clone(),
             "Channel switcher",
             Some(input_validator),
+            Some(visual_indicator),
             Some((storage.clone(), input_suggester)),
         );
 
