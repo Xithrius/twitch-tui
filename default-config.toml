@@ -20,9 +20,9 @@ start_state = "dashboard"
 
 [storage]
 # If previous channels switched to should be tracked.
-channels = true
+channels = false
 # If previous username mentions should be tracked.
-mentions = true
+mentions = false
 
 [filters]
 # If filters should be enabled at all.
@@ -57,6 +57,8 @@ cursor_shape = "block"
 blinking_cursor = false
 # If the scrolling should be inverted.
 inverted_scrolling = false
+# If scroll offset should be shown (bottom right of chat window).
+show_scroll_offset = false
 # Show twitch emotes.
 twitch_emotes = false
 # Show betterttv emotes.

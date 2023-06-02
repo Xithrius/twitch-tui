@@ -13,7 +13,7 @@ impl Scrolling {
         }
     }
 
-    pub const fn inverted(&self) -> bool {
+    pub const fn is_inverted(&self) -> bool {
         self.inverted
     }
 

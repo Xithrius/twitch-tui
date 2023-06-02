@@ -114,6 +114,8 @@ pub struct FrontendConfig {
     pub blinking_cursor: bool,
     /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
+    /// If scroll offset integer should be shown.
+    pub show_scroll_offset: bool,
     /// If twitch emotes should be displayed (requires kitty terminal).
     pub twitch_emotes: bool,
     /// If betterttv emotes should be displayed (requires kitty terminal).
@@ -167,6 +169,7 @@ impl Default for FrontendConfig {
             cursor_shape: CursorType::default(),
             blinking_cursor: false,
             inverted_scrolling: false,
+            show_scroll_offset: false,
             twitch_emotes: false,
             betterttv_emotes: false,
             seventv_emotes: false,

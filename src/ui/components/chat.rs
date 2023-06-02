@@ -4,7 +4,7 @@ use chrono::Local;
 use log::warn;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem},
@@ -278,7 +278,7 @@ impl Component for ChatWidget {
             final_messages.push(ListItem::new(Text::from(item)));
         }
 
-        let list = List::new(final_messages)
+        let list = List::new(&*final_messages)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
@@ -291,6 +291,35 @@ impl Component for ChatWidget {
             .style(Style::default().fg(Color::White));
 
         f.render_widget(list, *first_v_chunk);
+
+        if self.config.borrow().frontend.show_scroll_offset {
+            // Cannot scroll past the first message
+            let message_amount = messages_data.len().saturating_sub(1);
+
+            let title_binding = format!(
+                "{} / {}",
+                self.scroll_offset.get_offset(),
+                message_amount.to_string().as_str()
+            );
+
+            let title = [TitleStyle::Single(&title_binding)];
+
+            let bottom_block = Block::default()
+                .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+                .border_type(self.config.borrow().frontend.border_type.clone().into())
+                .title(title_line(&title, Style::default()))
+                .title_on_bottom()
+                .title_alignment(Alignment::Right);
+
+            let rect = Rect::new(
+                first_v_chunk.x,
+                first_v_chunk.bottom() - 1,
+                first_v_chunk.width,
+                1,
+            );
+
+            f.render_widget(bottom_block, rect);
+        }
 
         if self.chat_input.is_focused() {
             self.chat_input
@@ -336,12 +365,12 @@ impl Component for ChatWidget {
                     Key::ScrollUp => {
                         if limit {
                             self.scroll_offset.up();
-                        } else if self.scroll_offset.inverted() {
+                        } else if self.scroll_offset.is_inverted() {
                             self.scroll_offset.down();
                         }
                     }
                     Key::ScrollDown => {
-                        if self.scroll_offset.inverted() {
+                        if self.scroll_offset.is_inverted() {
                             if limit {
                                 self.scroll_offset.up();
                             }
