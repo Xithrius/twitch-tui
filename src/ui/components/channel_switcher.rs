@@ -33,7 +33,7 @@ impl ChannelSwitcherWidget {
 
         // Intuitively, a user will hit the username length limit rather than not hitting 4 characters.
         let visual_indicator =
-            Box::new(|s: String| -> String { format!("{} / {}", s.len(), *NAME_MAX_CHARACTERS) });
+            Box::new(|s: String| -> String { format!("{} / {}", s.len(), NAME_MAX_CHARACTERS) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
             first_similarity(

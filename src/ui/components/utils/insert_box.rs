@@ -45,7 +45,7 @@ impl InputWidget {
     ) -> Self {
         Self {
             config,
-            input: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
+            input: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             title: title.to_string(),
             focused: false,
             input_validator,

@@ -25,11 +25,11 @@ pub struct ChatInputWidget {
 impl ChatInputWidget {
     pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
         let input_validator =
-            Box::new(|s: String| -> bool { !s.is_empty() && s.len() < *TWITCH_MESSAGE_LIMIT });
+            Box::new(|s: String| -> bool { !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT });
 
         // User should be known of how close they are to the message length limit.
         let visual_indicator =
-            Box::new(|s: String| -> String { format!("{} / {}", s.len(), *TWITCH_MESSAGE_LIMIT) });
+            Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
             s.chars()

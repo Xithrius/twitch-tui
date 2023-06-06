@@ -91,7 +91,7 @@ impl App {
             filters,
             state: shared_config_borrow.terminal.start_state.clone(),
             previous_state: None,
-            input_buffer: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
+            input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
             theme: shared_config_borrow.frontend.theme.clone(),
         }

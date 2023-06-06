@@ -21,12 +21,12 @@ pub struct MessageSearchWidget {
 impl MessageSearchWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
         let input_validator =
-            Box::new(|s: String| -> bool { !s.is_empty() && s.len() <= *TWITCH_MESSAGE_LIMIT });
+            Box::new(|s: String| -> bool { !s.is_empty() && s.len() <= TWITCH_MESSAGE_LIMIT });
 
         // Indication that user won't get any good results near the twitch message length limit.
         // TODO: In the future, this should be replaced with how many results have been found.
         let visual_indicator =
-            Box::new(|s: String| -> String { format!("{} / {}", s.len(), *TWITCH_MESSAGE_LIMIT) });
+            Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input = InputWidget::new(
             config.clone(),

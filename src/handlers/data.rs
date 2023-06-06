@@ -2,8 +2,8 @@ use std::{borrow::Cow, string::ToString};
 
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use lazy_static::lazy_static;
 use log::warn;
+use once_cell::sync::Lazy;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
@@ -23,9 +23,7 @@ use crate::{
     },
 };
 
-lazy_static! {
-    pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
-}
+static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 #[derive(Debug, Clone)]
 pub struct EmoteData {
@@ -191,7 +189,7 @@ impl MessageData {
         let mut lines = wrapped_message.into_iter();
 
         let username_alignment = if frontend_config.right_align_usernames {
-            *NAME_MAX_CHARACTERS - self.author.len() + 1
+            NAME_MAX_CHARACTERS - self.author.len() + 1
         } else {
             1
         };
