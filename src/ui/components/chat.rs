@@ -73,7 +73,7 @@ impl ChatWidget {
         frame: &mut Frame<B>,
         area: Rect,
         messages_data: &'a VecDeque<MessageData>,
-        mut emotes: Emotes,
+        emotes: &mut Emotes,
     ) -> VecDeque<Line<'a>> {
         // Accounting for not all heights of rows to be the same due to text wrapping,
         // so extra space needs to be used in order to scroll correctly.
@@ -154,7 +154,7 @@ impl ChatWidget {
                         match show_span_emotes(
                             &data.emotes,
                             &mut span,
-                            &mut emotes,
+                            emotes,
                             &payload,
                             self.config.borrow().frontend.margin as usize,
                             current_row as u16,
@@ -201,9 +201,9 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
         // TODO: Don't let this be a thing
-        let mut emotes = emotes.unwrap();
+        let emotes = emotes.unwrap();
 
         let config = self.config.borrow();
 
@@ -238,7 +238,7 @@ impl Component for ChatWidget {
 
         let messages_data = self.messages.clone().borrow().to_owned();
 
-        let messages = self.get_messages(f, *first_v_chunk, &messages_data, emotes.clone());
+        let messages = self.get_messages(f, *first_v_chunk, &messages_data, emotes);
 
         let current_time = Local::now()
             .format(&config.frontend.date_format)

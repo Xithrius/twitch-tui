@@ -5,7 +5,7 @@ use tui::layout::Rect;
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::{unload_all_emotes, Emotes},
+    emotes::Emotes,
     handlers::{
         app::App,
         config::CompleteConfig,
@@ -52,20 +52,18 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
-    let mut emotes: Emotes = Emotes::default();
-
     let mut terminal_size = Rect::default();
 
     loop {
         if let Ok(e) = erx.try_recv() {
-            emotes = e;
-            for message in app.messages.borrow().iter() {
-                message.clone().parse_emotes(&mut emotes);
+            app.emotes = e;
+            for message in app.messages.borrow_mut().iter_mut() {
+                message.parse_emotes(&mut app.emotes);
             }
         };
 
         if let Ok(mut info) = rx.try_recv() {
-            info.parse_emotes(&mut emotes);
+            info.parse_emotes(&mut app.emotes);
             app.messages.borrow_mut().push_front(info);
 
             // If scrolling is enabled, pad for more messages.
@@ -91,7 +89,6 @@ pub async fn ui_driver(
                     }
                     TerminalAction::SwitchState(state) => {
                         if state == State::Normal {
-                            unload_all_emotes(&mut emotes);
                             app.clear_messages();
                         }
 
@@ -107,7 +104,7 @@ pub async fn ui_driver(
                                 message.to_string(),
                             );
 
-                            message_data.parse_emotes(&mut emotes);
+                            message_data.parse_emotes(&mut app.emotes);
 
                             app.messages.borrow_mut().push_front(message_data);
 
@@ -115,6 +112,7 @@ pub async fn ui_driver(
                         }
                         TwitchAction::Join(channel) => {
                             app.clear_messages();
+                            app.emotes.unload();
 
                             tx.send(TwitchAction::Join(channel)).unwrap();
 
@@ -131,11 +129,11 @@ pub async fn ui_driver(
 
                 if size != terminal_size {
                     terminal_size = size;
-                    emotes.displayed.clear();
-                    emotes.loaded.clear();
+                    app.emotes.clear();
+                    app.emotes.loaded.clear();
                 }
 
-                app.draw(f, emotes.clone());
+                app.draw(f);
             })
             .unwrap();
     }

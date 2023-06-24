@@ -37,7 +37,7 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
         // TODO: Add more debug stuff
         let config = self.config.borrow();
 

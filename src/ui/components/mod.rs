@@ -36,7 +36,7 @@ use crate::{
 
 pub trait Component {
     #[allow(unused_variables)]
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
         todo!()
     }
 
