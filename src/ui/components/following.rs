@@ -3,7 +3,6 @@ use once_cell::sync::Lazy;
 use tui::{layout::Rect, Frame};
 
 use crate::{
-    emotes::Emotes,
     handlers::{config::SharedCompleteConfig, user_input::events::Event},
     terminal::TerminalAction,
     twitch::{channels::Following, TwitchAction},
@@ -55,8 +54,8 @@ impl FollowingWidget {
 }
 
 impl Component for FollowingWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
-        self.search_widget.draw(f, area, emotes);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+        self.search_widget.draw(f, area);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

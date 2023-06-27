@@ -9,7 +9,6 @@ use tui::{
 };
 
 use crate::{
-    emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
         state::State,
@@ -158,7 +157,7 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| f.size(), |a| a);
 
         let favorite_channels_len = {
@@ -218,9 +217,9 @@ impl Component for DashboardWidget {
         self.render_quit_selection_widget(f, &mut v_chunks);
 
         if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None, emotes);
+            self.channel_input.draw(f, None);
         } else if self.following.is_focused() {
-            self.following.draw(f, None, None);
+            self.following.draw(f, None);
         }
     }
 

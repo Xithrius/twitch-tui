@@ -1,17 +1,18 @@
-use std::{borrow::Cow, string::ToString};
+use std::{borrow::Cow, iter, string::ToString};
 
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use log::warn;
+use log::{error, warn};
 use once_cell::sync::Lazy;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
 };
-use unicode_width::UnicodeWidthStr;
 
+use crate::emotes::{display_emote, overlay_emote, EmoteData};
+use crate::handlers::data::Word::{Emote, Text};
 use crate::{
-    emotes::{load_emote, Emotes, LoadedEmote},
+    emotes::{load_emote, Emotes},
     handlers::config::{FrontendConfig, Palette, Theme},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
@@ -25,31 +26,18 @@ use crate::{
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
-#[derive(Debug, Clone)]
-pub struct EmoteData {
-    pub name: String,
-    pub index_in_message: usize,
-    pub id: u32,
-    pub pid: u32,
-    pub layer: u16,
-}
-
-impl EmoteData {
-    pub const fn new(emote: &LoadedEmote, name: String, idx: usize, layer: u16) -> Self {
-        Self {
-            name,
-            index_in_message: idx,
-            id: emote.hash,
-            pid: emote.n,
-            layer,
-        }
-    }
-}
+const PRIVATE_USE_UNICODE: char = '\u{10EEEE}';
+const ZERO_WIDTH_SPACE: char = '\u{200B}';
 
 pub enum TwitchToTerminalAction {
     Message(MessageData),
     ClearChat(Option<String>),
     DeleteMessage(String),
+}
+
+enum Word {
+    Emote(Vec<EmoteData>),
+    Text(String),
 }
 
 #[derive(Debug, Clone)]
@@ -59,7 +47,7 @@ pub struct MessageData {
     pub user_id: Option<String>,
     pub system: bool,
     pub payload: String,
-    pub emotes: Vec<EmoteData>,
+    pub emotes: Vec<(u16, Color, Color)>,
     pub message_id: Option<String>,
 }
 
@@ -110,18 +98,61 @@ impl MessageData {
         search_highlight: Option<&str>,
         username_highlight: Option<&str>,
     ) -> Vec<Line> {
+        type Highlight<'a> = (&'a [usize], Style);
+
         #[inline]
         fn highlight<'s>(
             line: Cow<'s, str>,
             start_index: &mut usize,
-            search_highlight: &[usize],
-            search_theme: Style,
-            username_highlight: &[usize],
-            username_theme: Style,
+            (search_highlight, search_theme): Highlight,
+            (username_highlight, username_theme): Highlight,
+            emotes: &[(u16, Color, Color)],
+            emotes_idx: &mut usize,
         ) -> Vec<Span<'s>> {
+            let get_emote_span = |idx: &mut usize| -> Span {
+                if let Some(&(width, id, pid)) = emotes.get(*idx) {
+                    *idx += 1;
+                    Span::styled(
+                        format!(
+                            "\u{10EEEE}\u{0305}{}",
+                            "\u{10EEEE}".repeat(width as usize - 1)
+                        ),
+                        Style::default().fg(id).underline_color(pid),
+                    )
+                } else {
+                    error!("Emote index >= emotes.len()");
+                    Span::raw("")
+                }
+            };
+
+            let mut is_emote = false;
+
             // Fast path
             if search_highlight.is_empty() && username_highlight.is_empty() {
-                return vec![Span::raw(line)];
+                if !line.contains('\u{10EEEE}') {
+                    return vec![Span::raw(line)];
+                }
+
+                // Slower path, nothing is highlighted, but message contains emotes.
+                let mut spans = vec![];
+                line.split('\u{10EEEE}').for_each(|x| {
+                    if x.is_empty() {
+                        is_emote = true;
+                    } else {
+                        if is_emote {
+                            spans.push(get_emote_span(emotes_idx));
+                        }
+
+                        spans.push(Span::raw(x.to_owned()));
+                        is_emote = false;
+                    }
+                });
+
+                if is_emote {
+                    spans.push(get_emote_span(emotes_idx));
+                }
+
+                return spans;
             }
 
             // Slow path
@@ -136,7 +167,16 @@ impl MessageData {
                         Span::styled(c.to_string(), search_theme)
                     } else if username_highlight.binary_search(&i).is_ok() {
                         Span::styled(c.to_string(), username_theme)
+                    } else if c == '\u{10EEEE}' {
+                        // This is an emote, only create a span for the first unicode char, skip the rest
+                        if is_emote {
+                            Span::raw("")
+                        } else {
+                            is_emote = true;
+                            get_emote_span(emotes_idx)
+                        }
                     } else {
+                        is_emote = false;
                         Span::raw(c.to_string())
                     }
                 })
@@ -179,6 +219,9 @@ impl MessageData {
                     .map(|(_, indices)| indices)
             })
             .unwrap_or_default();
+
+        let search = (&search_highlight as &[usize], search_theme);
+        let username = (&username_highlight as &[usize], username_theme);
 
         // Message prefix
         let time_sent = self
@@ -247,13 +290,14 @@ impl MessageData {
         let mut first_line = lines.next().unwrap();
         let first_line_msg = split_cow_in_place(&mut first_line, prefix_len - 1);
 
+        let mut emote_idx = 0;
         first_row.extend(highlight(
             first_line_msg,
             &mut next_index,
-            &search_highlight,
-            search_theme,
-            &username_highlight,
-            username_theme,
+            search,
+            username,
+            &self.emotes,
+            &mut emote_idx,
         ));
 
         let mut rows = vec![Line::from(first_row)];
@@ -262,10 +306,10 @@ impl MessageData {
             Line::from(highlight(
                 line,
                 &mut next_index,
-                &search_highlight,
-                search_theme,
-                &username_highlight,
-                username_theme,
+                search,
+                username,
+                &self.emotes,
+                &mut emote_idx,
             ))
         }));
 
@@ -273,63 +317,101 @@ impl MessageData {
     }
 
     /// Splits the payload by spaces, then check every word to see if they match an emote.
-    /// If they do, tell the terminal to load the emote, and replace the word by `'a' * emote_width`,
-    /// which will later be replaced by spaces.
-    /// Some emotes can stack on top of each others, in this case we remove the word entirely from the payload.
+    /// If they do, tell the terminal to load the emote, and replace the word by `'\u{10EEEE}' * emote_width`.
+    /// The emote will then be displayed by the terminal by encoding its id in its foreground color, and its pid in its underline color.
+    /// The tui escapes all ansi escape sequences, so the id/color of the emote is stored and encoded in [`MessageData::to_vec`].
     pub fn parse_emotes(&mut self, emotes: &mut Emotes) {
-        let mut position = 1;
-        let mut last_emote_pos = 0;
+        let mut words = Vec::new();
 
-        self.payload = self
-            .payload
-            .split(' ')
-            .filter_map(|word| {
-                if let Some((filename, zero_width)) = emotes.emotes.get(word) {
-                    match load_emote(
-                        word,
-                        filename,
-                        *zero_width,
-                        &mut emotes.info,
-                        &mut emotes.loaded,
-                        emotes.cell_size,
-                    ) {
-                        Ok(loaded_emote) => {
-                            if loaded_emote.overlay {
-                                // Check if last word is emote.
-                                if let Some(emote) = self.emotes.last() {
-                                    if last_emote_pos == position {
-                                        self.emotes.push(EmoteData::new(
-                                            &loaded_emote,
-                                            word.to_string(),
-                                            emote.index_in_message,
-                                            emote.layer + 1,
-                                        ));
-                                        return None;
-                                    }
-                                }
+        self.payload.split(' ').for_each(|word| {
+            if let Some((filename, zero_width)) = emotes.emotes.get(word) {
+                match load_emote(
+                    word,
+                    filename,
+                    *zero_width,
+                    &mut emotes.info,
+                    emotes.cell_size,
+                ) {
+                    Ok(loaded_emote) => {
+                        if loaded_emote.overlay {
+                            // Check if last word is emote.
+                            if let Some(Emote(v)) = words.last_mut() {
+                                v.push(loaded_emote.into());
+                                return;
                             }
-                            self.emotes.push(EmoteData::new(
-                                &loaded_emote,
-                                word.to_string(),
-                                position,
-                                0,
-                            ));
+                        }
 
-                            position += loaded_emote.width as usize + 1;
-                            last_emote_pos = position;
-                            return Some("a".repeat(loaded_emote.width as usize));
-                        }
-                        Err(err) => {
-                            warn!("Unable to load emote {word} ({filename}): {err}");
-                            emotes.emotes.remove(word);
-                        }
+                        words.push(Emote(vec![loaded_emote.into()]));
+                        return;
+                    }
+                    Err(err) => {
+                        warn!("Unable to load emote {word} ({filename}): {err}");
+                        emotes.emotes.remove(word);
                     }
                 }
-                position += word.width() + 1;
-                Some(word.to_string())
+            }
+            words.push(Text(word.to_string()));
+        });
+
+        let words = words
+            .into_iter()
+            .filter_map(|w| match w {
+                Text(s) => Some(s),
+                Emote(v) => {
+                    let max_width = v.iter().max_by_key(|e| e.width)?.width as f32;
+                    let cols = (max_width / emotes.cell_size.0).ceil() as u16;
+                    let full_width = f32::from(cols) * emotes.cell_size.0;
+
+                    let &EmoteData { id, pid, .. } = v.first()?;
+                    if let Err(e) = display_emote(id, pid, cols) {
+                        warn!("Unable to display emote: {e}");
+                        return None;
+                    }
+
+                    v.iter().enumerate().skip(1).for_each(|(layer, emote)| {
+                        if let Err(e) = overlay_emote(
+                            (id, pid),
+                            emote,
+                            layer as u32,
+                            full_width,
+                            emotes.cell_size.0,
+                        ) {
+                            warn!("Unable to display overlay: {e}");
+                        }
+                    });
+
+                    let to_rgb = |i: u32| Rgb((i >> 16) as u8, (i >> 8) as u8, i as u8);
+
+                    self.emotes.push((cols, to_rgb(id), to_rgb(pid)));
+
+                    Some(
+                        iter::repeat(PRIVATE_USE_UNICODE)
+                            .take(cols as usize)
+                            .collect(),
+                    )
+                }
             })
-            .collect::<Vec<_>>()
-            .join(" ");
+            .collect::<Vec<_>>();
+
+        // Join words by space, skipping spaces before and after emotes
+        self.payload.clear();
+        let mut iter = words.iter();
+        match iter.next() {
+            Some(first) => {
+                let size = words.iter().map(String::len).sum::<usize>() + words.len() - 1;
+                self.payload.reserve(size);
+                self.payload.push_str(first);
+            }
+            None => return,
+        }
+        for w in iter {
+            if !w.starts_with(PRIVATE_USE_UNICODE) && !self.payload.ends_with(PRIVATE_USE_UNICODE) {
+                self.payload.push(' ');
+            } else {
+                self.payload.push(ZERO_WIDTH_SPACE);
+            }
+            self.payload.push_str(w);
+        }
     }
 }
 

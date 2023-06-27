@@ -26,7 +26,6 @@ use chrono::{DateTime, Local};
 use tui::{layout::Rect, Frame};
 
 use crate::{
-    emotes::Emotes,
     handlers::{
         app::SharedMessages,
         config::SharedCompleteConfig,
@@ -47,7 +46,7 @@ static WINDOW_SIZE_TOO_SMALL_ERROR: Lazy<Vec<&'static str>> = Lazy::new(|| {
 
 pub trait Component {
     #[allow(unused_variables)]
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         todo!()
     }
 

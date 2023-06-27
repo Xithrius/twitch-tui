@@ -1,7 +1,6 @@
 use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
-use log::warn;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -9,10 +8,8 @@ use tui::{
     widgets::{block::Position, Block, Borders, List, ListItem},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    emotes::{emotes_enabled, hide_message_emotes, is_in_rect, show_span_emotes, Emotes},
     handlers::{
         app::SharedMessages,
         config::SharedCompleteConfig,
@@ -27,8 +24,8 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::components::{
-        following::FollowingWidget, utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget,
-        Component, MessageSearchWidget,
+        following::FollowingWidget, ChannelSwitcherWidget, ChatInputWidget, Component,
+        MessageSearchWidget,
     },
     utils::text::{title_line, TitleStyle},
 };
@@ -82,7 +79,6 @@ impl ChatWidget {
         frame: &Frame,
         area: Rect,
         messages_data: &'a VecDeque<MessageData>,
-        emotes: &mut Emotes,
     ) -> VecDeque<Line<'a>> {
         // Accounting for not all heights of rows to be the same due to text wrapping,
         // so extra space needs to be used in order to scroll correctly.
@@ -102,15 +98,6 @@ impl ChatWidget {
 
         let message_chunk_width = h_chunk[0].width as usize;
 
-        let channel_switcher = if self.channel_input.is_focused() {
-            Some(centered_rect(60, 20, 3, frame.size()))
-        } else {
-            None
-        };
-
-        let is_behind_channel_switcher =
-            |a, b| channel_switcher.map_or(false, |r| is_in_rect(r, a, b));
-
         let config = self.config.borrow();
 
         'outer: for data in messages_data {
@@ -125,9 +112,6 @@ impl ChatWidget {
             // Offsetting of messages for scrolling through said messages
             if scroll > 0 {
                 scroll -= 1;
-                hide_message_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
-                // let mut map = HashMap::new();
-                // hide_message_emotes(&data.emotes, &mut map, data.payload.width());
 
                 continue;
             }
@@ -151,49 +135,12 @@ impl ChatWidget {
                 username_highlight,
             );
 
-            let mut payload = " ".to_string();
-            payload.push_str(&data.payload);
-
-            for span in lines.iter().rev() {
-                let mut span = span.clone();
-
+            for span in lines.into_iter().rev() {
                 if total_row_height < general_chunk_height {
-                    if !data.emotes.is_empty() {
-                        let current_row = general_chunk_height - total_row_height;
-                        match show_span_emotes(
-                            &data.emotes,
-                            &mut span,
-                            emotes,
-                            &payload,
-                            self.config.borrow().frontend.margin as usize,
-                            current_row as u16,
-                            is_behind_channel_switcher,
-                        ) {
-                            Ok(p) => payload = p,
-                            Err(e) => warn!("Unable to display some emotes: {e}"),
-                        }
-                    }
-
                     messages.push_front(span);
                     total_row_height += 1;
                 } else {
-                    if !emotes_enabled(&self.config.borrow().frontend)
-                        || emotes.displayed.is_empty()
-                    {
-                        break 'outer;
-                    }
-
-                    // If the current message already had all its emotes deleted, the following messages should
-                    // also have had their emotes deleted
-                    hide_message_emotes(&data.emotes, &mut emotes.displayed, payload.width());
-                    if !data.emotes.is_empty()
-                        && !data
-                            .emotes
-                            .iter()
-                            .all(|e| !emotes.displayed.contains_key(&(e.id, e.pid)))
-                    {
-                        break 'outer;
-                    }
+                    break 'outer;
                 }
             }
         }
@@ -210,10 +157,7 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
-        let mut default_emotes = Emotes::default();
-        let emotes = emotes.map_or(&mut default_emotes, |e| e);
-
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| f.size(), |a| a);
 
         let config = self.config.borrow();
@@ -235,13 +179,6 @@ impl Component for ChatWidget {
         let first_v_chunk = v_chunks.next().unwrap();
 
         if self.messages.borrow().len() > self.config.borrow().terminal.maximum_messages {
-            for data in self
-                .messages
-                .borrow()
-                .range(self.config.borrow().terminal.maximum_messages..)
-            {
-                hide_message_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
-            }
             self.messages
                 .borrow_mut()
                 .truncate(self.config.borrow().terminal.maximum_messages);
@@ -249,7 +186,7 @@ impl Component for ChatWidget {
 
         let messages_data = self.messages.clone().borrow().to_owned();
 
-        let messages = self.get_messages(f, *first_v_chunk, &messages_data, emotes);
+        let messages = self.get_messages(f, *first_v_chunk, &messages_data);
 
         let current_time = Local::now()
             .format(&config.frontend.datetime_format)
@@ -330,14 +267,13 @@ impl Component for ChatWidget {
         }
 
         if self.chat_input.is_focused() {
-            self.chat_input
-                .draw(f, v_chunks.next().copied(), Some(emotes));
+            self.chat_input.draw(f, v_chunks.next().copied());
         } else if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None, None);
+            self.channel_input.draw(f, None);
         } else if self.search_input.is_focused() {
-            self.search_input.draw(f, v_chunks.next().copied(), None);
+            self.search_input.draw(f, v_chunks.next().copied());
         } else if self.following.is_focused() {
-            self.following.draw(f, None, None);
+            self.following.draw(f, None);
         }
     }
 

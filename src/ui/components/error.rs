@@ -6,7 +6,7 @@ use tui::{
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
 };
 
-use crate::{emotes::Emotes, ui::components::Component};
+use crate::ui::components::Component;
 
 #[derive(Debug, Clone)]
 pub struct ErrorWidget {
@@ -32,7 +32,7 @@ impl ErrorWidget {
 }
 
 impl Component for ErrorWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, _emotes: Option<&mut Emotes>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| f.size(), |a| a);
 
         let paragraph = Paragraph::new(

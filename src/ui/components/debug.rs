@@ -8,7 +8,6 @@ use tui::{
 };
 
 use crate::{
-    emotes::Emotes,
     handlers::{
         config::{SharedCompleteConfig, ToVec},
         user_input::events::{Event, Key},
@@ -56,7 +55,7 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, _emotes: Option<&mut Emotes>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| f.size(), |a| a);
 
         let configs = self.get_config_values();
