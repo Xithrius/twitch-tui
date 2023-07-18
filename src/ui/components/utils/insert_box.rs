@@ -4,7 +4,7 @@ use tui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, Paragraph},
+    widgets::{block::Position, Block, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -155,7 +155,7 @@ impl Component for InputWidget {
                         .fg(status_color)
                         .add_modifier(Modifier::BOLD),
                 ))
-                .title_on_bottom()
+                .title_position(Position::Bottom)
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
                 .border_type(self.config.borrow().frontend.border_type.clone().into());
 

@@ -90,7 +90,7 @@ pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
 }
 
 #[inline]
-pub fn is_in_rect(rect: Rect, (x, y): (u16, u16), width: u16) -> bool {
+pub const fn is_in_rect(rect: Rect, (x, y): (u16, u16), width: u16) -> bool {
     y < rect.bottom() && y > rect.top() - 1 && x < rect.right() && x + width > rect.left()
 }
 

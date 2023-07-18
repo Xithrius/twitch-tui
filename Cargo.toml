@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 crossterm = "0.26.1"
-tui = { package = "ratatui", version = "0.21.0", default-features = false, features = [ "crossterm", "serde" ] }
+tui = { package = "ratatui", version = "0.22.0", default-features = false, features = [ "crossterm", "serde" ] }
 tokio = { version = "1.29.1", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
 clap = { version = "4.3.11", features = [ "derive", "cargo" ] }
 serde = { version = "1.0.171", features = [ "derive" ] }

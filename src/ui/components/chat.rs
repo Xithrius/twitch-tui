@@ -7,7 +7,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem},
+    widgets::{block::Position, Block, Borders, List, ListItem},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -308,7 +308,7 @@ impl Component for ChatWidget {
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
                 .border_type(self.config.borrow().frontend.border_type.clone().into())
                 .title(title_line(&title, Style::default()))
-                .title_on_bottom()
+                .title_position(Position::Bottom)
                 .title_alignment(Alignment::Right);
 
             let rect = Rect::new(
