@@ -67,6 +67,11 @@ impl InputWidget {
         self.focused = !self.focused;
     }
 
+    pub fn toggle_focus_with(&mut self, s: &str) {
+        self.focused = !self.focused;
+        self.input.update(s, 1);
+    }
+
     pub fn is_valid(&self) -> bool {
         self.input_validator
             .as_ref()

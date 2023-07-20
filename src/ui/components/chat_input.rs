@@ -82,6 +82,10 @@ impl ChatInputWidget {
     pub fn toggle_focus(&mut self) {
         self.input.toggle_focus();
     }
+
+    pub fn toggle_focus_with(&mut self, s: &str) {
+        self.input.toggle_focus_with(s);
+    }
 }
 
 impl ToString for ChatInputWidget {

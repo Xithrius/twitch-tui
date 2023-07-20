@@ -347,6 +347,8 @@ impl Component for ChatWidget {
             } else {
                 match key {
                     Key::Char('i') => self.chat_input.toggle_focus(),
+                    Key::Char('@') => self.chat_input.toggle_focus_with("@"),
+                    Key::Char('/') => self.chat_input.toggle_focus_with("/"),
                     Key::Char('s') => self.channel_input.toggle_focus(),
                     Key::Ctrl('f') => self.search_input.toggle_focus(),
                     Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
