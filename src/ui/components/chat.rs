@@ -241,7 +241,7 @@ impl Component for ChatWidget {
         let messages = self.get_messages(f, *first_v_chunk, &messages_data, emotes);
 
         let current_time = Local::now()
-            .format(&config.frontend.date_format)
+            .format(&config.frontend.datetime_format)
             .to_string();
 
         let spans = [

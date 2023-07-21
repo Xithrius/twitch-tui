@@ -2,7 +2,7 @@
 
 The default start screen of the application.
 
-Can be the start state by configuring `start_state` in the config to either `"dashboard"`, `"dash"`, or `"start"`.
+Can be the start state by configuring `first_state` in the config to either `"dashboard"`, `"dash"`, or `"start"`.
 
 Hitting any of the integers displayed between brackets will take you to said channel.
 

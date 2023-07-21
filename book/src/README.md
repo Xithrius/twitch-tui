@@ -10,7 +10,7 @@ This book is still under construction, so some sections might still be missing. 
 
 This application has vim and emacs inspired keybinds. That means you will start out in visual mode.
 
-The default start screen is the dashboard. This can be configured with `start_state` in the config file.
+The default start screen is the dashboard. This can be configured with `first_state` in the config file.
 
 To go to a channel, either hit `Enter` or an integer between square brackets to go to the corresponding channel.
 

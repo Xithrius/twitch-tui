@@ -63,13 +63,13 @@ pub struct Cli {
     pub verbose: bool,
     /// The delay in milliseconds between terminal updates
     #[arg(short, long)]
-    pub tick_delay: Option<u64>,
+    pub delay: Option<u64>,
     /// The maximum amount of messages to be stored
     #[arg(short, long)]
     pub max_messages: Option<usize>,
     /// Show the date/time
     #[arg(short, long)]
-    pub date_shown: bool,
+    pub show_datetimes: bool,
     /// Username color palette
     #[arg(short, long)]
     pub palette: Option<Palette>,
@@ -77,11 +77,11 @@ pub struct Cli {
     #[arg(short, long)]
     pub badges: bool,
     /// The theme of the terminal
-    #[arg(long)]
+    #[arg(short, long)]
     pub theme: Option<Theme>,
     /// The starting state of the terminal
     #[arg(short, long)]
-    pub start_state: Option<State>,
+    pub first_state: Option<State>,
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
@@ -92,14 +92,14 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
 
     config.terminal.verbose = config.terminal.verbose || args.verbose;
 
-    if let Some(tick_delay) = args.tick_delay {
+    if let Some(tick_delay) = args.delay {
         config.terminal.tick_delay = tick_delay;
     }
     if let Some(max_messages) = args.max_messages {
         config.terminal.maximum_messages = max_messages;
     }
-    if let Some(start_state) = args.start_state {
-        config.terminal.start_state = start_state;
+    if let Some(first_state) = args.first_state {
+        config.terminal.first_state = first_state;
     }
 
     // Twitch arguments
@@ -108,7 +108,7 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     }
 
     // Frontend arguments
-    config.frontend.date_shown = config.frontend.date_shown || args.date_shown;
+    config.frontend.show_datetimes = config.frontend.show_datetimes || args.show_datetimes;
 
     if let Some(palette) = args.palette {
         config.frontend.palette = palette;

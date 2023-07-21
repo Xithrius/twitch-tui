@@ -38,7 +38,7 @@ pub async fn twitch_irc(
 
     // If the dashboard is the start state, wait until the user has selected
     // a channel before connecting to Twitch's IRC.
-    if config.borrow().terminal.start_state == State::Dashboard {
+    if config.borrow().terminal.first_state == State::Dashboard {
         debug!("Waiting for user to select channel from debug screen");
 
         loop {
@@ -51,7 +51,7 @@ pub async fn twitch_irc(
         }
     }
 
-    let data_builder = DataBuilder::new(&config.frontend.date_format);
+    let data_builder = DataBuilder::new(&config.frontend.datetime_format);
     let mut room_state_startup = false;
 
     let (mut client, mut stream) =

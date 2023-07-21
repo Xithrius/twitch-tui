@@ -167,7 +167,7 @@ impl MessageData {
         // Message prefix
         let time_sent = self
             .time_sent
-            .format(&frontend_config.date_format)
+            .format(&frontend_config.datetime_format)
             .to_string();
 
         // Add 2 for the " " and ":"
@@ -297,12 +297,12 @@ impl MessageData {
 
 #[derive(Debug, Copy, Clone)]
 pub struct DataBuilder<'conf> {
-    pub date_format: &'conf str,
+    pub datetime_format: &'conf str,
 }
 
 impl<'conf> DataBuilder<'conf> {
-    pub const fn new(date_format: &'conf str) -> Self {
-        DataBuilder { date_format }
+    pub const fn new(datetime_format: &'conf str) -> Self {
+        DataBuilder { datetime_format }
     }
 
     pub fn user(user: String, payload: String) -> MessageData {

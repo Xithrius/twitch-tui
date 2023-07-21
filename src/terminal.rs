@@ -84,7 +84,7 @@ pub async fn ui_driver(
                         if let Some(previous_state) = app.get_previous_state() {
                             app.set_state(previous_state);
                         } else {
-                            app.set_state(config.terminal.start_state.clone());
+                            app.set_state(config.terminal.first_state.clone());
                         }
                     }
                     TerminalAction::SwitchState(state) => {

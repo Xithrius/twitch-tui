@@ -64,7 +64,7 @@ pub struct TerminalConfig {
     /// if debug logging should be enabled.
     pub verbose: bool,
     /// What state the application should start in.
-    pub start_state: State,
+    pub first_state: State,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -89,9 +89,9 @@ pub struct FiltersConfig {
 #[serde(default)]
 pub struct FrontendConfig {
     /// If the time and date is to be shown.
-    pub date_shown: bool,
+    pub show_datetimes: bool,
     /// The format of string that will show up in the terminal.
-    pub date_format: String,
+    pub datetime_format: String,
     /// If the username should be shown.
     pub username_shown: bool,
     /// The color palette.
@@ -148,7 +148,7 @@ impl Default for TerminalConfig {
             maximum_messages: 150,
             log_file: None,
             verbose: false,
-            start_state: State::default(),
+            first_state: State::default(),
         }
     }
 }
@@ -156,8 +156,8 @@ impl Default for TerminalConfig {
 impl Default for FrontendConfig {
     fn default() -> Self {
         Self {
-            date_shown: true,
-            date_format: "%a %b %e %T %Y".to_string(),
+            show_datetimes: true,
+            datetime_format: "%a %b %e %T %Y".to_string(),
             username_shown: true,
             palette: Palette::default(),
             title_shown: true,

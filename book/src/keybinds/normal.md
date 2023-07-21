@@ -1,6 +1,6 @@
 # Normal mode keybind map
 
-Can be the start state by configuring `start_state` in the config to either `"normal"` or `"default"`.
+Can be the start state by configuring `first_state` in the config to either `"normal"` or `"default"`.
 
 <table>
 <tr>

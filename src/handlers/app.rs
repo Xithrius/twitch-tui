@@ -91,7 +91,7 @@ impl App {
             messages,
             storage,
             filters,
-            state: shared_config_borrow.terminal.start_state.clone(),
+            state: shared_config_borrow.terminal.first_state.clone(),
             previous_state: None,
             input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
