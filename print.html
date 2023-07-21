@@ -174,10 +174,11 @@
 <h2 id="quick-start"><a class="header" href="#quick-start">Quick start</a></h2>
 <p>This application has vim and emacs inspired keybinds. That means you will start out in visual mode.</p>
 <p>The default start screen is the dashboard. This can be configured with <code>first_state</code> in the config file.</p>
+<p>Once in the application, hitting <code>?</code> or <code>h</code> will bring up the keybind window. To go back to the previous window, hit <code>Esc</code>.</p>
 <p>To go to a channel, either hit <code>Enter</code> or an integer between square brackets to go to the corresponding channel.</p>
-<p>To enter insert mode after getting into a channel, press <code>i</code>. To drop back to visual mode, press <code>esc</code>.</p>
+<p>To get a message to pop up in the chat, press <code>i</code> or <code>c</code>, then type your message and hit <code>Enter</code>. If you want to cancel typing a message, hit <code>Esc</code>.</p>
 <p>You can go back to the dashboard by hitting <code>S</code> (<code>Shift + s</code>).</p>
-<p>Insert modes at this time are message search (<code>Ctrl + f</code>), channel swapper (<code>s</code>), and the previously mentioned insert mode (<code>i</code>).</p>
+<p>Insert modes at this time are message search (<code>Ctrl + f</code>), channel swapper (<code>s</code>), and the previously mentioned insert mode (<code>i</code> or <code>c</code>).</p>
 <p>To see all the options with keybinds, either head over to the <a href="https://xithrius.github.io/twitch-tui/keybinds/index.html">keybinds section</a> of this book, or press <code>?</code> while in visual mode.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configuration-and-installation"><a class="header" href="#configuration-and-installation">Configuration and installation</a></h1>
 <p>The how-to of getting this application up and running.</p>
@@ -228,7 +229,7 @@
 <td> <b>Key</b>
 <td> <b> Description</b>
 <tr>
-<td> i
+<td> i or c
 <td> Enter message insert (chat) mode for sending messages. Exit this mode with `Esc`.
 <tr>
 <td> @
@@ -253,16 +254,16 @@
 <td> Enter message search mode, which highlights messages in the main window which match the query.
 <tr>
 <td> Ctrl + t
-<td> Toggle the filter.
+<td> Toggle the message filter.
 <tr>
 <td> Ctrl + r
-<td> Reverse the filter.
+<td> Reverse the message filter.
 <tr>
 <td> Ctrl + p
 <td> Manually crash the application.
 <tr>
 <td> Esc
-<td> Go back to previous window.
+<td> Go back to the previous window.
 </table>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="insert-modes-keybind-map"><a class="header" href="#insert-modes-keybind-map">Insert mode(s) keybind map</a></h1>
 <p>Message sending and searching, along with channel swapping keybinds are explained in this section.</p>
@@ -320,7 +321,7 @@
 <td> Confirm the current text to go through (doesn't do anything in message search mode).
 <tr>
 <td> Esc
-<td> Go back to previous window.
+<td> Go back to the previous window
 </table>
 
                     </main>
