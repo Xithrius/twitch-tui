@@ -44,7 +44,7 @@ pub async fn ui_driver(
 
     let mut events = Events::with_config(Config {
         exit_key: Key::Null,
-        tick_rate: Duration::from_millis(config.terminal.tick_delay),
+        tick_rate: Duration::from_millis(config.terminal.delay),
     })
     .await;
 

@@ -92,8 +92,8 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
 
     config.terminal.verbose = config.terminal.verbose || args.verbose;
 
-    if let Some(tick_delay) = args.delay {
-        config.terminal.tick_delay = tick_delay;
+    if let Some(delay) = args.delay {
+        config.terminal.delay = delay;
     }
     if let Some(max_messages) = args.max_messages {
         config.terminal.maximum_messages = max_messages;

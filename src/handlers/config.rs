@@ -56,7 +56,7 @@ pub struct TwitchConfig {
 #[serde(default)]
 pub struct TerminalConfig {
     /// The delay in milliseconds between terminal updates.
-    pub tick_delay: u64,
+    pub delay: u64,
     /// The maximum amount of messages before truncation.
     pub maximum_messages: usize,
     /// The file path to log to.
@@ -144,8 +144,8 @@ impl Default for TwitchConfig {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
-            tick_delay: 30,
-            maximum_messages: 150,
+            delay: 30,
+            maximum_messages: 500,
             log_file: None,
             verbose: false,
             first_state: State::default(),
