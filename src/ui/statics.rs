@@ -7,20 +7,34 @@ pub static HELP_COLUMN_TITLES: Lazy<Vec<&str>> =
 #[allow(clippy::type_complexity)]
 pub static HELP_KEYBINDS: Lazy<Vec<(&str, Vec<(&str, &str)>)>> = Lazy::new(|| {
     vec![
-        // TODO: Dashboard keybinds
+        (
+            "Dashboard",
+            vec![
+                (
+                    "Enter",
+                    "Enter the channel that you've configured in the config",
+                ),
+                ("? or h", "Have the keybinds popup window appear"),
+                ("q", "Quit the application"),
+                ("s", "Open the channel switcher popup"),
+                ("Ctrl + p", "Manually crash the application"),
+            ],
+        ),
         (
             "Normal mode",
             vec![
-                ("c", "Main chat window"),
-                ("i", "Insert mode"),
-                ("@", "Insert mode with mention symbol"),
-                ("/", "Insert mode with command symbol"),
-                ("s", "Swap channels"),
-                ("?", "* You are here!"),
+                ("i or c", "Enter message (chat) mode for sending messages"),
+                ("@", "Messaging mode with mention symbol"),
+                ("/", "Messaging mode with command symbol"),
+                ("? or h", "* You are here!"),
+                ("q", "Quit the application"),
+                ("s", "Open a popup window to switch channels"),
+                ("S", "Go to the dashboard screen (start screen)"),
                 ("Ctrl + f", "Search messages"),
-                ("Ctrl + p", "Manual crash"),
-                ("q", "Quit"),
-                ("Esc", "Go back a window layer"),
+                ("Ctrl + t", "Toggle the message filter"),
+                ("Ctrl + r", "Reverse the message filter"),
+                ("Ctrl + p", "Manually crash the application"),
+                ("Esc", "Go back to the previous window"),
             ],
         ),
         (
@@ -28,6 +42,7 @@ pub static HELP_KEYBINDS: Lazy<Vec<(&str, Vec<(&str, &str)>)>> = Lazy::new(|| {
             vec![
                 ("Tab", "Fill in suggestion, if available"),
                 ("Enter", "Confirm the input text to go through"),
+                ("Esc", "Go back to the previous window"),
                 ("Ctrl + f", "Move cursor to the right"),
                 ("Ctrl + b", "Move cursor to the left"),
                 ("Ctrl + a", "Move cursor to the start"),

@@ -7,7 +7,7 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> <b>Key</b>
 <td> <b> Description</b>
 <tr>
-<td> i
+<td> i or c
 <td> Enter message insert (chat) mode for sending messages. Exit this mode with `Esc`.
 <tr>
 <td> @
@@ -32,14 +32,14 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> Enter message search mode, which highlights messages in the main window which match the query.
 <tr>
 <td> Ctrl + t
-<td> Toggle the filter.
+<td> Toggle the message filter.
 <tr>
 <td> Ctrl + r
-<td> Reverse the filter.
+<td> Reverse the message filter.
 <tr>
 <td> Ctrl + p
 <td> Manually crash the application.
 <tr>
 <td> Esc
-<td> Go back to previous window.
+<td> Go back to the previous window.
 </table>

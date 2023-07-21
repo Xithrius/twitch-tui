@@ -56,5 +56,5 @@ Message sending and searching, along with channel swapping keybinds are explaine
 <td> Confirm the current text to go through (doesn't do anything in message search mode).
 <tr>
 <td> Esc
-<td> Go back to previous window.
+<td> Go back to the previous window
 </table>
