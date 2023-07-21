@@ -12,17 +12,17 @@ Hitting any of the integers displayed between brackets will take you to said cha
 <td> <b> Description</b>
 <tr>
 <td> Enter
-<td> Start in the channel that you've configured
+<td> Enter the channel that you set in the "channel" option within your config.
 <tr>
-<td> ?
+<td> ? or h
 <td> Have the keybinds popup window appear.
 <tr>
 <td> q
-<td> Quit out of the entire application once in the base chat view.
+<td> Quit the application.
 <tr>
 <td> s
-<td> Open a popup window to switch channels.
+<td> Open the channel switcher popup, which accepts an input of a channel name to enter into.
 <tr>
 <td> Ctrl + p
-<td> Manually trigger a panic, so the application crashes.
+<td> Manually crash the application.
 </table>

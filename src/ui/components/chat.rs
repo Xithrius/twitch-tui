@@ -354,7 +354,7 @@ impl Component for ChatWidget {
                     Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
                     Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
-                    Key::Char('?') => return Some(TerminalAction::SwitchState(State::Help)),
+                    Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                     Key::Char('q') => return Some(TerminalAction::Quit),
                     Key::Esc => {
                         if self.scroll_offset.get_offset() == 0 {

@@ -237,7 +237,7 @@ impl Component for DashboardWidget {
 
                     return Some(action);
                 }
-                Key::Char('?') => return Some(TerminalAction::SwitchState(State::Help)),
+                Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
                         let mut channels =

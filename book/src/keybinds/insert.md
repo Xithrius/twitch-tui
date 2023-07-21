@@ -50,8 +50,11 @@ Message sending and searching, along with channel swapping keybinds are explaine
 <td> Remove character to the right.
 <tr>
 <td> Tab
-<td> Fill in suggestion, if available.
+<td> Fill in suggestion, if one is available.
 <tr>
 <td> Enter
 <td> Confirm the current text to go through (doesn't do anything in message search mode).
+<tr>
+<td> Esc
+<td> Go back to previous window.
 </table>

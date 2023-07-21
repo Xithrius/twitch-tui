@@ -16,17 +16,17 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> /
 <td> Enter insert (chat) mode with the command symbol `/` already existing.
 <tr>
-<td> ?
+<td> ? or h
 <td> Have the keybinds popup window appear.
 <tr>
 <td> q
-<td> Quit out of the entire application once in the base chat view.
+<td> Quit the application (when no user input box is open).
 <tr>
 <td> s
 <td> Open a popup window to switch channels.
 <tr>
 <td> S
-<td> Go to the dashboard screen.
+<td> Go to the dashboard screen (start screen).
 <tr>
 <td> Ctrl + f
 <td> Enter message search mode, which highlights messages in the main window which match the query.
@@ -38,8 +38,8 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> Reverse the filter.
 <tr>
 <td> Ctrl + p
-<td> Manually trigger a panic, so the application crashes.
+<td> Manually crash the application.
 <tr>
 <td> Esc
-<td> Exits out of layered windows, such as going from the help window to normal view.
+<td> Go back to previous window.
 </table>
