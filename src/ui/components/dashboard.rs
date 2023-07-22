@@ -118,8 +118,7 @@ impl DashboardWidget {
         frame.render_widget(current_channel_selection, *v_chunks.next().unwrap());
 
         frame.render_widget(
-            Paragraph::new("Configured default channels")
-                .style(Style::default().fg(Color::LightRed)),
+            Paragraph::new("Favorite channels").style(Style::default().fg(Color::LightRed)),
             *v_chunks.next().unwrap(),
         );
 
@@ -166,8 +165,7 @@ impl DashboardWidget {
 
 impl Component for DashboardWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
-        let start_screen_channels_len =
-            self.config.borrow().frontend.start_screen_channels.len() as u16;
+        let favorite_channels_len = self.config.borrow().frontend.favorite_channels.len() as u16;
 
         let recent_channels_len = self.storage.borrow().get("channels").len() as u16;
 
@@ -189,9 +187,9 @@ impl Component for DashboardWidget {
                 // Currently selected channel title, content
                 Constraint::Length(2),
                 Constraint::Length(2),
-                // Configured default channels title, content
+                // Favorite channels title, content
                 Constraint::Length(2),
-                Constraint::Length(channel_list_constrainer(start_screen_channels_len)),
+                Constraint::Length(channel_list_constrainer(favorite_channels_len)),
                 // Recent channel title, content
                 Constraint::Length(2),
                 Constraint::Length(channel_list_constrainer(recent_channels_len)),
@@ -209,7 +207,7 @@ impl Component for DashboardWidget {
             f,
             &mut v_chunks,
             self.config.borrow().twitch.channel.clone(),
-            &self.config.borrow().frontend.start_screen_channels.clone(),
+            &self.config.borrow().frontend.favorite_channels.clone(),
         );
 
         self.render_quit_selection_widget(f, &mut v_chunks);
@@ -240,13 +238,11 @@ impl Component for DashboardWidget {
                 Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
-                        let mut channels =
-                            self.config.borrow().frontend.start_screen_channels.clone();
-                        channels.extend(self.storage.borrow().get_last_n(
-                            "channels",
-                            CHANNEL_LIST_AMOUNT as usize,
-                            true,
-                        ));
+                        let mut channels = self.config.borrow().frontend.favorite_channels.clone();
+                        let mut selected_channels = self.storage.borrow().get("channels");
+                        selected_channels.reverse();
+
+                        channels.extend(selected_channels);
 
                         if let Some(channel) = channels.get(selection as usize) {
                             let action =

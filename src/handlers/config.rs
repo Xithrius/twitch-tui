@@ -122,8 +122,8 @@ pub struct FrontendConfig {
     pub betterttv_emotes: bool,
     /// If 7tv emotes should be displayed (requires kitty terminal).
     pub seventv_emotes: bool,
-    /// Comma-separated channel names to be displayed at start screen.
-    pub start_screen_channels: Vec<String>,
+    /// Channels to always be displayed in the start screen.
+    pub favorite_channels: Vec<String>,
     /// A border wrapper around [`BorderType`].
     pub border_type: Border,
     /// If the usernames should be aligned to the right.
@@ -173,7 +173,7 @@ impl Default for FrontendConfig {
             twitch_emotes: false,
             betterttv_emotes: false,
             seventv_emotes: false,
-            start_screen_channels: vec![],
+            favorite_channels: vec![],
             border_type: Border::default(),
             right_align_usernames: false,
         }

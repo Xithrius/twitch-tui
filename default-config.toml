@@ -80,9 +80,9 @@ twitch_emotes = false
 betterttv_emotes = false
 # If 7tv emotes should be displayed (requires kitty terminal).
 seventv_emotes = false
-# Comma-separated channel names to be displayed at start screen
+# Channel names to always be displayed in the start screen (dashboard).
 # Example: ["Xithrius", "RocketLeague", "AntVenom"]
-start_screen_channels = []
+favorite_channels = []
 # What style the border of the terminal should have.
 # Options: plain, rounded, double, and thick.
 border_type = "plain"
