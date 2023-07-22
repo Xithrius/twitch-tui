@@ -124,6 +124,8 @@ pub struct FrontendConfig {
     pub seventv_emotes: bool,
     /// Channels to always be displayed in the start screen.
     pub favorite_channels: Vec<String>,
+    /// The amount of recent channels that should be shown on the start screen.
+    pub recent_channel_count: u16,
     /// A border wrapper around [`BorderType`].
     pub border_type: Border,
     /// If the usernames should be aligned to the right.
@@ -174,6 +176,7 @@ impl Default for FrontendConfig {
             betterttv_emotes: false,
             seventv_emotes: false,
             favorite_channels: vec![],
+            recent_channel_count: 5,
             border_type: Border::default(),
             right_align_usernames: false,
         }

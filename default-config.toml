@@ -83,6 +83,8 @@ seventv_emotes = false
 # Channel names to always be displayed in the start screen (dashboard).
 # Example: ["Xithrius", "RocketLeague", "AntVenom"]
 favorite_channels = []
+# The amount of recently connected to channels shown on the start screen.
+recent_channel_count = 5
 # What style the border of the terminal should have.
 # Options: plain, rounded, double, and thick.
 border_type = "plain"

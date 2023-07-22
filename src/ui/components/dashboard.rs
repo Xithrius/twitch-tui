@@ -31,8 +31,6 @@ const DASHBOARD_TITLE: [&str; 5] = [
     "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   ",
 ];
 
-const CHANNEL_LIST_AMOUNT: u16 = 5;
-
 pub struct DashboardWidget {
     config: SharedCompleteConfig,
     storage: SharedStorage,
@@ -165,17 +163,19 @@ impl DashboardWidget {
 
 impl Component for DashboardWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
-        let favorite_channels_len = self.config.borrow().frontend.favorite_channels.len() as u16;
+        let favorite_channels_len =
+            self.config.borrow().frontend.favorite_channels.len() as u16 + 1;
 
-        let recent_channels_len = self.storage.borrow().get("channels").len() as u16;
+        let recent_channels_len = {
+            let current_len = self.storage.borrow().get("channels").len() as u16;
+            let recent_channel_config_count = self.config.borrow().frontend.recent_channel_count;
 
-        let channel_list_constrainer = |l: u16| -> u16 {
-            if l == 0 {
+            if current_len == 0 {
                 2
-            } else if l <= CHANNEL_LIST_AMOUNT {
-                l + 1
+            } else if current_len <= recent_channel_config_count {
+                current_len + 1
             } else {
-                CHANNEL_LIST_AMOUNT + 1
+                recent_channel_config_count + 1
             }
         };
 
@@ -189,10 +189,10 @@ impl Component for DashboardWidget {
                 Constraint::Length(2),
                 // Favorite channels title, content
                 Constraint::Length(2),
-                Constraint::Length(channel_list_constrainer(favorite_channels_len)),
+                Constraint::Length(favorite_channels_len),
                 // Recent channel title, content
                 Constraint::Length(2),
-                Constraint::Length(channel_list_constrainer(recent_channels_len)),
+                Constraint::Length(recent_channels_len),
                 // Quit
                 Constraint::Length(1),
             ])
