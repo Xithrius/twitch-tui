@@ -1,9 +1,6 @@
 use anyhow::{Context, Result};
 use futures::StreamExt;
-use reqwest::{
-    header::{HeaderMap, HeaderValue, AUTHORIZATION},
-    Client,
-};
+use reqwest::Client;
 use serde::Deserialize;
 use std::{borrow::BorrowMut, collections::HashMap, path::Path};
 use tokio::io::AsyncWriteExt;
@@ -11,6 +8,7 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     emotes::DownloadedEmotes,
     handlers::config::{CompleteConfig, FrontendConfig},
+    twitch::oauth::get_twitch_client,
     utils::pathing::cache_path,
 };
 
@@ -302,46 +300,6 @@ mod frankerfacez {
             )
             .collect())
     }
-}
-
-#[derive(Deserialize)]
-struct ClientId {
-    client_id: String,
-}
-
-async fn get_twitch_client_id(token: &str) -> Result<String> {
-    let client = Client::new();
-
-    Ok(client
-        .get("https://id.twitch.tv/oauth2/validate")
-        .header(AUTHORIZATION, &format!("OAuth {token}"))
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<ClientId>()
-        .await?
-        .client_id)
-}
-
-async fn get_twitch_client(config: &CompleteConfig) -> Result<Client> {
-    let token = config
-        .twitch
-        .token
-        .as_ref()
-        .context("Twitch token is empty")?
-        .strip_prefix("oauth:")
-        .context("token does not start with `oauth:`")?;
-
-    let client_id = get_twitch_client_id(token).await?;
-
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        HeaderValue::from_str(&format!("Bearer {token}"))?,
-    );
-    headers.insert("Client-Id", HeaderValue::from_str(&client_id)?);
-
-    Ok(Client::builder().default_headers(headers).build()?)
 }
 
 #[derive(Deserialize)]
