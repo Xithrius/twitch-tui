@@ -19,7 +19,7 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::{
-        components::{Component, Components},
+        components::{utils::centered_rect, Component, Components},
         statics::LINE_BUFFER_CAPACITY,
     },
 };
@@ -124,7 +124,11 @@ impl App {
             }
         }
 
-        if self.components.debug.is_focused() {
+        if self.components.following.is_focused() {
+            let rect = centered_rect(60, 60, 10, size);
+
+            self.components.following.draw(f, rect, None);
+        } else if self.components.debug.is_focused() {
             let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
 
             let rect = Layout::default()
@@ -142,6 +146,9 @@ impl App {
                 // Global keybinds
                 Key::Ctrl('d') => {
                     self.components.debug.toggle_focus();
+                }
+                Key::Char('f') => {
+                    self.components.following.toggle_focus();
                 }
                 _ => {
                     return match self.state {

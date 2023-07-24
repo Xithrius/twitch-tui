@@ -55,6 +55,7 @@ impl ChatWidget {
         let chat_input = ChatInputWidget::new(config.clone(), storage.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
+
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
         Self {
@@ -94,7 +95,7 @@ impl ChatWidget {
         let message_chunk_width = h_chunk[0].width as usize;
 
         let channel_switcher = if self.channel_input.is_focused() {
-            Some(centered_rect(60, 20, frame.size()))
+            Some(centered_rect(60, 20, 3, frame.size()))
         } else {
             None
         };
@@ -326,7 +327,7 @@ impl Component for ChatWidget {
                 .draw(f, v_chunks.next().copied().unwrap(), Some(emotes));
         } else if self.channel_input.is_focused() {
             self.channel_input
-                .draw(f, centered_rect(60, 20, f.size()), None);
+                .draw(f, centered_rect(60, 20, 3, f.size()), None);
         } else if self.search_input.is_focused() {
             self.search_input
                 .draw(f, v_chunks.next().copied().unwrap(), None);

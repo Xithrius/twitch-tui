@@ -214,7 +214,7 @@ impl Component for DashboardWidget {
 
         if self.channel_input.is_focused() {
             self.channel_input
-                .draw(f, centered_rect(60, 20, f.size()), emotes);
+                .draw(f, centered_rect(60, 20, 3, f.size()), emotes);
         }
     }
 

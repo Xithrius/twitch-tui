@@ -1,14 +1,13 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures::StreamExt;
 use reqwest::Client;
-use serde::Deserialize;
 use std::{borrow::BorrowMut, collections::HashMap, path::Path};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
     emotes::DownloadedEmotes,
     handlers::config::{CompleteConfig, FrontendConfig},
-    twitch::oauth::get_twitch_client,
+    twitch::oauth::{get_channel_id, get_twitch_client},
     utils::pathing::cache_path,
 };
 
@@ -302,31 +301,6 @@ mod frankerfacez {
     }
 }
 
-#[derive(Deserialize)]
-struct Channel {
-    id: String,
-}
-
-#[derive(Deserialize)]
-struct ChannelList {
-    data: Vec<Channel>,
-}
-
-async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
-    Ok(client
-        .get(format!("https://api.twitch.tv/helix/users?login={channel}",))
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<ChannelList>()
-        .await?
-        .data
-        .first()
-        .context("Could not get channel id.")?
-        .id
-        .parse()?)
-}
-
 async fn download_emotes(emotes: EmoteMap) -> DownloadedEmotes {
     let client = &Client::new();
 
@@ -390,7 +364,7 @@ fn get_enabled_emote_providers(config: &FrontendConfig) -> Vec<EmoteProvider> {
 
 pub async fn get_emotes(config: &CompleteConfig, channel: &str) -> Result<DownloadedEmotes> {
     // Reuse the same client and headers for twitch requests
-    let twitch_client = get_twitch_client(config).await?;
+    let twitch_client = get_twitch_client(config.twitch.token.clone()).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 

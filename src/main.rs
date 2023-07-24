@@ -74,6 +74,9 @@ async fn main() -> Result<()> {
 
     let mut app = App::new(config.clone());
 
+    // TODO: Move this into the following file.
+    app.components.following.get_following().await;
+
     info!("Started tokio communication channels.");
 
     if emotes::emotes_enabled(&config.frontend) {

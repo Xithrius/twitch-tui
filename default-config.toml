@@ -6,7 +6,10 @@ channel = ""
 # The IRC server to connect to.
 server = "irc.chat.twitch.tv"
 # The authentication token for the IRC.
-# Can be received here: https://twitchapps.com/tmi/
+# Can be received here for default scopes: https://twitchapps.com/tmi/
+#   ["channel:moderate", "channel_editor", "chat:edit", "chat:read", "whispers:edit", "whispers:read"]
+# And here for custom scopes: https://twitchtokengenerator.com/
+#   "user:read:follows" to see who you are following
 token = ""
 
 [terminal]
