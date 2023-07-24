@@ -25,6 +25,9 @@ use crate::{
 mod downloader;
 pub mod graphics_protocol;
 
+// HashMap of emote name, emote filename, and if the emote is an overlay
+pub type DownloadedEmotes = HashMap<String, (String, bool)>;
+
 #[derive(Debug, Copy, Clone)]
 pub struct LoadedEmote {
     /// Hash of the emote filename, used as an ID for displaying the image
@@ -42,7 +45,7 @@ pub struct LoadedEmote {
 #[derive(Default, Debug, Clone)]
 pub struct Emotes {
     /// Map of emote name, filename, and if the emote is an overlay
-    pub emotes: HashMap<String, (String, bool)>,
+    pub emotes: DownloadedEmotes,
     /// Emotes currently loaded
     pub loaded: HashSet<u32>,
     /// Info about loaded emotes
@@ -54,22 +57,6 @@ pub struct Emotes {
 }
 
 impl Emotes {
-    pub async fn new(
-        config: &CompleteConfig,
-        channel: &str,
-        cell_size: (u16, u16),
-    ) -> Result<Self> {
-        let emotes = get_emotes(config, channel).await?;
-
-        Ok(Self {
-            emotes,
-            loaded: HashSet::new(),
-            info: HashMap::new(),
-            displayed: HashMap::new(),
-            cell_size,
-        })
-    }
-
     pub fn clear(&mut self) {
         graphics_protocol::command(graphics_protocol::Clear(0, 1)).unwrap_or_default();
         self.displayed.clear();
@@ -94,14 +81,9 @@ pub const fn is_in_rect(rect: Rect, (x, y): (u16, u16), width: u16) -> bool {
     y < rect.bottom() && y > rect.top() - 1 && x < rect.right() && x + width > rect.left()
 }
 
-pub async fn send_emotes(
-    config: &CompleteConfig,
-    tx: &Sender<Emotes>,
-    channel: &str,
-    terminal_cell_size: (u16, u16),
-) {
+pub async fn send_emotes(config: &CompleteConfig, tx: &Sender<DownloadedEmotes>, channel: &str) {
     info!("Starting emotes download.");
-    match Emotes::new(config, channel, terminal_cell_size).await {
+    match get_emotes(config, channel).await {
         Ok(emotes) => {
             info!("Emotes downloaded.");
             if let Err(e) = tx.send(emotes).await {
@@ -116,18 +98,14 @@ pub async fn send_emotes(
 
 pub async fn emotes(
     config: CompleteConfig,
-    tx: Sender<Emotes>,
+    tx: Sender<DownloadedEmotes>,
     mut rx: Receiver<TwitchAction>,
-    terminal_cell_size: (u16, u16),
 ) {
-    send_emotes(&config, &tx, &config.twitch.channel, terminal_cell_size).await;
+    send_emotes(&config, &tx, &config.twitch.channel).await;
 
     loop {
-        match rx.recv().await {
-            Ok(TwitchAction::Join(channel)) => {
-                send_emotes(&config, &tx, &channel, terminal_cell_size).await;
-            }
-            Ok(_) | Err(_) => {}
+        if let Ok(TwitchAction::Join(channel)) = rx.recv().await {
+            send_emotes(&config, &tx, &channel).await;
         }
     }
 }

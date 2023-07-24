@@ -209,8 +209,7 @@ impl Load {
                 if decoder.has_animation() {
                     // Some animated webp images have a default white background color
                     // We replace it by a transparent background
-                    // TODO: uncomment this line once PR below is merged.
-                    // https://github.com/image-rs/image/pull/1907
+                    // TODO: uncomment this line once image-rs is updated from 0.24.6.
                     // decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
                     Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
                 } else {

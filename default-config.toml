@@ -74,12 +74,14 @@ blinking_cursor = false
 inverted_scrolling = false
 # If scroll offset integer should be shown.
 show_scroll_offset = true
-# If twitch emotes should be displayed (requires kitty terminal).
+# If Twitch emotes should be displayed (requires kitty terminal).
 twitch_emotes = false
-# If betterttv emotes should be displayed (requires kitty terminal).
+# If BetterTTV emotes should be displayed (requires kitty terminal).
 betterttv_emotes = false
-# If 7tv emotes should be displayed (requires kitty terminal).
+# If 7TV emotes should be displayed (requires kitty terminal).
 seventv_emotes = false
+# If FrankerFaceZ emotes should be displayed (requires kitty terminal).
+frankerfacez_emotes = false
 # Channel names to always be displayed in the start screen (dashboard).
 # Example: ["Xithrius", "RocketLeague", "AntVenom"]
 favorite_channels = []

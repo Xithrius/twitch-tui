@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
-    let app = App::new(config.clone());
+    let mut app = App::new(config.clone());
 
     info!("Started tokio communication channels.");
 
@@ -84,8 +84,10 @@ async fn main() -> Result<()> {
         // as writing on stdout on a different thread can interfere.
         match get_terminal_cell_size() {
             Ok(cell_size) => {
+                app.emotes.cell_size = cell_size;
+
                 tokio::task::spawn(async move {
-                    emotes::emotes(cloned_config, emotes_tx, twitch_rx, cell_size).await;
+                    emotes::emotes(cloned_config, emotes_tx, twitch_rx).await;
                 });
             }
             Err(e) => {

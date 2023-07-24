@@ -122,6 +122,8 @@ pub struct FrontendConfig {
     pub betterttv_emotes: bool,
     /// If 7tv emotes should be displayed (requires kitty terminal).
     pub seventv_emotes: bool,
+    /// If FrankerFacez emotes should be displayed (requires kitty terminal).
+    pub frankerfacez_emotes: bool,
     /// Channels to always be displayed in the start screen.
     pub favorite_channels: Vec<String>,
     /// The amount of recent channels that should be shown on the start screen.
@@ -175,6 +177,7 @@ impl Default for FrontendConfig {
             twitch_emotes: false,
             betterttv_emotes: false,
             seventv_emotes: false,
+            frankerfacez_emotes: false,
             favorite_channels: vec![],
             recent_channel_count: 5,
             border_type: Border::default(),

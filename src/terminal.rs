@@ -5,7 +5,7 @@ use tui::layout::Rect;
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::Emotes,
+    emotes::DownloadedEmotes,
     handlers::{
         app::App,
         config::CompleteConfig,
@@ -29,7 +29,7 @@ pub async fn ui_driver(
     mut app: App,
     tx: Sender<TwitchAction>,
     mut rx: Receiver<MessageData>,
-    mut erx: Receiver<Emotes>,
+    mut erx: Receiver<DownloadedEmotes>,
 ) {
     info!("Started UI driver.");
 
@@ -56,7 +56,11 @@ pub async fn ui_driver(
 
     loop {
         if let Ok(e) = erx.try_recv() {
-            app.emotes = e;
+            // If the user switched channels too quickly,
+            // emotes will be from the wrong channel for a short time.
+            // Clear the emotes to use the ones from the right channel.
+            app.emotes.unload();
+            app.emotes.emotes = e;
             for message in app.messages.borrow_mut().iter_mut() {
                 message.parse_emotes(&mut app.emotes);
             }
