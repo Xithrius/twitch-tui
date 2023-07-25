@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
@@ -13,7 +15,10 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::oauth::{get_channel_id, get_twitch_client, get_user_following, FollowingList},
+    twitch::{
+        oauth::{get_channel_id, get_twitch_client, get_user_following, FollowingList},
+        TwitchAction,
+    },
     ui::{components::Component, statics::NAME_MAX_CHARACTERS},
     utils::text::{title_line, TitleStyle},
 };
@@ -110,10 +115,15 @@ impl Component for FollowingWidget {
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
+            .highlight_style(
+                Style::default()
+                    .bg(Color::LightGreen)
+                    .add_modifier(Modifier::BOLD),
+            )
             .widths(&constraint_binding);
 
         f.render_widget(Clear, area);
-        f.render_widget(table, area);
+        f.render_stateful_widget(table, area, &mut self.state);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
@@ -121,11 +131,29 @@ impl Component for FollowingWidget {
             match key {
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Esc => {
+                    self.unselect();
                     self.toggle_focus();
 
                     return Some(TerminalAction::BackOneLayer);
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                Key::ScrollDown => self.next(),
+                Key::ScrollUp => self.previous(),
+                Key::Enter => {
+                    if let Some(i) = self.state.selected() {
+                        self.toggle_focus();
+
+                        self.unselect();
+
+                        let selected_channel = &self.following.data.index(i).broadcaster_login;
+
+                        self.config.borrow_mut().twitch.channel = selected_channel.clone();
+
+                        return Some(TerminalAction::Enter(TwitchAction::Join(
+                            selected_channel.clone(),
+                        )));
+                    }
+                }
                 _ => {}
             }
         }

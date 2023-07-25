@@ -143,25 +143,25 @@ impl App {
     pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             if self.components.debug.is_focused() {
-                self.components.debug.event(event);
+                return self.components.debug.event(event);
             } else if self.components.following.is_focused() {
-                self.components.following.event(event);
-            } else {
-                match key {
-                    // Global keybinds
-                    Key::Ctrl('d') => {
-                        self.components.debug.toggle_focus();
-                    }
-                    Key::Char('f') => {
-                        self.components.following.toggle_focus();
-                    }
-                    _ => {
-                        return match self.state {
-                            State::Dashboard => self.components.dashboard.event(event),
-                            State::Normal => self.components.chat.event(event),
-                            State::Help => self.components.help.event(event),
-                        };
-                    }
+                return self.components.following.event(event);
+            }
+
+            match key {
+                // Global keybinds
+                Key::Ctrl('d') => {
+                    self.components.debug.toggle_focus();
+                }
+                Key::Char('f') => {
+                    self.components.following.toggle_focus();
+                }
+                _ => {
+                    return match self.state {
+                        State::Dashboard => self.components.dashboard.event(event),
+                        State::Normal => self.components.chat.event(event),
+                        State::Help => self.components.help.event(event),
+                    };
                 }
             }
         }

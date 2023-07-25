@@ -8,9 +8,13 @@ use tui::{
 
 use crate::{
     emotes::Emotes,
-    handlers::{config::SharedCompleteConfig, user_input::events::{Key, Event}},
+    handlers::{
+        config::SharedCompleteConfig,
+        user_input::events::{Event, Key},
+    },
+    terminal::TerminalAction,
     ui::components::Component,
-    utils::text::{title_line, TitleStyle}, terminal::TerminalAction,
+    utils::text::{title_line, TitleStyle},
 };
 
 #[derive(Debug, Clone)]
@@ -61,15 +65,15 @@ impl Component for DebugWidget {
         f.render_widget(table, area);
     }
 
-        fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Esc => {
                     self.toggle_focus();
 
-                    return Some(TerminalAction::BackOneLayer)
-                },
+                    return Some(TerminalAction::BackOneLayer);
+                }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 _ => {}
             }
