@@ -75,7 +75,7 @@ pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
         .parse()?)
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 #[allow(dead_code)]
 pub struct FollowingUser {
     broadcaster_id: String,
@@ -84,13 +84,13 @@ pub struct FollowingUser {
     followed_at: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 #[allow(dead_code)]
 struct Pagination {
     cursor: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 #[allow(dead_code)]
 pub struct FollowingList {
     total: u64,

@@ -2,15 +2,19 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Clear, Row, Table},
+    widgets::{Block, Borders, Clear, Row, Table, TableState},
     Frame,
 };
 
 use crate::{
     emotes::Emotes,
-    handlers::config::SharedCompleteConfig,
+    handlers::{
+        config::SharedCompleteConfig,
+        user_input::events::{Event, Key},
+    },
+    terminal::TerminalAction,
     twitch::oauth::{get_channel_id, get_twitch_client, get_user_following, FollowingList},
-    ui::components::Component,
+    ui::{components::Component, statics::NAME_MAX_CHARACTERS},
     utils::text::{title_line, TitleStyle},
 };
 
@@ -18,7 +22,8 @@ use crate::{
 pub struct FollowingWidget {
     config: SharedCompleteConfig,
     focused: bool,
-    following: Option<FollowingList>,
+    following: FollowingList,
+    state: TableState,
 }
 
 impl FollowingWidget {
@@ -26,32 +31,42 @@ impl FollowingWidget {
         Self {
             config,
             focused: false,
-            following: None,
+            following: FollowingList::default(),
+            state: TableState::default(),
         }
     }
 
-    // pub fn get_following(&mut self) {
-    //     let oauth_token = self.config.borrow().twitch.token.clone();
-    //     let app_user = self.config.borrow().twitch.username.clone();
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.following.data.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
 
-    //     let output = tokio::task::spawn_blocking(move || {
-    //         let rt = tokio::runtime::Runtime::new().unwrap();
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.following.data.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
 
-    //         rt.block_on(async {
-    //             let client = get_twitch_client(oauth_token).await.unwrap();
-
-    //             let user_id = get_channel_id(&client, &app_user).await.unwrap();
-
-    //             Some(get_user_following(&client, user_id).await)
-    //         })
-    //     });
-
-    //     mem::drop(output.and_then(|x| async move {
-    //         self.following = x;
-
-    //         Ok(())
-    //     }));
-    // }
+    fn unselect(&mut self) {
+        self.state.select(None);
+    }
 
     pub async fn get_following(&mut self) {
         let oauth_token = self.config.borrow().twitch.token.clone();
@@ -61,7 +76,7 @@ impl FollowingWidget {
 
         let user_id = get_channel_id(&client, &app_user).await.unwrap();
 
-        self.following = Some(get_user_following(&client, user_id).await);
+        self.following = get_user_following(&client, user_id).await;
     }
 
     pub const fn is_focused(&self) -> bool {
@@ -77,13 +92,13 @@ impl Component for FollowingWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
         let mut rows = vec![];
 
-        if let Some(followed_channels) = self.following.clone() {
-            for channel in followed_channels.data {
-                rows.push(Row::new(vec![channel.broadcaster_name.clone()]));
-            }
+        for channel in self.following.clone().data {
+            rows.push(Row::new(vec![channel.broadcaster_name.clone()]));
         }
 
         let title_binding = [TitleStyle::Single("Following")];
+
+        let constraint_binding = [Constraint::Length(NAME_MAX_CHARACTERS as u16)];
 
         let table = Table::new(rows)
             .block(
@@ -95,9 +110,26 @@ impl Component for FollowingWidget {
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .widths(&[Constraint::Length(10), Constraint::Length(10)]);
+            .widths(&constraint_binding);
 
         f.render_widget(Clear, area);
         f.render_widget(table, area);
+    }
+
+    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if let Event::Input(key) = event {
+            match key {
+                Key::Char('q') => return Some(TerminalAction::Quit),
+                Key::Esc => {
+                    self.toggle_focus();
+
+                    return Some(TerminalAction::BackOneLayer);
+                }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                _ => {}
+            }
+        }
+
+        None
     }
 }

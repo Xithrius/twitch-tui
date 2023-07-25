@@ -284,10 +284,7 @@ impl Component for ChatWidget {
                 Block::default()
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into())
-                    .title(chat_title), // .style(match self.theme {
-                                        //     Theme::Light => BORDER_NAME_LIGHT,
-                                        //     _ => BORDER_NAME_DARK,
-                                        // }),
+                    .title(chat_title),
             )
             .style(Style::default().fg(Color::White));
 

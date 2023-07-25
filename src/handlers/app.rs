@@ -125,7 +125,7 @@ impl App {
         }
 
         if self.components.following.is_focused() {
-            let rect = centered_rect(60, 60, 10, size);
+            let rect = centered_rect(60, 60, 20, size);
 
             self.components.following.draw(f, rect, None);
         } else if self.components.debug.is_focused() {
@@ -142,20 +142,26 @@ impl App {
 
     pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            match key {
-                // Global keybinds
-                Key::Ctrl('d') => {
-                    self.components.debug.toggle_focus();
-                }
-                Key::Char('f') => {
-                    self.components.following.toggle_focus();
-                }
-                _ => {
-                    return match self.state {
-                        State::Dashboard => self.components.dashboard.event(event),
-                        State::Normal => self.components.chat.event(event),
-                        State::Help => self.components.help.event(event),
-                    };
+            if self.components.debug.is_focused() {
+                self.components.debug.event(event);
+            } else if self.components.following.is_focused() {
+                self.components.following.event(event);
+            } else {
+                match key {
+                    // Global keybinds
+                    Key::Ctrl('d') => {
+                        self.components.debug.toggle_focus();
+                    }
+                    Key::Char('f') => {
+                        self.components.following.toggle_focus();
+                    }
+                    _ => {
+                        return match self.state {
+                            State::Dashboard => self.components.dashboard.event(event),
+                            State::Normal => self.components.chat.event(event),
+                            State::Help => self.components.help.event(event),
+                        };
+                    }
                 }
             }
         }
