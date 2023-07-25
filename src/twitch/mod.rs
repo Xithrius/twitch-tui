@@ -1,5 +1,6 @@
 mod badges;
 mod connection;
+pub mod oauth;
 
 use std::{borrow::Borrow, collections::HashMap};
 

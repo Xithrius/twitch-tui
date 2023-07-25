@@ -4,6 +4,7 @@ mod chat_input;
 mod dashboard;
 mod debug;
 mod error;
+mod following;
 mod help;
 mod message_search;
 mod state_tabs;
@@ -34,6 +35,8 @@ use crate::{
     terminal::TerminalAction,
 };
 
+use self::following::FollowingWidget;
+
 pub trait Component {
     #[allow(unused_variables)]
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
@@ -55,17 +58,16 @@ pub trait Component {
 }
 
 pub struct Components {
-    // Error window(s)
-    pub error: ErrorWidget,
-
-    // Tabs
+    // Partial window widgets
     pub tabs: StateTabsWidget,
+    pub debug: DebugWidget,
+    pub following: FollowingWidget,
 
     // Full window widgets
     pub chat: ChatWidget,
     pub dashboard: DashboardWidget,
-    pub debug: DebugWidget,
     pub help: HelpWidget,
+    pub error: ErrorWidget,
 }
 
 impl Components {
@@ -76,12 +78,14 @@ impl Components {
         messages: SharedMessages,
     ) -> Self {
         Self {
-            error: ErrorWidget::new(),
             tabs: StateTabsWidget::new(config.clone()),
+            debug: DebugWidget::new(config.clone()),
+            following: FollowingWidget::new(config.clone()),
+
             chat: ChatWidget::new(config.clone(), messages, &storage, filters),
             dashboard: DashboardWidget::new(config.clone(), storage),
-            debug: DebugWidget::new(config.clone()),
             help: HelpWidget::new(config.clone()),
+            error: ErrorWidget::new(),
         }
     }
 }
