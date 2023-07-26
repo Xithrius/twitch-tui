@@ -70,10 +70,6 @@ pub async fn ui_driver(
             info.parse_emotes(&mut app.emotes);
             app.messages.borrow_mut().push_front(info);
 
-            // If scrolling is enabled, pad for more messages.
-            if app.components.chat.scroll_offset.get_offset() > 0 {
-                app.components.chat.scroll_offset.up();
-            }
         }
 
         if let Some(event) = events.next().await {

@@ -176,8 +176,6 @@ impl App {
     pub fn clear_messages(&mut self) {
         self.emotes.clear();
         self.messages.borrow_mut().clear();
-
-        self.components.chat.scroll_offset.jump_to(0);
     }
 
     pub fn get_previous_state(&self) -> Option<State> {
