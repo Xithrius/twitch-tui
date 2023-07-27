@@ -1,13 +1,13 @@
 use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
-use log::{info, warn};
+use log::warn;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, ListState},
+    widgets::{block::Position, Block, Borders, List, ListItem},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -21,7 +21,10 @@ use crate::{
         filters::SharedFilters,
         state::State,
         storage::SharedStorage,
-        user_input::events::{Event, Key},
+        user_input::{
+            events::{Event, Key},
+            scrolling::Scrolling,
+        },
     },
     terminal::TerminalAction,
     ui::components::{
@@ -38,7 +41,7 @@ pub struct ChatWidget {
     channel_input: ChannelSwitcherWidget,
     search_input: MessageSearchWidget,
     filters: SharedFilters,
-    pub state: ListState,
+    pub scroll_offset: Scrolling,
     // theme: Theme,
 }
 
@@ -53,6 +56,8 @@ impl ChatWidget {
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
 
+        let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
+
         Self {
             config,
             messages,
@@ -60,40 +65,8 @@ impl ChatWidget {
             channel_input,
             search_input,
             filters,
-            state: ListState::default(),
+            scroll_offset,
         }
-    }
-
-    fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.messages.borrow().len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.messages.borrow().len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn unselect(&mut self) {
-        self.state.select(None);
     }
 
     pub fn get_messages<'a, B: Backend>(
@@ -110,6 +83,8 @@ impl ChatWidget {
         let mut messages = VecDeque::new();
 
         let general_chunk_height = area.height as usize - 2;
+
+        let mut scroll = self.scroll_offset.get_offset();
 
         // Horizontal chunks represents the list within the main chat window.
         let h_chunk = Layout::default()
@@ -136,6 +111,16 @@ impl ChatWidget {
                 .borrow()
                 .contaminated(data.payload.clone().as_str())
             {
+                continue;
+            }
+
+            // Offsetting of messages for scrolling through said messages
+            if scroll > 0 {
+                scroll -= 1;
+                hide_message_emotes(&data.emotes, &mut emotes.displayed, data.payload.width());
+                // let mut map = HashMap::new();
+                // hide_message_emotes(&data.emotes, &mut map, data.payload.width());
+
                 continue;
             }
 
@@ -202,6 +187,13 @@ impl ChatWidget {
                         break 'outer;
                     }
                 }
+            }
+        }
+
+        // Padding with empty rows so chat can go from bottom to top.
+        if general_chunk_height > total_row_height {
+            for _ in 0..(general_chunk_height - total_row_height) {
+                messages.push_front(Line::from(vec![Span::raw("")]));
             }
         }
 
@@ -294,14 +286,38 @@ impl Component for ChatWidget {
                     .border_type(self.config.borrow().frontend.border_type.clone().into())
                     .title(chat_title),
             )
-            .highlight_style(
-                Style::default()
-                    .bg(Color::LightGreen)
-                    .add_modifier(Modifier::BOLD),
-            )
             .style(Style::default().fg(Color::White));
 
-        f.render_stateful_widget(list, *first_v_chunk, &mut self.state);
+        f.render_widget(list, *first_v_chunk);
+
+        if self.config.borrow().frontend.show_scroll_offset {
+            // Cannot scroll past the first message
+            let message_amount = messages_data.len().saturating_sub(1);
+
+            let title_binding = format!(
+                "{} / {}",
+                self.scroll_offset.get_offset(),
+                message_amount.to_string().as_str()
+            );
+
+            let title = [TitleStyle::Single(&title_binding)];
+
+            let bottom_block = Block::default()
+                .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+                .border_type(self.config.borrow().frontend.border_type.clone().into())
+                .title(title_line(&title, Style::default()))
+                .title_position(Position::Bottom)
+                .title_alignment(Alignment::Right);
+
+            let rect = Rect::new(
+                first_v_chunk.x,
+                first_v_chunk.bottom() - 1,
+                first_v_chunk.width,
+                1,
+            );
+
+            f.render_widget(bottom_block, rect);
+        }
 
         if self.chat_input.is_focused() {
             self.chat_input
@@ -317,6 +333,9 @@ impl Component for ChatWidget {
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            let limit =
+                self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
+
             if self.chat_input.is_focused() {
                 self.chat_input.event(event)
             } else if self.channel_input.is_focused() {
@@ -336,29 +355,27 @@ impl Component for ChatWidget {
                     Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                     Key::Char('q') => return Some(TerminalAction::Quit),
                     Key::Esc => {
-                        if self.state.selected().is_none() {
+                        if self.scroll_offset.get_offset() == 0 {
                             return Some(TerminalAction::BackOneLayer);
                         }
 
-                        self.unselect();
+                        self.scroll_offset.jump_to(0);
                     }
                     Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                    Key::ScrollDown => {
-                        info!("{:?}", self.state.selected());
-
-                        if self.config.borrow().frontend.inverted_scrolling {
-                            self.previous();
-                        } else {
-                            self.next();
+                    Key::ScrollUp => {
+                        if limit {
+                            self.scroll_offset.up();
+                        } else if self.scroll_offset.is_inverted() {
+                            self.scroll_offset.down();
                         }
                     }
-                    Key::ScrollUp => {
-                        info!("{:?}", self.state.selected());
-
-                        if self.config.borrow().frontend.inverted_scrolling {
-                            self.next();
+                    Key::ScrollDown => {
+                        if self.scroll_offset.is_inverted() {
+                            if limit {
+                                self.scroll_offset.up();
+                            }
                         } else {
-                            self.previous();
+                            self.scroll_offset.down();
                         }
                     }
                     _ => {}
