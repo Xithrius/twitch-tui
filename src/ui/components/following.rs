@@ -3,8 +3,9 @@ use std::ops::Index;
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
+    prelude::Alignment,
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Clear, Row, Table, TableState},
+    widgets::{block::Position, Block, Borders, Clear, Row, Table, TableState},
     Frame,
 };
 
@@ -118,6 +119,25 @@ impl Component for FollowingWidget {
 
         f.render_widget(Clear, area);
         f.render_stateful_widget(table, area, &mut self.state);
+
+        let title_binding = format!(
+            "{} / {}",
+            self.state.selected().map_or(1, |i| i + 1),
+            self.following.data.len()
+        );
+
+        let title = [TitleStyle::Single(&title_binding)];
+
+        let bottom_block = Block::default()
+            .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .title(title_line(&title, Style::default()))
+            .title_position(Position::Bottom)
+            .title_alignment(Alignment::Right);
+
+        let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+
+        f.render_widget(bottom_block, rect);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
