@@ -354,6 +354,13 @@ impl Component for ChatWidget {
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
                     Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                     Key::Char('q') => return Some(TerminalAction::Quit),
+                    Key::Char('G') => {
+                        self.scroll_offset.jump_to(0);
+                    }
+                    Key::Char('g') => {
+                        // TODO: Make this not jump to nothingness
+                        self.scroll_offset.jump_to(self.messages.borrow().len());
+                    }
                     Key::Esc => {
                         if self.scroll_offset.get_offset() == 0 {
                             return Some(TerminalAction::BackOneLayer);

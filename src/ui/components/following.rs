@@ -45,7 +45,7 @@ impl FollowingWidget {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.following.data.len() - 1 {
-                    0
+                    self.following.data.len() - 1
                 } else {
                     i + 1
                 }
@@ -56,16 +56,10 @@ impl FollowingWidget {
     }
 
     fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.following.data.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
+        let i = self
+            .state
+            .selected()
+            .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
         self.state.select(Some(i));
     }
 
