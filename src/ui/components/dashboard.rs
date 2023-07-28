@@ -18,10 +18,12 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::TwitchAction,
+    twitch::{oauth::FollowingList, TwitchAction},
     ui::components::{utils::centered_rect, ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
+
+use super::following::FollowingWidget;
 
 const DASHBOARD_TITLE: [&str; 5] = [
     "   __           _ __       __          __        _ ",
@@ -35,16 +37,23 @@ pub struct DashboardWidget {
     config: SharedCompleteConfig,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
+    following: FollowingWidget,
 }
 
 impl DashboardWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+    pub fn new(
+        config: SharedCompleteConfig,
+        storage: SharedStorage,
+        following: FollowingList,
+    ) -> Self {
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
+        let following = FollowingWidget::new(config.clone(), following);
 
         Self {
             config,
             storage,
             channel_input,
+            following,
         }
     }
 
@@ -215,6 +224,9 @@ impl Component for DashboardWidget {
         if self.channel_input.is_focused() {
             self.channel_input
                 .draw(f, centered_rect(60, 20, 3, f.size()), emotes);
+        } else if self.following.is_focused() {
+            self.following
+                .draw(f, centered_rect(60, 60, 20, f.size()), None);
         }
     }
 
@@ -222,12 +234,15 @@ impl Component for DashboardWidget {
         if let Event::Input(key) = event {
             if self.channel_input.is_focused() {
                 return self.channel_input.event(event);
+            } else if self.following.is_focused() {
+                return self.following.event(event);
             }
 
             match key {
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Char('s') => self.channel_input.toggle_focus(),
+                Key::Char('f') => self.following.toggle_focus(),
                 Key::Enter => {
                     let action = TerminalAction::Enter(TwitchAction::Join(
                         self.config.borrow().twitch.channel.clone(),

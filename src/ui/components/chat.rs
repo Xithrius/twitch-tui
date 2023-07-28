@@ -27,9 +27,10 @@ use crate::{
         },
     },
     terminal::TerminalAction,
+    twitch::oauth::FollowingList,
     ui::components::{
-        utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget, Component,
-        MessageSearchWidget,
+        following::FollowingWidget, utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget,
+        Component, MessageSearchWidget,
     },
     utils::text::{title_line, TitleStyle},
 };
@@ -40,6 +41,7 @@ pub struct ChatWidget {
     chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
     search_input: MessageSearchWidget,
+    following: FollowingWidget,
     filters: SharedFilters,
     pub scroll_offset: Scrolling,
     // theme: Theme,
@@ -51,10 +53,12 @@ impl ChatWidget {
         messages: SharedMessages,
         storage: &SharedStorage,
         filters: SharedFilters,
+        following: FollowingList,
     ) -> Self {
         let chat_input = ChatInputWidget::new(config.clone(), storage.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
+        let following = FollowingWidget::new(config.clone(), following);
 
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 
@@ -64,6 +68,7 @@ impl ChatWidget {
             chat_input,
             channel_input,
             search_input,
+            following,
             filters,
             scroll_offset,
         }
@@ -328,6 +333,9 @@ impl Component for ChatWidget {
         } else if self.search_input.is_focused() {
             self.search_input
                 .draw(f, v_chunks.next().copied().unwrap(), None);
+        } else if self.following.is_focused() {
+            self.following
+                .draw(f, centered_rect(60, 60, 20, f.size()), None);
         }
     }
 
@@ -342,6 +350,8 @@ impl Component for ChatWidget {
                 self.channel_input.event(event)
             } else if self.search_input.is_focused() {
                 self.search_input.event(event)
+            } else if self.following.is_focused() {
+                self.following.event(event)
             } else {
                 match key {
                     Key::Char('i' | 'c') => self.chat_input.toggle_focus(),
@@ -349,6 +359,7 @@ impl Component for ChatWidget {
                     Key::Char('/') => self.chat_input.toggle_focus_with("/"),
                     Key::Char('s') => self.channel_input.toggle_focus(),
                     Key::Ctrl('f') => self.search_input.toggle_focus(),
+                    Key::Char('f') => self.following.toggle_focus(),
                     Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
                     Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),

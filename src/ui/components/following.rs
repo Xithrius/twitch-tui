@@ -16,10 +16,7 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::{
-        oauth::{get_channel_id, get_twitch_client, get_user_following, FollowingList},
-        TwitchAction,
-    },
+    twitch::{oauth::FollowingList, TwitchAction},
     ui::{components::Component, statics::NAME_MAX_CHARACTERS},
     utils::text::{title_line, TitleStyle},
 };
@@ -33,11 +30,11 @@ pub struct FollowingWidget {
 }
 
 impl FollowingWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCompleteConfig, following: FollowingList) -> Self {
         Self {
             config,
             focused: false,
-            following: FollowingList::default(),
+            following,
             state: TableState::default(),
         }
     }
@@ -66,17 +63,6 @@ impl FollowingWidget {
 
     fn unselect(&mut self) {
         self.state.select(None);
-    }
-
-    pub async fn get_following(&mut self) {
-        let oauth_token = self.config.borrow().twitch.token.clone();
-        let app_user = self.config.borrow().twitch.username.clone();
-
-        let client = get_twitch_client(oauth_token).await.unwrap();
-
-        let user_id = get_channel_id(&client, &app_user).await.unwrap();
-
-        self.following = get_user_following(&client, user_id).await;
     }
 
     pub const fn is_focused(&self) -> bool {

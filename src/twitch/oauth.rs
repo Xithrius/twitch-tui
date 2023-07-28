@@ -5,6 +5,8 @@ use reqwest::{
 };
 use serde::Deserialize;
 
+use crate::handlers::config::TwitchConfig;
+
 #[derive(Deserialize)]
 #[allow(dead_code)]
 pub struct ClientId {
@@ -111,4 +113,15 @@ pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList 
         .json::<FollowingList>()
         .await
         .unwrap()
+}
+
+pub async fn get_following(twitch_config: &TwitchConfig) -> FollowingList {
+    let oauth_token = twitch_config.token.clone();
+    let app_user = twitch_config.username.clone();
+
+    let client = get_twitch_client(oauth_token).await.unwrap();
+
+    let user_id = get_channel_id(&client, &app_user).await.unwrap();
+
+    get_user_following(&client, user_id).await
 }

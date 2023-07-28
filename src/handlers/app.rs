@@ -18,8 +18,9 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
+    twitch::oauth::FollowingList,
     ui::{
-        components::{utils::centered_rect, Component, Components},
+        components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
     },
 };
@@ -58,7 +59,7 @@ macro_rules! shared {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig) -> Self {
+    pub fn new(config: CompleteConfig, following: FollowingList) -> Self {
         let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
@@ -83,6 +84,7 @@ impl App {
             storage.clone(),
             filters.clone(),
             messages.clone(),
+            following,
         );
 
         Self {
@@ -124,11 +126,7 @@ impl App {
             }
         }
 
-        if self.components.following.is_focused() {
-            let rect = centered_rect(60, 60, 20, size);
-
-            self.components.following.draw(f, rect, None);
-        } else if self.components.debug.is_focused() {
+        if self.components.debug.is_focused() {
             let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
 
             let rect = Layout::default()
@@ -144,17 +142,12 @@ impl App {
         if let Event::Input(key) = event {
             if self.components.debug.is_focused() {
                 return self.components.debug.event(event);
-            } else if self.components.following.is_focused() {
-                return self.components.following.event(event);
             }
 
             match key {
                 // Global keybinds
                 Key::Ctrl('d') => {
                     self.components.debug.toggle_focus();
-                }
-                Key::Char('f') => {
-                    self.components.following.toggle_focus();
                 }
                 _ => {
                     return match self.state {

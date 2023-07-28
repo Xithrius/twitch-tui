@@ -11,7 +11,7 @@
     clippy::too_many_lines
 )]
 
-use crate::emotes::graphics_protocol::get_terminal_cell_size;
+use crate::{emotes::graphics_protocol::get_terminal_cell_size, twitch::oauth::get_following};
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
@@ -72,10 +72,9 @@ async fn main() -> Result<()> {
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
-    let mut app = App::new(config.clone());
+    let following = get_following(&config.twitch.clone()).await;
 
-    // TODO: Move this into the following file.
-    app.components.following.get_following().await;
+    let mut app = App::new(config.clone(), following);
 
     info!("Started tokio communication channels.");
 

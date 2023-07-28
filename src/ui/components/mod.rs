@@ -33,9 +33,8 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
+    twitch::oauth::FollowingList,
 };
-
-use self::following::FollowingWidget;
 
 pub trait Component {
     #[allow(unused_variables)]
@@ -61,7 +60,6 @@ pub struct Components {
     // Partial window widgets
     pub tabs: StateTabsWidget,
     pub debug: DebugWidget,
-    pub following: FollowingWidget,
 
     // Full window widgets
     pub chat: ChatWidget,
@@ -76,14 +74,20 @@ impl Components {
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,
+        following: FollowingList,
     ) -> Self {
         Self {
             tabs: StateTabsWidget::new(config.clone()),
             debug: DebugWidget::new(config.clone()),
-            following: FollowingWidget::new(config.clone()),
 
-            chat: ChatWidget::new(config.clone(), messages, &storage, filters),
-            dashboard: DashboardWidget::new(config.clone(), storage),
+            chat: ChatWidget::new(
+                config.clone(),
+                messages,
+                &storage,
+                filters,
+                following.clone(),
+            ),
+            dashboard: DashboardWidget::new(config.clone(), storage, following),
             help: HelpWidget::new(config.clone()),
             error: ErrorWidget::new(),
         }
