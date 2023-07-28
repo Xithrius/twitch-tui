@@ -165,7 +165,11 @@ impl Component for FollowingWidget {
         let title_binding = format!(
             "{} / {}",
             self.state.selected().map_or(1, |i| i + 1),
-            self.following.data.len()
+            if let Some(v) = &self.filtered_following {
+                v.len()
+            } else {
+                self.following.data.len()
+            }
         );
 
         let title = [TitleStyle::Single(&title_binding)];
