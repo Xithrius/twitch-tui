@@ -89,7 +89,7 @@ pub struct FollowingUser {
 #[derive(Deserialize, Debug, Clone, Default)]
 #[allow(dead_code)]
 struct Pagination {
-    cursor: String,
+    cursor: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
