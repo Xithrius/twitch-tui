@@ -343,6 +343,53 @@ impl ToVec<(String, String)> for TerminalConfig {
     }
 }
 
+impl ToVec<(String, String)> for StorageConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Channels enabled".to_string(), self.channels.to_string()),
+            ("Mentions enabled".to_string(), self.mentions.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for FiltersConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Enabled".to_string(), self.enabled.to_string()),
+            ("Reversed".to_string(), self.reversed.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for FrontendConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Show datetimes".to_string(), self.show_datetimes.to_string()),
+            ("Datetime format".to_string(), self.datetime_format.to_string()),
+            ("Username shown".to_string(), self.username_shown.to_string()),
+            // ("".to_string(), self.palette.to_string()),
+            ("Title shown".to_string(), self.title_shown.to_string()),
+            ("Margin".to_string(), self.margin.to_string()),
+            ("Badges".to_string(), self.badges.to_string()),
+            // ("".to_string(), self.theme.to_string()),
+            ("Username highlight".to_string(), self.username_highlight.to_string()),
+            ("State tabs".to_string(), self.state_tabs.to_string()),
+            // ("".to_string(), self.cursor_shape.to_string()),
+            ("Blinking cursor".to_string(), self.blinking_cursor.to_string()),
+            ("Inverted scrolling".to_string(), self.inverted_scrolling.to_string()),
+            ("Scroll offset shown".to_string(), self.show_scroll_offset.to_string()),
+            ("Twitch emotes".to_string(), self.twitch_emotes.to_string()),
+            ("BetterTTV emotes".to_string(), self.betterttv_emotes.to_string()),
+            ("SevenTV emotes".to_string(), self.seventv_emotes.to_string()),
+            ("FrankerFacez emotes".to_string(), self.frankerfacez_emotes.to_string()),
+            // ("".to_string(), self.favorite_channels.to_string()),
+            ("Recent channel count".to_string(), self.recent_channel_count.to_string()),
+            // ("".to_string(), self.border_type.to_string()),
+            ("Right aligned usernames".to_string(), self.right_align_usernames.to_string()),
+        ]
+    }
+}
+
 fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
     let toml_string = toml::to_string(&config)?;
     let mut file = File::create(path)?;

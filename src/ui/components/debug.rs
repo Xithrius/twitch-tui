@@ -45,6 +45,9 @@ impl DebugWidget {
         vec![
             ("Twitch Config".to_string(), c.twitch.to_vec()),
             ("Terminal Config".to_string(), c.terminal.to_vec()),
+            ("Storage Config".to_string(), c.storage.to_vec()),
+            ("Filter Config".to_string(), c.filters.to_vec()),
+            ("Frontend Config".to_string(), c.frontend.to_vec()),
         ]
     }
 }
