@@ -171,7 +171,11 @@ impl MessageData {
             .to_string();
 
         // Add 2 for the " " and ":"
-        let prefix_len = time_sent.len() + self.author.len() + 2;
+        let prefix_len = if frontend_config.username_shown {
+            time_sent.len() + self.author.len() + 2
+        } else {
+            time_sent.len()
+        };
 
         // Width of the window - window margin on both sides
         let wrap_limit = {
@@ -188,20 +192,29 @@ impl MessageData {
         }
         let mut lines = wrapped_message.into_iter();
 
-        let username_alignment = if frontend_config.right_align_usernames {
-            NAME_MAX_CHARACTERS - self.author.len() + 1
+        let username_alignment = if frontend_config.username_shown {
+            if frontend_config.right_align_usernames {
+                NAME_MAX_CHARACTERS - self.author.len() + 1
+            } else {
+                1
+            }
         } else {
-            1
+            0
         };
 
         let mut first_row = vec![
             // Datetime
             Span::styled(time_sent, datetime_theme),
             Span::raw(" ".repeat(username_alignment)),
-            // Author
-            Span::styled(&self.author, author_theme),
-            Span::raw(":"),
         ];
+
+        if frontend_config.username_shown {
+            first_row.extend(vec![
+                // Author
+                Span::styled(&self.author, author_theme),
+                Span::raw(":"),
+            ]);
+        }
 
         let mut next_index = 0;
 
