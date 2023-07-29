@@ -19,8 +19,8 @@ async fn create_client_stream(config: CompleteConfig) -> Result<(Client, ClientS
         server: Some(config.twitch.server.clone()),
         channels: vec![format!("#{}", config.twitch.channel)],
         password: config.twitch.token.clone(),
-        port: Some(6667),
-        use_tls: Some(false),
+        port: Some(6697),
+        use_tls: Some(true),
         ping_timeout: Some(10),
         ping_time: Some(10),
         ..Default::default()
