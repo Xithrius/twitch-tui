@@ -1,5 +1,6 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
+use chrono::{DateTime, Local};
 use rustyline::line_buffer::LineBuffer;
 use tui::{
     backend::Backend,
@@ -59,7 +60,11 @@ macro_rules! shared {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig, following: FollowingList) -> Self {
+    pub fn new(
+        config: CompleteConfig,
+        following: FollowingList,
+        startup_time: DateTime<Local>,
+    ) -> Self {
         let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
@@ -85,6 +90,7 @@ impl App {
             filters.clone(),
             messages.clone(),
             following,
+            startup_time,
         );
 
         Self {

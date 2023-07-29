@@ -1,8 +1,10 @@
+use chrono::{DateTime, Local};
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
+    prelude::Alignment,
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Clear, Row, Table},
+    widgets::{block::Position, Block, Borders, Clear, Row, Table},
     Frame,
 };
 
@@ -21,13 +23,15 @@ use crate::{
 pub struct DebugWidget {
     config: SharedCompleteConfig,
     focused: bool,
+    startup_time: DateTime<Local>,
 }
 
 impl DebugWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCompleteConfig, startup_time: DateTime<Local>) -> Self {
         Self {
             config,
             focused: false,
+            startup_time,
         }
     }
 
@@ -92,10 +96,31 @@ impl Component for DebugWidget {
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
             // TODO: Automatically calculate the constraints
-            .widths(&[Constraint::Length(20), Constraint::Length(20)]);
+            .widths(&[Constraint::Length(25), Constraint::Length(25)]);
 
         f.render_widget(Clear, area);
         f.render_widget(table, area);
+
+        let title_binding = self
+            .startup_time
+            .format(&self.config.borrow().frontend.datetime_format)
+            .to_string();
+
+        let title = [TitleStyle::Combined("Startup time", &title_binding)];
+
+        let bottom_block = Block::default()
+            .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .title(title_line(
+                &title,
+                Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+            ))
+            .title_position(Position::Bottom)
+            .title_alignment(Alignment::Left);
+
+        let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+
+        f.render_widget(bottom_block, rect);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

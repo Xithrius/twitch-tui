@@ -58,6 +58,8 @@ fn initialize_logging(config: &CompleteConfig) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let startup_time = chrono::Local::now();
+
     color_eyre::install().unwrap();
 
     let config = CompleteConfig::new(Cli::parse())
@@ -74,7 +76,7 @@ async fn main() -> Result<()> {
 
     let following = get_following(&config.twitch.clone()).await;
 
-    let mut app = App::new(config.clone(), following);
+    let mut app = App::new(config.clone(), following, startup_time);
 
     info!("Started tokio communication channels.");
 

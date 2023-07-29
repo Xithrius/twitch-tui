@@ -14,6 +14,7 @@ pub mod utils;
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
 pub use chat_input::ChatInputWidget;
+use chrono::{DateTime, Local};
 pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
@@ -75,10 +76,11 @@ impl Components {
         filters: SharedFilters,
         messages: SharedMessages,
         following: FollowingList,
+        startup_time: DateTime<Local>,
     ) -> Self {
         Self {
             tabs: StateTabsWidget::new(config.clone()),
-            debug: DebugWidget::new(config.clone()),
+            debug: DebugWidget::new(config.clone(), startup_time),
 
             chat: ChatWidget::new(
                 config.clone(),
