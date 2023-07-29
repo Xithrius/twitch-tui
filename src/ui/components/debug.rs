@@ -9,7 +9,7 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::{
-        config::SharedCompleteConfig,
+        config::{SharedCompleteConfig, ToVec},
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -38,14 +38,43 @@ impl DebugWidget {
     pub fn toggle_focus(&mut self) {
         self.focused = !self.focused;
     }
+
+    fn get_config_values(&self) -> Vec<(String, Vec<(String, String)>)> {
+        let c = self.config.borrow();
+
+        vec![
+            ("Twitch Config".to_string(), c.twitch.to_vec()),
+            ("Terminal Config".to_string(), c.terminal.to_vec()),
+        ]
+    }
 }
 
 impl Component for DebugWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
-        // TODO: Add more debug stuff
-        let config = self.config.borrow();
+        let configs = self.get_config_values();
 
-        let rows = vec![Row::new(vec!["Current channel", &config.twitch.channel])];
+        let rows = configs
+            .iter()
+            .enumerate()
+            .flat_map(|(i, (t, values))| {
+                let mut inner_rows = if i > 0 {
+                    vec![
+                        Row::new::<Vec<String>>(vec![]),
+                        Row::new(vec![t.to_string()])
+                            .style(Style::default().add_modifier(Modifier::BOLD)),
+                    ]
+                } else {
+                    vec![Row::new(vec![t.to_string()])
+                        .style(Style::default().add_modifier(Modifier::BOLD))]
+                };
+
+                for (k, v) in values {
+                    inner_rows.push(Row::new(vec![k.to_string(), v.to_string()]));
+                }
+
+                inner_rows
+            })
+            .collect::<Vec<Row>>();
 
         let title_binding = [TitleStyle::Single("Debug")];
 
@@ -59,7 +88,8 @@ impl Component for DebugWidget {
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .widths(&[Constraint::Length(10), Constraint::Length(10)]);
+            // TODO: Automatically calculate the constraints
+            .widths(&[Constraint::Length(20), Constraint::Length(20)]);
 
         f.render_widget(Clear, area);
         f.render_widget(table, area);

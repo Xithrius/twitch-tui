@@ -312,6 +312,37 @@ impl From<Border> for BorderType {
     }
 }
 
+pub trait ToVec<T> {
+    fn to_vec(&self) -> Vec<T>;
+}
+
+impl ToVec<(String, String)> for TwitchConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Username".to_string(), self.username.to_string()),
+            ("Channel".to_string(), self.channel.to_string()),
+            ("Server".to_string(), self.server.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for TerminalConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Current channel".to_string(), self.delay.to_string()),
+            (
+                "Max messages".to_string(),
+                self.maximum_messages.to_string(),
+            ),
+            (
+                "Log file".to_string(),
+                self.log_file.clone().map_or("None".to_string(), |f| f),
+            ),
+            ("First state".to_string(), self.first_state.to_string()),
+        ]
+    }
+}
+
 fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
     let toml_string = toml::to_string(&config)?;
     let mut file = File::create(path)?;
