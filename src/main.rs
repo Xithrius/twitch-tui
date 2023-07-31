@@ -12,13 +12,16 @@
     clippy::too_many_lines
 )]
 
-use crate::{emotes::graphics_protocol::get_terminal_cell_size, twitch::oauth::get_following};
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
 
-use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
+use crate::{
+    emotes::graphics_protocol::get_terminal_cell_size,
+    handlers::{app::App, args::Cli, config::CompleteConfig},
+    twitch::oauth::get_following,
+};
 
 mod commands;
 mod emotes;

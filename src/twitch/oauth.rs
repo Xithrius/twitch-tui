@@ -102,6 +102,7 @@ pub struct FollowingList {
 
 const FOLLOWER_COUNT: usize = 100;
 
+// https://dev.twitch.tv/docs/api/reference/#get-followed-channels
 pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList {
     client
         .get(format!(

@@ -5,10 +5,13 @@ use once_cell::sync::Lazy;
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
-    prelude::Alignment,
+    prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{block::Position, Block, Borders, Clear, Row, Table, TableState},
+    widgets::{
+        block::Position, scrollbar, Block, Borders, Clear, Row, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Table, TableState,
+    },
     Frame,
 };
 
@@ -35,6 +38,8 @@ pub struct FollowingWidget {
     filtered_following: Option<Vec<String>>,
     state: TableState,
     search_input: InputWidget,
+    vertical_scroll_state: ScrollbarState,
+    vertical_scroll: usize,
 }
 
 impl FollowingWidget {
@@ -50,13 +55,21 @@ impl FollowingWidget {
             state: table_state,
             filtered_following: None,
             search_input,
+            vertical_scroll_state: ScrollbarState::default(),
+            vertical_scroll: 0,
         }
     }
 
     fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.following.data.len() - 1 {
+                if let Some(filtered) = &self.filtered_following {
+                    if i >= filtered.len().saturating_sub(1) {
+                        filtered.len().saturating_sub(1)
+                    } else {
+                        i + 1
+                    }
+                } else if i >= self.following.data.len() - 1 {
                     self.following.data.len() - 1
                 } else {
                     i + 1
@@ -142,7 +155,7 @@ impl Component for FollowingWidget {
 
         let constraint_binding = [Constraint::Length(NAME_MAX_CHARACTERS as u16)];
 
-        let table = Table::new(rows)
+        let table = Table::new(rows.clone())
             .block(
                 Block::default()
                     .title(title_line(
@@ -161,6 +174,21 @@ impl Component for FollowingWidget {
 
         f.render_widget(Clear, area);
         f.render_stateful_widget(table, area, &mut self.state);
+
+        self.vertical_scroll_state = self.vertical_scroll_state.content_length(rows.len() as u16);
+
+        f.render_stateful_widget(
+            Scrollbar::default()
+                .orientation(ScrollbarOrientation::VerticalRight)
+                .symbols(scrollbar::VERTICAL)
+                .begin_symbol(None)
+                .end_symbol(None),
+            area.inner(&Margin {
+                vertical: 1,
+                horizontal: 0,
+            }),
+            &mut self.vertical_scroll_state,
+        );
 
         let title_binding = format!(
             "{} / {}",
@@ -203,8 +231,22 @@ impl Component for FollowingWidget {
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown => self.next(),
-                Key::ScrollUp => self.previous(),
+                Key::ScrollDown => {
+                    self.next();
+
+                    self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+                    self.vertical_scroll_state = self
+                        .vertical_scroll_state
+                        .position(self.vertical_scroll as u16);
+                }
+                Key::ScrollUp => {
+                    self.previous();
+
+                    self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+                    self.vertical_scroll_state = self
+                        .vertical_scroll_state
+                        .position(self.vertical_scroll as u16);
+                }
                 Key::Enter => {
                     if let Some(i) = self.state.selected() {
                         let selected_channel = if let Some(v) = self.filtered_following.clone() {
