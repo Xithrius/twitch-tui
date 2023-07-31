@@ -100,10 +100,12 @@ pub struct FollowingList {
     pagination: Pagination,
 }
 
+const FOLLOWER_COUNT: usize = 100;
+
 pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList {
     client
         .get(format!(
-            "https://api.twitch.tv/helix/channels/followed?user_id={user_id}",
+            "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
         ))
         .send()
         .await

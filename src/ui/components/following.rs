@@ -207,16 +207,20 @@ impl Component for FollowingWidget {
                 Key::ScrollUp => self.previous(),
                 Key::Enter => {
                     if let Some(i) = self.state.selected() {
-                        self.toggle_focus();
-
-                        self.unselect();
-
                         let selected_channel = if let Some(v) = self.filtered_following.clone() {
+                            if v.is_empty() {
+                                return None;
+                            }
+
                             v.index(i).to_string()
                         } else {
                             self.following.data.index(i).broadcaster_name.to_string()
                         }
                         .to_lowercase();
+
+                        self.toggle_focus();
+
+                        self.unselect();
 
                         self.config.borrow_mut().twitch.channel = selected_channel.clone();
 
@@ -225,6 +229,13 @@ impl Component for FollowingWidget {
                 }
                 _ => {
                     self.search_input.event(event);
+
+                    // Assuming that the user inputted something that modified the input
+                    if let Some(v) = &self.filtered_following {
+                        if !v.is_empty() {
+                            self.state.select(Some(0));
+                        }
+                    }
                 }
             }
         }
