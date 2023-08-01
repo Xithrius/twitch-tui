@@ -1,5 +1,18 @@
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use once_cell::sync::Lazy;
 use regex::Regex;
-use tui::{backend::Backend, layout::Rect, Frame};
+use tui::{
+    backend::Backend,
+    layout::Rect,
+    prelude::{Alignment, Margin},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{
+        block::Position, scrollbar, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
+    Frame,
+};
 
 use crate::{
     emotes::Emotes,
@@ -14,13 +27,20 @@ use crate::{
         components::{utils::InputWidget, Component},
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
-    utils::text::first_similarity,
+    utils::text::{first_similarity, title_line, TitleStyle},
 };
+
+static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 pub struct ChannelSwitcherWidget {
     config: SharedCompleteConfig,
+    focused: bool,
     storage: SharedStorage,
-    input: InputWidget,
+    search_input: InputWidget,
+    state: ListState,
+    filtered_channels: Option<Vec<String>>,
+    vertical_scroll_state: ScrollbarState,
+    vertical_scroll: usize,
 }
 
 impl ChannelSwitcherWidget {
@@ -47,7 +67,7 @@ impl ChannelSwitcherWidget {
             )
         });
 
-        let input = InputWidget::new(
+        let search_input = InputWidget::new(
             config.clone(),
             "Channel switcher",
             Some(input_validator),
@@ -57,61 +77,245 @@ impl ChannelSwitcherWidget {
 
         Self {
             config,
+            focused: false,
             storage,
-            input,
+            search_input,
+            state: ListState::default(),
+            filtered_channels: None,
+            vertical_scroll_state: ScrollbarState::default(),
+            vertical_scroll: 0,
         }
     }
 
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                let items = self.storage.borrow().get("channels");
+
+                if i >= items.len() - 1 {
+                    items.len() - 1
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn previous(&mut self) {
+        let i = self
+            .state
+            .selected()
+            .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
+        self.state.select(Some(i));
+    }
+
+    fn unselect(&mut self) {
+        self.state.select(None);
+    }
+
     pub const fn is_focused(&self) -> bool {
-        self.input.is_focused()
+        self.focused
     }
 
     pub fn toggle_focus(&mut self) {
-        self.input.toggle_focus();
+        self.focused = !self.focused;
     }
 }
 
 impl ToString for ChannelSwitcherWidget {
     fn to_string(&self) -> String {
-        self.input.to_string()
+        self.search_input.to_string()
     }
 }
 
 impl Component for ChannelSwitcherWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
-        self.input.draw(f, area, emotes);
+        let channels = self.storage.borrow().get("channels");
+
+        let mut items = vec![];
+        let current_input = self.search_input.to_string();
+
+        if current_input.is_empty() {
+            for channel in channels.clone() {
+                items.push(ListItem::new(channel.clone()));
+            }
+
+            self.filtered_channels = None;
+        } else {
+            let channel_filter = |c: String| -> Vec<usize> {
+                FUZZY_FINDER
+                    .fuzzy_indices(&c, &current_input)
+                    .map(|(_, indices)| indices)
+                    .unwrap_or_default()
+            };
+
+            let mut matched = vec![];
+
+            for channel in channels.clone() {
+                let matched_indices = channel_filter(channel.clone());
+
+                if matched_indices.is_empty() {
+                    continue;
+                }
+
+                let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
+
+                let line = channel
+                    .chars()
+                    .enumerate()
+                    .map(|(i, c)| {
+                        if matched_indices.contains(&i) {
+                            Span::styled(c.to_string(), search_theme)
+                        } else {
+                            Span::raw(c.to_string())
+                        }
+                    })
+                    .collect::<Vec<Span>>();
+
+                items.push(ListItem::new(vec![Line::from(line)]));
+                matched.push(channel);
+            }
+
+            self.filtered_channels = Some(matched);
+        }
+
+        let title_binding = [TitleStyle::Single("Following")];
+
+        let list = List::new(items.clone())
+            .block(
+                Block::default()
+                    .title(title_line(
+                        &title_binding,
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ))
+                    .borders(Borders::ALL)
+                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+            )
+            .highlight_style(
+                Style::default()
+                    .bg(Color::LightGreen)
+                    .add_modifier(Modifier::BOLD),
+            );
+
+        f.render_widget(Clear, area);
+        f.render_stateful_widget(list, area, &mut self.state);
+
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .content_length(items.len() as u16);
+
+        f.render_stateful_widget(
+            Scrollbar::default()
+                .orientation(ScrollbarOrientation::VerticalRight)
+                .symbols(scrollbar::VERTICAL)
+                .begin_symbol(None)
+                .end_symbol(None),
+            area.inner(&Margin {
+                vertical: 1,
+                horizontal: 0,
+            }),
+            &mut self.vertical_scroll_state,
+        );
+
+        let title_binding = format!(
+            "{} / {}",
+            self.state.selected().map_or(1, |i| i + 1),
+            self.filtered_channels
+                .as_ref()
+                .map_or(channels.len(), Vec::len)
+        );
+
+        let title = [TitleStyle::Single(&title_binding)];
+
+        let bottom_block = Block::default()
+            .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .title(title_line(&title, Style::default()))
+            .title_position(Position::Bottom)
+            .title_alignment(Alignment::Right);
+
+        let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+
+        f.render_widget(bottom_block, rect);
+
+        let input_rect = Rect::new(area.x, area.bottom(), area.width, 3);
+
+        self.search_input.draw(f, input_rect, emotes);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
+                Key::Esc => {
+                    if self.state.selected().is_some() {
+                        self.unselect();
+                    } else {
+                        self.toggle_focus();
+
+                        return Some(TerminalAction::BackOneLayer);
+                    }
+                }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                Key::ScrollDown => {
+                    self.next();
+
+                    self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+                    self.vertical_scroll_state = self
+                        .vertical_scroll_state
+                        .position(self.vertical_scroll as u16);
+                }
+                Key::ScrollUp => {
+                    self.previous();
+
+                    self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+                    self.vertical_scroll_state = self
+                        .vertical_scroll_state
+                        .position(self.vertical_scroll as u16);
+                }
                 Key::Enter => {
-                    if self.input.is_valid() {
-                        let current_input = self.input.to_string();
+                    if let Some(i) = self.state.selected() {
+                        self.toggle_focus();
 
-                        let action =
-                            TerminalAction::Enter(TwitchAction::Join(current_input.clone()));
+                        self.unselect();
 
-                        self.input.toggle_focus();
+                        let channels = self.storage.borrow().get("channels");
+
+                        let selected_channel = if let Some(v) = &self.filtered_channels {
+                            if v.is_empty() {
+                                return None;
+                            }
+
+                            v.get(i).unwrap()
+                        } else {
+                            channels.get(i).unwrap()
+                        };
 
                         if self.config.borrow().storage.channels {
                             self.storage
                                 .borrow_mut()
-                                .add("channels", current_input.clone());
+                                .add("channels", selected_channel.clone());
                         }
 
-                        self.config.borrow_mut().twitch.channel = current_input;
+                        self.search_input.update("");
 
-                        self.input.update("");
+                        self.config.borrow_mut().twitch.channel = selected_channel.clone();
 
-                        return Some(action);
+                        return Some(TerminalAction::Enter(TwitchAction::Join(
+                            selected_channel.to_string(),
+                        )));
                     }
                 }
-                Key::Esc => {
-                    self.input.toggle_focus();
-                }
                 _ => {
-                    self.input.event(event);
+                    self.search_input.event(event);
+
+                    // Assuming that the user inputted something that modified the input
+                    if let Some(v) = &self.filtered_channels {
+                        if !v.is_empty() {
+                            self.state.select(Some(0));
+                        }
+                    }
                 }
             }
         }

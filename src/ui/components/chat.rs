@@ -329,7 +329,7 @@ impl Component for ChatWidget {
                 .draw(f, v_chunks.next().copied().unwrap(), Some(emotes));
         } else if self.channel_input.is_focused() {
             self.channel_input
-                .draw(f, centered_rect(60, 20, 3, f.size()), None);
+                .draw(f, centered_rect(60, 60, 20, f.size()), None);
         } else if self.search_input.is_focused() {
             self.search_input
                 .draw(f, v_chunks.next().copied().unwrap(), None);

@@ -4,13 +4,13 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Rect},
+    layout::Rect,
     prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        block::Position, scrollbar, Block, Borders, Clear, Row, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, Table, TableState,
+        block::Position, scrollbar, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
     },
     Frame,
 };
@@ -23,7 +23,7 @@ use crate::{
     },
     terminal::TerminalAction,
     twitch::{oauth::FollowingList, TwitchAction},
-    ui::{components::Component, statics::NAME_MAX_CHARACTERS},
+    ui::components::Component,
     utils::text::{title_line, TitleStyle},
 };
 
@@ -36,7 +36,7 @@ pub struct FollowingWidget {
     focused: bool,
     following: FollowingList,
     filtered_following: Option<Vec<String>>,
-    state: TableState,
+    state: ListState,
     search_input: InputWidget,
     vertical_scroll_state: ScrollbarState,
     vertical_scroll: usize,
@@ -46,7 +46,7 @@ impl FollowingWidget {
     pub fn new(config: SharedCompleteConfig, following: FollowingList) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
 
-        let table_state = TableState::default().with_selected(Some(0));
+        let table_state = ListState::default().with_selected(Some(0));
 
         Self {
             config,
@@ -102,13 +102,13 @@ impl FollowingWidget {
 }
 
 impl Component for FollowingWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
-        let mut rows = vec![];
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+        let mut items = vec![];
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
             for channel in self.following.clone().data {
-                rows.push(Row::new(vec![channel.broadcaster_name.clone()]));
+                items.push(ListItem::new(channel.broadcaster_name.clone()));
             }
 
             self.filtered_following = None;
@@ -144,7 +144,7 @@ impl Component for FollowingWidget {
                     })
                     .collect::<Vec<Span>>();
 
-                rows.push(Row::new(vec![Line::from(line)]));
+                items.push(ListItem::new(vec![Line::from(line)]));
                 matched.push(channel.broadcaster_name);
             }
 
@@ -153,9 +153,7 @@ impl Component for FollowingWidget {
 
         let title_binding = [TitleStyle::Single("Following")];
 
-        let constraint_binding = [Constraint::Length(NAME_MAX_CHARACTERS as u16)];
-
-        let table = Table::new(rows.clone())
+        let list = List::new(items.clone())
             .block(
                 Block::default()
                     .title(title_line(
@@ -169,13 +167,14 @@ impl Component for FollowingWidget {
                 Style::default()
                     .bg(Color::LightGreen)
                     .add_modifier(Modifier::BOLD),
-            )
-            .widths(&constraint_binding);
+            );
 
         f.render_widget(Clear, area);
-        f.render_stateful_widget(table, area, &mut self.state);
+        f.render_stateful_widget(list, area, &mut self.state);
 
-        self.vertical_scroll_state = self.vertical_scroll_state.content_length(rows.len() as u16);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .content_length(items.len() as u16);
 
         f.render_stateful_widget(
             Scrollbar::default()
@@ -215,7 +214,7 @@ impl Component for FollowingWidget {
 
         let input_rect = Rect::new(area.x, area.bottom(), area.width, 3);
 
-        self.search_input.draw(f, input_rect, None);
+        self.search_input.draw(f, input_rect, emotes);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
