@@ -34,7 +34,6 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::oauth::FollowingList,
 };
 
 pub trait Component {
@@ -75,21 +74,14 @@ impl Components {
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,
-        following: FollowingList,
         startup_time: DateTime<Local>,
     ) -> Self {
         Self {
             tabs: StateTabsWidget::new(config.clone()),
             debug: DebugWidget::new(config.clone(), startup_time),
 
-            chat: ChatWidget::new(
-                config.clone(),
-                messages,
-                &storage,
-                filters,
-                following.clone(),
-            ),
-            dashboard: DashboardWidget::new(config.clone(), storage, following),
+            chat: ChatWidget::new(config.clone(), messages, &storage, filters),
+            dashboard: DashboardWidget::new(config.clone(), storage),
             help: HelpWidget::new(config.clone()),
             error: ErrorWidget::new(),
         }

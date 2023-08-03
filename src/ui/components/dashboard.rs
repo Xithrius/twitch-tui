@@ -18,7 +18,7 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::{oauth::FollowingList, TwitchAction},
+    twitch::TwitchAction,
     ui::components::{utils::centered_rect, ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
@@ -41,13 +41,9 @@ pub struct DashboardWidget {
 }
 
 impl DashboardWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        storage: SharedStorage,
-        following: FollowingList,
-    ) -> Self {
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
-        let following = FollowingWidget::new(config.clone(), following);
+        let following = FollowingWidget::new(config.clone());
 
         Self {
             config,

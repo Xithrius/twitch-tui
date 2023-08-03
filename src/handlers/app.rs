@@ -19,7 +19,6 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::oauth::FollowingList,
     ui::{
         components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
@@ -60,11 +59,7 @@ macro_rules! shared {
 }
 
 impl App {
-    pub fn new(
-        config: CompleteConfig,
-        following: FollowingList,
-        startup_time: DateTime<Local>,
-    ) -> Self {
+    pub fn new(config: CompleteConfig, startup_time: DateTime<Local>) -> Self {
         let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
@@ -89,7 +84,6 @@ impl App {
             storage.clone(),
             filters.clone(),
             messages.clone(),
-            following,
             startup_time,
         );
 

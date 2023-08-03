@@ -20,7 +20,6 @@ use tokio::sync::{broadcast, mpsc};
 use crate::{
     emotes::graphics_protocol::get_terminal_cell_size,
     handlers::{app::App, args::Cli, config::CompleteConfig},
-    twitch::oauth::get_following,
 };
 
 mod commands;
@@ -78,9 +77,7 @@ async fn main() -> Result<()> {
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
-    let following = get_following(&config.twitch.clone()).await;
-
-    let mut app = App::new(config.clone(), following, startup_time);
+    let mut app = App::new(config.clone(), startup_time);
 
     info!("Started tokio communication channels.");
 

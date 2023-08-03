@@ -27,7 +27,6 @@ use crate::{
         },
     },
     terminal::TerminalAction,
-    twitch::oauth::FollowingList,
     ui::components::{
         following::FollowingWidget, utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget,
         Component, MessageSearchWidget,
@@ -53,12 +52,11 @@ impl ChatWidget {
         messages: SharedMessages,
         storage: &SharedStorage,
         filters: SharedFilters,
-        following: FollowingList,
     ) -> Self {
         let chat_input = ChatInputWidget::new(config.clone(), storage.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
-        let following = FollowingWidget::new(config.clone(), following);
+        let following = FollowingWidget::new(config.clone());
 
         let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
 

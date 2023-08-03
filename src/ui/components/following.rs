@@ -2,6 +2,7 @@ use std::ops::Index;
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
+use tokio::runtime::Handle;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -18,11 +19,14 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::{
-        config::SharedCompleteConfig,
+        config::{SharedCompleteConfig, TwitchConfig},
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::{oauth::FollowingList, TwitchAction},
+    twitch::{
+        oauth::{get_following, FollowingList},
+        TwitchAction,
+    },
     ui::components::Component,
     utils::text::{title_line, TitleStyle},
 };
@@ -34,26 +38,39 @@ static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 pub struct FollowingWidget {
     config: SharedCompleteConfig,
     focused: bool,
-    following: FollowingList,
-    filtered_following: Option<Vec<String>>,
-    state: ListState,
+    channels: FollowingList,
+    filtered_channels: Option<Vec<String>>,
+    list_state: ListState,
     search_input: InputWidget,
     vertical_scroll_state: ScrollbarState,
     vertical_scroll: usize,
 }
 
+fn get_followed_channels(twitch_config: TwitchConfig) -> FollowingList {
+    let handle = Handle::current();
+
+    futures::executor::block_on(async {
+        handle
+            .spawn(async move { get_following(&twitch_config.clone()).await })
+            .await
+            .unwrap()
+    })
+}
+
 impl FollowingWidget {
-    pub fn new(config: SharedCompleteConfig, following: FollowingList) -> Self {
+    pub fn new(config: SharedCompleteConfig) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
 
-        let table_state = ListState::default().with_selected(Some(0));
+        let list_state = ListState::default().with_selected(Some(0));
+
+        let channels = get_followed_channels(config.borrow().twitch.clone());
 
         Self {
             config,
             focused: false,
-            following,
-            state: table_state,
-            filtered_following: None,
+            channels,
+            list_state,
+            filtered_channels: None,
             search_input,
             vertical_scroll_state: ScrollbarState::default(),
             vertical_scroll: 0,
@@ -61,35 +78,46 @@ impl FollowingWidget {
     }
 
     fn next(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.list_state.selected() {
             Some(i) => {
-                if let Some(filtered) = &self.filtered_following {
+                if let Some(filtered) = &self.filtered_channels {
                     if i >= filtered.len().saturating_sub(1) {
                         filtered.len().saturating_sub(1)
                     } else {
                         i + 1
                     }
-                } else if i >= self.following.data.len() - 1 {
-                    self.following.data.len() - 1
+                } else if i >= self.channels.data.len() - 1 {
+                    self.channels.data.len() - 1
                 } else {
                     i + 1
                 }
             }
             None => 0,
         };
-        self.state.select(Some(i));
+
+        self.list_state.select(Some(i));
+
+        self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll as u16);
     }
 
     fn previous(&mut self) {
         let i = self
-            .state
+            .list_state
             .selected()
             .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
-        self.state.select(Some(i));
+        self.list_state.select(Some(i));
+
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll as u16);
     }
 
     fn unselect(&mut self) {
-        self.state.select(None);
+        self.list_state.select(None);
     }
 
     pub const fn is_focused(&self) -> bool {
@@ -97,6 +125,10 @@ impl FollowingWidget {
     }
 
     pub fn toggle_focus(&mut self) {
+        if !self.focused {
+            self.channels = get_followed_channels(self.config.borrow().twitch.clone());
+        }
+
         self.focused = !self.focused;
     }
 }
@@ -107,11 +139,11 @@ impl Component for FollowingWidget {
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
-            for channel in self.following.clone().data {
+            for channel in self.channels.clone().data {
                 items.push(ListItem::new(channel.broadcaster_name.clone()));
             }
 
-            self.filtered_following = None;
+            self.filtered_channels = None;
         } else {
             let channel_filter = |c: String| -> Vec<usize> {
                 FUZZY_FINDER
@@ -122,7 +154,7 @@ impl Component for FollowingWidget {
 
             let mut matched = vec![];
 
-            for channel in self.following.clone().data {
+            for channel in self.channels.clone().data {
                 let matched_indices = channel_filter(channel.broadcaster_name.clone());
 
                 if matched_indices.is_empty() {
@@ -148,7 +180,7 @@ impl Component for FollowingWidget {
                 matched.push(channel.broadcaster_name);
             }
 
-            self.filtered_following = Some(matched);
+            self.filtered_channels = Some(matched);
         }
 
         let title_binding = [TitleStyle::Single("Following")];
@@ -170,7 +202,7 @@ impl Component for FollowingWidget {
             );
 
         f.render_widget(Clear, area);
-        f.render_stateful_widget(list, area, &mut self.state);
+        f.render_stateful_widget(list, area, &mut self.list_state);
 
         self.vertical_scroll_state = self
             .vertical_scroll_state
@@ -191,11 +223,11 @@ impl Component for FollowingWidget {
 
         let title_binding = format!(
             "{} / {}",
-            self.state.selected().map_or(1, |i| i + 1),
-            if let Some(v) = &self.filtered_following {
+            self.list_state.selected().map_or(1, |i| i + 1),
+            if let Some(v) = &self.filtered_channels {
                 v.len()
             } else {
-                self.following.data.len()
+                self.channels.data.len()
             }
         );
 
@@ -221,41 +253,25 @@ impl Component for FollowingWidget {
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {
-                    if self.state.selected().is_some() {
+                    if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
                         self.toggle_focus();
-
-                        return Some(TerminalAction::BackOneLayer);
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown => {
-                    self.next();
-
-                    self.vertical_scroll = self.vertical_scroll.saturating_add(1);
-                    self.vertical_scroll_state = self
-                        .vertical_scroll_state
-                        .position(self.vertical_scroll as u16);
-                }
-                Key::ScrollUp => {
-                    self.previous();
-
-                    self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
-                    self.vertical_scroll_state = self
-                        .vertical_scroll_state
-                        .position(self.vertical_scroll as u16);
-                }
+                Key::ScrollDown => self.next(),
+                Key::ScrollUp => self.previous(),
                 Key::Enter => {
-                    if let Some(i) = self.state.selected() {
-                        let selected_channel = if let Some(v) = self.filtered_following.clone() {
+                    if let Some(i) = self.list_state.selected() {
+                        let selected_channel = if let Some(v) = self.filtered_channels.clone() {
                             if v.is_empty() {
                                 return None;
                             }
 
                             v.index(i).to_string()
                         } else {
-                            self.following.data.index(i).broadcaster_name.to_string()
+                            self.channels.data.index(i).broadcaster_name.to_string()
                         }
                         .to_lowercase();
 
@@ -272,9 +288,9 @@ impl Component for FollowingWidget {
                     self.search_input.event(event);
 
                     // Assuming that the user inputted something that modified the input
-                    if let Some(v) = &self.filtered_following {
+                    if let Some(v) = &self.filtered_channels {
                         if !v.is_empty() {
-                            self.state.select(Some(0));
+                            self.list_state.select(Some(0));
                         }
                     }
                 }

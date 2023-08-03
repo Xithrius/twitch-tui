@@ -37,7 +37,7 @@ pub struct ChannelSwitcherWidget {
     focused: bool,
     storage: SharedStorage,
     search_input: InputWidget,
-    state: ListState,
+    list_state: ListState,
     filtered_channels: Option<Vec<String>>,
     vertical_scroll_state: ScrollbarState,
     vertical_scroll: usize,
@@ -80,7 +80,7 @@ impl ChannelSwitcherWidget {
             focused: false,
             storage,
             search_input,
-            state: ListState::default(),
+            list_state: ListState::default(),
             filtered_channels: None,
             vertical_scroll_state: ScrollbarState::default(),
             vertical_scroll: 0,
@@ -88,7 +88,7 @@ impl ChannelSwitcherWidget {
     }
 
     fn next(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.list_state.selected() {
             Some(i) => {
                 let items = self.storage.borrow().get("channels");
 
@@ -100,19 +100,19 @@ impl ChannelSwitcherWidget {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.list_state.select(Some(i));
     }
 
     fn previous(&mut self) {
         let i = self
-            .state
+            .list_state
             .selected()
             .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
-        self.state.select(Some(i));
+        self.list_state.select(Some(i));
     }
 
     fn unselect(&mut self) {
-        self.state.select(None);
+        self.list_state.select(None);
     }
 
     pub const fn is_focused(&self) -> bool {
@@ -200,7 +200,7 @@ impl Component for ChannelSwitcherWidget {
             );
 
         f.render_widget(Clear, area);
-        f.render_stateful_widget(list, area, &mut self.state);
+        f.render_stateful_widget(list, area, &mut self.list_state);
 
         self.vertical_scroll_state = self
             .vertical_scroll_state
@@ -221,7 +221,7 @@ impl Component for ChannelSwitcherWidget {
 
         let title_binding = format!(
             "{} / {}",
-            self.state.selected().map_or(1, |i| i + 1),
+            self.list_state.selected().map_or(1, |i| i + 1),
             self.filtered_channels
                 .as_ref()
                 .map_or(channels.len(), Vec::len)
@@ -249,7 +249,7 @@ impl Component for ChannelSwitcherWidget {
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {
-                    if self.state.selected().is_some() {
+                    if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
                         self.toggle_focus();
@@ -275,7 +275,7 @@ impl Component for ChannelSwitcherWidget {
                         .position(self.vertical_scroll as u16);
                 }
                 Key::Enter => {
-                    if let Some(i) = self.state.selected() {
+                    if let Some(i) = self.list_state.selected() {
                         self.toggle_focus();
 
                         self.unselect();
@@ -313,7 +313,7 @@ impl Component for ChannelSwitcherWidget {
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_channels {
                         if !v.is_empty() {
-                            self.state.select(Some(0));
+                            self.list_state.select(Some(0));
                         }
                     }
                 }
