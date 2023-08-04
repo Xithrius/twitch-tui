@@ -23,10 +23,7 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::{
-        oauth::{get_following, FollowingList},
-        TwitchAction,
-    },
+    twitch::{self, channels::FollowingList, TwitchAction},
     ui::components::Component,
     utils::text::{title_line, TitleStyle},
 };
@@ -34,12 +31,6 @@ use crate::{
 use super::utils::{centered_rect, InputWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
-
-fn get_followed_channels(twitch_config: TwitchConfig) -> FollowingList {
-    task::block_in_place(move || {
-        Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
-    })
-}
 
 pub struct FollowingWidget {
     config: SharedCompleteConfig,
@@ -56,7 +47,8 @@ impl FollowingWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
 
-        let channels = get_followed_channels(config.borrow().twitch.clone());
+        // let channels = get_followed_channels(config.borrow().twitch.clone());
+        let channels = FollowingList::default();
 
         Self {
             config,
@@ -119,7 +111,7 @@ impl FollowingWidget {
 
     pub fn toggle_focus(&mut self) {
         if !self.focused {
-            self.channels = get_followed_channels(self.config.borrow().twitch.clone());
+            FollowingList::get_followed_channels(self.config.borrow().twitch.clone());
         }
 
         self.focused = !self.focused;

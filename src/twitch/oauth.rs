@@ -5,8 +5,6 @@ use reqwest::{
 };
 use serde::Deserialize;
 
-use crate::handlers::config::TwitchConfig;
-
 #[derive(Deserialize)]
 #[allow(dead_code)]
 pub struct ClientId {
@@ -75,56 +73,4 @@ pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
         .context("Could not get channel id.")?
         .id
         .parse()?)
-}
-
-#[derive(Deserialize, Debug, Clone, Default)]
-#[allow(dead_code)]
-pub struct FollowingUser {
-    broadcaster_id: String,
-    pub broadcaster_login: String,
-    pub broadcaster_name: String,
-    followed_at: String,
-}
-
-#[derive(Deserialize, Debug, Clone, Default)]
-#[allow(dead_code)]
-struct Pagination {
-    cursor: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Clone, Default)]
-#[allow(dead_code)]
-pub struct FollowingList {
-    total: u64,
-    pub data: Vec<FollowingUser>,
-    pagination: Pagination,
-}
-
-const FOLLOWER_COUNT: usize = 100;
-
-// https://dev.twitch.tv/docs/api/reference/#get-followed-channels
-pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList {
-    client
-        .get(format!(
-            "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
-        ))
-        .send()
-        .await
-        .unwrap()
-        .error_for_status()
-        .unwrap()
-        .json::<FollowingList>()
-        .await
-        .unwrap()
-}
-
-pub async fn get_following(twitch_config: &TwitchConfig) -> FollowingList {
-    let oauth_token = twitch_config.token.clone();
-    let app_user = twitch_config.username.clone();
-
-    let client = get_twitch_client(oauth_token).await.unwrap();
-
-    let user_id = get_channel_id(&client, &app_user).await.unwrap();
-
-    get_user_following(&client, user_id).await
 }
