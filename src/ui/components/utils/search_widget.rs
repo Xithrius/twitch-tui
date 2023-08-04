@@ -1,3 +1,5 @@
+use std::iter::Iterator;
+
 use rustyline::{line_buffer::LineBuffer, At, Word};
 use tui::{
     backend::Backend,
@@ -45,7 +47,7 @@ pub struct SearchWidget<T: Default, F> {
 
 impl<T, F> SearchWidget<T, F>
 where
-    T: Default,
+    T: Default + Iterator + Copy,
     F: ItemGetter<T>,
 {
     pub fn new(config: SharedCompleteConfig, item_getter: F) -> Self {
@@ -64,6 +66,49 @@ where
         }
     }
 
+    fn next(&mut self) {
+        let i = match self.list_state.selected() {
+            Some(i) => {
+                if let Some(filtered) = &self.filtered_items {
+                    if i >= filtered.count().saturating_sub(1) {
+                        filtered.count().saturating_sub(1)
+                    } else {
+                        i + 1
+                    }
+                } else if i >= self.items.count() - 1 {
+                    self.items.count() - 1
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+
+        self.list_state.select(Some(i));
+
+        self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll as u16);
+    }
+
+    fn previous(&mut self) {
+        let i = self
+            .list_state
+            .selected()
+            .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
+        self.list_state.select(Some(i));
+
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll as u16);
+    }
+
+    fn unselect(&mut self) {
+        self.list_state.select(None);
+    }
+
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
@@ -79,7 +124,8 @@ where
 
 impl<T, F> Component for SearchWidget<T, F>
 where
-    T: Default,
+    T: Default + Iterator + Copy,
+    F: ItemGetter<T>,
 {
     fn draw<B: Backend>(
         &mut self,
@@ -93,10 +139,25 @@ where
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
-                Key::Char('q') => return Some(TerminalAction::Quit),
-                Key::Esc => return Some(TerminalAction::BackOneLayer),
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                _ => {}
+                Key::Esc => {
+                    if self.list_state.selected().is_some() {
+                        self.unselect();
+                    } else {
+                        self.toggle_focus();
+                    }
+                }
+                Key::ScrollDown => self.next(),
+                Key::ScrollUp => self.previous(),
+                _ => {
+                    self.search_input.event(event);
+
+                    // Assuming that the user inputted something that modified the input
+                    if let Some(v) = &self.filtered_items {
+                        if v.count() > 0 {
+                            self.list_state.select(Some(0));
+                        }
+                    }
+                }
             }
         }
 

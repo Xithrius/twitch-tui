@@ -259,7 +259,6 @@ impl Component for FollowingWidget {
                         self.toggle_focus();
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::ScrollDown => self.next(),
                 Key::ScrollUp => self.previous(),
                 Key::Enter => {

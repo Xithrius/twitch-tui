@@ -229,6 +229,7 @@ impl Component for InputWidget {
                         }
                     }
                 }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Ctrl('q') => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1);
