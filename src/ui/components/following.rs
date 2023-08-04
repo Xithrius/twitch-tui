@@ -35,6 +35,12 @@ use super::utils::InputWidget;
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
+fn get_followed_channels(twitch_config: TwitchConfig) -> FollowingList {
+    task::block_in_place(move || {
+        Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
+    })
+}
+
 pub struct FollowingWidget {
     config: SharedCompleteConfig,
     focused: bool,
@@ -46,17 +52,9 @@ pub struct FollowingWidget {
     vertical_scroll: usize,
 }
 
-fn get_followed_channels(twitch_config: TwitchConfig) -> FollowingList {
-    task::block_in_place(move || {
-        Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
-    })
-}
-
 impl FollowingWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-
-        let list_state = ListState::default().with_selected(Some(0));
 
         let channels = get_followed_channels(config.borrow().twitch.clone());
 
@@ -64,7 +62,7 @@ impl FollowingWidget {
             config,
             focused: false,
             channels,
-            list_state,
+            list_state: ListState::default().with_selected(Some(0)),
             filtered_channels: None,
             search_input,
             vertical_scroll_state: ScrollbarState::default(),
