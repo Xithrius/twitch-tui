@@ -63,8 +63,7 @@ pub async fn get_following(twitch_config: &TwitchConfig) -> FollowingList {
 impl FollowingList {
     pub fn get_followed_channels(twitch_config: TwitchConfig) -> Self {
         task::block_in_place(move || {
-            Handle::current()
-                .block_on(async move { get_following(&twitch_config.clone()).await })
+            Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
         })
     }
 }

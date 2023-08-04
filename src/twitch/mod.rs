@@ -1,7 +1,7 @@
 mod badges;
+pub mod channels;
 mod connection;
 pub mod oauth;
-pub mod channels;
 
 use std::{borrow::Borrow, collections::HashMap};
 
