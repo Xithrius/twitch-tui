@@ -211,8 +211,8 @@ impl Component for ChatWidget {
         area: Option<Rect>,
         emotes: Option<&mut Emotes>,
     ) {
-        // TODO: Don't let this be a thing
-        let emotes = emotes.unwrap();
+        let mut default_emotes = Emotes::default();
+        let emotes = emotes.map_or(&mut default_emotes, |e| e);
 
         let r = area.map_or_else(|| f.size(), |a| a);
 
