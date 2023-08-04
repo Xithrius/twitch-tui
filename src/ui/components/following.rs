@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
-use tokio::runtime::Handle;
+use tokio::{runtime::Handle, task};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -47,13 +47,8 @@ pub struct FollowingWidget {
 }
 
 fn get_followed_channels(twitch_config: TwitchConfig) -> FollowingList {
-    let handle = Handle::current();
-
-    futures::executor::block_on(async {
-        handle
-            .spawn(async move { get_following(&twitch_config.clone()).await })
-            .await
-            .unwrap()
+    task::block_in_place(move || {
+        Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
     })
 }
 
