@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{convert::From, fmt::Display, string::String, vec::Vec};
 
 use reqwest::Client;
 use serde::Deserialize;
@@ -33,9 +33,41 @@ pub struct FollowingList {
     pagination: Pagination,
 }
 
-// https://dev.twitch.tv/docs/api/reference/#get-followed-channels
-pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList {
-    client
+#[derive(Debug, Clone)]
+pub struct Following {
+    client: Client,
+    twitch_config: TwitchConfig,
+    list: FollowingList,
+}
+
+pub trait ItemGetter<X, T>
+where
+    X: Display,
+    T: Default + Iterator<Item = X> + From<Vec<X>>,
+{
+    fn get_items(&mut self) -> T;
+}
+
+impl Following {
+    pub fn new(twitch_config: TwitchConfig) -> Self {
+        let client = task::block_in_place(move || {
+            Handle::current().block_on(async move {
+                get_twitch_client(twitch_config.token.clone())
+                    .await
+                    .unwrap()
+            })
+        });
+
+        Self {
+            client,
+            twitch_config,
+            list: FollowingList::default(),
+        }
+    }
+
+    // https://dev.twitch.tv/docs/api/reference/#get-followed-channels
+    pub async fn get_user_following(&self, user_id: i32) -> FollowingList {
+        self.client
         .get(format!(
             "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
         ))
@@ -47,39 +79,45 @@ pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList 
         .json::<FollowingList>()
         .await
         .unwrap()
-}
+    }
 
-pub async fn get_following(twitch_config: &TwitchConfig) -> FollowingList {
-    let oauth_token = twitch_config.token.clone();
-    let app_user = twitch_config.username.clone();
+    pub async fn get_following(&self) -> FollowingList {
+        let app_user = self.twitch_config.username.clone();
 
-    let client = get_twitch_client(oauth_token).await.unwrap();
+        let user_id = get_channel_id(&self.client, &app_user).await.unwrap();
 
-    let user_id = get_channel_id(&client, &app_user).await.unwrap();
+        self.get_user_following(user_id).await
+    }
 
-    get_user_following(&client, user_id).await
-}
-
-impl FollowingList {
-    pub fn get_followed_channels(twitch_config: TwitchConfig) -> Self {
+    pub fn get_followed_channels(self) -> FollowingList {
         task::block_in_place(move || {
-            Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
+            Handle::current().block_on(async move { self.get_following().await })
         })
+    }
+}
+
+impl From<Vec<String>> for FollowingList {
+    fn from(value: Vec<String>) -> Self {
+        todo!()
+    }
+}
+
+impl Iterator for FollowingList {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.data.iter().next()
+    }
+}
+
+impl ItemGetter<String, FollowingList> for Following {
+    fn get_items(&mut self) -> FollowingList {
+        self.get_followed_channels()
     }
 }
 
 impl Display for FollowingUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.broadcaster_login.fmt(f)
-    }
-}
-
-impl From<Vec<FollowingUser>> for FollowingList {
-    fn from(value: Vec<FollowingUser>) -> Self {
-        Self {
-            total: value.len() as u64,
-            data: value,
-            ..Default::default()
-        }
     }
 }

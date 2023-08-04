@@ -26,7 +26,7 @@ mod commands;
 mod emotes;
 mod handlers;
 mod terminal;
-mod twitch;
+pub mod twitch;
 mod ui;
 mod utils;
 

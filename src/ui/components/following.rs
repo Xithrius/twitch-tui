@@ -19,11 +19,11 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::{
-        config::{SharedCompleteConfig, TwitchConfig},
+        config::SharedCompleteConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::{self, channels::FollowingList, TwitchAction},
+    twitch::{channels::FollowingList, TwitchAction},
     ui::components::Component,
     utils::text::{title_line, TitleStyle},
 };

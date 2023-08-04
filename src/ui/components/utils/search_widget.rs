@@ -23,25 +23,18 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::components::Component,
-    utils::text::{title_line, TitleStyle},
+    utils::text::{title_line, TitleStyle}, twitch::channels::ItemGetter,
 };
 
 use super::{centered_rect, InputWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
-pub trait ItemGetter<T>
-where
-    T: Default,
-{
-    fn get_items(&mut self) -> T;
-}
-
 pub struct SearchWidget<X, T, F>
 where
     X: Display,
-    T: Default + Iterator<Item = X> + Copy + From<Vec<X>>,
-    F: ItemGetter<T>,
+    T: Default + Iterator<Item = X> + From<Vec<X>>,
+    F: ItemGetter<X, T>,
 {
     config: SharedCompleteConfig,
     focused: bool,
@@ -59,8 +52,8 @@ where
 impl<X, T, F> SearchWidget<X, T, F>
 where
     X: Display,
-    T: Default + Iterator<Item = X> + Copy + From<Vec<X>>,
-    F: ItemGetter<T>,
+    T: Default + Iterator<Item = X> + From<Vec<X>>,
+    F: ItemGetter<X, T>,
 {
     pub fn new(config: SharedCompleteConfig, item_getter: F) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
@@ -137,8 +130,8 @@ where
 impl<X, T, F> Component for SearchWidget<X, T, F>
 where
     X: Display,
-    T: Default + Iterator<Item = X> + Copy + From<Vec<X>>,
-    F: ItemGetter<T>,
+    T: Default + Iterator<Item = X> + From<Vec<X>>,
+    F: ItemGetter<X, T>,
 {
     fn draw<B: Backend>(
         &mut self,
