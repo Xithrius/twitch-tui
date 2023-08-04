@@ -22,8 +22,9 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
+    twitch::channels::ItemGetter,
     ui::components::Component,
-    utils::text::{title_line, TitleStyle}, twitch::channels::ItemGetter,
+    utils::text::{title_line, TitleStyle},
 };
 
 use super::{centered_rect, InputWidget};
