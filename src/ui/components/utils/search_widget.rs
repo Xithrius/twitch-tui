@@ -1,12 +1,17 @@
-use std::iter::Iterator;
+use std::{convert::From, fmt::Display, iter::Iterator, vec::Vec};
 
-use rustyline::{line_buffer::LineBuffer, At, Word};
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use once_cell::sync::Lazy;
 use tui::{
     backend::Backend,
     layout::Rect,
+    prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{block::Position, Block, Borders, Clear, ListState, Paragraph, ScrollbarState},
+    widgets::{
+        block::Position, scrollbar, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
     Frame,
 };
 
@@ -14,15 +19,16 @@ use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
-        storage::SharedStorage,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
-    utils::text::{get_cursor_position, title_line, TitleStyle},
+    ui::components::Component,
+    utils::text::{title_line, TitleStyle},
 };
 
-use super::InputWidget;
+use super::{centered_rect, InputWidget};
+
+static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 pub trait ItemGetter<T>
 where
@@ -31,7 +37,12 @@ where
     fn get_items(&mut self) -> T;
 }
 
-pub struct SearchWidget<T: Default, F> {
+pub struct SearchWidget<X, T, F>
+where
+    X: Display,
+    T: Default + Iterator<Item = X> + Copy + From<Vec<X>>,
+    F: ItemGetter<T>,
+{
     config: SharedCompleteConfig,
     focused: bool,
 
@@ -45,9 +56,10 @@ pub struct SearchWidget<T: Default, F> {
     vertical_scroll: usize,
 }
 
-impl<T, F> SearchWidget<T, F>
+impl<X, T, F> SearchWidget<X, T, F>
 where
-    T: Default + Iterator + Copy,
+    X: Display,
+    T: Default + Iterator<Item = X> + Copy + From<Vec<X>>,
     F: ItemGetter<T>,
 {
     pub fn new(config: SharedCompleteConfig, item_getter: F) -> Self {
@@ -122,9 +134,10 @@ where
     }
 }
 
-impl<T, F> Component for SearchWidget<T, F>
+impl<X, T, F> Component for SearchWidget<X, T, F>
 where
-    T: Default + Iterator + Copy,
+    X: Display,
+    T: Default + Iterator<Item = X> + Copy + From<Vec<X>>,
     F: ItemGetter<T>,
 {
     fn draw<B: Backend>(
@@ -133,7 +146,120 @@ where
         area: Option<Rect>,
         emotes: Option<&mut Emotes>,
     ) {
-        todo!()
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+
+        let mut items = vec![];
+        let current_input = self.search_input.to_string();
+
+        if current_input.is_empty() {
+            for item in self.items {
+                items.push(ListItem::new(item.to_string()));
+            }
+
+            self.filtered_items = None;
+        } else {
+            let item_filter = |c: String| -> Vec<usize> {
+                FUZZY_FINDER
+                    .fuzzy_indices(&c, &current_input)
+                    .map(|(_, indices)| indices)
+                    .unwrap_or_default()
+            };
+
+            let mut matched = vec![];
+
+            for item in self.items {
+                let matched_indices = item_filter(item.to_string());
+
+                if matched_indices.is_empty() {
+                    continue;
+                }
+
+                let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
+
+                let line = item
+                    .to_string()
+                    .chars()
+                    .enumerate()
+                    .map(|(i, c)| {
+                        if matched_indices.contains(&i) {
+                            Span::styled(c.to_string(), search_theme)
+                        } else {
+                            Span::raw(c.to_string())
+                        }
+                    })
+                    .collect::<Vec<Span>>();
+
+                items.push(ListItem::new(vec![Line::from(line)]));
+                matched.push(item);
+            }
+
+            self.filtered_items = Some(matched.into());
+        }
+
+        let title_binding = [TitleStyle::Single("Following")];
+
+        let list = List::new(items.clone())
+            .block(
+                Block::default()
+                    .title(title_line(
+                        &title_binding,
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ))
+                    .borders(Borders::ALL)
+                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+            )
+            .highlight_style(
+                Style::default()
+                    .bg(Color::LightGreen)
+                    .add_modifier(Modifier::BOLD),
+            );
+
+        f.render_widget(Clear, r);
+        f.render_stateful_widget(list, r, &mut self.list_state);
+
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .content_length(items.len() as u16);
+
+        f.render_stateful_widget(
+            Scrollbar::default()
+                .orientation(ScrollbarOrientation::VerticalRight)
+                .symbols(scrollbar::VERTICAL)
+                .begin_symbol(None)
+                .end_symbol(None),
+            r.inner(&Margin {
+                vertical: 1,
+                horizontal: 0,
+            }),
+            &mut self.vertical_scroll_state,
+        );
+
+        let title_binding = format!(
+            "{} / {}",
+            self.list_state.selected().map_or(1, |i| i + 1),
+            if let Some(v) = &self.filtered_items {
+                v.count()
+            } else {
+                self.items.count()
+            }
+        );
+
+        let title = [TitleStyle::Single(&title_binding)];
+
+        let bottom_block = Block::default()
+            .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .title(title_line(&title, Style::default()))
+            .title_position(Position::Bottom)
+            .title_alignment(Alignment::Right);
+
+        let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
+
+        f.render_widget(bottom_block, rect);
+
+        let input_rect = Rect::new(rect.x, rect.bottom(), rect.width, 3);
+
+        self.search_input.draw(f, Some(input_rect), emotes);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
@@ -164,54 +290,3 @@ where
         None
     }
 }
-
-// impl SearchWidget {
-//     pub fn new(
-//         config: SharedCompleteConfig,
-//         title: &str,
-//         input_validator: Option<InputValidator>,
-//     ) -> Self {
-//         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-
-//         Self {
-//             config,
-//             search_input,
-//             title: title.to_string(),
-//             focused: false,
-//             input_validator,
-//         }
-//     }
-
-//     // pub fn update(&mut self, s: &str) {
-//     //     self.input.update(s, 0);
-//     // }
-
-//     // pub const fn is_focused(&self) -> bool {
-//     //     self.focused
-//     // }
-
-//     // pub fn toggle_focus(&mut self) {
-//     //     self.focused = !self.focused;
-//     // }
-
-//     // pub fn toggle_focus_with(&mut self, s: &str) {
-//     //     self.focused = !self.focused;
-//     //     self.input.update(s, 1);
-//     // }
-
-//     // pub fn is_valid(&self) -> bool {
-//     //     self.input_validator
-//     //         .as_ref()
-//     //         .map_or(true, |validator| validator(self.input.to_string()))
-//     // }
-// }
-
-// impl Component for SearchWidget {
-//     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
-//         self.search_input.draw(f, area, emotes);
-//     }
-
-//     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-//         self.search_input.event(event)
-//     }
-// }
