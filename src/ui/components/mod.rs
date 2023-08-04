@@ -14,7 +14,6 @@ pub mod utils;
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
 pub use chat_input::ChatInputWidget;
-use chrono::{DateTime, Local};
 pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
@@ -22,6 +21,7 @@ pub use help::HelpWidget;
 pub use message_search::MessageSearchWidget;
 pub use state_tabs::StateTabsWidget;
 
+use chrono::{DateTime, Local};
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
@@ -38,7 +38,12 @@ use crate::{
 
 pub trait Component {
     #[allow(unused_variables)]
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
         todo!()
     }
 

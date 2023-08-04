@@ -25,7 +25,14 @@ impl ErrorWidget {
 }
 
 impl Component for ErrorWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
+
         let paragraph = Paragraph::new(
             WINDOW_SIZE_ERROR_MESSAGE
                 .iter()
@@ -36,6 +43,6 @@ impl Component for ErrorWidget {
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Center);
 
-        f.render_widget(paragraph, area);
+        f.render_widget(paragraph, r);
     }
 }

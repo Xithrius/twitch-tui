@@ -30,6 +30,8 @@ use crate::{
     utils::text::{first_similarity, title_line, TitleStyle},
 };
 
+use super::utils::centered_rect;
+
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 pub struct ChannelSwitcherWidget {
@@ -131,7 +133,14 @@ impl ToString for ChannelSwitcherWidget {
 }
 
 impl Component for ChannelSwitcherWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+
         let channels = self.storage.borrow().get("channels");
 
         let mut items = vec![];
@@ -199,8 +208,8 @@ impl Component for ChannelSwitcherWidget {
                     .add_modifier(Modifier::BOLD),
             );
 
-        f.render_widget(Clear, area);
-        f.render_stateful_widget(list, area, &mut self.list_state);
+        f.render_widget(Clear, r);
+        f.render_stateful_widget(list, r, &mut self.list_state);
 
         self.vertical_scroll_state = self
             .vertical_scroll_state
@@ -212,7 +221,7 @@ impl Component for ChannelSwitcherWidget {
                 .symbols(scrollbar::VERTICAL)
                 .begin_symbol(None)
                 .end_symbol(None),
-            area.inner(&Margin {
+            r.inner(&Margin {
                 vertical: 1,
                 horizontal: 0,
             }),
@@ -236,13 +245,13 @@ impl Component for ChannelSwitcherWidget {
             .title_position(Position::Bottom)
             .title_alignment(Alignment::Right);
 
-        let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+        let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
 
         f.render_widget(bottom_block, rect);
 
-        let input_rect = Rect::new(area.x, area.bottom(), area.width, 3);
+        let input_rect = Rect::new(r.x, r.bottom(), r.width, 3);
 
-        self.search_input.draw(f, input_rect, emotes);
+        self.search_input.draw(f, Some(input_rect), emotes);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

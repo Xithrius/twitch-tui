@@ -32,7 +32,14 @@ impl HelpWidget {
 }
 
 impl Component for HelpWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
+
         let mut rows = vec![];
 
         for (s, v) in HELP_KEYBINDS.iter() {
@@ -62,11 +69,7 @@ impl Component for HelpWidget {
             )
             .widths(&TABLE_CONSTRAINTS)
             .column_spacing(2);
-        // .style(match app.theme {
-        //     Theme::Light => BORDER_NAME_LIGHT,
-        //     _ => BORDER_NAME_DARK,
-        // });
 
-        f.render_widget(help_table, area);
+        f.render_widget(help_table, r);
     }
 }

@@ -22,9 +22,18 @@ use crate::{
 
 use super::InputWidget;
 
-pub struct SearchWidget<T: Default> {
+pub trait ItemGetter<T>
+where
+    T: Default,
+{
+    fn get_items(&mut self) -> T;
+}
+
+pub struct SearchWidget<T: Default, F> {
     config: SharedCompleteConfig,
     focused: bool,
+
+    item_getter: F,
     items: T,
     filtered_items: Option<T>,
 
@@ -34,16 +43,18 @@ pub struct SearchWidget<T: Default> {
     vertical_scroll: usize,
 }
 
-impl<T> SearchWidget<T>
+impl<T, F> SearchWidget<T, F>
 where
     T: Default,
+    F: ItemGetter<T>,
 {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCompleteConfig, item_getter: F) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
 
         Self {
             config,
             focused: false,
+            item_getter,
             items: T::default(),
             filtered_items: None,
             list_state: ListState::default(),
@@ -52,13 +63,30 @@ where
             vertical_scroll: 0,
         }
     }
+
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    pub fn toggle_focus(&mut self) {
+        if !self.focused {
+            self.items = self.item_getter.get_items();
+        }
+
+        self.focused = !self.focused;
+    }
 }
 
-impl<T> Component for SearchWidget<T>
+impl<T, F> Component for SearchWidget<T, F>
 where
     T: Default,
 {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
         todo!()
     }
 

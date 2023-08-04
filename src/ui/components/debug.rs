@@ -57,7 +57,14 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
+
         let configs = self.get_config_values();
 
         let rows = configs
@@ -98,8 +105,8 @@ impl Component for DebugWidget {
             // TODO: Automatically calculate the constraints
             .widths(&[Constraint::Length(25), Constraint::Length(25)]);
 
-        f.render_widget(Clear, area);
-        f.render_widget(table, area);
+        f.render_widget(Clear, r);
+        f.render_widget(table, r);
 
         let title_binding = self
             .startup_time
@@ -118,7 +125,7 @@ impl Component for DebugWidget {
             .title_position(Position::Bottom)
             .title_alignment(Alignment::Left);
 
-        let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+        let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
 
         f.render_widget(bottom_block, rect);
     }
