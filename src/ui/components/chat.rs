@@ -72,6 +72,12 @@ impl ChatWidget {
         }
     }
 
+    pub fn open_in_browser(&self) {
+        webbrowser::open(format!(
+            "https://player.twitch.tv/?channel={}&enableExtensions=true&parent=twitch.tv&quality=chunked",
+            self.config.borrow().twitch.channel).as_str()).unwrap();
+    }
+
     pub fn get_messages<'a, B: Backend>(
         &self,
         frame: &mut Frame<B>,
@@ -363,6 +369,7 @@ impl Component for ChatWidget {
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
                     Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                     Key::Char('q') => return Some(TerminalAction::Quit),
+                    Key::Char('o') => self.open_in_browser(),
                     Key::Char('G') => {
                         self.scroll_offset.jump_to(0);
                     }
