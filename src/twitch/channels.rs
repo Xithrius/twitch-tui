@@ -1,4 +1,4 @@
-use std::{convert::From, fmt::Display, string::String, vec::Vec};
+use std::{string::String, vec::Vec};
 
 use reqwest::Client;
 use serde::Deserialize;
@@ -40,22 +40,19 @@ pub struct Following {
     list: FollowingList,
 }
 
-pub trait ItemGetter<X, T>
+pub trait ItemGetter<T>
 where
-    X: Display,
-    T: Default + Iterator<Item = X> + From<Vec<X>>,
+    T: ToString,
 {
-    fn get_items(&mut self) -> T;
+    fn get_items(&mut self) -> Vec<T>;
 }
 
 impl Following {
     pub fn new(twitch_config: TwitchConfig) -> Self {
+        let token = twitch_config.token.clone();
+
         let client = task::block_in_place(move || {
-            Handle::current().block_on(async move {
-                get_twitch_client(twitch_config.token.clone())
-                    .await
-                    .unwrap()
-            })
+            Handle::current().block_on(async move { get_twitch_client(token).await.unwrap() })
         });
 
         Self {
@@ -93,31 +90,5 @@ impl Following {
         task::block_in_place(move || {
             Handle::current().block_on(async move { self.get_following().await })
         })
-    }
-}
-
-impl From<Vec<String>> for FollowingList {
-    fn from(value: Vec<String>) -> Self {
-        todo!()
-    }
-}
-
-impl Iterator for FollowingList {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.data.iter().next()
-    }
-}
-
-impl ItemGetter<String, FollowingList> for Following {
-    fn get_items(&mut self) -> FollowingList {
-        self.get_followed_channels()
-    }
-}
-
-impl Display for FollowingUser {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.broadcaster_login.fmt(f)
     }
 }

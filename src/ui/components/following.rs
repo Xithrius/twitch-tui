@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
-use tokio::{runtime::Handle, task};
+
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -28,7 +28,7 @@ use crate::{
     utils::text::{title_line, TitleStyle},
 };
 
-use super::utils::{centered_rect, InputWidget};
+use super::utils::{centered_rect, InputWidget, SearchWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
@@ -45,10 +45,7 @@ pub struct FollowingWidget {
 
 impl FollowingWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
-        let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-
-        // let channels = get_followed_channels(config.borrow().twitch.clone());
-        let channels = FollowingList::default();
+        let search_widget = SearchWidget::new(config.borrow().clone(), FollowingList);
 
         Self {
             config,
@@ -110,9 +107,9 @@ impl FollowingWidget {
     }
 
     pub fn toggle_focus(&mut self) {
-        if !self.focused {
-            FollowingList::get_followed_channels(self.config.borrow().twitch.clone());
-        }
+        // if !self.focused {
+        //     FollowingList::get_followed_channels(self.config.borrow().twitch.clone());
+        // }
 
         self.focused = !self.focused;
     }

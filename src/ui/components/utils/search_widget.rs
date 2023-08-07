@@ -1,4 +1,4 @@
-use std::{convert::From, fmt::Display, iter::Iterator, vec::Vec};
+use std::{convert::From, iter::Iterator, vec::Vec};
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
@@ -31,18 +31,17 @@ use super::{centered_rect, InputWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
-pub struct SearchWidget<X, T, F>
+pub struct SearchWidget<T, U>
 where
-    X: Display,
-    T: Default + Iterator<Item = X> + From<Vec<X>>,
-    F: ItemGetter<X, T>,
+    T: ToString + Copy,
+    U: ItemGetter<T>,
 {
     config: SharedCompleteConfig,
     focused: bool,
 
-    item_getter: F,
-    items: T,
-    filtered_items: Option<T>,
+    item_getter: U,
+    items: Vec<T>,
+    filtered_items: Option<Vec<T>>,
 
     list_state: ListState,
     search_input: InputWidget,
@@ -50,20 +49,19 @@ where
     vertical_scroll: usize,
 }
 
-impl<X, T, F> SearchWidget<X, T, F>
+impl<T, U> SearchWidget<T, U>
 where
-    X: Display,
-    T: Default + Iterator<Item = X> + From<Vec<X>>,
-    F: ItemGetter<X, T>,
+    T: ToString + Copy,
+    U: ItemGetter<T>,
 {
-    pub fn new(config: SharedCompleteConfig, item_getter: F) -> Self {
+    pub fn new(config: SharedCompleteConfig, item_getter: U) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
 
         Self {
             config,
             focused: false,
             item_getter,
-            items: T::default(),
+            items: vec![],
             filtered_items: None,
             list_state: ListState::default(),
             search_input,
@@ -76,13 +74,13 @@ where
         let i = match self.list_state.selected() {
             Some(i) => {
                 if let Some(filtered) = &self.filtered_items {
-                    if i >= filtered.count().saturating_sub(1) {
-                        filtered.count().saturating_sub(1)
+                    if i >= filtered.len().saturating_sub(1) {
+                        filtered.len().saturating_sub(1)
                     } else {
                         i + 1
                     }
-                } else if i >= self.items.count() - 1 {
-                    self.items.count() - 1
+                } else if i >= self.items.len().saturating_sub(1) {
+                    self.items.len().saturating_sub(1)
                 } else {
                     i + 1
                 }
@@ -128,11 +126,10 @@ where
     }
 }
 
-impl<X, T, F> Component for SearchWidget<X, T, F>
+impl<T, U> Component for SearchWidget<T, U>
 where
-    X: Display,
-    T: Default + Iterator<Item = X> + From<Vec<X>>,
-    F: ItemGetter<X, T>,
+    T: ToString + Copy,
+    U: ItemGetter<T>,
 {
     fn draw<B: Backend>(
         &mut self,
@@ -146,7 +143,7 @@ where
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
-            for item in self.items {
+            for item in self.items.clone() {
                 items.push(ListItem::new(item.to_string()));
             }
 
@@ -161,7 +158,7 @@ where
 
             let mut matched = vec![];
 
-            for item in self.items {
+            for item in self.items.clone() {
                 let matched_indices = item_filter(item.to_string());
 
                 if matched_indices.is_empty() {
@@ -187,7 +184,7 @@ where
                 matched.push(item);
             }
 
-            self.filtered_items = Some(matched.into());
+            self.filtered_items = Some(matched);
         }
 
         let title_binding = [TitleStyle::Single("Following")];
@@ -232,9 +229,9 @@ where
             "{} / {}",
             self.list_state.selected().map_or(1, |i| i + 1),
             if let Some(v) = &self.filtered_items {
-                v.count()
+                v.len()
             } else {
-                self.items.count()
+                self.items.len()
             }
         );
 
@@ -273,7 +270,7 @@ where
 
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_items {
-                        if v.count() > 0 {
+                        if !v.is_empty() {
                             self.list_state.select(Some(0));
                         }
                     }
