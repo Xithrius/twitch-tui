@@ -13,7 +13,7 @@ keywords = ["tui", "twitch"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-crossterm = "0.26.1"
+crossterm = "0.27.0"
 tui = { package = "ratatui", version = "0.22.0", default-features = false, features = [ "crossterm", "serde" ] }
 tokio = { version = "1.29.1", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
 clap = { version = "4.3.19", features = [ "derive", "cargo" ] }
