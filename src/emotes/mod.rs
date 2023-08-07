@@ -138,9 +138,7 @@ pub fn show_emotes<F>(
 
         emotes_pos_in_span.insert(emote.index_in_message - start);
 
-        let info = if let Some(info) = emotes.info.get(&emote.name) {
-            info
-        } else {
+        let Some(info) = emotes.info.get(&emote.name) else {
             warn!("Unable to get info of emote {}", emote.name);
             continue;
         };

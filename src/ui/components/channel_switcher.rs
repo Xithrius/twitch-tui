@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -273,6 +275,23 @@ impl Component for ChannelSwitcherWidget {
                     self.vertical_scroll_state = self
                         .vertical_scroll_state
                         .position(self.vertical_scroll as u16);
+                }
+                Key::Char('d') => {
+                    if let Some(index) = self.list_state.selected() {
+                        let to_delete = if let Some(filtered) = self.filtered_channels.clone() {
+                            filtered.index(index).to_string()
+                        } else {
+                            self.storage
+                                .borrow()
+                                .get("channels")
+                                .index(index)
+                                .to_string()
+                        };
+
+                        self.storage
+                            .borrow_mut()
+                            .remove_inner_with("channels", to_delete.as_str());
+                    }
                 }
                 Key::Enter => {
                     if let Some(i) = self.list_state.selected() {
