@@ -79,7 +79,7 @@ pub async fn ui_driver(
                 }
                 TwitchToTerminalAction::ClearChat => {
                     app.clear_messages();
-                },
+                }
                 TwitchToTerminalAction::DeleteMessage(_) => todo!(),
             }
         }
