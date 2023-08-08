@@ -210,11 +210,16 @@ async fn handle_message_command(
                 // https://docs.rs/irc/latest/irc/client/prelude/enum.Command.html
                 // https://datatracker.ietf.org/doc/html/rfc2812#section-3.4.7
                 "CLEARCHAT" => {
+                    tx.send(TwitchToTerminalAction::ClearChat).await.unwrap();
+                    tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
+                        .await
+                        .unwrap();
+                }
+                "CLEARMSG" => {
                     if let Some(id) = tags.get("target-msg-id") {
                         info!("Message to remove: {id}");
                     }
                 }
-                "CLEARMSG" => {}
                 _ => (),
             }
         }

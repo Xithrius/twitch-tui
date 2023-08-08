@@ -66,13 +66,21 @@ pub async fn ui_driver(
             }
         };
 
-        if let Ok(TwitchToTerminalAction::Message(mut msg)) = rx.try_recv() {
-            msg.parse_emotes(&mut app.emotes);
-            app.messages.borrow_mut().push_front(msg);
+        if let Ok(msg) = rx.try_recv() {
+            match msg {
+                TwitchToTerminalAction::Message(mut m) => {
+                    m.parse_emotes(&mut app.emotes);
+                    app.messages.borrow_mut().push_front(m);
 
-            // If scrolling is enabled, pad for more messages.
-            if app.components.chat.scroll_offset.get_offset() > 0 {
-                app.components.chat.scroll_offset.up();
+                    // If scrolling is enabled, pad for more messages.
+                    if app.components.chat.scroll_offset.get_offset() > 0 {
+                        app.components.chat.scroll_offset.up();
+                    }
+                }
+                TwitchToTerminalAction::ClearChat => {
+                    app.clear_messages();
+                },
+                TwitchToTerminalAction::DeleteMessage(_) => todo!(),
             }
         }
 
