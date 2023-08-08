@@ -116,6 +116,7 @@ pub async fn ui_driver(
                             let message_data = DataBuilder::user(
                                 config.twitch.username.to_string(),
                                 message.to_string(),
+                                None,
                             );
 
                             if let TwitchToTerminalAction::Message(mut msg) = message_data {

@@ -175,9 +175,12 @@ async fn handle_message_command(
             // An attempt to remove null bytes from the message.
             let cleaned_message = msg.trim_matches(char::from(0));
 
+            let id = tags.get("target-msg-id").map(|&s| s.to_string());
+
             tx.send(DataBuilder::user(
                 name.to_string(),
                 cleaned_message.to_string(),
+                id,
             ))
             .await
             .unwrap();
@@ -263,7 +266,9 @@ pub async fn handle_roomstate(tx: &Sender<TwitchToTerminalAction>, tags: &HashMa
         return;
     }
 
-    tx.send(DataBuilder::user(String::from("Info"), room_state))
+    let id = tags.get("target-msg-id").map(|&s| s.to_string());
+
+    tx.send(DataBuilder::user(String::from("Info"), room_state, id))
         .await
         .unwrap();
 }
