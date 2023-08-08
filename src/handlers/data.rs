@@ -46,6 +46,13 @@ impl EmoteData {
     }
 }
 
+#[allow(dead_code)]
+pub enum TwitchToTerminalAction {
+    Message(MessageData),
+    ClearChat,
+    DeleteMessage(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
@@ -318,16 +325,16 @@ impl<'conf> DataBuilder<'conf> {
         DataBuilder { datetime_format }
     }
 
-    pub fn user(user: String, payload: String) -> MessageData {
-        MessageData::new(user, false, payload)
+    pub fn user(user: String, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new(user, false, payload))
     }
 
-    pub fn system(self, payload: String) -> MessageData {
-        MessageData::new("System".to_string(), true, payload)
+    pub fn system(self, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new("System".to_string(), true, payload))
     }
 
-    pub fn twitch(self, payload: String) -> MessageData {
-        MessageData::new("Twitch".to_string(), true, payload)
+    pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new("Twitch".to_string(), true, payload))
     }
 }
 

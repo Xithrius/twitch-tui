@@ -15,7 +15,7 @@ use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use crate::{
     handlers::{
         config::CompleteConfig,
-        data::{DataBuilder, MessageData},
+        data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },
     twitch::{
@@ -32,7 +32,7 @@ pub enum TwitchAction {
 
 pub async fn twitch_irc(
     mut config: CompleteConfig,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
 ) {
     info!("Spawned Twitch IRC thread.");
@@ -144,7 +144,7 @@ pub async fn twitch_irc(
 
 async fn handle_message_command(
     message: Message,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     badges: bool,
     room_state_startup: bool,
@@ -209,7 +209,12 @@ async fn handle_message_command(
                 // https://dev.twitch.tv/docs/irc/tags/#clearchat-tags
                 // https://docs.rs/irc/latest/irc/client/prelude/enum.Command.html
                 // https://datatracker.ietf.org/doc/html/rfc2812#section-3.4.7
-                "CLEARCHAT" | "CLEARMSG" => {}
+                "CLEARCHAT" => {
+                    if let Some(id) = tags.get("target-msg-id") {
+                        info!("Message to remove: {id}");
+                    }
+                }
+                "CLEARMSG" => {}
                 _ => (),
             }
         }
@@ -219,7 +224,7 @@ async fn handle_message_command(
     None
 }
 
-pub async fn handle_roomstate(tx: &Sender<MessageData>, tags: &HashMap<&str, &str>) {
+pub async fn handle_roomstate(tx: &Sender<TwitchToTerminalAction>, tags: &HashMap<&str, &str>) {
     let mut room_state = String::new();
 
     for (name, value) in tags.iter() {
