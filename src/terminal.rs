@@ -108,6 +108,8 @@ pub async fn ui_driver(
                     }
                     TerminalAction::ClearMessages => {
                         app.clear_messages();
+
+                        tx.send(TwitchAction::ClearMessages).unwrap();
                     }
                     TerminalAction::Enter(action) => match action {
                         TwitchAction::Privmsg(message) => {
@@ -132,6 +134,7 @@ pub async fn ui_driver(
 
                             app.set_state(State::Normal);
                         }
+                        TwitchAction::ClearMessages => {}
                     },
                 }
             }

@@ -28,6 +28,7 @@ use crate::{
 pub enum TwitchAction {
     Privmsg(String),
     Join(String),
+    ClearMessages,
 }
 
 pub async fn twitch_irc(
@@ -112,6 +113,9 @@ pub async fn twitch_irc(
 
                         // Set old channel to new channel
                         config.twitch.channel = channel;
+                    }
+                    TwitchAction::ClearMessages => {
+                        client.send(Command::Raw("CLEARCHAT".to_string(), vec![])).unwrap();
                     }
                 }
             }
