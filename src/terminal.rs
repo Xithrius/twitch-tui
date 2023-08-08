@@ -80,7 +80,9 @@ pub async fn ui_driver(
                 TwitchToTerminalAction::ClearChat => {
                     app.clear_messages();
                 }
-                TwitchToTerminalAction::DeleteMessage(_) => todo!(),
+                TwitchToTerminalAction::DeleteMessage(message_id) => {
+                    app.remove_message_with(message_id.as_str());
+                }
             }
         }
 

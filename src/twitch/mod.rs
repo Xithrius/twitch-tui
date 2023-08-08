@@ -175,7 +175,7 @@ async fn handle_message_command(
             // An attempt to remove null bytes from the message.
             let cleaned_message = msg.trim_matches(char::from(0));
 
-            let id = tags.get("target-msg-id").map(|&s| s.to_string());
+            let id = tags.get("id").map(|&s| s.to_string());
 
             tx.send(DataBuilder::user(
                 name.to_string(),
@@ -197,6 +197,7 @@ async fn handle_message_command(
         }
         Command::Raw(ref cmd, ref _items) => {
             match cmd.as_ref() {
+                // https://dev.twitch.tv/docs/irc/tags/#roomstate-tags
                 "ROOMSTATE" => {
                     // Only display roomstate on startup, since twitch
                     // sends a NOTICE whenever roomstate changes.
@@ -206,6 +207,7 @@ async fn handle_message_command(
 
                     return Some(true);
                 }
+                // https://dev.twitch.tv/docs/irc/tags/#usernotice-tags
                 "USERNOTICE" => {
                     if let Some(value) = tags.get("system-msg") {
                         tx.send(data_builder.twitch((*value).to_string()))
@@ -214,17 +216,18 @@ async fn handle_message_command(
                     }
                 }
                 // https://dev.twitch.tv/docs/irc/tags/#clearchat-tags
-                // https://docs.rs/irc/latest/irc/client/prelude/enum.Command.html
-                // https://datatracker.ietf.org/doc/html/rfc2812#section-3.4.7
                 "CLEARCHAT" => {
                     tx.send(TwitchToTerminalAction::ClearChat).await.unwrap();
                     tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
                         .await
                         .unwrap();
                 }
+                // https://dev.twitch.tv/docs/irc/tags/#clearmsg-tags
                 "CLEARMSG" => {
                     if let Some(id) = tags.get("target-msg-id") {
-                        info!("Message to remove: {id}");
+                        tx.send(TwitchToTerminalAction::DeleteMessage((*id).to_string()))
+                            .await
+                            .unwrap();
                     }
                 }
                 _ => (),
