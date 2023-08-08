@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -276,34 +274,54 @@ impl Component for ChannelSwitcherWidget {
                         .vertical_scroll_state
                         .position(self.vertical_scroll as u16);
                 }
-                Key::Char('d') => {
+                Key::Ctrl('d') => {
                     if let Some(index) = self.list_state.selected() {
-                        let to_delete = if let Some(filtered) = self.filtered_channels.clone() {
-                            filtered.index(index).to_string()
-                        } else {
+                        // TODO: Make this just two if lets
+                        if let Some(filtered) = self.filtered_channels.clone() {
+                            if let Some(value) = filtered.get(index) {
+                                self.storage
+                                    .borrow_mut()
+                                    .remove_inner_with("channels", value);
+                            }
+                        } else if let Some(value) = self.storage.borrow().get("channels").get(index)
+                        {
                             self.storage
-                                .borrow()
-                                .get("channels")
-                                .index(index)
-                                .to_string()
-                        };
-
-                        self.storage
-                            .borrow_mut()
-                            .remove_inner_with("channels", to_delete.as_str());
+                                .borrow_mut()
+                                .remove_inner_with("channels", value);
+                        }
                     }
                 }
                 Key::Enter => {
+                    // TODO: Reduce code duplication
                     if let Some(i) = self.list_state.selected() {
                         self.toggle_focus();
-
                         self.unselect();
 
                         let channels = self.storage.borrow().get("channels");
 
                         let selected_channel = if let Some(v) = &self.filtered_channels {
                             if v.is_empty() {
-                                return None;
+                                let selected_channel = self.search_input.to_string();
+
+                                if !selected_channel.is_empty() {
+                                    self.toggle_focus();
+                                    self.unselect();
+
+                                    if self.config.borrow().storage.channels {
+                                        self.storage
+                                            .borrow_mut()
+                                            .add("channels", selected_channel.clone());
+                                    }
+
+                                    self.search_input.update("");
+
+                                    self.config.borrow_mut().twitch.channel =
+                                        selected_channel.clone();
+
+                                    return Some(TerminalAction::Enter(TwitchAction::Join(
+                                        selected_channel,
+                                    )));
+                                }
                             }
 
                             v.get(i).unwrap()
