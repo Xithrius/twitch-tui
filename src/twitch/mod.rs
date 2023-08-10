@@ -17,7 +17,7 @@ use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use crate::{
     handlers::{
         config::CompleteConfig,
-        data::{DataBuilder, MessageData},
+        data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },
     twitch::{
@@ -30,11 +30,12 @@ use crate::{
 pub enum TwitchAction {
     Privmsg(String),
     Join(String),
+    ClearMessages,
 }
 
 pub async fn twitch_irc(
     mut config: CompleteConfig,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
 ) {
     info!("Spawned Twitch IRC thread.");
@@ -115,6 +116,9 @@ pub async fn twitch_irc(
                         // Set old channel to new channel
                         config.twitch.channel = channel;
                     }
+                    TwitchAction::ClearMessages => {
+                        client.send(Command::Raw("CLEARCHAT".to_string(), vec![])).unwrap();
+                    }
                 }
             }
             Some(message) = stream.next() => {
@@ -146,7 +150,7 @@ pub async fn twitch_irc(
 
 async fn handle_message_command(
     message: Message,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     badges: bool,
     room_state_startup: bool,
@@ -173,9 +177,12 @@ async fn handle_message_command(
             // An attempt to remove null bytes from the message.
             let cleaned_message = msg.trim_matches(char::from(0));
 
+            let id = tags.get("id").map(|&s| s.to_string());
+
             tx.send(DataBuilder::user(
                 name.to_string(),
                 cleaned_message.to_string(),
+                id,
             ))
             .await
             .unwrap();
@@ -192,6 +199,7 @@ async fn handle_message_command(
         }
         Command::Raw(ref cmd, ref _items) => {
             match cmd.as_ref() {
+                // https://dev.twitch.tv/docs/irc/tags/#roomstate-tags
                 "ROOMSTATE" => {
                     // Only display roomstate on startup, since twitch
                     // sends a NOTICE whenever roomstate changes.
@@ -201,9 +209,25 @@ async fn handle_message_command(
 
                     return Some(true);
                 }
+                // https://dev.twitch.tv/docs/irc/tags/#usernotice-tags
                 "USERNOTICE" => {
                     if let Some(value) = tags.get("system-msg") {
                         tx.send(data_builder.twitch((*value).to_string()))
+                            .await
+                            .unwrap();
+                    }
+                }
+                // https://dev.twitch.tv/docs/irc/tags/#clearchat-tags
+                "CLEARCHAT" => {
+                    tx.send(TwitchToTerminalAction::ClearChat).await.unwrap();
+                    tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
+                        .await
+                        .unwrap();
+                }
+                // https://dev.twitch.tv/docs/irc/tags/#clearmsg-tags
+                "CLEARMSG" => {
+                    if let Some(id) = tags.get("target-msg-id") {
+                        tx.send(TwitchToTerminalAction::DeleteMessage((*id).to_string()))
                             .await
                             .unwrap();
                     }
@@ -217,10 +241,7 @@ async fn handle_message_command(
     None
 }
 
-pub async fn handle_roomstate<S: BuildHasher>(
-    tx: &Sender<MessageData>,
-    tags: &HashMap<&str, &str, S>,
-) {
+pub async fn handle_roomstate(tx: &Sender<TwitchToTerminalAction>, tags: &HashMap<&str, &str>) {
     let mut room_state = String::new();
 
     for (name, value) in tags.iter() {
@@ -250,7 +271,9 @@ pub async fn handle_roomstate<S: BuildHasher>(
         return;
     }
 
-    tx.send(DataBuilder::user(String::from("Info"), room_state))
+    let id = tags.get("target-msg-id").map(|&s| s.to_string());
+
+    tx.send(DataBuilder::user(String::from("Info"), room_state, id))
         .await
         .unwrap();
 }

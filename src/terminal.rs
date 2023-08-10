@@ -9,7 +9,7 @@ use crate::{
     handlers::{
         app::App,
         config::CompleteConfig,
-        data::{DataBuilder, MessageData},
+        data::{DataBuilder, TwitchToTerminalAction},
         state::State,
         user_input::events::{Config, Events, Key},
     },
@@ -28,7 +28,7 @@ pub async fn ui_driver(
     config: CompleteConfig,
     mut app: App,
     tx: Sender<TwitchAction>,
-    mut rx: Receiver<MessageData>,
+    mut rx: Receiver<TwitchToTerminalAction>,
     mut erx: Receiver<DownloadedEmotes>,
 ) {
     info!("Started UI driver.");
@@ -66,13 +66,23 @@ pub async fn ui_driver(
             }
         };
 
-        if let Ok(mut info) = rx.try_recv() {
-            info.parse_emotes(&mut app.emotes);
-            app.messages.borrow_mut().push_front(info);
+        if let Ok(msg) = rx.try_recv() {
+            match msg {
+                TwitchToTerminalAction::Message(mut m) => {
+                    m.parse_emotes(&mut app.emotes);
+                    app.messages.borrow_mut().push_front(m);
 
-            // If scrolling is enabled, pad for more messages.
-            if app.components.chat.scroll_offset.get_offset() > 0 {
-                app.components.chat.scroll_offset.up();
+                    // If scrolling is enabled, pad for more messages.
+                    if app.components.chat.scroll_offset.get_offset() > 0 {
+                        app.components.chat.scroll_offset.up();
+                    }
+                }
+                TwitchToTerminalAction::ClearChat => {
+                    app.clear_messages();
+                }
+                TwitchToTerminalAction::DeleteMessage(message_id) => {
+                    app.remove_message_with(message_id.as_str());
+                }
             }
         }
 
@@ -100,19 +110,24 @@ pub async fn ui_driver(
                     }
                     TerminalAction::ClearMessages => {
                         app.clear_messages();
+
+                        tx.send(TwitchAction::ClearMessages).unwrap();
                     }
                     TerminalAction::Enter(action) => match action {
                         TwitchAction::Privmsg(message) => {
-                            let mut message_data = DataBuilder::user(
+                            let message_data = DataBuilder::user(
                                 config.twitch.username.to_string(),
                                 message.to_string(),
+                                None,
                             );
 
-                            message_data.parse_emotes(&mut app.emotes);
+                            if let TwitchToTerminalAction::Message(mut msg) = message_data {
+                                msg.parse_emotes(&mut app.emotes);
 
-                            app.messages.borrow_mut().push_front(message_data);
+                                app.messages.borrow_mut().push_front(msg);
 
-                            tx.send(TwitchAction::Privmsg(message)).unwrap();
+                                tx.send(TwitchAction::Privmsg(message)).unwrap();
+                            }
                         }
                         TwitchAction::Join(channel) => {
                             app.clear_messages();
@@ -122,6 +137,7 @@ pub async fn ui_driver(
 
                             app.set_state(State::Normal);
                         }
+                        TwitchAction::ClearMessages => {}
                     },
                 }
             }

@@ -9,7 +9,7 @@ use tokio::{sync::mpsc::Sender, time::sleep};
 
 use crate::handlers::{
     config::CompleteConfig,
-    data::{DataBuilder, MessageData},
+    data::{DataBuilder, TwitchToTerminalAction},
 };
 
 /// Initialize the config and send it to the client to connect to an IRC channel.
@@ -36,7 +36,7 @@ async fn create_client_stream(config: CompleteConfig) -> Result<(Client, ClientS
 }
 
 pub async fn wait_client_stream(
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     config: CompleteConfig,
 ) -> (Client, ClientStream) {
@@ -67,7 +67,7 @@ pub async fn wait_client_stream(
 /// If an error of any kind occurs, attempt to reconnect to the IRC channel.
 pub async fn client_stream_reconnect(
     err: Error,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     config: &CompleteConfig,
 ) -> (Client, ClientStream) {

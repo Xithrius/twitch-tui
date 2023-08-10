@@ -173,6 +173,18 @@ impl App {
         self.components.chat.scroll_offset.jump_to(0);
     }
 
+    pub fn remove_message_with(&mut self, message_id: &str) {
+        let index = self
+            .messages
+            .borrow_mut()
+            .iter()
+            .position(|f| f.message_id.clone().map_or(false, |id| id == message_id));
+
+        if let Some(i) = index {
+            self.messages.borrow_mut().remove(i).unwrap();
+        }
+    }
+
     pub fn get_previous_state(&self) -> Option<State> {
         self.previous_state.clone()
     }

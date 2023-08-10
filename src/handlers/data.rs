@@ -46,6 +46,13 @@ impl EmoteData {
     }
 }
 
+#[allow(dead_code)]
+pub enum TwitchToTerminalAction {
+    Message(MessageData),
+    ClearChat,
+    DeleteMessage(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
@@ -53,16 +60,18 @@ pub struct MessageData {
     pub system: bool,
     pub payload: String,
     pub emotes: Vec<EmoteData>,
+    pub message_id: Option<String>,
 }
 
 impl MessageData {
-    pub fn new(author: String, system: bool, payload: String) -> Self {
+    pub fn new(author: String, system: bool, payload: String, message_id: Option<String>) -> Self {
         Self {
             time_sent: Local::now(),
             author,
             system,
             payload,
             emotes: vec![],
+            message_id,
         }
     }
 
@@ -318,16 +327,16 @@ impl<'conf> DataBuilder<'conf> {
         DataBuilder { datetime_format }
     }
 
-    pub fn user(user: String, payload: String) -> MessageData {
-        MessageData::new(user, false, payload)
+    pub fn user(user: String, payload: String, id: Option<String>) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new(user, false, payload, id))
     }
 
-    pub fn system(self, payload: String) -> MessageData {
-        MessageData::new("System".to_string(), true, payload)
+    pub fn system(self, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new("System".to_string(), true, payload, None))
     }
 
-    pub fn twitch(self, payload: String) -> MessageData {
-        MessageData::new("Twitch".to_string(), true, payload)
+    pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new("Twitch".to_string(), true, payload, None))
     }
 }
 
@@ -338,7 +347,7 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            MessageData::new("human".to_string(), false, "beep boop".to_string())
+            MessageData::new("human".to_string(), false, "beep boop".to_string(), None)
                 .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );
