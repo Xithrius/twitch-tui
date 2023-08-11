@@ -179,11 +179,18 @@ impl MessageData {
             .format(&frontend_config.datetime_format)
             .to_string();
 
-        // Add 2 for the " " and ":"
-        let prefix_len = if frontend_config.username_shown {
-            time_sent.len() + self.author.len() + 2
+        let time_sent_len = if frontend_config.show_datetimes {
+            // Add 1 for the space after the timestamp
+            time_sent.len() + 1
         } else {
-            time_sent.len()
+            0
+        };
+
+        let prefix_len = if frontend_config.username_shown {
+            // Add 1 for the ":"
+            time_sent_len + self.author.len() + 1
+        } else {
+            time_sent_len
         };
 
         // Width of the window - window margin on both sides
@@ -211,15 +218,17 @@ impl MessageData {
             0
         };
 
-        let mut first_row = vec![
-            // Datetime
-            Span::styled(time_sent, datetime_theme),
-            Span::raw(" ".repeat(username_alignment)),
-        ];
+        let mut first_row: Vec<Span<'_>> = vec![];
+
+        if frontend_config.show_datetimes {
+            first_row.extend(vec![
+                Span::styled(time_sent, datetime_theme),
+                Span::raw(" ".repeat(username_alignment)),
+            ]);
+        }
 
         if frontend_config.username_shown {
             first_row.extend(vec![
-                // Author
                 Span::styled(&self.author, author_theme),
                 Span::raw(":"),
             ]);
