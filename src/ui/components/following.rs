@@ -1,5 +1,6 @@
 use std::ops::Index;
 
+use anyhow::Result;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use tokio::{runtime::Handle, task};
@@ -31,22 +32,34 @@ use crate::{
     utils::text::{title_line, TitleStyle},
 };
 
-use super::utils::InputWidget;
+use super::{utils::InputWidget, ErrorWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
+static INCORRECT_SCOPES_ERROR_MESSAGE: Lazy<Vec<&'static str>> = Lazy::new(|| {
+    vec![
+        "Failed to get the list of streamers you currently follow.",
+        "Either you have incorrect scopes in your token, or the API is down.",
+        "To get the correct scopes, see the default config at the link below:",
+        "https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml#L8-L13",
+        "",
+        "Hit ESC to dismiss this error.",
+    ]
+});
 
 pub struct FollowingWidget {
     config: SharedCompleteConfig,
     focused: bool,
-    channels: FollowingList,
+    channels: Result<FollowingList>,
     filtered_channels: Option<Vec<String>>,
     list_state: ListState,
     search_input: InputWidget,
     vertical_scroll_state: ScrollbarState,
     vertical_scroll: usize,
+
+    incorrect_scopes_error: ErrorWidget,
 }
 
-fn get_followed_channels(twitch_config: TwitchConfig) -> FollowingList {
+fn get_followed_channels(twitch_config: TwitchConfig) -> Result<FollowingList> {
     task::block_in_place(move || {
         Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
     })
@@ -58,7 +71,10 @@ impl FollowingWidget {
 
         let list_state = ListState::default().with_selected(Some(0));
 
-        let channels = get_followed_channels(config.borrow().twitch.clone());
+        let channels = Ok(get_followed_channels(config.borrow().twitch.clone())
+            .map_or_else(|_| FollowingList::default(), |l| l));
+
+        let incorrect_scopes_error = ErrorWidget::new(INCORRECT_SCOPES_ERROR_MESSAGE.to_vec());
 
         Self {
             config,
@@ -69,6 +85,8 @@ impl FollowingWidget {
             search_input,
             vertical_scroll_state: ScrollbarState::default(),
             vertical_scroll: 0,
+
+            incorrect_scopes_error,
         }
     }
 
@@ -81,8 +99,14 @@ impl FollowingWidget {
                     } else {
                         i + 1
                     }
-                } else if i >= self.channels.data.len() - 1 {
-                    self.channels.data.len() - 1
+                // } else if i >= self.channels.data.len() - 1 {
+                //     self.channels.data.len() - 1
+                } else if let Ok(channels) = &self.channels {
+                    if i >= channels.data.len() - 1 {
+                        channels.data.len()
+                    } else {
+                        i + 1
+                    }
                 } else {
                     i + 1
                 }
@@ -124,17 +148,31 @@ impl FollowingWidget {
             self.channels = get_followed_channels(self.config.borrow().twitch.clone());
         }
 
+        if self.channels.is_err() {
+            self.incorrect_scopes_error.toggle_focus();
+        }
+
         self.focused = !self.focused;
     }
 }
 
 impl Component for FollowingWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+        if self.incorrect_scopes_error.is_focused() {
+            self.incorrect_scopes_error.draw(f, area, emotes);
+
+            return;
+        }
+
         let mut items = vec![];
         let current_input = self.search_input.to_string();
 
+        let default_channels = FollowingList::default();
+
+        let channels = self.channels.as_ref().map_or(&default_channels, |c| c);
+
         if current_input.is_empty() {
-            for channel in self.channels.clone().data {
+            for channel in channels.clone().data {
                 items.push(ListItem::new(channel.broadcaster_name.clone()));
             }
 
@@ -149,7 +187,7 @@ impl Component for FollowingWidget {
 
             let mut matched = vec![];
 
-            for channel in self.channels.clone().data {
+            for channel in channels.clone().data {
                 let matched_indices = channel_filter(channel.broadcaster_name.clone());
 
                 if matched_indices.is_empty() {
@@ -219,11 +257,9 @@ impl Component for FollowingWidget {
         let title_binding = format!(
             "{} / {}",
             self.list_state.selected().map_or(1, |i| i + 1),
-            if let Some(v) = &self.filtered_channels {
-                v.len()
-            } else {
-                self.channels.data.len()
-            }
+            self.filtered_channels
+                .as_ref()
+                .map_or(channels.data.len(), Vec::len)
         );
 
         let title = [TitleStyle::Single(&title_binding)];
@@ -245,6 +281,15 @@ impl Component for FollowingWidget {
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if self.incorrect_scopes_error.is_focused() && matches!(event, Event::Input(Key::Esc)) {
+            self.incorrect_scopes_error.toggle_focus();
+            self.toggle_focus();
+        }
+
+        let default_channels = FollowingList::default();
+
+        let channels = self.channels.as_ref().map_or(&default_channels, |c| c);
+
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {
@@ -266,7 +311,7 @@ impl Component for FollowingWidget {
 
                             v.index(i).to_string()
                         } else {
-                            self.channels.data.index(i).broadcaster_name.to_string()
+                            channels.data.index(i).broadcaster_name.to_string()
                         }
                         .to_lowercase();
 

@@ -4,38 +4,52 @@ use tui::{
     style::{Color, Style},
     terminal::Frame,
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{block::Title, Block, Borders, Clear, Paragraph},
 };
 
 use crate::{emotes::Emotes, ui::components::Component};
 
-const WINDOW_SIZE_ERROR_MESSAGE: [&str; 3] = [
-    "Window to small!",
-    "Must allow for at least 60x10.",
-    "Restart and resize.",
-];
-
 #[derive(Debug, Clone)]
-pub struct ErrorWidget;
+pub struct ErrorWidget {
+    message: Vec<&'static str>,
+    focused: bool,
+}
 
 impl ErrorWidget {
-    pub const fn new() -> Self {
-        Self
+    pub const fn new(message: Vec<&'static str>) -> Self {
+        Self {
+            message,
+            focused: false,
+        }
+    }
+
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    pub fn toggle_focus(&mut self) {
+        self.focused = !self.focused;
     }
 }
 
 impl Component for ErrorWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
         let paragraph = Paragraph::new(
-            WINDOW_SIZE_ERROR_MESSAGE
+            self.message
                 .iter()
                 .map(|&s| Line::from(vec![Span::raw(s)]))
                 .collect::<Vec<Line>>(),
         )
-        .block(Block::default().borders(Borders::NONE))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Red))
+                .title(Title::from("[ ERROR ]").alignment(Alignment::Center)),
+        )
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Center);
 
+        f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
     }
 }

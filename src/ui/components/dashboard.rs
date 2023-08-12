@@ -168,8 +168,15 @@ impl DashboardWidget {
 
 impl Component for DashboardWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
-        let favorite_channels_len =
-            self.config.borrow().frontend.favorite_channels.len() as u16 + 1;
+        let favorite_channels_len = {
+            let l = self.config.borrow().frontend.favorite_channels.len() as u16;
+
+            if l == 0 {
+                2
+            } else {
+                l + 1
+            }
+        };
 
         let recent_channels_len = {
             let current_len = self.storage.borrow().get("channels").len() as u16;

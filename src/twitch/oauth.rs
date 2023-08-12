@@ -103,22 +103,19 @@ pub struct FollowingList {
 const FOLLOWER_COUNT: usize = 100;
 
 // https://dev.twitch.tv/docs/api/reference/#get-followed-channels
-pub async fn get_user_following(client: &Client, user_id: i32) -> FollowingList {
-    client
+pub async fn get_user_following(client: &Client, user_id: i32) -> Result<FollowingList> {
+    Ok(client
         .get(format!(
             "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
         ))
         .send()
-        .await
-        .unwrap()
-        .error_for_status()
-        .unwrap()
+        .await?
+        .error_for_status()?
         .json::<FollowingList>()
-        .await
-        .unwrap()
+        .await?)
 }
 
-pub async fn get_following(twitch_config: &TwitchConfig) -> FollowingList {
+pub async fn get_following(twitch_config: &TwitchConfig) -> Result<FollowingList> {
     let oauth_token = twitch_config.token.clone();
     let app_user = twitch_config.username.clone();
 
