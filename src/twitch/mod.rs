@@ -221,12 +221,36 @@ async fn handle_message_command(
                 "CLEARCHAT" => {
                     let user_id = tags.get("target-user-id").map(|&s| s.to_string());
 
-                    tx.send(TwitchToTerminalAction::ClearChat(user_id))
+                    tx.send(TwitchToTerminalAction::ClearChat(user_id.clone()))
                         .await
                         .unwrap();
-                    tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
-                        .await
-                        .unwrap();
+
+                    // User was either timed out or banned
+                    if user_id.is_some() {
+                        let ban_duration = tags.get("ban-duration").map(|&s| s.to_string());
+
+                        // TODO: In both cases of this branch, replace "User" with the username that the punishment was inflicted upon
+
+                        // User was timed out
+                        if let Some(duration) = ban_duration {
+                            tx.send(
+                                data_builder
+                                    .twitch(format!("User was timed out for {duration} seconds")),
+                            )
+                            .await
+                            .unwrap();
+                        }
+                        // User was banned
+                        else {
+                            tx.send(data_builder.twitch("User banned".to_string()))
+                                .await
+                                .unwrap();
+                        }
+                    } else {
+                        tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
+                            .await
+                            .unwrap();
+                    }
                 }
                 // https://dev.twitch.tv/docs/irc/tags/#clearmsg-tags
                 "CLEARMSG" => {
