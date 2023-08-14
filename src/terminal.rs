@@ -77,8 +77,12 @@ pub async fn ui_driver(
                         app.components.chat.scroll_offset.up();
                     }
                 }
-                TwitchToTerminalAction::ClearChat => {
-                    app.clear_messages();
+                TwitchToTerminalAction::ClearChat(user_id) => {
+                    if let Some(user) = user_id {
+                        app.purge_user_messages(user.as_str());
+                    } else {
+                        app.clear_messages();
+                    }
                 }
                 TwitchToTerminalAction::DeleteMessage(message_id) => {
                     app.remove_message_with(message_id.as_str());
@@ -117,6 +121,7 @@ pub async fn ui_driver(
                         TwitchAction::Privmsg(message) => {
                             let message_data = DataBuilder::user(
                                 config.twitch.username.to_string(),
+                                None,
                                 message.to_string(),
                                 None,
                             );
