@@ -173,13 +173,16 @@ impl App {
         self.components.chat.scroll_offset.jump_to(0);
     }
 
-    pub fn purge_user_messages(&mut self, _user_id: &str) {
-        // let filtered_messages: Rc<RefCell<VecDeque<MessageData>>> = self.messages.borrow().iter().filter(|m| {
-        //     m.user_id.clone().map_or(true, |user| user != user_id)
-        // }).collect();
+    pub fn purge_user_messages(&mut self, user_id: &str) {
+        let messages = self
+            .messages
+            .borrow_mut()
+            .iter()
+            .filter(|&m| m.user_id.clone().map_or(true, |user| user != user_id))
+            .cloned()
+            .collect::<VecDeque<MessageData>>();
 
-        // self.messages = filtered_messages;
-        todo!();
+        self.messages.replace(messages);
     }
 
     pub fn remove_message_with(&mut self, message_id: &str) {
