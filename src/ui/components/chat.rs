@@ -212,8 +212,9 @@ impl ChatWidget {
 
 impl Component for ChatWidget {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
-        // TODO: Don't let this be a thing
-        let emotes = emotes.unwrap();
+        let mut default_emotes = Emotes::default();
+
+        let emotes = emotes.map_or(&mut default_emotes, |e| e);
 
         let config = self.config.borrow();
 

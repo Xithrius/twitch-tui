@@ -46,10 +46,9 @@ impl EmoteData {
     }
 }
 
-#[allow(dead_code)]
 pub enum TwitchToTerminalAction {
     Message(MessageData),
-    ClearChat,
+    ClearChat(Option<String>),
     DeleteMessage(String),
 }
 
@@ -57,6 +56,7 @@ pub enum TwitchToTerminalAction {
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
+    pub user_id: Option<String>,
     pub system: bool,
     pub payload: String,
     pub emotes: Vec<EmoteData>,
@@ -64,10 +64,17 @@ pub struct MessageData {
 }
 
 impl MessageData {
-    pub fn new(author: String, system: bool, payload: String, message_id: Option<String>) -> Self {
+    pub fn new(
+        author: String,
+        user_id: Option<String>,
+        system: bool,
+        payload: String,
+        message_id: Option<String>,
+    ) -> Self {
         Self {
             time_sent: Local::now(),
             author,
+            user_id,
             system,
             payload,
             emotes: vec![],
@@ -336,16 +343,33 @@ impl<'conf> DataBuilder<'conf> {
         DataBuilder { datetime_format }
     }
 
-    pub fn user(user: String, payload: String, id: Option<String>) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new(user, false, payload, id))
+    pub fn user(
+        user: String,
+        user_id: Option<String>,
+        payload: String,
+        message_id: Option<String>,
+    ) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new(user, user_id, false, payload, message_id))
     }
 
     pub fn system(self, payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new("System".to_string(), true, payload, None))
+        TwitchToTerminalAction::Message(MessageData::new(
+            "System".to_string(),
+            None,
+            true,
+            payload,
+            None,
+        ))
     }
 
     pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new("Twitch".to_string(), true, payload, None))
+        TwitchToTerminalAction::Message(MessageData::new(
+            "Twitch".to_string(),
+            None,
+            true,
+            payload,
+            None,
+        ))
     }
 }
 
@@ -356,8 +380,14 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            MessageData::new("human".to_string(), false, "beep boop".to_string(), None)
-                .hash_username(&Palette::Pastel),
+            MessageData::new(
+                "human".to_string(),
+                None,
+                false,
+                "beep boop".to_string(),
+                None
+            )
+            .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );
     }
