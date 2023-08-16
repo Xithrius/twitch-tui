@@ -177,12 +177,14 @@ async fn handle_message_command(
             // An attempt to remove null bytes from the message.
             let cleaned_message = msg.trim_matches(char::from(0));
 
-            let id = tags.get("id").map(|&s| s.to_string());
+            let message_id = tags.get("id").map(|&s| s.to_string());
+            let user_id = tags.get("user-id").map(|&s| s.to_string());
 
             tx.send(DataBuilder::user(
                 name.to_string(),
+                user_id,
                 cleaned_message.to_string(),
-                id,
+                message_id,
             ))
             .await
             .unwrap();
@@ -219,10 +221,38 @@ async fn handle_message_command(
                 }
                 // https://dev.twitch.tv/docs/irc/tags/#clearchat-tags
                 "CLEARCHAT" => {
-                    tx.send(TwitchToTerminalAction::ClearChat).await.unwrap();
-                    tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
+                    let user_id = tags.get("target-user-id").map(|&s| s.to_string());
+
+                    tx.send(TwitchToTerminalAction::ClearChat(user_id.clone()))
                         .await
                         .unwrap();
+
+                    // User was either timed out or banned
+                    if user_id.is_some() {
+                        let ban_duration = tags.get("ban-duration").map(|&s| s.to_string());
+
+                        // TODO: In both cases of this branch, replace "User" with the username that the punishment was inflicted upon
+
+                        // User was timed out
+                        if let Some(duration) = ban_duration {
+                            tx.send(
+                                data_builder
+                                    .twitch(format!("User was timed out for {duration} seconds")),
+                            )
+                            .await
+                            .unwrap();
+                        }
+                        // User was banned
+                        else {
+                            tx.send(data_builder.twitch("User banned".to_string()))
+                                .await
+                                .unwrap();
+                        }
+                    } else {
+                        tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
+                            .await
+                            .unwrap();
+                    }
                 }
                 // https://dev.twitch.tv/docs/irc/tags/#clearmsg-tags
                 "CLEARMSG" => {
@@ -271,9 +301,14 @@ pub async fn handle_roomstate(tx: &Sender<TwitchToTerminalAction>, tags: &HashMa
         return;
     }
 
-    let id = tags.get("target-msg-id").map(|&s| s.to_string());
+    let message_id = tags.get("target-msg-id").map(|&s| s.to_string());
 
-    tx.send(DataBuilder::user(String::from("Info"), room_state, id))
-        .await
-        .unwrap();
+    tx.send(DataBuilder::user(
+        String::from("Info"),
+        None,
+        room_state,
+        message_id,
+    ))
+    .await
+    .unwrap();
 }

@@ -117,7 +117,7 @@ impl App {
         }
 
         if size.height < 10 || size.width < 60 {
-            self.components.error.draw(f, None, None);
+            self.components.window_size_error.draw(f, f.size(), None);
         } else {
             match self.state {
                 State::Dashboard => self.components.dashboard.draw(f, None, None),
@@ -171,6 +171,18 @@ impl App {
         self.messages.borrow_mut().clear();
 
         self.components.chat.scroll_offset.jump_to(0);
+    }
+
+    pub fn purge_user_messages(&mut self, user_id: &str) {
+        let messages = self
+            .messages
+            .borrow_mut()
+            .iter()
+            .filter(|&m| m.user_id.clone().map_or(true, |user| user != user_id))
+            .cloned()
+            .collect::<VecDeque<MessageData>>();
+
+        self.messages.replace(messages);
     }
 
     pub fn remove_message_with(&mut self, message_id: &str) {

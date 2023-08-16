@@ -19,6 +19,7 @@ pub use debug::DebugWidget;
 pub use error::ErrorWidget;
 pub use help::HelpWidget;
 pub use message_search::MessageSearchWidget;
+use once_cell::sync::Lazy;
 pub use state_tabs::StateTabsWidget;
 
 use chrono::{DateTime, Local};
@@ -35,6 +36,14 @@ use crate::{
     },
     terminal::TerminalAction,
 };
+
+static WINDOW_SIZE_TOO_SMALL_ERROR: Lazy<Vec<&'static str>> = Lazy::new(|| {
+    vec![
+        "Window to small!",
+        "Must allow for at least 60x10.",
+        "Restart and resize.",
+    ]
+});
 
 pub trait Component {
     #[allow(unused_variables)]
@@ -70,7 +79,9 @@ pub struct Components {
     pub chat: ChatWidget,
     pub dashboard: DashboardWidget,
     pub help: HelpWidget,
-    pub error: ErrorWidget,
+
+    // Errors
+    pub window_size_error: ErrorWidget,
 }
 
 impl Components {
@@ -81,6 +92,8 @@ impl Components {
         messages: SharedMessages,
         startup_time: DateTime<Local>,
     ) -> Self {
+        let window_size_error = ErrorWidget::new(WINDOW_SIZE_TOO_SMALL_ERROR.to_vec());
+
         Self {
             tabs: StateTabsWidget::new(config.clone()),
             debug: DebugWidget::new(config.clone(), startup_time),
@@ -88,7 +101,7 @@ impl Components {
             chat: ChatWidget::new(config.clone(), messages, &storage, filters),
             dashboard: DashboardWidget::new(config.clone(), storage),
             help: HelpWidget::new(config.clone()),
-            error: ErrorWidget::new(),
+            window_size_error,
         }
     }
 }

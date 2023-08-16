@@ -104,7 +104,13 @@ impl ChannelSwitcherWidget {
             }
             None => 0,
         };
+
         self.list_state.select(Some(i));
+
+        self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll as u16);
     }
 
     fn previous(&mut self) {
@@ -112,7 +118,13 @@ impl ChannelSwitcherWidget {
             .list_state
             .selected()
             .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
+
         self.list_state.select(Some(i));
+
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll as u16);
     }
 
     fn unselect(&mut self) {
@@ -269,22 +281,8 @@ impl Component for ChannelSwitcherWidget {
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown => {
-                    self.next();
-
-                    self.vertical_scroll = self.vertical_scroll.saturating_add(1);
-                    self.vertical_scroll_state = self
-                        .vertical_scroll_state
-                        .position(self.vertical_scroll as u16);
-                }
-                Key::ScrollUp => {
-                    self.previous();
-
-                    self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
-                    self.vertical_scroll_state = self
-                        .vertical_scroll_state
-                        .position(self.vertical_scroll as u16);
-                }
+                Key::ScrollDown | Key::Down => self.next(),
+                Key::ScrollUp | Key::Up => self.previous(),
                 Key::Ctrl('d') => {
                     if let Some(index) = self.list_state.selected() {
                         // TODO: Make this just two if lets
