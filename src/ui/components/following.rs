@@ -300,8 +300,8 @@ impl Component for FollowingWidget {
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown => self.next(),
-                Key::ScrollUp => self.previous(),
+                Key::ScrollDown | Key::Down => self.next(),
+                Key::ScrollUp | Key::Up => self.previous(),
                 Key::Enter => {
                     if let Some(i) = self.list_state.selected() {
                         let selected_channel = if let Some(v) = self.filtered_channels.clone() {
