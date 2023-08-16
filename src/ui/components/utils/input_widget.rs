@@ -20,6 +20,8 @@ use crate::{
     utils::text::{get_cursor_position, title_line, TitleStyle},
 };
 
+use super::centered_rect;
+
 pub type InputValidator = Box<dyn Fn(String) -> bool>;
 pub type VisualValidator = Box<dyn Fn(String) -> String>;
 pub type InputSuggester = Box<dyn Fn(SharedStorage, String) -> Option<String>>;
@@ -86,12 +88,19 @@ impl ToString for InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+
         let cursor_pos = get_cursor_position(&self.input);
 
         f.set_cursor(
-            (area.x + cursor_pos as u16 + 1).min(area.x + area.width.saturating_sub(2)),
-            area.y + 1,
+            (r.x + cursor_pos as u16 + 1).min(r.x + r.width.saturating_sub(2)),
+            r.y + 1,
         );
 
         let current_input = self.input.as_str();
@@ -143,10 +152,10 @@ impl Component for InputWidget {
 
         let paragraph = Paragraph::new(paragraph_lines)
             .block(block)
-            .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
+            .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(r.width)));
 
-        f.render_widget(Clear, area);
-        f.render_widget(paragraph, area);
+        f.render_widget(Clear, r);
+        f.render_widget(paragraph, r);
 
         if let Some(visual) = &self.visual_indicator {
             let contents = visual(self.input.to_string());
@@ -166,7 +175,7 @@ impl Component for InputWidget {
 
             // This is only supposed to render on the very bottom line of the area.
             // If some rendering breaks for input boxes, this is a possible source.
-            let rect = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+            let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
             f.render_widget(bottom_block, rect);
         }
     }
@@ -220,6 +229,7 @@ impl Component for InputWidget {
                         }
                     }
                 }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Ctrl('q') => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1);

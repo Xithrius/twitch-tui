@@ -19,7 +19,7 @@ use crate::{
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
-    ui::components::{utils::centered_rect, ChannelSwitcherWidget, Component},
+    ui::components::{ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
 
@@ -167,7 +167,14 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
+
         let favorite_channels_len = {
             let l = self.config.borrow().frontend.favorite_channels.len() as u16;
 
@@ -209,7 +216,7 @@ impl Component for DashboardWidget {
                 Constraint::Length(1),
             ])
             .margin(2)
-            .split(area);
+            .split(r);
 
         let mut v_chunks = v_chunk_binding.iter();
 
@@ -225,11 +232,9 @@ impl Component for DashboardWidget {
         self.render_quit_selection_widget(f, &mut v_chunks);
 
         if self.channel_input.is_focused() {
-            self.channel_input
-                .draw(f, centered_rect(60, 60, 20, f.size()), emotes);
+            self.channel_input.draw(f, None, emotes);
         } else if self.following.is_focused() {
-            self.following
-                .draw(f, centered_rect(60, 60, 20, f.size()), None);
+            self.following.draw(f, None, None);
         }
     }
 

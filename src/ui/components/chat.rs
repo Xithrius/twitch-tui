@@ -211,10 +211,16 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, emotes: Option<&mut Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
         let mut default_emotes = Emotes::default();
-
         let emotes = emotes.map_or(&mut default_emotes, |e| e);
+
+        let r = area.map_or_else(|| f.size(), |a| a);
 
         let config = self.config.borrow();
 
@@ -228,7 +234,7 @@ impl Component for ChatWidget {
             .direction(Direction::Vertical)
             .margin(self.config.borrow().frontend.margin)
             .constraints(v_constraints)
-            .split(area);
+            .split(r);
 
         let mut v_chunks: Iter<Rect> = v_chunks_binding.iter();
 
@@ -331,16 +337,13 @@ impl Component for ChatWidget {
 
         if self.chat_input.is_focused() {
             self.chat_input
-                .draw(f, v_chunks.next().copied().unwrap(), Some(emotes));
+                .draw(f, v_chunks.next().copied(), Some(emotes));
         } else if self.channel_input.is_focused() {
-            self.channel_input
-                .draw(f, centered_rect(60, 60, 20, f.size()), None);
+            self.channel_input.draw(f, None, None);
         } else if self.search_input.is_focused() {
-            self.search_input
-                .draw(f, v_chunks.next().copied().unwrap(), None);
+            self.search_input.draw(f, v_chunks.next().copied(), None);
         } else if self.following.is_focused() {
-            self.following
-                .draw(f, centered_rect(60, 60, 20, f.size()), None);
+            self.following.draw(f, None, None);
         }
     }
 

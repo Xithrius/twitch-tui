@@ -117,12 +117,14 @@ impl App {
         }
 
         if size.height < 10 || size.width < 60 {
-            self.components.window_size_error.draw(f, f.size(), None);
+            self.components
+                .window_size_error
+                .draw(f, Some(f.size()), None);
         } else {
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, size, None),
-                State::Normal => self.components.chat.draw(f, size, Some(&mut self.emotes)),
-                State::Help => self.components.help.draw(f, size, None),
+                State::Dashboard => self.components.dashboard.draw(f, None, None),
+                State::Normal => self.components.chat.draw(f, None, Some(&mut self.emotes)),
+                State::Help => self.components.help.draw(f, None, None),
             }
         }
 
@@ -134,7 +136,7 @@ impl App {
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(new_rect)[1];
 
-            self.components.debug.draw(f, rect, None);
+            self.components.debug.draw(f, Some(rect), None);
         }
     }
 

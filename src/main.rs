@@ -9,7 +9,10 @@
     clippy::unused_self,
     clippy::future_not_send,
     clippy::suboptimal_flops,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate
 )]
 
 use clap::Parser;
@@ -26,7 +29,7 @@ mod commands;
 mod emotes;
 mod handlers;
 mod terminal;
-mod twitch;
+pub mod twitch;
 mod ui;
 mod utils;
 
