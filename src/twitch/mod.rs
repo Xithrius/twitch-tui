@@ -3,7 +3,6 @@ pub mod channels;
 mod connection;
 pub mod oauth;
 
-use ::std::hash::BuildHasher;
 use std::{borrow::Borrow, collections::HashMap};
 
 use futures::StreamExt;

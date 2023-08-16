@@ -56,7 +56,7 @@ impl Component for ErrorWidget {
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Center);
 
-        f.render_widget(Clear, area);
-        f.render_widget(paragraph, area);
+        f.render_widget(Clear, r);
+        f.render_widget(paragraph, r);
     }
 }

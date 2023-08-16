@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use regex::Regex;

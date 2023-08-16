@@ -1,10 +1,14 @@
-use std::{string::String, vec::Vec};
+use std::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
+use anyhow::Result;
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::{runtime::Handle, task};
 
-use crate::handlers::config::TwitchConfig;
+use crate::{handlers::config::TwitchConfig, ui::components::utils::SearchItemGetter};
 
 use super::oauth::{get_channel_id, get_twitch_client};
 
@@ -17,6 +21,12 @@ pub struct FollowingUser {
     pub broadcaster_login: String,
     pub broadcaster_name: String,
     followed_at: String,
+}
+
+impl ToString for FollowingUser {
+    fn to_string(&self) -> String {
+        self.broadcaster_login.to_string()
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
@@ -34,61 +44,62 @@ pub struct FollowingList {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Following {
-    client: Client,
+    // TODO: Don't re-create client on new requests
+    // client: &Client,
     twitch_config: TwitchConfig,
     list: FollowingList,
 }
 
-pub trait ItemGetter<T>
-where
-    T: ToString,
-{
-    fn get_items(&mut self) -> Vec<T>;
-}
-
-impl Following {
-    pub fn new(twitch_config: TwitchConfig) -> Self {
-        let token = twitch_config.token.clone();
-
-        let client = task::block_in_place(move || {
-            Handle::current().block_on(async move { get_twitch_client(token).await.unwrap() })
-        });
-
-        Self {
-            client,
-            twitch_config,
-            list: FollowingList::default(),
-        }
-    }
-
-    // https://dev.twitch.tv/docs/api/reference/#get-followed-channels
-    pub async fn get_user_following(&self, user_id: i32) -> FollowingList {
-        self.client
+// https://dev.twitch.tv/docs/api/reference/#get-followed-channels
+pub async fn get_user_following(client: &Client, user_id: i32) -> Result<FollowingList> {
+    Ok(client
         .get(format!(
             "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
         ))
         .send()
-        .await
-        .unwrap()
-        .error_for_status()
-        .unwrap()
+        .await?
+        .error_for_status()?
         .json::<FollowingList>()
-        .await
-        .unwrap()
+        .await?)
+}
+
+pub async fn get_following(twitch_config: &TwitchConfig) -> Result<FollowingList> {
+    let oauth_token = twitch_config.token.clone();
+    let app_user = twitch_config.username.clone();
+
+    let client = get_twitch_client(oauth_token).await.unwrap();
+
+    let user_id = get_channel_id(&client, &app_user).await.unwrap();
+
+    get_user_following(&client, user_id).await
+}
+
+fn get_followed_channels(twitch_config: TwitchConfig) -> Result<FollowingList> {
+    task::block_in_place(move || {
+        Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
+    })
+}
+
+impl Following {
+    pub fn new(twitch_config: TwitchConfig) -> Self {
+        Self {
+            twitch_config,
+            list: FollowingList::default(),
+        }
     }
+}
 
-    pub async fn get_following(&self) -> FollowingList {
-        let app_user = self.twitch_config.username.clone();
+impl SearchItemGetter<String> for Following {
+    fn get_items(&mut self) -> Result<Vec<String>> {
+        let following = get_followed_channels(self.twitch_config.clone());
 
-        let user_id = get_channel_id(&self.client, &app_user).await.unwrap();
-
-        self.get_user_following(user_id).await
-    }
-
-    pub fn get_followed_channels(self) -> FollowingList {
-        task::block_in_place(move || {
-            Handle::current().block_on(async move { self.get_following().await })
+        following.map(|v| {
+            v.data
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<String>>()
         })
     }
 }

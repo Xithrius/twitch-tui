@@ -1,5 +1,6 @@
-use std::{convert::From, iter::Iterator, vec::Vec};
+use std::{borrow::BorrowMut, convert::From, iter::Iterator, vec::Vec};
 
+use anyhow::Result;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use tui::{
@@ -22,8 +23,7 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::channels::ItemGetter,
-    ui::components::Component,
+    ui::components::{Component, ErrorWidget},
     utils::text::{title_line, TitleStyle},
 };
 
@@ -31,42 +31,53 @@ use super::{centered_rect, InputWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
+pub trait SearchItemGetter<T>
+where
+    T: ToString,
+{
+    fn get_items(&mut self) -> Result<Vec<T>>;
+}
+
 pub struct SearchWidget<T, U>
 where
-    T: ToString + Copy,
-    U: ItemGetter<T>,
+    T: ToString,
+    U: SearchItemGetter<T>,
 {
     config: SharedCompleteConfig,
     focused: bool,
 
     item_getter: U,
-    items: Vec<T>,
+    items: Result<Vec<T>>,
     filtered_items: Option<Vec<T>>,
 
     list_state: ListState,
     search_input: InputWidget,
     vertical_scroll_state: ScrollbarState,
     vertical_scroll: usize,
+
+    error_widget: ErrorWidget,
 }
 
 impl<T, U> SearchWidget<T, U>
 where
-    T: ToString + Copy,
-    U: ItemGetter<T>,
+    T: ToString,
+    U: SearchItemGetter<T>,
 {
     pub fn new(config: SharedCompleteConfig, item_getter: U) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
+        let error_widget = ErrorWidget::new(vec!["Something happened", "This is a placeholder"]);
 
         Self {
             config,
             focused: false,
             item_getter,
-            items: vec![],
+            items: Ok(vec![]),
             filtered_items: None,
             list_state: ListState::default(),
             search_input,
             vertical_scroll_state: ScrollbarState::default(),
             vertical_scroll: 0,
+            error_widget,
         }
     }
 
@@ -79,8 +90,8 @@ where
                     } else {
                         i + 1
                     }
-                } else if i >= self.items.len().saturating_sub(1) {
-                    self.items.len().saturating_sub(1)
+                } else if i >= self.items.unwrap().len().saturating_sub(1) {
+                    self.items.unwrap().len().saturating_sub(1)
                 } else {
                     i + 1
                 }
@@ -122,14 +133,18 @@ where
             self.items = self.item_getter.get_items();
         }
 
+        if self.items.is_err() {
+            self.error_widget.toggle_focus();
+        }
+
         self.focused = !self.focused;
     }
 }
 
 impl<T, U> Component for SearchWidget<T, U>
 where
-    T: ToString + Copy,
-    U: ItemGetter<T>,
+    T: ToString,
+    U: SearchItemGetter<T> + Sized,
 {
     fn draw<B: Backend>(
         &mut self,
@@ -140,10 +155,11 @@ where
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         let mut items = vec![];
+        let mut current_items = &self.items.map_or(vec![], |v| v);
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
-            for item in self.items.clone() {
+            for item in current_items {
                 items.push(ListItem::new(item.to_string()));
             }
 
@@ -158,7 +174,7 @@ where
 
             let mut matched = vec![];
 
-            for item in self.items.clone() {
+            for item in current_items.clone() {
                 let matched_indices = item_filter(item.to_string());
 
                 if matched_indices.is_empty() {
@@ -231,7 +247,7 @@ where
             if let Some(v) = &self.filtered_items {
                 v.len()
             } else {
-                self.items.len()
+                current_items.len()
             }
         );
 

@@ -117,7 +117,9 @@ impl App {
         }
 
         if size.height < 10 || size.width < 60 {
-            self.components.window_size_error.draw(f, f.size(), None);
+            self.components
+                .window_size_error
+                .draw(f, Some(f.size()), None);
         } else {
             match self.state {
                 State::Dashboard => self.components.dashboard.draw(f, None, None),
