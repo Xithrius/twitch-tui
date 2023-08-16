@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use color_eyre::{eyre::ContextCompat, Result};
 use log::{info, warn};
 use std::{
     collections::{hash_map::DefaultHasher, HashMap, HashSet},

@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Context};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use color_eyre::eyre::{anyhow, ContextCompat};
 use crossterm::{csi, cursor::MoveTo, queue, Command};
 use dialoguer::console::{Key, Term};
 use image::{
@@ -34,7 +34,7 @@ macro_rules! gp {
 /// string to be deleted by the terminal.
 const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 
-type Result<T = ()> = anyhow::Result<T>;
+type Result<T = ()> = color_eyre::Result<T>;
 
 pub trait Size {
     fn size(&self) -> (u32, u32);

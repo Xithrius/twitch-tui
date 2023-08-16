@@ -3,7 +3,7 @@ use std::{
     vec::Vec,
 };
 
-use anyhow::Result;
+use color_eyre::Result;
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::{runtime::Handle, task};

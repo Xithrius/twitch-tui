@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use color_eyre::{eyre::ContextCompat, Result};
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION},
     Client,

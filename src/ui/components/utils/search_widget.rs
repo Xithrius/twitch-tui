@@ -1,6 +1,6 @@
-use std::{borrow::BorrowMut, convert::From, iter::Iterator, vec::Vec};
+use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
-use anyhow::Result;
+use color_eyre::Result;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use tui::{
@@ -40,7 +40,7 @@ where
 
 pub struct SearchWidget<T, U>
 where
-    T: ToString,
+    T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
     config: SharedCompleteConfig,
@@ -60,12 +60,16 @@ where
 
 impl<T, U> SearchWidget<T, U>
 where
-    T: ToString,
+    T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    pub fn new(config: SharedCompleteConfig, item_getter: U) -> Self {
+    pub fn new(
+        config: SharedCompleteConfig,
+        item_getter: U,
+        error_message: Vec<&'static str>,
+    ) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-        let error_widget = ErrorWidget::new(vec!["Something happened", "This is a placeholder"]);
+        let error_widget = ErrorWidget::new(error_message);
 
         Self {
             config,
@@ -90,8 +94,8 @@ where
                     } else {
                         i + 1
                     }
-                } else if i >= self.items.unwrap().len().saturating_sub(1) {
-                    self.items.unwrap().len().saturating_sub(1)
+                } else if i >= self.items.as_ref().unwrap().len().saturating_sub(1) {
+                    self.items.as_ref().unwrap().len().saturating_sub(1)
                 } else {
                     i + 1
                 }
@@ -143,8 +147,8 @@ where
 
 impl<T, U> Component for SearchWidget<T, U>
 where
-    T: ToString,
-    U: SearchItemGetter<T> + Sized,
+    T: ToString + Clone,
+    U: SearchItemGetter<T>,
 {
     fn draw<B: Backend>(
         &mut self,
@@ -152,10 +156,16 @@ where
         area: Option<Rect>,
         emotes: Option<&mut Emotes>,
     ) {
+        if self.error_widget.is_focused() {
+            self.error_widget.draw(f, area, emotes);
+
+            return;
+        }
+
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         let mut items = vec![];
-        let mut current_items = &self.items.map_or(vec![], |v| v);
+        let current_items = &self.items.as_ref().map_or(vec![], Clone::clone);
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
@@ -244,11 +254,9 @@ where
         let title_binding = format!(
             "{} / {}",
             self.list_state.selected().map_or(1, |i| i + 1),
-            if let Some(v) = &self.filtered_items {
-                v.len()
-            } else {
-                current_items.len()
-            }
+            self.filtered_items
+                .as_ref()
+                .map_or(current_items.len(), Vec::len)
         );
 
         let title = [TitleStyle::Single(&title_binding)];
@@ -270,6 +278,11 @@ where
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
+            self.error_widget.toggle_focus();
+            self.toggle_focus();
+        }
+
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {

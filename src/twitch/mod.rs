@@ -3,6 +3,7 @@ pub mod channels;
 mod connection;
 pub mod oauth;
 
+use ::std::hash::BuildHasher;
 use std::{borrow::Borrow, collections::HashMap};
 
 use futures::StreamExt;
@@ -270,7 +271,10 @@ async fn handle_message_command(
     None
 }
 
-pub async fn handle_roomstate(tx: &Sender<TwitchToTerminalAction>, tags: &HashMap<&str, &str>) {
+pub async fn handle_roomstate<S: BuildHasher>(
+    tx: &Sender<TwitchToTerminalAction>,
+    tags: &HashMap<&str, &str, S>,
+) {
     let mut room_state = String::new();
 
     for (name, value) in tags.iter() {

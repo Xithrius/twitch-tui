@@ -1,4 +1,4 @@
-use anyhow::Result;
+use color_eyre::Result;
 use futures::StreamExt;
 use reqwest::Client;
 use std::{borrow::BorrowMut, collections::HashMap, path::Path};
@@ -16,7 +16,7 @@ type EmoteMap = HashMap<String, (String, String, bool)>;
 
 mod twitch {
     use crate::emotes::downloader::EmoteMap;
-    use anyhow::Result;
+    use color_eyre::Result;
     use reqwest::Client;
     use serde::Deserialize;
 
@@ -68,7 +68,7 @@ mod twitch {
 
 mod betterttv {
     use crate::emotes::downloader::EmoteMap;
-    use anyhow::Result;
+    use color_eyre::Result;
     use reqwest::Client;
     use serde::Deserialize;
 
@@ -137,7 +137,7 @@ mod betterttv {
 
 mod seventv {
     use crate::emotes::downloader::EmoteMap;
-    use anyhow::Result;
+    use color_eyre::Result;
     use reqwest::Client;
     use serde::Deserialize;
 
@@ -199,7 +199,7 @@ mod seventv {
 
 mod frankerfacez {
     use crate::emotes::downloader::EmoteMap;
-    use anyhow::Result;
+    use color_eyre::Result;
     use futures::StreamExt;
     use reqwest::Client;
     use serde::Deserialize;
