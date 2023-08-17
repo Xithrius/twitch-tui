@@ -6,7 +6,7 @@ use crate::{
     emotes::Emotes,
     handlers::{config::SharedCompleteConfig, user_input::events::Event},
     terminal::TerminalAction,
-    twitch::channels::Following,
+    twitch::{channels::Following, TwitchAction},
     ui::components::Component,
 };
 
@@ -65,6 +65,12 @@ impl Component for FollowingWidget {
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        self.search_widget.event(event)
+        let action = self.search_widget.event(event);
+
+        if let Some(TerminalAction::Enter(TwitchAction::Join(channel))) = &action {
+            self.config.borrow_mut().twitch.channel = channel.clone();
+        }
+
+        action
     }
 }

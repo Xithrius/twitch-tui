@@ -23,6 +23,7 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
+    twitch::TwitchAction,
     ui::components::{Component, ErrorWidget},
     utils::text::{title_line, TitleStyle},
 };
@@ -292,8 +293,28 @@ where
                         self.toggle_focus();
                     }
                 }
-                Key::ScrollDown => self.next(),
-                Key::ScrollUp => self.previous(),
+                Key::ScrollDown | Key::Down => self.next(),
+                Key::ScrollUp | Key::Up => self.previous(),
+                Key::Enter => {
+                    if let Some(i) = self.list_state.selected() {
+                        let selected_channel = if let Some(v) = self.filtered_items.clone() {
+                            if v.is_empty() {
+                                return None;
+                            }
+
+                            v.get(i).unwrap().to_string()
+                        } else {
+                            self.items.as_ref().unwrap().get(i).unwrap().to_string()
+                        }
+                        .to_lowercase();
+
+                        self.toggle_focus();
+
+                        self.unselect();
+
+                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
+                    }
+                }
                 _ => {
                     self.search_input.event(event);
 
