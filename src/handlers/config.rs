@@ -453,6 +453,7 @@ impl CompleteConfig {
             create_dir_all(p.parent().unwrap()).unwrap();
 
             if let Some(config) = interactive_config() {
+                persist_config(p, &config)?;
                 Ok(config)
             } else {
                 persist_config(p, &Self::default())?;

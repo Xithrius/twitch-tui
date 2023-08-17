@@ -21,7 +21,10 @@ Hitting any of the integers displayed between brackets will take you to said cha
 <td> Quit the application.
 <tr>
 <td> s
-<td> Open the channel switcher popup, which accepts an input of a channel name to enter into.
+<td> Open the recent channel switcher popup
+<tr>
+<td> f
+<td> Open the followed channel search popup
 <tr>
 <td> Ctrl + p
 <td> Manually crash the application.

@@ -23,7 +23,10 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> Quit the application (when no user input box is open).
 <tr>
 <td> s
-<td> Open a popup window to switch channels.
+<td> Open the recent channel switcher popup
+<tr>
+<td> f
+<td> Open the followed channel search popup
 <tr>
 <td> S
 <td> Go to the dashboard screen (start screen).

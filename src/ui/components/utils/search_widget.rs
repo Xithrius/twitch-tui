@@ -157,13 +157,13 @@ where
         area: Option<Rect>,
         emotes: Option<&mut Emotes>,
     ) {
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+
         if self.error_widget.is_focused() {
-            self.error_widget.draw(f, area, emotes);
+            self.error_widget.draw(f, Some(r), emotes);
 
             return;
         }
-
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         let mut items = vec![];
         let current_items = &self.items.as_ref().map_or(vec![], Clone::clone);
@@ -282,6 +282,8 @@ where
         if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
             self.error_widget.toggle_focus();
             self.toggle_focus();
+
+            return None;
         }
 
         if let Event::Input(key) = event {
