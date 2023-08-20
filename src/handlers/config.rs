@@ -10,6 +10,7 @@ use std::{
     rc::Rc,
     str::FromStr,
 };
+use tokio::{runtime::Handle, task};
 use tui::widgets::BorderType;
 
 use crate::{
@@ -436,6 +437,27 @@ fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
     Ok(())
 }
 
+const RAW_DEFAULT_CONFIG_URL: &str =
+    "https://raw.githubusercontent.com/Xithrius/twitch-tui/main/default-config.toml";
+
+fn persist_default_config(path: &Path) {
+    let default_config = task::block_in_place(move || {
+        Handle::current().block_on(async move {
+            reqwest::get(RAW_DEFAULT_CONFIG_URL)
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap()
+        })
+    });
+
+    let mut file = File::create(path).unwrap();
+
+    file.write_all(default_config.as_bytes()).unwrap();
+    drop(file);
+}
+
 impl CompleteConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
         let path_str = cache_path("");
@@ -456,8 +478,8 @@ impl CompleteConfig {
                 persist_config(p, &config)?;
                 Ok(config)
             } else {
-                persist_config(p, &Self::default())?;
-                bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
+                persist_default_config(p);
+                bail!("Default configuration was generated at {path_str}, please fill it out with necessary information.")
             }
         } else if let Ok(file_content) = read_to_string(p) {
             let mut config: Self = match toml::from_str(&file_content) {
