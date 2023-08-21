@@ -525,4 +525,11 @@ impl CompleteConfig {
             )
         }
     }
+
+    pub fn rotate_theme(&mut self) {
+        self.frontend.theme = match self.frontend.theme {
+            Theme::Dark => Theme::Light,
+            _ => Theme::Dark,
+        }
+    }
 }

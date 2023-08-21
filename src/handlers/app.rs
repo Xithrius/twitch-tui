@@ -151,8 +151,8 @@ impl App {
                 Key::Ctrl('d') => {
                     self.components.debug.toggle_focus();
                 }
-                Key::Ctrl('T') => {
-                    self.rotate_theme();
+                Key::Ctrl('.') => {
+                    self.config.borrow_mut().rotate_theme();
                 }
                 _ => {
                     return match self.state {
@@ -215,12 +215,5 @@ impl App {
         self.emotes.clear();
         self.previous_state = Some(self.state.clone());
         self.state = other;
-    }
-
-    pub fn rotate_theme(&mut self) {
-        self.theme = match self.theme {
-            Theme::Dark => Theme::Light,
-            _ => Theme::Dark,
-        }
     }
 }
