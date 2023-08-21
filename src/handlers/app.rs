@@ -151,6 +151,9 @@ impl App {
                 Key::Ctrl('d') => {
                     self.components.debug.toggle_focus();
                 }
+                Key::Ctrl('T') => {
+                    self.rotate_theme();
+                }
                 _ => {
                     return match self.state {
                         State::Dashboard => self.components.dashboard.event(event),
@@ -214,8 +217,10 @@ impl App {
         self.state = other;
     }
 
-    #[allow(dead_code)]
     pub fn rotate_theme(&mut self) {
-        todo!("Rotate through different themes")
+        self.theme = match self.theme {
+            Theme::Dark => Theme::Light,
+            _ => Theme::Dark,
+        }
     }
 }

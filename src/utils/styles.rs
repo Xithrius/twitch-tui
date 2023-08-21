@@ -1,7 +1,6 @@
 use tui::style::{Color, Modifier, Style};
 
-#[allow(dead_code)]
-pub const BORDER_NAME_DARK: Style = Style {
+pub const BORDER_DARK: Style = Style {
     fg: Some(Color::White),
     bg: None,
     add_modifier: Modifier::empty(),
@@ -9,8 +8,7 @@ pub const BORDER_NAME_DARK: Style = Style {
     underline_color: None,
 };
 
-#[allow(dead_code)]
-pub const BORDER_NAME_LIGHT: Style = Style {
+pub const BORDER_LIGHT: Style = Style {
     fg: Some(Color::Black),
     bg: None,
     add_modifier: Modifier::empty(),

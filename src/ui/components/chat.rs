@@ -16,7 +16,7 @@ use crate::{
     emotes::{emotes_enabled, hide_message_emotes, is_in_rect, show_span_emotes, Emotes},
     handlers::{
         app::SharedMessages,
-        config::SharedCompleteConfig,
+        config::{SharedCompleteConfig, Theme},
         data::MessageData,
         filters::SharedFilters,
         state::State,
@@ -31,7 +31,10 @@ use crate::{
         following::FollowingWidget, utils::centered_rect, ChannelSwitcherWidget, ChatInputWidget,
         Component, MessageSearchWidget,
     },
-    utils::text::{title_line, TitleStyle},
+    utils::{
+        styles::{BORDER_DARK, BORDER_LIGHT},
+        text::{title_line, TitleStyle},
+    },
 };
 
 pub struct ChatWidget {
@@ -302,7 +305,10 @@ impl Component for ChatWidget {
                     .border_type(self.config.borrow().frontend.border_type.clone().into())
                     .title(chat_title),
             )
-            .style(Style::default().fg(Color::White));
+            .style(match self.config.borrow().frontend.theme {
+                Theme::Dark => BORDER_DARK,
+                _ => BORDER_LIGHT,
+            });
 
         f.render_widget(list, *first_v_chunk);
 
@@ -323,7 +329,11 @@ impl Component for ChatWidget {
                 .border_type(self.config.borrow().frontend.border_type.clone().into())
                 .title(title_line(&title, Style::default()))
                 .title_position(Position::Bottom)
-                .title_alignment(Alignment::Right);
+                .title_alignment(Alignment::Right)
+                .style(match self.config.borrow().frontend.theme {
+                    Theme::Dark => BORDER_DARK,
+                    _ => BORDER_LIGHT,
+                });
 
             let rect = Rect::new(
                 first_v_chunk.x,
