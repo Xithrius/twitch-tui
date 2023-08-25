@@ -45,8 +45,7 @@ pub async fn ui_driver(
     let mut events = Events::with_config(Config {
         exit_key: Key::Null,
         tick_rate: Duration::from_millis(config.terminal.delay),
-    })
-    .await;
+    });
 
     let mut terminal = init_terminal(&config.frontend);
 
@@ -61,7 +60,7 @@ pub async fn ui_driver(
             // Clear the emotes to use the ones from the right channel.
             app.emotes.unload();
             app.emotes.emotes = e;
-            for message in app.messages.borrow_mut().iter_mut() {
+            for message in &mut *app.messages.borrow_mut() {
                 message.parse_emotes(&mut app.emotes);
             }
         };

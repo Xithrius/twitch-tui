@@ -277,7 +277,7 @@ pub async fn handle_roomstate<S: BuildHasher>(
 ) {
     let mut room_state = String::new();
 
-    for (name, value) in tags.iter() {
+    for (name, value) in tags {
         match *name {
             "emote-only" if *value == "1" => {
                 room_state.push_str("The channel is emote-only.\n");

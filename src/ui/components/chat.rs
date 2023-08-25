@@ -114,7 +114,7 @@ impl ChatWidget {
 
         let config = self.config.borrow();
 
-        'outer: for data in messages_data.iter() {
+        'outer: for data in messages_data {
             if self
                 .filters
                 .borrow()
