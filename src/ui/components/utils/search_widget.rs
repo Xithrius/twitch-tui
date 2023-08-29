@@ -8,9 +8,10 @@ use tui::{
     layout::Rect,
     prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
+    symbols::scrollbar,
     text::{Line, Span},
     widgets::{
-        block::Position, scrollbar, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
+        block::Position, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
     Frame,
