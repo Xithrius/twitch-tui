@@ -133,6 +133,8 @@ pub struct FrontendConfig {
     pub border_type: Border,
     /// If the usernames should be aligned to the right.
     pub right_align_usernames: bool,
+    /// Do not display the window size warning.
+    pub show_unsupported_screen_size: bool,
 }
 
 impl Default for TwitchConfig {
@@ -183,6 +185,7 @@ impl Default for FrontendConfig {
             recent_channel_count: 5,
             border_type: Border::default(),
             right_align_usernames: false,
+            show_unsupported_screen_size: true,
         }
     }
 }

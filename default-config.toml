@@ -96,3 +96,5 @@ border_type = "plain"
 # If the usernames should be aligned to the right.
 # They will be shown to the left if this is disabled.
 right_align_usernames = false
+# Do not display the window size warning.
+show_unsupported_screen_size = true

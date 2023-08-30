@@ -116,7 +116,9 @@ impl App {
             self.components.tabs.draw(f, Some(layout[1]), &self.state);
         }
 
-        if size.height < 10 || size.width < 60 {
+        if (size.height < 10 || size.width < 60)
+            && self.config.borrow().frontend.show_unsupported_screen_size
+        {
             self.components
                 .window_size_error
                 .draw(f, Some(f.size()), None);
