@@ -1,13 +1,13 @@
 # Normal mode keybind map
 
-Can be the start state by configuring `start_state` in the config to either `"normal"` or `"default"`.
+Can be the start state by configuring `first_state` in the config to either `"normal"` or `"default"`.
 
 <table>
 <tr>
 <td> <b>Key</b>
 <td> <b> Description</b>
 <tr>
-<td> i
+<td> i or c
 <td> Enter message insert (chat) mode for sending messages. Exit this mode with `Esc`.
 <tr>
 <td> @
@@ -16,30 +16,33 @@ Can be the start state by configuring `start_state` in the config to either `"no
 <td> /
 <td> Enter insert (chat) mode with the command symbol `/` already existing.
 <tr>
-<td> ?
+<td> ? or h
 <td> Have the keybinds popup window appear.
 <tr>
 <td> q
-<td> Quit out of the entire application once in the base chat view.
+<td> Quit the application (when no user input box is open).
 <tr>
 <td> s
-<td> Open a popup window to switch channels.
+<td> Open the recent channel switcher popup
+<tr>
+<td> f
+<td> Open the followed channel search popup
 <tr>
 <td> S
-<td> Go to the dashboard screen.
+<td> Go to the dashboard screen (start screen).
 <tr>
 <td> Ctrl + f
 <td> Enter message search mode, which highlights messages in the main window which match the query.
 <tr>
 <td> Ctrl + t
-<td> Toggle the filter.
+<td> Toggle the message filter.
 <tr>
 <td> Ctrl + r
-<td> Reverse the filter.
+<td> Reverse the message filter.
 <tr>
 <td> Ctrl + p
-<td> Manually trigger a panic, so the application crashes.
+<td> Manually crash the application.
 <tr>
 <td> Esc
-<td> Exits out of layered windows, such as going from the help window to normal view.
+<td> Go back to the previous window.
 </table>

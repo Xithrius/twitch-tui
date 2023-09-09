@@ -4,6 +4,7 @@ mod chat_input;
 mod dashboard;
 mod debug;
 mod error;
+mod following;
 mod help;
 mod message_search;
 mod state_tabs;
@@ -18,9 +19,10 @@ pub use debug::DebugWidget;
 pub use error::ErrorWidget;
 pub use help::HelpWidget;
 pub use message_search::MessageSearchWidget;
+use once_cell::sync::Lazy;
 pub use state_tabs::StateTabsWidget;
 
-use tokio::sync::broadcast::Sender;
+use chrono::{DateTime, Local};
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
@@ -33,12 +35,24 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::TwitchAction,
 };
+
+static WINDOW_SIZE_TOO_SMALL_ERROR: Lazy<Vec<&'static str>> = Lazy::new(|| {
+    vec![
+        "Window to small!",
+        "Must allow for at least 60x10.",
+        "Restart and resize.",
+    ]
+});
 
 pub trait Component {
     #[allow(unused_variables)]
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
         todo!()
     }
 
@@ -57,34 +71,37 @@ pub trait Component {
 }
 
 pub struct Components {
-    // Error window(s)
-    pub error: ErrorWidget,
-
-    // Tabs
+    // Partial window widgets
     pub tabs: StateTabsWidget,
+    pub debug: DebugWidget,
 
     // Full window widgets
     pub chat: ChatWidget,
     pub dashboard: DashboardWidget,
-    pub debug: DebugWidget,
     pub help: HelpWidget,
+
+    // Errors
+    pub window_size_error: ErrorWidget,
 }
 
 impl Components {
     pub fn new(
         config: &SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,
+        startup_time: DateTime<Local>,
     ) -> Self {
+        let window_size_error = ErrorWidget::new(WINDOW_SIZE_TOO_SMALL_ERROR.to_vec());
+
         Self {
-            error: ErrorWidget::new(),
             tabs: StateTabsWidget::new(config.clone()),
-            chat: ChatWidget::new(config.clone(), &tx, messages, &storage, filters),
-            dashboard: DashboardWidget::new(config.clone(), tx, storage),
-            debug: DebugWidget::new(config.clone()),
+            debug: DebugWidget::new(config.clone(), startup_time),
+
+            chat: ChatWidget::new(config.clone(), messages, &storage, filters),
+            dashboard: DashboardWidget::new(config.clone(), storage),
             help: HelpWidget::new(config.clone()),
+            window_size_error,
         }
     }
 }

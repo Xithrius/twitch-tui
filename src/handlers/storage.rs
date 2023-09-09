@@ -7,14 +7,12 @@ use std::{
     rc::Rc,
 };
 
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use crate::{handlers::config::StorageConfig, utils::pathing::config_path};
 
-lazy_static! {
-    pub static ref ITEM_KEYS: Vec<&'static str> = vec!["channels", "mentions"];
-}
+static ITEM_KEYS: Lazy<Vec<&str>> = Lazy::new(|| vec!["channels", "mentions"]);
 
 pub type SharedStorage = Rc<RefCell<Storage>>;
 type StorageMap = HashMap<String, StorageItem>;
@@ -121,5 +119,19 @@ impl Storage {
 
     pub fn contains(&self, key: &str, value: &str) -> bool {
         self.get(key).contains(&value.to_string())
+    }
+
+    pub fn remove_inner_with(&mut self, key: &str, value: &str) -> String {
+        if ITEM_KEYS.contains(&key) {
+            let item = self.items.get_mut(&key.to_string()).unwrap();
+
+            if let Some(position) = item.content.iter().position(|x| x == value) {
+                item.content.remove(position)
+            } else {
+                panic!("Item {value} could not be found within {key}");
+            }
+        } else {
+            panic!("Attempted to add value with key {key} to JSON storage.");
+        }
     }
 }

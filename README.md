@@ -1,11 +1,25 @@
-# Twitch chat in the terminal
+<div align="center">
 
-[![CI](https://github.com/Xithrius/twitch-tui/actions/workflows/ci.yml/badge.svg)](https://github.com/Xithrius/twitch-tui/actions/workflows/ci.yml)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Xithrius/twitch-tui/main.svg)](https://results.pre-commit.ci/latest/github/Xithrius/twitch-tui/main)
-[![Lines of code](https://tokei.rs/b1/github/Xithrius/twitch-tui?category=code)](https://github.com/Xithrius/twitch-tui)
-[![Crate Status](https://img.shields.io/crates/v/twitch-tui.svg)](https://crates.io/crates/twitch-tui)
+# twitch-tui
 
-<img width="714" alt="image" src="https://user-images.githubusercontent.com/15021300/206926779-121da601-ae05-4bef-adfa-0459901027cf.png">
+Twitch chat in the terminal.
+
+[![crates][s1]][l1] [![CI][s2]][l2] [![pre-commit.ci status][s3]][l3] [![lines of code][s4]][l4] [![unsafe][s5]][l5]
+
+[s1]: https://img.shields.io/crates/v/twitch-tui.svg
+[l1]: https://crates.io/crates/twitch-tui
+[s2]: https://github.com/Xithrius/twitch-tui/actions/workflows/ci.yml/badge.svg
+[l2]: https://github.com/Xithrius/twitch-tui/actions/workflows/ci.yml
+[s3]: https://results.pre-commit.ci/badge/github/Xithrius/twitch-tui/main.svg
+[l3]: https://results.pre-commit.ci/latest/github/Xithrius/twitch-tui/main
+[s4]: https://tokei.rs/b1/github/Xithrius/twitch-tui?category=code
+[l4]: https://github.com/Xithrius/twitch-tui
+[s5]: https://img.shields.io/badge/unsafe-forbidden-success.svg
+[l5]: https://github.com/rust-secure-code/safety-dance/
+
+<img src="assets/preview.png" />
+
+</div>
 
 ## Feature list
 

@@ -1,6 +1,8 @@
+use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
+
+use color_eyre::Result;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
-use regex::Regex;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -19,84 +21,83 @@ use crate::{
     emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
-        storage::SharedStorage,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
-    ui::{
-        components::{utils::InputWidget, Component},
-        statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
-    },
-    utils::text::{first_similarity, title_line, TitleStyle},
+    ui::components::{Component, ErrorWidget},
+    utils::text::{title_line, TitleStyle},
 };
 
-use super::utils::centered_rect;
+use super::{centered_rect, InputWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
-pub struct ChannelSwitcherWidget {
-    config: SharedCompleteConfig,
-    focused: bool,
-    storage: SharedStorage,
-    search_input: InputWidget,
-    list_state: ListState,
-    filtered_channels: Option<Vec<String>>,
-    vertical_scroll_state: ScrollbarState,
-    vertical_scroll: usize,
+pub trait SearchItemGetter<T>
+where
+    T: ToString,
+{
+    fn get_items(&mut self) -> Result<Vec<T>>;
 }
 
-impl ChannelSwitcherWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
-        let input_validator = Box::new(|s: String| -> bool {
-            Regex::new(&NAME_RESTRICTION_REGEX)
-                .unwrap()
-                .is_match(s.as_str())
-        });
+pub struct SearchWidget<T, U>
+where
+    T: ToString + Clone,
+    U: SearchItemGetter<T>,
+{
+    config: SharedCompleteConfig,
+    focused: bool,
 
-        // Intuitively, a user will hit the username length limit rather than not hitting 4 characters.
-        let visual_indicator =
-            Box::new(|s: String| -> String { format!("{} / {}", s.len(), NAME_MAX_CHARACTERS) });
+    item_getter: U,
+    items: Result<Vec<T>>,
+    filtered_items: Option<Vec<T>>,
 
-        let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
-            first_similarity(
-                &storage
-                    .borrow()
-                    .get("channels")
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<String>>(),
-                &s,
-            )
-        });
+    list_state: ListState,
+    search_input: InputWidget,
+    vertical_scroll_state: ScrollbarState,
+    vertical_scroll: usize,
 
-        let search_input = InputWidget::new(
-            config.clone(),
-            "Channel switcher",
-            Some(input_validator),
-            Some(visual_indicator),
-            Some((storage.clone(), input_suggester)),
-        );
+    error_widget: ErrorWidget,
+}
+
+impl<T, U> SearchWidget<T, U>
+where
+    T: ToString + Clone,
+    U: SearchItemGetter<T>,
+{
+    pub fn new(
+        config: SharedCompleteConfig,
+        item_getter: U,
+        error_message: Vec<&'static str>,
+    ) -> Self {
+        let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
+        let error_widget = ErrorWidget::new(error_message);
 
         Self {
             config,
             focused: false,
-            storage,
-            search_input,
+            item_getter,
+            items: Ok(vec![]),
+            filtered_items: None,
             list_state: ListState::default(),
-            filtered_channels: None,
+            search_input,
             vertical_scroll_state: ScrollbarState::default(),
             vertical_scroll: 0,
+            error_widget,
         }
     }
 
     fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {
-                let items = self.storage.borrow().get("channels");
-
-                if i >= items.len() - 1 {
-                    items.len() - 1
+                if let Some(filtered) = &self.filtered_items {
+                    if i >= filtered.len().saturating_sub(1) {
+                        filtered.len().saturating_sub(1)
+                    } else {
+                        i + 1
+                    }
+                } else if i >= self.items.as_ref().unwrap().len().saturating_sub(1) {
+                    self.items.as_ref().unwrap().len().saturating_sub(1)
                 } else {
                     i + 1
                 }
@@ -117,7 +118,6 @@ impl ChannelSwitcherWidget {
             .list_state
             .selected()
             .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
-
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
@@ -135,17 +135,23 @@ impl ChannelSwitcherWidget {
     }
 
     pub fn toggle_focus(&mut self) {
+        if !self.focused {
+            self.items = self.item_getter.get_items();
+        }
+
+        if self.items.is_err() {
+            self.error_widget.toggle_focus();
+        }
+
         self.focused = !self.focused;
     }
 }
 
-impl ToString for ChannelSwitcherWidget {
-    fn to_string(&self) -> String {
-        self.search_input.to_string()
-    }
-}
-
-impl Component for ChannelSwitcherWidget {
+impl<T, U> Component for SearchWidget<T, U>
+where
+    T: ToString + Clone,
+    U: SearchItemGetter<T>,
+{
     fn draw<B: Backend>(
         &mut self,
         f: &mut Frame<B>,
@@ -154,19 +160,24 @@ impl Component for ChannelSwitcherWidget {
     ) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
-        let channels = self.storage.borrow().get("channels");
+        if self.error_widget.is_focused() {
+            self.error_widget.draw(f, Some(r), emotes);
+
+            return;
+        }
 
         let mut items = vec![];
+        let current_items = &self.items.as_ref().map_or(vec![], Clone::clone);
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
-            for channel in channels.clone() {
-                items.push(ListItem::new(channel.clone()));
+            for item in current_items {
+                items.push(ListItem::new(item.to_string()));
             }
 
-            self.filtered_channels = None;
+            self.filtered_items = None;
         } else {
-            let channel_filter = |c: String| -> Vec<usize> {
+            let item_filter = |c: String| -> Vec<usize> {
                 FUZZY_FINDER
                     .fuzzy_indices(&c, &current_input)
                     .map(|(_, indices)| indices)
@@ -175,8 +186,8 @@ impl Component for ChannelSwitcherWidget {
 
             let mut matched = vec![];
 
-            for channel in channels.clone() {
-                let matched_indices = channel_filter(channel.clone());
+            for item in current_items.clone() {
+                let matched_indices = item_filter(item.to_string());
 
                 if matched_indices.is_empty() {
                     continue;
@@ -184,7 +195,8 @@ impl Component for ChannelSwitcherWidget {
 
                 let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
 
-                let line = channel
+                let line = item
+                    .to_string()
                     .chars()
                     .enumerate()
                     .map(|(i, c)| {
@@ -197,10 +209,10 @@ impl Component for ChannelSwitcherWidget {
                     .collect::<Vec<Span>>();
 
                 items.push(ListItem::new(vec![Line::from(line)]));
-                matched.push(channel);
+                matched.push(item);
             }
 
-            self.filtered_channels = Some(matched);
+            self.filtered_items = Some(matched);
         }
 
         let title_binding = [TitleStyle::Single("Following")];
@@ -244,9 +256,9 @@ impl Component for ChannelSwitcherWidget {
         let title_binding = format!(
             "{} / {}",
             self.list_state.selected().map_or(1, |i| i + 1),
-            self.filtered_channels
+            self.filtered_items
                 .as_ref()
-                .map_or(channels.len(), Vec::len)
+                .map_or(current_items.len(), Vec::len)
         );
 
         let title = [TitleStyle::Single(&title_binding)];
@@ -262,12 +274,19 @@ impl Component for ChannelSwitcherWidget {
 
         f.render_widget(bottom_block, rect);
 
-        let input_rect = Rect::new(r.x, r.bottom(), r.width, 3);
+        let input_rect = Rect::new(rect.x, rect.bottom(), rect.width, 3);
 
         self.search_input.draw(f, Some(input_rect), emotes);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
+            self.error_widget.toggle_focus();
+            self.toggle_focus();
+
+            return None;
+        }
+
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {
@@ -275,88 +294,35 @@ impl Component for ChannelSwitcherWidget {
                         self.unselect();
                     } else {
                         self.toggle_focus();
-
-                        return Some(TerminalAction::BackOneLayer);
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::ScrollDown | Key::Down => self.next(),
                 Key::ScrollUp | Key::Up => self.previous(),
-                Key::Ctrl('d') => {
-                    if let Some(index) = self.list_state.selected() {
-                        // TODO: Make this just two if lets
-                        if let Some(filtered) = self.filtered_channels.clone() {
-                            if let Some(value) = filtered.get(index) {
-                                self.storage
-                                    .borrow_mut()
-                                    .remove_inner_with("channels", value);
-                            }
-                        } else if let Some(value) = self.storage.borrow().get("channels").get(index)
-                        {
-                            self.storage
-                                .borrow_mut()
-                                .remove_inner_with("channels", value);
-                        }
-                    }
-                }
                 Key::Enter => {
-                    // TODO: Reduce code duplication
                     if let Some(i) = self.list_state.selected() {
+                        let selected_channel = if let Some(v) = self.filtered_items.clone() {
+                            if v.is_empty() {
+                                return None;
+                            }
+
+                            v.get(i).unwrap().to_string()
+                        } else {
+                            self.items.as_ref().unwrap().get(i).unwrap().to_string()
+                        }
+                        .to_lowercase();
+
                         self.toggle_focus();
+
                         self.unselect();
 
-                        let channels = self.storage.borrow().get("channels");
-
-                        let selected_channel = if let Some(v) = &self.filtered_channels {
-                            if v.is_empty() {
-                                let selected_channel = self.search_input.to_string();
-
-                                if !selected_channel.is_empty() {
-                                    self.toggle_focus();
-                                    self.unselect();
-
-                                    if self.config.borrow().storage.channels {
-                                        self.storage
-                                            .borrow_mut()
-                                            .add("channels", selected_channel.clone());
-                                    }
-
-                                    self.search_input.update("");
-
-                                    self.config.borrow_mut().twitch.channel =
-                                        selected_channel.clone();
-
-                                    return Some(TerminalAction::Enter(TwitchAction::Join(
-                                        selected_channel,
-                                    )));
-                                }
-                            }
-
-                            v.get(i).unwrap()
-                        } else {
-                            channels.get(i).unwrap()
-                        };
-
-                        if self.config.borrow().storage.channels {
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", selected_channel.clone());
-                        }
-
-                        self.search_input.update("");
-
-                        self.config.borrow_mut().twitch.channel = selected_channel.clone();
-
-                        return Some(TerminalAction::Enter(TwitchAction::Join(
-                            selected_channel.to_string(),
-                        )));
+                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
                     }
                 }
                 _ => {
                     self.search_input.event(event);
 
                     // Assuming that the user inputted something that modified the input
-                    if let Some(v) = &self.filtered_channels {
+                    if let Some(v) = &self.filtered_items {
                         if !v.is_empty() {
                             self.list_state.select(Some(0));
                         }

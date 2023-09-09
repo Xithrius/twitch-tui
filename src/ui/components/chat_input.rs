@@ -1,4 +1,3 @@
-use tokio::sync::broadcast::Sender;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 use crate::{
@@ -21,16 +20,16 @@ pub struct ChatInputWidget {
     config: SharedCompleteConfig,
     storage: SharedStorage,
     input: InputWidget,
-    tx: Sender<TwitchAction>,
 }
 
 impl ChatInputWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
-        storage: SharedStorage,
-    ) -> Self {
-        let input_validator = Box::new(|s: String| -> bool { s.len() < *TWITCH_MESSAGE_LIMIT });
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+        let input_validator =
+            Box::new(|s: String| -> bool { !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT });
+
+        // User should be known of how close they are to the message length limit.
+        let visual_indicator =
+            Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
             s.chars()
@@ -65,6 +64,7 @@ impl ChatInputWidget {
             config.clone(),
             "Chat",
             Some(input_validator),
+            Some(visual_indicator),
             Some((storage.clone(), input_suggester)),
         );
 
@@ -72,7 +72,6 @@ impl ChatInputWidget {
             config,
             storage,
             input,
-            tx,
         }
     }
 
@@ -83,6 +82,10 @@ impl ChatInputWidget {
     pub fn toggle_focus(&mut self) {
         self.input.toggle_focus();
     }
+
+    pub fn toggle_focus_with(&mut self, s: &str) {
+        self.input.toggle_focus_with(s);
+    }
 }
 
 impl ToString for ChatInputWidget {
@@ -92,7 +95,12 @@ impl ToString for ChatInputWidget {
 }
 
 impl Component for ChatInputWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
         self.input.draw(f, area, emotes);
     }
 
@@ -103,9 +111,8 @@ impl Component for ChatInputWidget {
                     if self.input.is_valid() {
                         let current_input = self.input.to_string();
 
-                        self.tx
-                            .send(TwitchAction::Privmsg(current_input.clone()))
-                            .unwrap();
+                        let action =
+                            TerminalAction::Enter(TwitchAction::Privmsg(current_input.clone()));
 
                         self.input.update("");
 
@@ -120,6 +127,8 @@ impl Component for ChatInputWidget {
                                 return Some(TerminalAction::ClearMessages);
                             }
                         }
+
+                        return Some(action);
                     }
                 }
                 Key::Esc => {

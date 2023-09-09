@@ -22,17 +22,24 @@ const TABLE_CONSTRAINTS: [Constraint; 3] =
 
 #[derive(Debug, Clone)]
 pub struct HelpWidget {
-    _config: SharedCompleteConfig,
+    config: SharedCompleteConfig,
 }
 
 impl HelpWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
-        Self { _config: config }
+        Self { config }
     }
 }
 
 impl Component for HelpWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
+
         let mut rows = vec![];
 
         for (s, v) in HELP_KEYBINDS.iter() {
@@ -55,15 +62,14 @@ impl Component for HelpWidget {
         let help_table = Table::new(rows)
             .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(COLUMN_TITLE))
             .block(
-                Block::default().borders(Borders::ALL).title("[ Keybinds ]"), // .border_type(frontend.border_type.into()),
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("[ Keybinds ]")
+                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
             .widths(&TABLE_CONSTRAINTS)
             .column_spacing(2);
-        // .style(match app.theme {
-        //     Theme::Light => BORDER_NAME_LIGHT,
-        //     _ => BORDER_NAME_DARK,
-        // });
 
-        f.render_widget(help_table, area);
+        f.render_widget(help_table, r);
     }
 }

@@ -1,7 +1,10 @@
 mod badges;
+pub mod channels;
 mod connection;
+pub mod oauth;
 
-use std::collections::HashMap;
+use ::std::hash::BuildHasher;
+use std::{borrow::Borrow, collections::HashMap};
 
 use futures::StreamExt;
 use irc::{
@@ -14,11 +17,12 @@ use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use crate::{
     handlers::{
         config::CompleteConfig,
-        data::{DataBuilder, MessageData},
+        data::{DataBuilder, TwitchToTerminalAction},
+        state::State,
     },
     twitch::{
         badges::retrieve_user_badges,
-        connection::{client_stream_reconnect, create_client_stream},
+        connection::{client_stream_reconnect, wait_client_stream},
     },
 };
 
@@ -26,19 +30,36 @@ use crate::{
 pub enum TwitchAction {
     Privmsg(String),
     Join(String),
+    ClearMessages,
 }
 
 pub async fn twitch_irc(
     mut config: CompleteConfig,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
 ) {
     info!("Spawned Twitch IRC thread.");
 
-    let data_builder = DataBuilder::new(&config.frontend.date_format);
+    // If the dashboard is the start state, wait until the user has selected
+    // a channel before connecting to Twitch's IRC.
+    if config.borrow().terminal.first_state == State::Dashboard {
+        debug!("Waiting for user to select channel from debug screen");
+
+        loop {
+            if let Ok(TwitchAction::Join(channel)) = rx.recv().await {
+                config.twitch.channel = channel;
+
+                debug!("User has selected channel from start screen");
+                break;
+            }
+        }
+    }
+
+    let data_builder = DataBuilder::new(&config.frontend.datetime_format);
     let mut room_state_startup = false;
 
-    let (mut client, mut stream) = create_client_stream(config.clone()).await;
+    let (mut client, mut stream) =
+        wait_client_stream(tx.clone(), data_builder, config.clone()).await;
 
     let sender = client.sender();
 
@@ -85,8 +106,6 @@ pub async fn twitch_irc(
                         // Leave previous channel
                         if let Err(err) = sender.send_part(current_channel) {
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap();
-                        } else {
-                            tx.send(data_builder.twitch(format!("Joined {channel_list}"))).await.unwrap();
                         }
 
                         // Join specified channel
@@ -96,6 +115,9 @@ pub async fn twitch_irc(
 
                         // Set old channel to new channel
                         config.twitch.channel = channel;
+                    }
+                    TwitchAction::ClearMessages => {
+                        client.send(Command::Raw("CLEARCHAT".to_string(), vec![])).unwrap();
                     }
                 }
             }
@@ -118,7 +140,6 @@ pub async fn twitch_irc(
 
                         (client, stream) = client_stream_reconnect(err, tx.clone(), data_builder, &config).await;
 
-                        tx.send(data_builder.system("Attempting reconnect...".to_string())).await.unwrap();
                     }
                 }
             }
@@ -129,7 +150,7 @@ pub async fn twitch_irc(
 
 async fn handle_message_command(
     message: Message,
-    tx: Sender<MessageData>,
+    tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     badges: bool,
     room_state_startup: bool,
@@ -156,9 +177,14 @@ async fn handle_message_command(
             // An attempt to remove null bytes from the message.
             let cleaned_message = msg.trim_matches(char::from(0));
 
+            let message_id = tags.get("id").map(|&s| s.to_string());
+            let user_id = tags.get("user-id").map(|&s| s.to_string());
+
             tx.send(DataBuilder::user(
                 name.to_string(),
+                user_id,
                 cleaned_message.to_string(),
+                message_id,
             ))
             .await
             .unwrap();
@@ -168,8 +194,14 @@ async fn handle_message_command(
         Command::NOTICE(ref _target, ref msg) => {
             tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
         }
+        Command::JOIN(ref channel, _, _) => {
+            tx.send(data_builder.twitch(format!("Joined {}", *channel)))
+                .await
+                .unwrap();
+        }
         Command::Raw(ref cmd, ref _items) => {
             match cmd.as_ref() {
+                // https://dev.twitch.tv/docs/irc/tags/#roomstate-tags
                 "ROOMSTATE" => {
                     // Only display roomstate on startup, since twitch
                     // sends a NOTICE whenever roomstate changes.
@@ -179,9 +211,53 @@ async fn handle_message_command(
 
                     return Some(true);
                 }
+                // https://dev.twitch.tv/docs/irc/tags/#usernotice-tags
                 "USERNOTICE" => {
                     if let Some(value) = tags.get("system-msg") {
                         tx.send(data_builder.twitch((*value).to_string()))
+                            .await
+                            .unwrap();
+                    }
+                }
+                // https://dev.twitch.tv/docs/irc/tags/#clearchat-tags
+                "CLEARCHAT" => {
+                    let user_id = tags.get("target-user-id").map(|&s| s.to_string());
+
+                    tx.send(TwitchToTerminalAction::ClearChat(user_id.clone()))
+                        .await
+                        .unwrap();
+
+                    // User was either timed out or banned
+                    if user_id.is_some() {
+                        let ban_duration = tags.get("ban-duration").map(|&s| s.to_string());
+
+                        // TODO: In both cases of this branch, replace "User" with the username that the punishment was inflicted upon
+
+                        // User was timed out
+                        if let Some(duration) = ban_duration {
+                            tx.send(
+                                data_builder
+                                    .twitch(format!("User was timed out for {duration} seconds")),
+                            )
+                            .await
+                            .unwrap();
+                        }
+                        // User was banned
+                        else {
+                            tx.send(data_builder.twitch("User banned".to_string()))
+                                .await
+                                .unwrap();
+                        }
+                    } else {
+                        tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
+                            .await
+                            .unwrap();
+                    }
+                }
+                // https://dev.twitch.tv/docs/irc/tags/#clearmsg-tags
+                "CLEARMSG" => {
+                    if let Some(id) = tags.get("target-msg-id") {
+                        tx.send(TwitchToTerminalAction::DeleteMessage((*id).to_string()))
                             .await
                             .unwrap();
                     }
@@ -195,10 +271,13 @@ async fn handle_message_command(
     None
 }
 
-pub async fn handle_roomstate(tx: &Sender<MessageData>, tags: &HashMap<&str, &str>) {
+pub async fn handle_roomstate<S: BuildHasher>(
+    tx: &Sender<TwitchToTerminalAction>,
+    tags: &HashMap<&str, &str, S>,
+) {
     let mut room_state = String::new();
 
-    for (name, value) in tags.iter() {
+    for (name, value) in tags {
         match *name {
             "emote-only" if *value == "1" => {
                 room_state.push_str("The channel is emote-only.\n");
@@ -225,7 +304,14 @@ pub async fn handle_roomstate(tx: &Sender<MessageData>, tags: &HashMap<&str, &st
         return;
     }
 
-    tx.send(DataBuilder::user(String::from("Info"), room_state))
-        .await
-        .unwrap();
+    let message_id = tags.get("target-msg-id").map(|&s| s.to_string());
+
+    tx.send(DataBuilder::user(
+        String::from("Info"),
+        None,
+        room_state,
+        message_id,
+    ))
+    .await
+    .unwrap();
 }

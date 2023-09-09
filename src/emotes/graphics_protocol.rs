@@ -1,11 +1,11 @@
-use anyhow::{anyhow, Context};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use color_eyre::eyre::{anyhow, ContextCompat};
 use crossterm::{csi, cursor::MoveTo, queue, Command};
 use dialoguer::console::{Key, Term};
 use image::{
     codecs::{gif::GifDecoder, webp::WebPDecoder},
     io::Reader,
-    AnimationDecoder, ImageDecoder, ImageFormat,
+    AnimationDecoder, ImageDecoder, ImageFormat, Rgba,
 };
 use std::{
     env, fmt, fs,
@@ -34,7 +34,7 @@ macro_rules! gp {
 /// string to be deleted by the terminal.
 const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 
-type Result<T = ()> = anyhow::Result<T>;
+type Result<T = ()> = color_eyre::Result<T>;
 
 pub trait Size {
     fn size(&self) -> (u32, u32);
@@ -204,14 +204,12 @@ impl Load {
         match image.format() {
             None => Err(anyhow!("Could not guess image format.")),
             Some(ImageFormat::WebP) => {
-                let decoder = WebPDecoder::new(image.into_inner())?;
+                let mut decoder = WebPDecoder::new(image.into_inner())?;
 
                 if decoder.has_animation() {
                     // Some animated webp images have a default white background color
                     // We replace it by a transparent background
-                    // TODO: uncomment this line once PR below is merged.
-                    // https://github.com/image-rs/image/pull/1907
-                    // decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
+                    decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
                     Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
                 } else {
                     let image = Reader::open(&path)?.with_guessed_format()?;

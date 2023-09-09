@@ -1,29 +1,37 @@
+use chrono::{DateTime, Local};
 use tui::{
     backend::Backend,
     layout::{Constraint, Rect},
+    prelude::Alignment,
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Clear, Row, Table},
+    widgets::{block::Position, Block, Borders, Clear, Row, Table},
     Frame,
 };
 
 use crate::{
     emotes::Emotes,
-    handlers::config::SharedCompleteConfig,
+    handlers::{
+        config::{SharedCompleteConfig, ToVec},
+        user_input::events::{Event, Key},
+    },
+    terminal::TerminalAction,
     ui::components::Component,
-    utils::text::{title_spans, TitleStyle},
+    utils::text::{title_line, TitleStyle},
 };
 
 #[derive(Debug, Clone)]
 pub struct DebugWidget {
     config: SharedCompleteConfig,
     focused: bool,
+    startup_time: DateTime<Local>,
 }
 
 impl DebugWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCompleteConfig, startup_time: DateTime<Local>) -> Self {
         Self {
             config,
             focused: false,
+            startup_time,
         }
     }
 
@@ -34,30 +42,108 @@ impl DebugWidget {
     pub fn toggle_focus(&mut self) {
         self.focused = !self.focused;
     }
+
+    fn get_config_values(&self) -> Vec<(String, Vec<(String, String)>)> {
+        let c = self.config.borrow();
+
+        vec![
+            ("Twitch Config".to_string(), c.twitch.to_vec()),
+            ("Terminal Config".to_string(), c.terminal.to_vec()),
+            ("Storage Config".to_string(), c.storage.to_vec()),
+            ("Filter Config".to_string(), c.filters.to_vec()),
+            ("Frontend Config".to_string(), c.frontend.to_vec()),
+        ]
+    }
 }
 
 impl Component for DebugWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
-        // TODO: Add more debug stuff
-        let config = self.config.borrow();
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
 
-        let rows = vec![Row::new(vec!["Current channel", &config.twitch.channel])];
+        let configs = self.get_config_values();
+
+        let rows = configs
+            .iter()
+            .enumerate()
+            .flat_map(|(i, (t, values))| {
+                let mut inner_rows = if i > 0 {
+                    vec![
+                        Row::new::<Vec<String>>(vec![]),
+                        Row::new(vec![t.to_string()])
+                            .style(Style::default().add_modifier(Modifier::BOLD)),
+                    ]
+                } else {
+                    vec![Row::new(vec![t.to_string()])
+                        .style(Style::default().add_modifier(Modifier::BOLD))]
+                };
+
+                for (k, v) in values {
+                    inner_rows.push(Row::new(vec![k.to_string(), v.to_string()]));
+                }
+
+                inner_rows
+            })
+            .collect::<Vec<Row>>();
 
         let title_binding = [TitleStyle::Single("Debug")];
 
         let table = Table::new(rows)
             .block(
                 Block::default()
-                    .title(title_spans(
+                    .title(title_line(
                         &title_binding,
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                     ))
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .widths(&[Constraint::Length(10), Constraint::Length(10)]);
+            // TODO: Automatically calculate the constraints
+            .widths(&[Constraint::Length(25), Constraint::Length(25)]);
 
-        f.render_widget(Clear, area);
-        f.render_widget(table, area);
+        f.render_widget(Clear, r);
+        f.render_widget(table, r);
+
+        let title_binding = self
+            .startup_time
+            .format(&self.config.borrow().frontend.datetime_format)
+            .to_string();
+
+        let title = [TitleStyle::Combined("Startup time", &title_binding)];
+
+        let bottom_block = Block::default()
+            .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .title(title_line(
+                &title,
+                Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+            ))
+            .title_position(Position::Bottom)
+            .title_alignment(Alignment::Left);
+
+        let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
+
+        f.render_widget(bottom_block, rect);
+    }
+
+    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if let Event::Input(key) = event {
+            match key {
+                Key::Char('q') => return Some(TerminalAction::Quit),
+                Key::Esc => {
+                    self.toggle_focus();
+
+                    return Some(TerminalAction::BackOneLayer);
+                }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                _ => {}
+            }
+        }
+
+        None
     }
 }

@@ -10,6 +10,7 @@ use std::{
     rc::Rc,
     str::FromStr,
 };
+use tokio::{runtime::Handle, task};
 use tui::widgets::BorderType;
 
 use crate::{
@@ -56,7 +57,7 @@ pub struct TwitchConfig {
 #[serde(default)]
 pub struct TerminalConfig {
     /// The delay in milliseconds between terminal updates.
-    pub tick_delay: u64,
+    pub delay: u64,
     /// The maximum amount of messages before truncation.
     pub maximum_messages: usize,
     /// The file path to log to.
@@ -64,7 +65,7 @@ pub struct TerminalConfig {
     /// if debug logging should be enabled.
     pub verbose: bool,
     /// What state the application should start in.
-    pub start_state: State,
+    pub first_state: State,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -89,9 +90,9 @@ pub struct FiltersConfig {
 #[serde(default)]
 pub struct FrontendConfig {
     /// If the time and date is to be shown.
-    pub date_shown: bool,
+    pub show_datetimes: bool,
     /// The format of string that will show up in the terminal.
-    pub date_format: String,
+    pub datetime_format: String,
     /// If the username should be shown.
     pub username_shown: bool,
     /// The color palette.
@@ -114,16 +115,26 @@ pub struct FrontendConfig {
     pub blinking_cursor: bool,
     /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
+    /// If scroll offset integer should be shown.
+    pub show_scroll_offset: bool,
     /// If twitch emotes should be displayed (requires kitty terminal).
     pub twitch_emotes: bool,
     /// If betterttv emotes should be displayed (requires kitty terminal).
     pub betterttv_emotes: bool,
     /// If 7tv emotes should be displayed (requires kitty terminal).
     pub seventv_emotes: bool,
-    /// Comma-separated channel names to be displayed at start screen.
-    pub start_screen_channels: Vec<String>,
+    /// If FrankerFacez emotes should be displayed (requires kitty terminal).
+    pub frankerfacez_emotes: bool,
+    /// Channels to always be displayed in the start screen.
+    pub favorite_channels: Vec<String>,
+    /// The amount of recent channels that should be shown on the start screen.
+    pub recent_channel_count: u16,
     /// A border wrapper around [`BorderType`].
     pub border_type: Border,
+    /// If the usernames should be aligned to the right.
+    pub right_align_usernames: bool,
+    /// Do not display the window size warning.
+    pub show_unsupported_screen_size: bool,
 }
 
 impl Default for TwitchConfig {
@@ -140,11 +151,11 @@ impl Default for TwitchConfig {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
-            tick_delay: 30,
-            maximum_messages: 150,
+            delay: 30,
+            maximum_messages: 500,
             log_file: None,
             verbose: false,
-            start_state: State::default(),
+            first_state: State::default(),
         }
     }
 }
@@ -152,8 +163,8 @@ impl Default for TerminalConfig {
 impl Default for FrontendConfig {
     fn default() -> Self {
         Self {
-            date_shown: true,
-            date_format: "%a %b %e %T %Y".to_string(),
+            show_datetimes: true,
+            datetime_format: "%a %b %e %T %Y".to_string(),
             username_shown: true,
             palette: Palette::default(),
             title_shown: true,
@@ -165,11 +176,16 @@ impl Default for FrontendConfig {
             cursor_shape: CursorType::default(),
             blinking_cursor: false,
             inverted_scrolling: false,
+            show_scroll_offset: false,
             twitch_emotes: false,
             betterttv_emotes: false,
             seventv_emotes: false,
-            start_screen_channels: vec![],
+            frankerfacez_emotes: false,
+            favorite_channels: vec![],
+            recent_channel_count: 5,
             border_type: Border::default(),
+            right_align_usernames: false,
+            show_unsupported_screen_size: true,
         }
     }
 }
@@ -300,6 +316,120 @@ impl From<Border> for BorderType {
     }
 }
 
+pub trait ToVec<T> {
+    fn to_vec(&self) -> Vec<T>;
+}
+
+impl ToVec<(String, String)> for TwitchConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Username".to_string(), self.username.to_string()),
+            ("Channel".to_string(), self.channel.to_string()),
+            ("Server".to_string(), self.server.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for TerminalConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Current channel".to_string(), self.delay.to_string()),
+            (
+                "Max messages".to_string(),
+                self.maximum_messages.to_string(),
+            ),
+            (
+                "Log file".to_string(),
+                self.log_file.clone().map_or("None".to_string(), |f| f),
+            ),
+            ("First state".to_string(), self.first_state.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for StorageConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Channels enabled".to_string(), self.channels.to_string()),
+            ("Mentions enabled".to_string(), self.mentions.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for FiltersConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            ("Enabled".to_string(), self.enabled.to_string()),
+            ("Reversed".to_string(), self.reversed.to_string()),
+        ]
+    }
+}
+
+impl ToVec<(String, String)> for FrontendConfig {
+    fn to_vec(&self) -> Vec<(String, String)> {
+        vec![
+            (
+                "Show datetimes".to_string(),
+                self.show_datetimes.to_string(),
+            ),
+            (
+                "Datetime format".to_string(),
+                self.datetime_format.to_string(),
+            ),
+            (
+                "Username shown".to_string(),
+                self.username_shown.to_string(),
+            ),
+            // ("".to_string(), self.palette.to_string()),
+            ("Title shown".to_string(), self.title_shown.to_string()),
+            ("Margin".to_string(), self.margin.to_string()),
+            ("Badges".to_string(), self.badges.to_string()),
+            // ("".to_string(), self.theme.to_string()),
+            (
+                "Username highlight".to_string(),
+                self.username_highlight.to_string(),
+            ),
+            ("State tabs".to_string(), self.state_tabs.to_string()),
+            // ("".to_string(), self.cursor_shape.to_string()),
+            (
+                "Blinking cursor".to_string(),
+                self.blinking_cursor.to_string(),
+            ),
+            (
+                "Inverted scrolling".to_string(),
+                self.inverted_scrolling.to_string(),
+            ),
+            (
+                "Scroll offset shown".to_string(),
+                self.show_scroll_offset.to_string(),
+            ),
+            ("Twitch emotes".to_string(), self.twitch_emotes.to_string()),
+            (
+                "BetterTTV emotes".to_string(),
+                self.betterttv_emotes.to_string(),
+            ),
+            (
+                "SevenTV emotes".to_string(),
+                self.seventv_emotes.to_string(),
+            ),
+            (
+                "FrankerFacez emotes".to_string(),
+                self.frankerfacez_emotes.to_string(),
+            ),
+            // ("".to_string(), self.favorite_channels.to_string()),
+            (
+                "Recent channel count".to_string(),
+                self.recent_channel_count.to_string(),
+            ),
+            // ("".to_string(), self.border_type.to_string()),
+            (
+                "Right aligned usernames".to_string(),
+                self.right_align_usernames.to_string(),
+            ),
+        ]
+    }
+}
+
 fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
     let toml_string = toml::to_string(&config)?;
     let mut file = File::create(path)?;
@@ -308,6 +438,27 @@ fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
     drop(file);
 
     Ok(())
+}
+
+const RAW_DEFAULT_CONFIG_URL: &str =
+    "https://raw.githubusercontent.com/Xithrius/twitch-tui/main/default-config.toml";
+
+fn persist_default_config(path: &Path) {
+    let default_config = task::block_in_place(move || {
+        Handle::current().block_on(async move {
+            reqwest::get(RAW_DEFAULT_CONFIG_URL)
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap()
+        })
+    });
+
+    let mut file = File::create(path).unwrap();
+
+    file.write_all(default_config.as_bytes()).unwrap();
+    drop(file);
 }
 
 impl CompleteConfig {
@@ -327,10 +478,11 @@ impl CompleteConfig {
             create_dir_all(p.parent().unwrap()).unwrap();
 
             if let Some(config) = interactive_config() {
+                persist_config(p, &config)?;
                 Ok(config)
             } else {
-                persist_config(p, &Self::default())?;
-                bail!("Configuration was generated at {path_str}, please fill it out with necessary information.")
+                persist_default_config(p);
+                bail!("Default configuration was generated at {path_str}, please fill it out with necessary information.")
             }
         } else if let Ok(file_content) = read_to_string(p) {
             let mut config: Self = match toml::from_str(&file_content) {

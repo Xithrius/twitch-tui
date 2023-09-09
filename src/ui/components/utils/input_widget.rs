@@ -3,8 +3,8 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, Clear, Paragraph},
+    text::{Line, Span},
+    widgets::{block::Position, Block, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -17,10 +17,13 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
-    utils::text::{get_cursor_position, title_spans, TitleStyle},
+    utils::text::{get_cursor_position, title_line, TitleStyle},
 };
 
+use super::centered_rect;
+
 pub type InputValidator = Box<dyn Fn(String) -> bool>;
+pub type VisualValidator = Box<dyn Fn(String) -> String>;
 pub type InputSuggester = Box<dyn Fn(SharedStorage, String) -> Option<String>>;
 
 pub struct InputWidget {
@@ -29,7 +32,9 @@ pub struct InputWidget {
     title: String,
     focused: bool,
     input_validator: Option<InputValidator>,
+    visual_indicator: Option<VisualValidator>,
     input_suggester: Option<(SharedStorage, InputSuggester)>,
+    suggestion: Option<String>,
 }
 
 impl InputWidget {
@@ -37,15 +42,18 @@ impl InputWidget {
         config: SharedCompleteConfig,
         title: &str,
         input_validator: Option<InputValidator>,
+        visual_indicator: Option<VisualValidator>,
         input_suggester: Option<(SharedStorage, InputSuggester)>,
     ) -> Self {
         Self {
             config,
-            input: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
+            input: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             title: title.to_string(),
             focused: false,
             input_validator,
+            visual_indicator,
             input_suggester,
+            suggestion: None,
         }
     }
 
@@ -59,6 +67,11 @@ impl InputWidget {
 
     pub fn toggle_focus(&mut self) {
         self.focused = !self.focused;
+    }
+
+    pub fn toggle_focus_with(&mut self, s: &str) {
+        self.focused = !self.focused;
+        self.input.update(s, 1);
     }
 
     pub fn is_valid(&self) -> bool {
@@ -75,12 +88,19 @@ impl ToString for InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _emotes: Option<Emotes>) {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        _emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+
         let cursor_pos = get_cursor_position(&self.input);
 
         f.set_cursor(
-            (area.x + cursor_pos as u16 + 1).min(area.x + area.width.saturating_sub(2)),
-            area.y + 1,
+            (r.x + cursor_pos as u16 + 1).min(r.x + r.width.saturating_sub(2)),
+            r.y + 1,
         );
 
         let current_input = self.input.as_str();
@@ -93,7 +113,7 @@ impl Component for InputWidget {
             Color::Red
         };
 
-        let suggestion = if self.config.borrow().storage.channels {
+        self.suggestion = if self.config.borrow().storage.channels {
             if let Some((storage, suggester)) = &self.input_suggester {
                 suggester(storage.clone(), self.input.to_string())
             } else {
@@ -103,35 +123,61 @@ impl Component for InputWidget {
             None
         };
 
-        let paragraph = Paragraph::new(Spans::from(vec![
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_style(Style::default().fg(status_color))
+            .title(title_line(
+                &binding,
+                Style::default()
+                    .fg(status_color)
+                    .add_modifier(Modifier::BOLD),
+            ));
+
+        let paragraph_lines = Line::from(vec![
             Span::raw(current_input),
             Span::styled(
-                suggestion.map_or_else(String::new, |suggestion_buffer| {
-                    if suggestion_buffer.len() > current_input.len() {
-                        suggestion_buffer[current_input.len()..].to_string()
-                    } else {
-                        String::new()
-                    }
-                }),
+                self.suggestion
+                    .as_ref()
+                    .map_or_else(String::new, |suggestion_buffer| {
+                        if suggestion_buffer.len() > current_input.len() {
+                            suggestion_buffer[current_input.len()..].to_string()
+                        } else {
+                            String::new()
+                        }
+                    }),
                 Style::default().add_modifier(Modifier::DIM),
             ),
-        ]))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(self.config.borrow().frontend.border_type.clone().into())
-                .border_style(Style::default().fg(status_color))
-                .title(title_spans(
-                    &binding,
+        ]);
+
+        let paragraph = Paragraph::new(paragraph_lines)
+            .block(block)
+            .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(r.width)));
+
+        f.render_widget(Clear, r);
+        f.render_widget(paragraph, r);
+
+        if let Some(visual) = &self.visual_indicator {
+            let contents = visual(self.input.to_string());
+
+            let title = [TitleStyle::Single(&contents)];
+
+            let bottom_block = Block::default()
+                .title(title_line(
+                    &title,
                     Style::default()
                         .fg(status_color)
                         .add_modifier(Modifier::BOLD),
-                )),
-        )
-        .scroll((0, ((cursor_pos + 3) as u16).saturating_sub(area.width)));
+                ))
+                .title_position(Position::Bottom)
+                .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
+                .border_type(self.config.borrow().frontend.border_type.clone().into());
 
-        f.render_widget(Clear, area);
-        f.render_widget(paragraph, area);
+            // This is only supposed to render on the very bottom line of the area.
+            // If some rendering breaks for input boxes, this is a possible source.
+            let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
+            f.render_widget(bottom_block, rect);
+        }
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {
@@ -177,17 +223,13 @@ impl Component for InputWidget {
                     self.input.backspace(1);
                 }
                 Key::Tab => {
-                    // TODO: Have this be a shared suggestion so it doesn't have to run twice
                     if self.config.borrow().storage.channels {
-                        if let Some((storage, suggester)) = &self.input_suggester {
-                            if let Some(suggestion) =
-                                suggester(storage.clone(), self.input.to_string())
-                            {
-                                self.input.update(&suggestion, suggestion.len());
-                            }
+                        if let Some(suggestion) = &self.suggestion {
+                            self.input.update(suggestion, suggestion.len());
                         }
                     }
                 }
+                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Ctrl('q') => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1);

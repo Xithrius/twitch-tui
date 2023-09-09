@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![warn(clippy::nursery, clippy::pedantic)]
 #![allow(
     clippy::cast_possible_truncation,
@@ -8,22 +9,27 @@
     clippy::unused_self,
     clippy::future_not_send,
     clippy::suboptimal_flops,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate
 )]
 
-use crate::emotes::graphics_protocol::get_terminal_cell_size;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
 
-use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
+use crate::{
+    emotes::graphics_protocol::get_terminal_cell_size,
+    handlers::{app::App, args::Cli, config::CompleteConfig},
+};
 
 mod commands;
 mod emotes;
 mod handlers;
 mod terminal;
-mod twitch;
+pub mod twitch;
 mod ui;
 mod utils;
 
@@ -58,6 +64,8 @@ fn initialize_logging(config: &CompleteConfig) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let startup_time = chrono::Local::now();
+
     color_eyre::install().unwrap();
 
     let config = CompleteConfig::new(Cli::parse())
@@ -72,7 +80,7 @@ async fn main() -> Result<()> {
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
     let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
-    let app = App::new(config.clone(), terminal_tx);
+    let mut app = App::new(config.clone(), startup_time);
 
     info!("Started tokio communication channels.");
 
@@ -84,8 +92,10 @@ async fn main() -> Result<()> {
         // as writing on stdout on a different thread can interfere.
         match get_terminal_cell_size() {
             Ok(cell_size) => {
+                app.emotes.cell_size = cell_size;
+
                 tokio::task::spawn(async move {
-                    emotes::emotes(cloned_config, emotes_tx, twitch_rx, cell_size).await;
+                    emotes::emotes(cloned_config, emotes_tx, twitch_rx).await;
                 });
             }
             Err(e) => {
@@ -100,7 +110,7 @@ async fn main() -> Result<()> {
         twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
     });
 
-    terminal::ui_driver(cloned_config, app, terminal_rx, emotes_rx).await;
+    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, emotes_rx).await;
 
     std::process::exit(0)
 }

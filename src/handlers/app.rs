@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
+use chrono::{DateTime, Local};
 use rustyline::line_buffer::LineBuffer;
-use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -11,24 +11,18 @@ use tui::{
 use crate::{
     emotes::Emotes,
     handlers::{
-        config::{CompleteConfig, Theme},
+        config::{CompleteConfig, SharedCompleteConfig, Theme},
         data::MessageData,
-        filters::Filters,
+        filters::{Filters, SharedFilters},
         state::State,
-        storage::Storage,
-        user_input::events::Event,
+        storage::{SharedStorage, Storage},
+        user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::{
         components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
     },
-};
-
-use super::{
-    config::SharedCompleteConfig, filters::SharedFilters, storage::SharedStorage,
-    user_input::events::Key,
 };
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
@@ -54,6 +48,8 @@ pub struct App {
     pub buffer_suggestion: Option<String>,
     /// The theme selected by the user.
     pub theme: Theme,
+    /// Emotes
+    pub emotes: Emotes,
 }
 
 macro_rules! shared {
@@ -63,13 +59,21 @@ macro_rules! shared {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig, tx: Sender<TwitchAction>) -> Self {
-        let shared_config = shared!(config);
+    pub fn new(config: CompleteConfig, startup_time: DateTime<Local>) -> Self {
+        let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
 
         let storage = shared!(Storage::new("storage.json", &shared_config_borrow.storage));
-        let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters,));
+
+        if !storage
+            .borrow()
+            .contains("channels", &config.twitch.channel)
+        {
+            storage.borrow_mut().add("channels", config.twitch.channel);
+        }
+
+        let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters));
 
         let messages = shared!(VecDeque::with_capacity(
             shared_config_borrow.terminal.maximum_messages,
@@ -77,10 +81,10 @@ impl App {
 
         let components = Components::new(
             &shared_config,
-            tx,
             storage.clone(),
             filters.clone(),
             messages.clone(),
+            startup_time,
         );
 
         Self {
@@ -89,15 +93,16 @@ impl App {
             messages,
             storage,
             filters,
-            state: shared_config_borrow.terminal.start_state.clone(),
+            state: shared_config_borrow.terminal.first_state.clone(),
             previous_state: None,
-            input_buffer: LineBuffer::with_capacity(*LINE_BUFFER_CAPACITY),
+            input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
             theme: shared_config_borrow.frontend.theme.clone(),
+            emotes: Emotes::default(),
         }
     }
 
-    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>, emotes: Emotes) {
+    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let mut size = f.size();
 
         if self.config.borrow().frontend.state_tabs {
@@ -111,13 +116,17 @@ impl App {
             self.components.tabs.draw(f, Some(layout[1]), &self.state);
         }
 
-        if size.height < 10 || size.width < 60 {
-            self.components.error.draw(f, f.size(), None);
+        if (size.height < 10 || size.width < 60)
+            && self.config.borrow().frontend.show_unsupported_screen_size
+        {
+            self.components
+                .window_size_error
+                .draw(f, Some(f.size()), None);
         } else {
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, size, None),
-                State::Normal => self.components.chat.draw(f, size, Some(emotes)),
-                State::Help => self.components.help.draw(f, size, None),
+                State::Dashboard => self.components.dashboard.draw(f, None, None),
+                State::Normal => self.components.chat.draw(f, None, Some(&mut self.emotes)),
+                State::Help => self.components.help.draw(f, None, None),
             }
         }
 
@@ -129,12 +138,16 @@ impl App {
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(new_rect)[1];
 
-            self.components.debug.draw(f, rect, None);
+            self.components.debug.draw(f, Some(rect), None);
         }
     }
 
     pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            if self.components.debug.is_focused() {
+                return self.components.debug.event(event);
+            }
+
             match key {
                 // Global keybinds
                 Key::Ctrl('d') => {
@@ -158,9 +171,34 @@ impl App {
     }
 
     pub fn clear_messages(&mut self) {
+        self.emotes.clear();
         self.messages.borrow_mut().clear();
 
         self.components.chat.scroll_offset.jump_to(0);
+    }
+
+    pub fn purge_user_messages(&mut self, user_id: &str) {
+        let messages = self
+            .messages
+            .borrow_mut()
+            .iter()
+            .filter(|&m| m.user_id.clone().map_or(true, |user| user != user_id))
+            .cloned()
+            .collect::<VecDeque<MessageData>>();
+
+        self.messages.replace(messages);
+    }
+
+    pub fn remove_message_with(&mut self, message_id: &str) {
+        let index = self
+            .messages
+            .borrow_mut()
+            .iter()
+            .position(|f| f.message_id.clone().map_or(false, |id| id == message_id));
+
+        if let Some(i) = index {
+            self.messages.borrow_mut().remove(i).unwrap();
+        }
     }
 
     pub fn get_previous_state(&self) -> Option<State> {
@@ -173,6 +211,7 @@ impl App {
     }
 
     pub fn set_state(&mut self, other: State) {
+        self.emotes.clear();
         self.previous_state = Some(self.state.clone());
         self.state = other;
     }

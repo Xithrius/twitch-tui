@@ -2,7 +2,7 @@
 
 The default start screen of the application.
 
-Can be the start state by configuring `start_state` in the config to either `"dashboard"`, `"dash"`, or `"start"`.
+Can be the start state by configuring `first_state` in the config to either `"dashboard"`, `"dash"`, or `"start"`.
 
 Hitting any of the integers displayed between brackets will take you to said channel.
 
@@ -12,17 +12,20 @@ Hitting any of the integers displayed between brackets will take you to said cha
 <td> <b> Description</b>
 <tr>
 <td> Enter
-<td> Start in the channel that you've configured
+<td> Enter the channel that you set in the "channel" option within your config.
 <tr>
-<td> ?
+<td> ? or h
 <td> Have the keybinds popup window appear.
 <tr>
 <td> q
-<td> Quit out of the entire application once in the base chat view.
+<td> Quit the application.
 <tr>
 <td> s
-<td> Open a popup window to switch channels.
+<td> Open the recent channel switcher popup
+<tr>
+<td> f
+<td> Open the followed channel search popup
 <tr>
 <td> Ctrl + p
-<td> Manually trigger a panic, so the application crashes.
+<td> Manually crash the application.
 </table>

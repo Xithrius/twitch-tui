@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use color_eyre::{eyre::ContextCompat, Result};
 use log::{info, warn};
 use std::{
     collections::{hash_map::DefaultHasher, HashMap, HashSet},
@@ -8,7 +8,7 @@ use std::{
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tui::{
     layout::Rect,
-    text::{Span, Spans},
+    text::{Line, Span},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -24,6 +24,9 @@ use crate::{
 
 mod downloader;
 pub mod graphics_protocol;
+
+// HashMap of emote name, emote filename, and if the emote is an overlay
+pub type DownloadedEmotes = HashMap<String, (String, bool)>;
 
 #[derive(Debug, Copy, Clone)]
 pub struct LoadedEmote {
@@ -42,7 +45,7 @@ pub struct LoadedEmote {
 #[derive(Default, Debug, Clone)]
 pub struct Emotes {
     /// Map of emote name, filename, and if the emote is an overlay
-    pub emotes: HashMap<String, (String, bool)>,
+    pub emotes: DownloadedEmotes,
     /// Emotes currently loaded
     pub loaded: HashSet<u32>,
     /// Info about loaded emotes
@@ -54,20 +57,17 @@ pub struct Emotes {
 }
 
 impl Emotes {
-    pub async fn new(
-        config: &CompleteConfig,
-        channel: &str,
-        cell_size: (u16, u16),
-    ) -> Result<Self> {
-        let emotes = get_emotes(config, channel).await?;
+    pub fn clear(&mut self) {
+        graphics_protocol::command(graphics_protocol::Clear(0, 1)).unwrap_or_default();
+        self.displayed.clear();
+    }
 
-        Ok(Self {
-            emotes,
-            loaded: HashSet::new(),
-            info: HashMap::new(),
-            displayed: HashMap::new(),
-            cell_size,
-        })
+    pub fn unload(&mut self) {
+        graphics_protocol::command(graphics_protocol::Clear(0, 0)).unwrap_or_default();
+        self.emotes.clear();
+        self.loaded.clear();
+        self.info.clear();
+        self.displayed.clear();
     }
 }
 
@@ -77,18 +77,13 @@ pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
 }
 
 #[inline]
-pub fn is_in_rect(rect: Rect, (x, y): (u16, u16), width: u16) -> bool {
+pub const fn is_in_rect(rect: Rect, (x, y): (u16, u16), width: u16) -> bool {
     y < rect.bottom() && y > rect.top() - 1 && x < rect.right() && x + width > rect.left()
 }
 
-pub async fn send_emotes(
-    config: &CompleteConfig,
-    tx: &Sender<Emotes>,
-    channel: &str,
-    terminal_cell_size: (u16, u16),
-) {
+pub async fn send_emotes(config: &CompleteConfig, tx: &Sender<DownloadedEmotes>, channel: &str) {
     info!("Starting emotes download.");
-    match Emotes::new(config, channel, terminal_cell_size).await {
+    match get_emotes(config, channel).await {
         Ok(emotes) => {
             info!("Emotes downloaded.");
             if let Err(e) = tx.send(emotes).await {
@@ -103,18 +98,14 @@ pub async fn send_emotes(
 
 pub async fn emotes(
     config: CompleteConfig,
-    tx: Sender<Emotes>,
+    tx: Sender<DownloadedEmotes>,
     mut rx: Receiver<TwitchAction>,
-    terminal_cell_size: (u16, u16),
 ) {
-    send_emotes(&config, &tx, &config.twitch.channel, terminal_cell_size).await;
+    send_emotes(&config, &tx, &config.twitch.channel).await;
 
     loop {
-        match rx.recv().await {
-            Ok(TwitchAction::Join(channel)) => {
-                send_emotes(&config, &tx, &channel, terminal_cell_size).await;
-            }
-            Ok(_) | Err(_) => {}
+        if let Ok(TwitchAction::Join(channel)) = rx.recv().await {
+            send_emotes(&config, &tx, &channel).await;
         }
     }
 }
@@ -147,9 +138,7 @@ pub fn show_emotes<F>(
 
         emotes_pos_in_span.insert(emote.index_in_message - start);
 
-        let info = if let Some(info) = emotes.info.get(&emote.name) {
-            info
-        } else {
+        let Some(info) = emotes.info.get(&emote.name) else {
             warn!("Unable to get info of emote {}", emote.name);
             continue;
         };
@@ -286,23 +275,9 @@ pub fn reload_emote(
     Ok(())
 }
 
-pub fn unload_all_emotes(emotes: &mut Emotes) {
-    graphics_protocol::command(graphics_protocol::Clear(0, 0)).unwrap_or_default();
-    emotes.emotes.clear();
-    emotes.loaded.clear();
-    emotes.info.clear();
-    emotes.displayed.clear();
-}
-
-#[allow(dead_code)]
-pub fn hide_all_emotes(emotes: &mut Emotes) {
-    graphics_protocol::command(graphics_protocol::Clear(0, 1)).unwrap_or_default();
-    emotes.displayed.clear();
-}
-
 pub fn show_span_emotes<F>(
     message_emotes: &Vec<EmoteData>,
-    span: &mut Spans,
+    line: &mut Line,
     emotes: &mut Emotes,
     payload: &str,
     margin: usize,
@@ -312,8 +287,8 @@ pub fn show_span_emotes<F>(
 where
     F: Fn((u16, u16), u16) -> bool,
 {
-    let span_width: usize = span.0.iter().map(|s| s.content.width()).sum();
-    let last_span = span.0.last_mut().context("Span is empty")?;
+    let span_width: usize = line.spans.iter().map(|s| s.content.width()).sum();
+    let last_span = line.spans.last_mut().context("Span is empty")?;
 
     let p = payload
         .trim_end()

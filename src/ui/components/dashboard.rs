@@ -1,12 +1,11 @@
 use std::slice::Iter;
 
-use tokio::sync::broadcast::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
 };
 
@@ -20,9 +19,11 @@ use crate::{
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
-    ui::components::{utils::centered_rect, ChannelSwitcherWidget, Component},
+    ui::components::{ChannelSwitcherWidget, Component},
     utils::styles::DASHBOARD_TITLE_COLOR,
 };
+
+use super::following::FollowingWidget;
 
 const DASHBOARD_TITLE: [&str; 5] = [
     "   __           _ __       __          __        _ ",
@@ -32,33 +33,26 @@ const DASHBOARD_TITLE: [&str; 5] = [
     "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   ",
 ];
 
-const CHANNEL_LIST_AMOUNT: u16 = 5;
-
 pub struct DashboardWidget {
     config: SharedCompleteConfig,
-    tx: Sender<TwitchAction>,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
+    following: FollowingWidget,
 }
 
 impl DashboardWidget {
-    pub fn new(
-        config: SharedCompleteConfig,
-        tx: Sender<TwitchAction>,
-        storage: SharedStorage,
-    ) -> Self {
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), tx.clone(), storage.clone());
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+        let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
+        let following = FollowingWidget::new(config.clone());
 
         Self {
             config,
-            tx,
             storage,
             channel_input,
+            following,
         }
     }
-}
 
-impl DashboardWidget {
     fn create_interactive_list_widget<'a>(
         &'a self,
         items: &'a [String],
@@ -69,7 +63,7 @@ impl DashboardWidget {
                 .iter()
                 .enumerate()
                 .map(|(i, s)| {
-                    ListItem::new(Spans::from(vec![
+                    ListItem::new(Line::from(vec![
                         Span::raw("["),
                         Span::styled(
                             (i + index_offset).to_string(),
@@ -85,25 +79,25 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
-    fn render_dashboard_title_widget<T: Backend>(
+    fn render_dashboard_title_widget<B: Backend>(
         &self,
-        frame: &mut Frame<T>,
+        frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
     ) {
         let w = Paragraph::new(
             DASHBOARD_TITLE
                 .iter()
-                .map(|&s| Spans::from(vec![Span::raw(s)]))
-                .collect::<Vec<Spans>>(),
+                .map(|&s| Line::from(vec![Span::raw(s)]))
+                .collect::<Vec<Line>>(),
         )
         .style(DASHBOARD_TITLE_COLOR);
 
         frame.render_widget(w, *v_chunks.next().unwrap());
     }
 
-    fn render_channel_selection_widget<T: Backend>(
+    fn render_channel_selection_widget<B: Backend>(
         &self,
-        frame: &mut Frame<T>,
+        frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
         current_channel: String,
         default_channels: &[String],
@@ -114,7 +108,7 @@ impl DashboardWidget {
             *v_chunks.next().unwrap(),
         );
 
-        let current_channel_selection = Paragraph::new(Spans::from(vec![
+        let current_channel_selection = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled(
                 "ENTER".to_string(),
@@ -127,8 +121,7 @@ impl DashboardWidget {
         frame.render_widget(current_channel_selection, *v_chunks.next().unwrap());
 
         frame.render_widget(
-            Paragraph::new("Configured default channels")
-                .style(Style::default().fg(Color::LightRed)),
+            Paragraph::new("Favorite channels").style(Style::default().fg(Color::LightRed)),
             *v_chunks.next().unwrap(),
         );
 
@@ -157,12 +150,12 @@ impl DashboardWidget {
         }
     }
 
-    fn render_quit_selection_widget<T: Backend>(
+    fn render_quit_selection_widget<B: Backend>(
         &self,
-        frame: &mut Frame<T>,
+        frame: &mut Frame<B>,
         v_chunks: &mut Iter<Rect>,
     ) {
-        let quit_option = Paragraph::new(Spans::from(vec![
+        let quit_option = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled("q", Style::default().fg(Color::LightMagenta)),
             Span::raw("] "),
@@ -174,19 +167,34 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, emotes: Option<Emotes>) {
-        let start_screen_channels_len =
-            self.config.borrow().frontend.start_screen_channels.len() as u16;
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        area: Option<Rect>,
+        emotes: Option<&mut Emotes>,
+    ) {
+        let r = area.map_or_else(|| f.size(), |a| a);
 
-        let recent_channels_len = self.storage.borrow().get("channels").len() as u16;
+        let favorite_channels_len = {
+            let l = self.config.borrow().frontend.favorite_channels.len() as u16;
 
-        let channel_list_constrainer = |l: u16| -> u16 {
             if l == 0 {
                 2
-            } else if l <= CHANNEL_LIST_AMOUNT {
-                l + 1
             } else {
-                CHANNEL_LIST_AMOUNT + 1
+                l + 1
+            }
+        };
+
+        let recent_channels_len = {
+            let current_len = self.storage.borrow().get("channels").len() as u16;
+            let recent_channel_config_count = self.config.borrow().frontend.recent_channel_count;
+
+            if current_len == 0 {
+                2
+            } else if current_len <= recent_channel_config_count {
+                current_len + 1
+            } else {
+                recent_channel_config_count + 1
             }
         };
 
@@ -198,17 +206,17 @@ impl Component for DashboardWidget {
                 // Currently selected channel title, content
                 Constraint::Length(2),
                 Constraint::Length(2),
-                // Configured default channels title, content
+                // Favorite channels title, content
                 Constraint::Length(2),
-                Constraint::Length(channel_list_constrainer(start_screen_channels_len)),
+                Constraint::Length(favorite_channels_len),
                 // Recent channel title, content
                 Constraint::Length(2),
-                Constraint::Length(channel_list_constrainer(recent_channels_len)),
+                Constraint::Length(recent_channels_len),
                 // Quit
                 Constraint::Length(1),
             ])
             .margin(2)
-            .split(area);
+            .split(r);
 
         let mut v_chunks = v_chunk_binding.iter();
 
@@ -218,14 +226,15 @@ impl Component for DashboardWidget {
             f,
             &mut v_chunks,
             self.config.borrow().twitch.channel.clone(),
-            &self.config.borrow().frontend.start_screen_channels.clone(),
+            &self.config.borrow().frontend.favorite_channels.clone(),
         );
 
         self.render_quit_selection_widget(f, &mut v_chunks);
 
         if self.channel_input.is_focused() {
-            self.channel_input
-                .draw(f, centered_rect(60, 20, f.size()), emotes);
+            self.channel_input.draw(f, None, emotes);
+        } else if self.following.is_focused() {
+            self.following.draw(f, None, None);
         }
     }
 
@@ -233,35 +242,41 @@ impl Component for DashboardWidget {
         if let Event::Input(key) = event {
             if self.channel_input.is_focused() {
                 return self.channel_input.event(event);
+            } else if self.following.is_focused() {
+                return self.following.event(event);
             }
 
             match key {
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Char('s') => self.channel_input.toggle_focus(),
-                Key::Enter => return Some(TerminalAction::SwitchState(State::Normal)),
-                Key::Char('?') => return Some(TerminalAction::SwitchState(State::Help)),
+                Key::Char('f') => self.following.toggle_focus(),
+                Key::Enter => {
+                    let action = TerminalAction::Enter(TwitchAction::Join(
+                        self.config.borrow().twitch.channel.clone(),
+                    ));
+
+                    return Some(action);
+                }
+                Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                 Key::Char(c) => {
                     if let Some(selection) = c.to_digit(10) {
-                        let mut channels =
-                            self.config.borrow().frontend.start_screen_channels.clone();
-                        channels.extend(self.storage.borrow().get_last_n(
-                            "channels",
-                            CHANNEL_LIST_AMOUNT as usize,
-                            true,
-                        ));
+                        let mut channels = self.config.borrow().frontend.favorite_channels.clone();
+                        let mut selected_channels = self.storage.borrow().get("channels");
+                        selected_channels.reverse();
+
+                        channels.extend(selected_channels);
 
                         if let Some(channel) = channels.get(selection as usize) {
-                            self.tx
-                                .send(TwitchAction::Join(channel.to_string()))
-                                .unwrap();
+                            let action =
+                                TerminalAction::Enter(TwitchAction::Join(channel.to_string()));
 
                             self.config.borrow_mut().twitch.channel = channel.to_string();
                             self.storage
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
 
-                            return Some(TerminalAction::SwitchState(State::Normal));
+                            return Some(action);
                         }
                     }
                 }

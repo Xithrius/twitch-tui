@@ -1,67 +1,100 @@
 [twitch]
-# Your username on Twitch.
+# Your username from Twitch.
 username = ""
-# The streamer's name.
+# The streamer's username.
 channel = ""
-# The IRC channel you'd like to connect to.
+# The IRC server to connect to.
 server = "irc.chat.twitch.tv"
-# OAuth token that authenticates you into Twitch. Acquired through https://twitchapps.com/tmi/.
+# The authentication token for the IRC.
+# Can be received here for default scopes: https://twitchapps.com/tmi/
+#   ["channel:moderate", "channel_editor", "chat:edit", "chat:read", "whispers:edit", "whispers:read"]
+# And here for custom scopes: https://twitchtokengenerator.com/
+#   "user:read:follows" to see who you are following
 token = ""
 
 [terminal]
 # The delay in milliseconds between terminal updates.
 tick_delay = 30
-# The maximum amount of messages to be stored.
-maximum_messages = 150
-# The file path to log to.
+# The maximum amount of messages that can be rendered.
+maximum_messages = 500
+# The file to put logs in.
 log_file = ""
-# The state the application will start in.
-start_state = "Start"
+# if verbose (debug) logging should be enabled.
+verbose = false
+# What state the application should start in.
+# Options: dashboard, normal, and help.
+first_state = "dashboard"
 
 [storage]
 # If previous channels switched to should be tracked.
-channels = true
+# If enabled, the channel switcher search the user's previously switched to channels.
+channels = false
 # If previous username mentions should be tracked.
-mentions = true
+# If enabled, the chat input box will search previously mentioned users, given that
+# the first character in the input box is `@`.
+mentions = false
 
 [filters]
-# If filters should be enabled at all.
+# If filters should be enabled.
+# Filters can be configured by placing a `filters.txt` file in the same directory
+# as the config file.
+# Each new filter is to be put on a new line.
+# Regex can be used, where as keywords will also try to match anything in a message.
 enabled = false
 # If the regex filters should be reversed.
+# This means that everything in the filters file will be accepted.
 reversed = false
 
 [frontend]
-# If the time and date is to be shown.
-date_shown = true
-# The format of the date and time outputs. Formats can be found at https://strftime.org/.
-date_format = "%a %b %e %T %Y"
-# If the username should be shown.
+# If the time and date is to be shown in the chat window.
+show_datetimes = true
+# The format of string that will show up in the terminal.
+# Specification of formatting datetime strings can be found here: https://strftime.org/
+datetime_format = "%a %b %e %T %Y"
+# If usernames should be shown in the chat window.
 username_shown = true
-# The color palette for the username column: pastel (default), vibrant, warm, cool.
+# The color palette for usernames.
+# Options: pastel, vibrant, warm, and cool.
 palette = "pastel"
-# Show title with time and channel.
+# Show the title values at the top of the terminal.
 title_shown = true
 # The amount of space between the chat window and the terminal border.
 margin = 0
 # Show twitch badges next to usernames.
 badges = false
-# The theme of the frontend, dark (default), or light.
+# Color theme, being either light or dark.
 theme = "dark"
-# If the user's name appears in chat, highlight it.
+# If your username should be highlighted when it appears in chat.
 username_highlight = true
-# If there should be state tabs shown on the bottom of the terminal
+# If there should be state tabs shown on the bottom of the terminal.
 state_tabs = false
-# The shape of the cursor, block (default), underscore, or line.
+# The shape of the cursor in insert boxes.
+# Options: user (current terminal cursor), line, underscore, and block.
 cursor_shape = "block"
-# If the cursor should be blinking in input boxes.
+# If the cursor should be blinking.
 blinking_cursor = false
-# If the scrolling should be inverted.
+# If mouse scrolling should be inverted.
 inverted_scrolling = false
-# Show twitch emotes
+# If scroll offset integer should be shown.
+show_scroll_offset = true
+# If Twitch emotes should be displayed (requires kitty terminal).
 twitch_emotes = false
-# Show betterttv emotes
+# If BetterTTV emotes should be displayed (requires kitty terminal).
 betterttv_emotes = false
-# Show 7tv emotes
+# If 7TV emotes should be displayed (requires kitty terminal).
 seventv_emotes = false
-# Array of channel names as strings to be displayed at start screen.
-start_screen_channels = []
+# If FrankerFaceZ emotes should be displayed (requires kitty terminal).
+frankerfacez_emotes = false
+# Channel names to always be displayed in the start screen (dashboard).
+# Example: ["Xithrius", "RocketLeague", "AntVenom"]
+favorite_channels = []
+# The amount of recently connected to channels shown on the start screen.
+recent_channel_count = 5
+# What style the border of the terminal should have.
+# Options: plain, rounded, double, and thick.
+border_type = "plain"
+# If the usernames should be aligned to the right.
+# They will be shown to the left if this is disabled.
+right_align_usernames = false
+# Do not display the window size warning.
+show_unsupported_screen_size = true

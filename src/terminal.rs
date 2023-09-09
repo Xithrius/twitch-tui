@@ -1,18 +1,19 @@
 use log::{debug, info};
 use std::time::Duration;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tui::layout::Rect;
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::{unload_all_emotes, Emotes},
+    emotes::DownloadedEmotes,
     handlers::{
         app::App,
         config::CompleteConfig,
-        data::MessageData,
+        data::{DataBuilder, TwitchToTerminalAction},
         state::State,
         user_input::events::{Config, Events, Key},
     },
+    twitch::TwitchAction,
 };
 
 pub enum TerminalAction {
@@ -20,13 +21,15 @@ pub enum TerminalAction {
     BackOneLayer,
     SwitchState(State),
     ClearMessages,
+    Enter(TwitchAction),
 }
 
 pub async fn ui_driver(
     config: CompleteConfig,
     mut app: App,
-    mut rx: Receiver<MessageData>,
-    mut erx: Receiver<Emotes>,
+    tx: Sender<TwitchAction>,
+    mut rx: Receiver<TwitchToTerminalAction>,
+    mut erx: Receiver<DownloadedEmotes>,
 ) {
     info!("Started UI driver.");
 
@@ -41,43 +44,48 @@ pub async fn ui_driver(
 
     let mut events = Events::with_config(Config {
         exit_key: Key::Null,
-        tick_rate: Duration::from_millis(config.terminal.tick_delay),
-    })
-    .await;
-
-    if !app
-        .storage
-        .borrow()
-        .contains("channels", &config.twitch.channel)
-    {
-        app.storage
-            .borrow_mut()
-            .add("channels", config.twitch.channel.clone());
-    }
+        tick_rate: Duration::from_millis(config.terminal.delay),
+    });
 
     let mut terminal = init_terminal(&config.frontend);
 
     terminal.clear().unwrap();
 
-    let mut emotes: Emotes = Emotes::default();
-
     let mut terminal_size = Rect::default();
 
     loop {
         if let Ok(e) = erx.try_recv() {
-            emotes = e;
-            for message in app.messages.borrow().iter() {
-                message.clone().parse_emotes(&mut emotes);
+            // If the user switched channels too quickly,
+            // emotes will be from the wrong channel for a short time.
+            // Clear the emotes to use the ones from the right channel.
+            app.emotes.unload();
+            app.emotes.emotes = e;
+            for message in &mut *app.messages.borrow_mut() {
+                message.parse_emotes(&mut app.emotes);
             }
         };
 
-        if let Ok(mut info) = rx.try_recv() {
-            info.parse_emotes(&mut emotes);
-            app.messages.borrow_mut().push_front(info);
+        if let Ok(msg) = rx.try_recv() {
+            match msg {
+                TwitchToTerminalAction::Message(mut m) => {
+                    m.parse_emotes(&mut app.emotes);
+                    app.messages.borrow_mut().push_front(m);
 
-            // If scrolling is enabled, pad for more messages.
-            if app.components.chat.scroll_offset.get_offset() > 0 {
-                app.components.chat.scroll_offset.up();
+                    // If scrolling is enabled, pad for more messages.
+                    if app.components.chat.scroll_offset.get_offset() > 0 {
+                        app.components.chat.scroll_offset.up();
+                    }
+                }
+                TwitchToTerminalAction::ClearChat(user_id) => {
+                    if let Some(user) = user_id {
+                        app.purge_user_messages(user.as_str());
+                    } else {
+                        app.clear_messages();
+                    }
+                }
+                TwitchToTerminalAction::DeleteMessage(message_id) => {
+                    app.remove_message_with(message_id.as_str());
+                }
             }
         }
 
@@ -93,12 +101,11 @@ pub async fn ui_driver(
                         if let Some(previous_state) = app.get_previous_state() {
                             app.set_state(previous_state);
                         } else {
-                            app.set_state(config.terminal.start_state.clone());
+                            app.set_state(config.terminal.first_state.clone());
                         }
                     }
                     TerminalAction::SwitchState(state) => {
                         if state == State::Normal {
-                            unload_all_emotes(&mut emotes);
                             app.clear_messages();
                         }
 
@@ -106,7 +113,36 @@ pub async fn ui_driver(
                     }
                     TerminalAction::ClearMessages => {
                         app.clear_messages();
+
+                        tx.send(TwitchAction::ClearMessages).unwrap();
                     }
+                    TerminalAction::Enter(action) => match action {
+                        TwitchAction::Privmsg(message) => {
+                            let message_data = DataBuilder::user(
+                                config.twitch.username.to_string(),
+                                None,
+                                message.to_string(),
+                                None,
+                            );
+
+                            if let TwitchToTerminalAction::Message(mut msg) = message_data {
+                                msg.parse_emotes(&mut app.emotes);
+
+                                app.messages.borrow_mut().push_front(msg);
+
+                                tx.send(TwitchAction::Privmsg(message)).unwrap();
+                            }
+                        }
+                        TwitchAction::Join(channel) => {
+                            app.clear_messages();
+                            app.emotes.unload();
+
+                            tx.send(TwitchAction::Join(channel)).unwrap();
+
+                            app.set_state(State::Normal);
+                        }
+                        TwitchAction::ClearMessages => {}
+                    },
                 }
             }
         }
@@ -117,11 +153,11 @@ pub async fn ui_driver(
 
                 if size != terminal_size {
                     terminal_size = size;
-                    emotes.displayed.clear();
-                    emotes.loaded.clear();
+                    app.emotes.clear();
+                    app.emotes.loaded.clear();
                 }
 
-                app.draw(f, emotes.clone());
+                app.draw(f);
             })
             .unwrap();
     }

@@ -36,7 +36,7 @@ pub enum TitleStyle<'a> {
     Custom(Span<'a>),
 }
 
-pub fn title_spans<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span<'a>> {
+pub fn title_line<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span<'a>> {
     let mut complete = Vec::new();
 
     for (i, item) in contents.iter().enumerate() {
@@ -80,11 +80,20 @@ pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String
         })
 }
 
+/// <https://stackoverflow.com/a/38406885/>
+pub fn capitalize_first_char(s: &str) -> String {
+    let mut c = s.chars();
+
+    c.next().map_or_else(String::new, |f| {
+        f.to_uppercase().collect::<String>() + c.as_str()
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use tui::{
         style::{Color, Modifier},
-        text::Spans,
+        text::Line,
     };
 
     use super::*;
@@ -116,8 +125,8 @@ mod tests {
     }
 
     #[test]
-    fn test_2_dimensional_vector_to_spans() {
-        let s = Spans::from(title_spans(
+    fn test_2_dimensional_vector_to_line() {
+        let s = Line::from(title_line(
             &[TitleStyle::Combined("Time", "Some time")],
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         ));

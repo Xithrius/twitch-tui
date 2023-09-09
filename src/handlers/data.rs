@@ -2,17 +2,18 @@ use std::{borrow::Cow, string::ToString};
 
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use lazy_static::lazy_static;
 use log::warn;
+use once_cell::sync::Lazy;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     emotes::{load_emote, Emotes, LoadedEmote},
     handlers::config::{FrontendConfig, Palette, Theme},
+    ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::hsl_to_rgb,
         styles::{
@@ -22,9 +23,7 @@ use crate::{
     },
 };
 
-lazy_static! {
-    pub static ref FUZZY_FINDER: SkimMatcherV2 = SkimMatcherV2::default();
-}
+static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 #[derive(Debug, Clone)]
 pub struct EmoteData {
@@ -47,23 +46,39 @@ impl EmoteData {
     }
 }
 
+pub enum TwitchToTerminalAction {
+    Message(MessageData),
+    ClearChat(Option<String>),
+    DeleteMessage(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
+    pub user_id: Option<String>,
     pub system: bool,
     pub payload: String,
     pub emotes: Vec<EmoteData>,
+    pub message_id: Option<String>,
 }
 
 impl MessageData {
-    pub fn new(author: String, system: bool, payload: String) -> Self {
+    pub fn new(
+        author: String,
+        user_id: Option<String>,
+        system: bool,
+        payload: String,
+        message_id: Option<String>,
+    ) -> Self {
         Self {
             time_sent: Local::now(),
             author,
+            user_id,
             system,
             payload,
             emotes: vec![],
+            message_id,
         }
     }
 
@@ -88,13 +103,13 @@ impl MessageData {
         Rgb(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn to_spans(
+    pub fn to_vec(
         &self,
         frontend_config: &FrontendConfig,
         width: usize,
         search_highlight: Option<&str>,
         username_highlight: Option<&str>,
-    ) -> Vec<Spans> {
+    ) -> Vec<Line> {
         #[inline]
         fn highlight<'s>(
             line: Cow<'s, str>,
@@ -110,7 +125,7 @@ impl MessageData {
             }
 
             // Slow path
-            let spans = line
+            let lines = line
                 .chars()
                 .zip(*start_index..)
                 .map(|(c, i)| {
@@ -127,7 +142,7 @@ impl MessageData {
                 })
                 .collect();
             *start_index += line.len();
-            spans
+            lines
         }
 
         // Theme styles
@@ -168,18 +183,29 @@ impl MessageData {
         // Message prefix
         let time_sent = self
             .time_sent
-            .format(&frontend_config.date_format)
+            .format(&frontend_config.datetime_format)
             .to_string();
 
-        // Add 2 for the " " and ":"
-        let prefix_len = time_sent.len() + self.author.len() + 2;
+        let time_sent_len = if frontend_config.show_datetimes {
+            // Add 1 for the space after the timestamp
+            time_sent.len() + 1
+        } else {
+            0
+        };
+
+        let prefix_len = if frontend_config.username_shown {
+            // Add 1 for the ":"
+            time_sent_len + self.author.len() + 1
+        } else {
+            time_sent_len
+        };
 
         // Width of the window - window margin on both sides
         let wrap_limit = {
             // Add 1 for the border line
             let window_margin = usize::from(frontend_config.margin) + 1;
             width - window_margin * 2
-        };
+        } - 1;
 
         let prefix = " ".repeat(prefix_len);
         let opts = textwrap::Options::new(wrap_limit).initial_indent(&prefix);
@@ -189,14 +215,31 @@ impl MessageData {
         }
         let mut lines = wrapped_message.into_iter();
 
-        let mut first_row = vec![
-            // Datetime
-            Span::styled(time_sent, datetime_theme),
-            Span::raw(" "),
-            // Author
-            Span::styled(&self.author, author_theme),
-            Span::raw(":"),
-        ];
+        let username_alignment = if frontend_config.username_shown {
+            if frontend_config.right_align_usernames {
+                NAME_MAX_CHARACTERS - self.author.len() + 1
+            } else {
+                1
+            }
+        } else {
+            0
+        };
+
+        let mut first_row: Vec<Span<'_>> = vec![];
+
+        if frontend_config.show_datetimes {
+            first_row.extend(vec![
+                Span::styled(time_sent, datetime_theme),
+                Span::raw(" ".repeat(username_alignment)),
+            ]);
+        }
+
+        if frontend_config.username_shown {
+            first_row.extend(vec![
+                Span::styled(&self.author, author_theme),
+                Span::raw(":"),
+            ]);
+        }
 
         let mut next_index = 0;
 
@@ -213,10 +256,10 @@ impl MessageData {
             username_theme,
         ));
 
-        let mut rows = vec![Spans(first_row)];
+        let mut rows = vec![Line::from(first_row)];
 
         rows.extend(lines.map(|line| {
-            Spans(highlight(
+            Line::from(highlight(
                 line,
                 &mut next_index,
                 &search_highlight,
@@ -292,24 +335,41 @@ impl MessageData {
 
 #[derive(Debug, Copy, Clone)]
 pub struct DataBuilder<'conf> {
-    pub date_format: &'conf str,
+    pub datetime_format: &'conf str,
 }
 
 impl<'conf> DataBuilder<'conf> {
-    pub const fn new(date_format: &'conf str) -> Self {
-        DataBuilder { date_format }
+    pub const fn new(datetime_format: &'conf str) -> Self {
+        DataBuilder { datetime_format }
     }
 
-    pub fn user(user: String, payload: String) -> MessageData {
-        MessageData::new(user, false, payload)
+    pub fn user(
+        user: String,
+        user_id: Option<String>,
+        payload: String,
+        message_id: Option<String>,
+    ) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new(user, user_id, false, payload, message_id))
     }
 
-    pub fn system(self, payload: String) -> MessageData {
-        MessageData::new("System".to_string(), true, payload)
+    pub fn system(self, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new(
+            "System".to_string(),
+            None,
+            true,
+            payload,
+            None,
+        ))
     }
 
-    pub fn twitch(self, payload: String) -> MessageData {
-        MessageData::new("Twitch".to_string(), true, payload)
+    pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
+        TwitchToTerminalAction::Message(MessageData::new(
+            "Twitch".to_string(),
+            None,
+            true,
+            payload,
+            None,
+        ))
     }
 }
 
@@ -320,8 +380,14 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            MessageData::new("human".to_string(), false, "beep boop".to_string())
-                .hash_username(&Palette::Pastel),
+            MessageData::new(
+                "human".to_string(),
+                None,
+                false,
+                "beep boop".to_string(),
+                None
+            )
+            .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );
     }
