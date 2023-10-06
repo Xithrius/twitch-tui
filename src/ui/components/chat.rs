@@ -80,7 +80,7 @@ impl ChatWidget {
 
     pub fn get_messages<'a, B: Backend>(
         &self,
-        frame: &mut Frame<B>,
+        frame: &Frame<B>,
         area: Rect,
         messages_data: &'a VecDeque<MessageData>,
         emotes: &mut Emotes,
