@@ -1,6 +1,5 @@
 use rustyline::{line_buffer::LineBuffer, At, Word};
 use tui::{
-    backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
@@ -88,12 +87,7 @@ impl ToString for InputWidget {
 }
 
 impl Component for InputWidget {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        _emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, _emotes: Option<&mut Emotes>) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         let cursor_pos = get_cursor_position(&self.input);

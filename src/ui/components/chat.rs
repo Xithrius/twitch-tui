@@ -3,7 +3,6 @@ use std::{collections::VecDeque, slice::Iter};
 use chrono::Local;
 use log::warn;
 use tui::{
-    backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
@@ -78,9 +77,9 @@ impl ChatWidget {
             self.config.borrow().twitch.channel).as_str()).unwrap();
     }
 
-    pub fn get_messages<'a, B: Backend>(
+    pub fn get_messages<'a>(
         &self,
-        frame: &Frame<B>,
+        frame: &Frame,
         area: Rect,
         messages_data: &'a VecDeque<MessageData>,
         emotes: &mut Emotes,
@@ -211,12 +210,7 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
         let mut default_emotes = Emotes::default();
         let emotes = emotes.map_or(&mut default_emotes, |e| e);
 

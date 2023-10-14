@@ -1,5 +1,4 @@
 use tui::{
-    backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
     symbols::DOT,
@@ -25,7 +24,7 @@ impl StateTabsWidget {
         Self { _config: config }
     }
 
-    pub fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Option<Rect>, state: &State) {
+    pub fn draw(&self, f: &mut Frame, area: Option<Rect>, state: &State) {
         let tab_titles = TABS_TO_RENDER
             .iter()
             .map(|t| Line::from(capitalize_first_char(&t.to_string())))

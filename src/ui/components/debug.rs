@@ -1,6 +1,5 @@
 use chrono::{DateTime, Local};
 use tui::{
-    backend::Backend,
     layout::{Constraint, Rect},
     prelude::Alignment,
     style::{Color, Modifier, Style},
@@ -57,12 +56,7 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        _emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, _emotes: Option<&mut Emotes>) {
         let r = area.map_or_else(|| f.size(), |a| a);
 
         let configs = self.get_config_values();

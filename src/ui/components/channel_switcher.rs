@@ -2,7 +2,6 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use tui::{
-    backend::Backend,
     layout::Rect,
     prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
@@ -107,9 +106,7 @@ impl ChannelSwitcherWidget {
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_add(1);
-        self.vertical_scroll_state = self
-            .vertical_scroll_state
-            .position(self.vertical_scroll as u16);
+        self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
     fn previous(&mut self) {
@@ -121,9 +118,7 @@ impl ChannelSwitcherWidget {
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
-        self.vertical_scroll_state = self
-            .vertical_scroll_state
-            .position(self.vertical_scroll as u16);
+        self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
     fn unselect(&mut self) {
@@ -146,12 +141,7 @@ impl ToString for ChannelSwitcherWidget {
 }
 
 impl Component for ChannelSwitcherWidget {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         let channels = self.storage.borrow().get("channels");
@@ -224,9 +214,7 @@ impl Component for ChannelSwitcherWidget {
         f.render_widget(Clear, r);
         f.render_stateful_widget(list, r, &mut self.list_state);
 
-        self.vertical_scroll_state = self
-            .vertical_scroll_state
-            .content_length(items.len() as u16);
+        self.vertical_scroll_state = self.vertical_scroll_state.content_length(items.len());
 
         f.render_stateful_widget(
             Scrollbar::default()

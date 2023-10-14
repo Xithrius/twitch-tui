@@ -1,7 +1,6 @@
 use std::slice::Iter;
 
 use tui::{
-    backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     terminal::Frame,
@@ -79,11 +78,7 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
-    fn render_dashboard_title_widget<B: Backend>(
-        &self,
-        frame: &mut Frame<B>,
-        v_chunks: &mut Iter<Rect>,
-    ) {
+    fn render_dashboard_title_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let w = Paragraph::new(
             DASHBOARD_TITLE
                 .iter()
@@ -95,9 +90,9 @@ impl DashboardWidget {
         frame.render_widget(w, *v_chunks.next().unwrap());
     }
 
-    fn render_channel_selection_widget<B: Backend>(
+    fn render_channel_selection_widget(
         &self,
-        frame: &mut Frame<B>,
+        frame: &mut Frame,
         v_chunks: &mut Iter<Rect>,
         current_channel: String,
         default_channels: &[String],
@@ -150,11 +145,7 @@ impl DashboardWidget {
         }
     }
 
-    fn render_quit_selection_widget<B: Backend>(
-        &self,
-        frame: &mut Frame<B>,
-        v_chunks: &mut Iter<Rect>,
-    ) {
+    fn render_quit_selection_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let quit_option = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled("q", Style::default().fg(Color::LightMagenta)),
@@ -167,12 +158,7 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
         let r = area.map_or_else(|| f.size(), |a| a);
 
         let favorite_channels_len = {
