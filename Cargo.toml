@@ -15,31 +15,31 @@ categories = ["command-line-utilities"]
 [dependencies]
 crossterm = "0.27.0"
 tui = { package = "ratatui", version = "0.23.1-alpha.6", default-features = false, features = [ "crossterm", "serde" ] }
-tokio = { version = "1.32.0", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
+tokio = { version = "1.33.0", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
 clap = { version = "4.4.6", features = [ "derive", "cargo" ] }
-serde = { version = "1.0.188", features = [ "derive" ] }
-serde_json = "1.0.105"
+serde = { version = "1.0.189", features = [ "derive" ] }
+serde_json = "1.0.107"
 unicode-width = "0.1.11"
 unicode-segmentation = "1.10.1"
-chrono = "0.4.26"
+chrono = "0.4.31"
 irc = "0.15.0"
 futures = "0.3.28"
-toml = "0.8.1"
+toml = "0.8.2"
 textwrap = "0.16.0"
 rustyline = "10.1.1"
 fuzzy-matcher = "0.3.7"
-regex = "1.9.6"
+regex = "1.10.2"
 color-eyre = "0.6.2"
 log = "0.4.20"
 fern = "0.6.2"
-dialoguer = { version = "0.10.4", default-features = false }
-reqwest = { version = "0.11.20", features = [ "json" ] }
+dialoguer = { version = "0.11.0", default-features = false }
+reqwest = { version = "0.11.22", features = [ "json" ] }
 image = "0.24.7"
-base64 = "0.21.3"
+base64 = "0.21.4"
 tempfile = "3.8.0"
-serde_with = "3.3.0"
+serde_with = "3.4.0"
 once_cell = "1.18.0"
-webbrowser = "0.8.11"
+webbrowser = "0.8.12"
 
 [[bin]]
 bench = false
