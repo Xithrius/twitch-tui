@@ -192,6 +192,7 @@
 <li><a href="guide/configuration.html">Configuration</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<h2 id="cargo"><a class="header" href="#cargo">Cargo</a></h2>
 <p>After <a href="https://www.rust-lang.org/tools/install">installing Rust</a>, use the following command to install twitch-tui:</p>
 <pre><code class="language-sh">cargo install twitch-tui
 </code></pre>
@@ -199,6 +200,10 @@
 <p>Installing a version such as <code>2.0.0-alpha.1</code> would be <code>cargo install twitch-tui --version &quot;2.0.0-alpha.1&quot;</code>.</p>
 <p>(PPT and AUR repos coming soon)</p>
 <p>To uninstall, run the command <code>cargo uninstall twitch-tui</code>.</p>
+<h2 id="nix"><a class="header" href="#nix">Nix</a></h2>
+<p>twitch-tui is also a <a href="https://nixos.wiki/wiki/Flakes">Nix Flake</a>! You can build and run it on nix using:</p>
+<pre><code class="language-sh">nix run github:Xithrius/twitch-tui
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
 <h2 id="config-file"><a class="header" href="#config-file">Config file</a></h2>
 <p>After running <code>twt</code> for the first time, a config file will be generated at the following locations, depending on your OS:</p>
