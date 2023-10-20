@@ -16,7 +16,7 @@ Installing a version such as `2.0.0-alpha.1` would be `cargo install twitch-tui 
 
 To uninstall, run the command `cargo uninstall twitch-tui`.
 
-# Nix
+## Nix
 
 twitch-tui is also a [Nix Flake](https://nixos.wiki/wiki/Flakes)! You can build and run it on nix using:
 
