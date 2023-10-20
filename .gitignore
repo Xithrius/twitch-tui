@@ -18,3 +18,6 @@
 # Ignore Vim temporary and swap files.
 *.sw?
 *~
+
+# Ignore nix build output
+result
