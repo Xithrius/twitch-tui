@@ -6,7 +6,6 @@ pub const BORDER_NAME_DARK: Style = Style {
     bg: None,
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 #[allow(dead_code)]
@@ -15,7 +14,6 @@ pub const BORDER_NAME_LIGHT: Style = Style {
     bg: None,
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 pub const DATETIME_DARK: Style = Style {
@@ -23,7 +21,6 @@ pub const DATETIME_DARK: Style = Style {
     bg: None,
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 pub const DATETIME_LIGHT: Style = Style {
@@ -31,7 +28,6 @@ pub const DATETIME_LIGHT: Style = Style {
     bg: None,
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 pub const HIGHLIGHT_NAME_DARK: Style = Style {
@@ -39,14 +35,12 @@ pub const HIGHLIGHT_NAME_DARK: Style = Style {
     bg: Some(Color::White),
     add_modifier: Modifier::BOLD,
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 pub const HIGHLIGHT_NAME_LIGHT: Style = Style {
     fg: Some(Color::White),
     bg: Some(Color::Black),
     add_modifier: Modifier::BOLD,
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 pub const COLUMN_TITLE: Style = Style {
@@ -54,7 +48,6 @@ pub const COLUMN_TITLE: Style = Style {
     bg: None,
     add_modifier: Modifier::BOLD,
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 pub const SYSTEM_CHAT: Style = Style {
@@ -62,7 +55,6 @@ pub const SYSTEM_CHAT: Style = Style {
     bg: None,
     add_modifier: Modifier::BOLD,
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
 
 pub const DASHBOARD_TITLE_COLOR: Style = Style {
@@ -70,5 +62,4 @@ pub const DASHBOARD_TITLE_COLOR: Style = Style {
     bg: None,
     add_modifier: Modifier::empty(),
     sub_modifier: Modifier::empty(),
-    underline_color: None,
 };
