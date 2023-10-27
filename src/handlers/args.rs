@@ -82,6 +82,9 @@ pub struct Cli {
     /// The starting state of the terminal
     #[arg(short, long)]
     pub first_state: Option<State>,
+    /// Show a warning if the screen size is too small
+    #[arg(short, long)]
+    pub unsupported_screen_size: bool,
 }
 
 pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
@@ -119,4 +122,6 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
     if let Some(theme) = args.theme {
         config.frontend.theme = theme;
     }
+
+    config.frontend.show_unsupported_screen_size = !args.unsupported_screen_size;
 }

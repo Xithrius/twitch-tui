@@ -1,4 +1,4 @@
-use tui::{backend::Backend, layout::Rect, Frame};
+use tui::{layout::Rect, Frame};
 
 use crate::{
     emotes::Emotes,
@@ -95,12 +95,7 @@ impl ToString for ChatInputWidget {
 }
 
 impl Component for ChatInputWidget {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
         self.input.draw(f, area, emotes);
     }
 

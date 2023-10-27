@@ -4,13 +4,13 @@ use color_eyre::Result;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use tui::{
-    backend::Backend,
     layout::Rect,
     prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
+    symbols::scrollbar,
     text::{Line, Span},
     widgets::{
-        block::Position, scrollbar, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
+        block::Position, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
     Frame,
@@ -107,9 +107,7 @@ where
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_add(1);
-        self.vertical_scroll_state = self
-            .vertical_scroll_state
-            .position(self.vertical_scroll as u16);
+        self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
     fn previous(&mut self) {
@@ -120,9 +118,7 @@ where
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
-        self.vertical_scroll_state = self
-            .vertical_scroll_state
-            .position(self.vertical_scroll as u16);
+        self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
     fn unselect(&mut self) {
@@ -151,12 +147,7 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    fn draw<B: Backend>(
-        &mut self,
-        f: &mut Frame<B>,
-        area: Option<Rect>,
-        emotes: Option<&mut Emotes>,
-    ) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         if self.error_widget.is_focused() {
@@ -235,9 +226,7 @@ where
         f.render_widget(Clear, r);
         f.render_stateful_widget(list, r, &mut self.list_state);
 
-        self.vertical_scroll_state = self
-            .vertical_scroll_state
-            .content_length(items.len() as u16);
+        self.vertical_scroll_state = self.vertical_scroll_state.content_length(items.len());
 
         f.render_stateful_widget(
             Scrollbar::default()

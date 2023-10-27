@@ -1,5 +1,7 @@
 # Installation
 
+## Cargo
+
 After [installing Rust](https://www.rust-lang.org/tools/install), use the following command to install twitch-tui:
 
 ```sh
@@ -13,3 +15,11 @@ Installing a version such as `2.0.0-alpha.1` would be `cargo install twitch-tui 
 (PPT and AUR repos coming soon)
 
 To uninstall, run the command `cargo uninstall twitch-tui`.
+
+## Nix
+
+twitch-tui is also a [Nix Flake](https://nixos.wiki/wiki/Flakes)! You can build and run it on nix using:
+
+```sh
+nix run github:Xithrius/twitch-tui
+```

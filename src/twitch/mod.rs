@@ -4,7 +4,7 @@ mod connection;
 pub mod oauth;
 
 use ::std::hash::BuildHasher;
-use std::{borrow::Borrow, collections::HashMap};
+use std::collections::HashMap;
 
 use futures::StreamExt;
 use irc::{
@@ -42,7 +42,7 @@ pub async fn twitch_irc(
 
     // If the dashboard is the start state, wait until the user has selected
     // a channel before connecting to Twitch's IRC.
-    if config.borrow().terminal.first_state == State::Dashboard {
+    if config.terminal.first_state == State::Dashboard {
         debug!("Waiting for user to select channel from debug screen");
 
         loop {
@@ -277,7 +277,7 @@ pub async fn handle_roomstate<S: BuildHasher>(
 ) {
     let mut room_state = String::new();
 
-    for (name, value) in tags.iter() {
+    for (name, value) in tags {
         match *name {
             "emote-only" if *value == "1" => {
                 room_state.push_str("The channel is emote-only.\n");

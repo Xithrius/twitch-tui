@@ -3,7 +3,6 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 use chrono::{DateTime, Local};
 use rustyline::line_buffer::LineBuffer;
 use tui::{
-    backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
@@ -102,7 +101,7 @@ impl App {
         }
     }
 
-    pub fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
+    pub fn draw(&mut self, f: &mut Frame) {
         let mut size = f.size();
 
         if self.config.borrow().frontend.state_tabs {
@@ -116,7 +115,9 @@ impl App {
             self.components.tabs.draw(f, Some(layout[1]), &self.state);
         }
 
-        if size.height < 10 || size.width < 60 {
+        if (size.height < 10 || size.width < 60)
+            && self.config.borrow().frontend.show_unsupported_screen_size
+        {
             self.components
                 .window_size_error
                 .draw(f, Some(f.size()), None);
