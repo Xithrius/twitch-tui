@@ -263,8 +263,6 @@ impl Component for ChannelSwitcherWidget {
                         self.unselect();
                     } else {
                         self.toggle_focus();
-
-                        return Some(TerminalAction::BackOneLayer);
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
