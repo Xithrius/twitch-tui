@@ -336,6 +336,23 @@ impl Component for ChannelSwitcherWidget {
                         return Some(TerminalAction::Enter(TwitchAction::Join(
                             selected_channel.to_string(),
                         )));
+                    } else if self.search_input.is_valid() {
+                        self.toggle_focus();
+                        self.unselect();
+
+                        let selected_channel = self.search_input.to_string();
+
+                        if self.config.borrow().storage.channels {
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", selected_channel.clone());
+                        }
+
+                        self.search_input.update("");
+
+                        self.config.borrow_mut().twitch.channel = selected_channel.clone();
+
+                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
                     }
                 }
                 _ => {
