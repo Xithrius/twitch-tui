@@ -152,7 +152,7 @@ impl App {
                 Key::Ctrl('d') => {
                     self.components.debug.toggle_focus();
                 }
-                Key::Ctrl('.') => {
+                Key::Ctrl('g') => {
                     self.config.borrow_mut().rotate_theme();
                 }
                 _ => {

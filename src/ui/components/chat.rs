@@ -31,7 +31,7 @@ use crate::{
         Component, MessageSearchWidget,
     },
     utils::{
-        styles::{BORDER_DARK, BORDER_LIGHT},
+        styles::{BORDER_DARK, BORDER_LIGHT, WINDOW_DARK, WINDOW_LIGHT},
         text::{title_line, TitleStyle},
     },
 };
@@ -297,7 +297,11 @@ impl Component for ChatWidget {
                 Block::default()
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into())
-                    .title(chat_title),
+                    .title(chat_title)
+                    .style(match self.config.borrow().frontend.theme {
+                        Theme::Dark => WINDOW_DARK,
+                        _ => WINDOW_LIGHT,
+                    }),
             )
             .style(match self.config.borrow().frontend.theme {
                 Theme::Dark => BORDER_DARK,

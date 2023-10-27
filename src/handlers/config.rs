@@ -533,6 +533,6 @@ impl CompleteConfig {
         self.frontend.theme = match self.frontend.theme {
             Theme::Dark => Theme::Light,
             _ => Theme::Dark,
-        }
+        };
     }
 }
