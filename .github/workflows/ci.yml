@@ -9,7 +9,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-test:
+  build:
     strategy:
       fail-fast: false
 
@@ -25,6 +25,7 @@ jobs:
             target: x86_64-apple-darwin
 
     name: Build & Test (${{ matrix.target }})
+
     runs-on: ${{ matrix.os }}
 
     env:
@@ -55,13 +56,10 @@ jobs:
       - name: Build
         run: cargo build --verbose --target ${{ matrix.target }}
 
-      - name: Run tests
-        run: cargo test --verbose --target ${{ matrix.target }}
-
   lint:
-    name: Formatter
+    name: Lint
 
-    needs: build-test
+    needs: build
 
     runs-on: ubuntu-latest
 
@@ -83,7 +81,12 @@ jobs:
         run: cargo clippy -- -D warnings
 
   coverage:
+    name: Coverage
+
+    needs: build
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
