@@ -123,5 +123,7 @@ pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
         config.frontend.theme = theme;
     }
 
-    config.frontend.show_unsupported_screen_size = !args.unsupported_screen_size;
+    if args.unsupported_screen_size {
+        config.frontend.show_unsupported_screen_size = false;
+    }
 }
