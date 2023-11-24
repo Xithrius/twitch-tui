@@ -152,6 +152,9 @@ impl App {
                 Key::Ctrl('d') => {
                     self.components.debug.toggle_focus();
                 }
+                Key::Ctrl('g') => {
+                    self.config.borrow_mut().rotate_theme();
+                }
                 _ => {
                     return match self.state {
                         State::Dashboard => self.components.dashboard.event(event),
@@ -213,10 +216,5 @@ impl App {
         self.emotes.clear();
         self.previous_state = Some(self.state.clone());
         self.state = other;
-    }
-
-    #[allow(dead_code)]
-    pub fn rotate_theme(&mut self) {
-        todo!("Rotate through different themes")
     }
 }
