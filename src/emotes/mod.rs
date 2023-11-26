@@ -13,7 +13,7 @@ use crate::{
     twitch::TwitchAction,
     utils::pathing::cache_path,
 };
-use anyhow::Result;
+use color_eyre::Result;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 
 mod downloader;
@@ -144,14 +144,14 @@ pub fn overlay_emote(
     parent: (u32, u32),
     emote: &EmoteData,
     layer: u32,
-    full_width: f32,
+    root_width: u32,
     cell_width: f32,
 ) -> Result<()> {
     // Center the overlay on top of the emote
-    let pixel_offset = (full_width - emote.width as f32) / 2.0;
+    let pixel_offset = (root_width as f32 - emote.width as f32) / 2.0;
     let (col_offset, pixel_offset) = (
-        (pixel_offset / cell_width) as u16,
-        (pixel_offset % cell_width) as u16,
+        (pixel_offset / cell_width) as i16,
+        pixel_offset.rem_euclid(cell_width) as u16,
     );
 
     graphics_protocol::Chain::new(emote.id, emote.pid, parent, layer, col_offset, pixel_offset)

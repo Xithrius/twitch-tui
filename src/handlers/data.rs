@@ -360,22 +360,17 @@ impl MessageData {
                 Emote(v) => {
                     let max_width = v.iter().max_by_key(|e| e.width)?.width as f32;
                     let cols = (max_width / emotes.cell_size.0).ceil() as u16;
-                    let full_width = f32::from(cols) * emotes.cell_size.0;
 
-                    let &EmoteData { id, pid, .. } = v.first()?;
+                    let &EmoteData { id, pid, width } = v.first()?;
                     if let Err(e) = display_emote(id, pid, cols) {
                         warn!("Unable to display emote: {e}");
                         return None;
                     }
 
                     v.iter().enumerate().skip(1).for_each(|(layer, emote)| {
-                        if let Err(e) = overlay_emote(
-                            (id, pid),
-                            emote,
-                            layer as u32,
-                            full_width,
-                            emotes.cell_size.0,
-                        ) {
+                        if let Err(e) =
+                            overlay_emote((id, pid), emote, layer as u32, width, emotes.cell_size.0)
+                        {
                             warn!("Unable to display overlay: {e}");
                         }
                     });

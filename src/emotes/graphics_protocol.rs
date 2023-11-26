@@ -1,5 +1,8 @@
-use anyhow::{anyhow, Context, Result};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use color_eyre::{
+    eyre::{anyhow, ContextCompat, Error},
+    Result,
+};
 use crossterm::{csi, queue, Command};
 use dialoguer::console::{Key, Term};
 use image::{
@@ -9,7 +12,6 @@ use image::{
     AnimationDecoder, DynamicImage, GenericImageView, ImageDecoder, ImageFormat, Rgba,
 };
 use std::{
-    cmp::min,
     env, fmt, fs,
     fs::File,
     io::{BufReader, Write},
@@ -35,16 +37,7 @@ const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 pub trait Size {
     fn width(&self) -> u32;
 
-    fn calculate_new_size(
-        (width, height): (u32, u32),
-        (_cell_w, cell_h): (f32, f32),
-    ) -> (u32, u32) {
-        // Resize width to fit image in 1 cell of height
-        let new_width = (width as f32 * cell_h / height as f32).ceil();
-        (new_width as u32, cell_h as u32)
-    }
-
-    fn calculate_resize_ratio((_width, height): (u32, u32), (_cell_w, cell_h): (f32, f32)) -> f32 {
+    fn calculate_resize_ratio(height: u32, cell_h: f32) -> f32 {
         cell_h / height as f32
     }
 }
@@ -60,8 +53,14 @@ impl StaticImage {
     pub fn new(id: u32, image: Reader<BufReader<File>>, cell_size: (f32, f32)) -> Result<Self> {
         let image = image.decode()?;
         let (width, height) = image.dimensions();
-        let (width, height) = Self::calculate_new_size((width, height), cell_size);
-        let image = image.resize(width, height, FilterType::Lanczos3);
+        let ratio = Self::calculate_resize_ratio(height, cell_size.1);
+
+        let image = image.resize(
+            (width as f32 * ratio) as u32,
+            cell_size.1 as u32,
+            FilterType::Lanczos3,
+        );
+        let (width, height) = image.dimensions();
 
         let (mut tempfile, pathbuf) = create_temp_file(GP_PREFIX)?;
         if let Err(e) = save_in_temp_file(image.to_rgba8().as_raw(), &mut tempfile) {
@@ -105,8 +104,7 @@ impl Size for StaticImage {
 pub struct AnimatedImage {
     id: u32,
     width: u32,
-    height: u32,
-    frames: Vec<(PathBuf, u32)>,
+    frames: Vec<(PathBuf, u32, u32, u32)>,
 }
 
 impl AnimatedImage {
@@ -116,8 +114,7 @@ impl AnimatedImage {
         cell_size: (f32, f32),
     ) -> Result<Self> {
         let (width, height) = decoder.dimensions();
-        let resize_ratio = Self::calculate_resize_ratio((width, height), cell_size);
-        let (width, height) = Self::calculate_new_size((width, height), cell_size);
+        let resize_ratio = Self::calculate_resize_ratio(height, cell_size.1);
         let frames = decoder.into_frames();
 
         let (ok, err): (Vec<_>, Vec<_>) = frames
@@ -127,22 +124,23 @@ impl AnimatedImage {
                 let image = DynamicImage::from(frame.into_buffer());
                 let (w, h) = image.dimensions();
                 let image = image.resize(
-                    min((w as f32 * resize_ratio).ceil() as u32, width),
-                    min((h as f32 * resize_ratio).ceil() as u32, height),
+                    (w as f32 * resize_ratio).ceil() as u32,
+                    (h as f32 * resize_ratio).ceil() as u32,
                     FilterType::Lanczos3,
                 );
+                let (w, h) = image.dimensions();
                 let (mut tempfile, pathbuf) = create_temp_file(GP_PREFIX)?;
                 save_in_temp_file(image.to_rgba8().as_raw(), &mut tempfile)?;
 
-                Ok::<(PathBuf, u32), anyhow::Error>((pathbuf, delay))
+                Ok::<(PathBuf, u32, u32, u32), Error>((pathbuf, delay, w, h))
             })
             .partition(Result::is_ok);
 
-        let frames: Vec<(PathBuf, u32)> = ok.into_iter().flatten().collect();
+        let frames: Vec<(PathBuf, u32, u32, u32)> = ok.into_iter().flatten().collect();
 
         // If we had any error, we need to delete the temp files, as the terminal won't do it for us.
         if !err.is_empty() {
-            for (path, _) in &frames {
+            for (path, ..) in &frames {
                 drop(fs::remove_file(path));
             }
             return Err(anyhow!("Invalid frame in gif."));
@@ -153,8 +151,7 @@ impl AnimatedImage {
         } else {
             Ok(Self {
                 id,
-                width,
-                height,
+                width: (width as f32 * resize_ratio) as u32,
                 frames,
             })
         }
@@ -171,14 +168,14 @@ impl Command for AnimatedImage {
 
         // We need to send the data for the first frame as a normal image.
         // We can unwrap here because we checked above if frames was empty.
-        let (path, delay) = frames.next().unwrap();
+        let (path, delay, width, height) = frames.next().unwrap();
 
         write!(
             f,
             gp!("a=t,t=t,f=32,s={width},v={height},i={id},q=2;{path}"),
             id = self.id,
-            width = self.width,
-            height = self.height,
+            width = width,
+            height = height,
             path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
         )?;
         // r=1: First frame
@@ -189,13 +186,13 @@ impl Command for AnimatedImage {
             delay = delay,
         )?;
 
-        for (path, delay) in frames {
+        for (path, delay, width, height) in frames {
             write!(
                 f,
                 gp!("a=f,t=t,f=32,s={width},v={height},i={id},z={delay},q=2;{path}"),
                 id = self.id,
-                width = self.width,
-                height = self.height,
+                width = width,
+                height = height,
                 delay = delay,
                 path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
             )?;
@@ -323,7 +320,7 @@ pub struct Chain {
     parent_id: u32,
     parent_placement_id: u32,
     z: u32,
-    col_offset: u16,
+    col_offset: i16,
     pixel_offset: u16,
 }
 
@@ -333,7 +330,7 @@ impl Chain {
         pid: u32,
         (parent_id, parent_placement_id): (u32, u32),
         z: u32,
-        col_offset: u16,
+        col_offset: i16,
         pixel_offset: u16,
     ) -> Self {
         Self {

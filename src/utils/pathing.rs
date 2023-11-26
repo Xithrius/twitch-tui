@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use color_eyre::{eyre::anyhow, Result};
 use std::{
     env,
     fs::remove_file,
