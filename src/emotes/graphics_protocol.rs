@@ -1,25 +1,25 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
-use color_eyre::eyre::{anyhow, ContextCompat};
-use crossterm::{csi, cursor::MoveTo, queue, Command};
+use color_eyre::{
+    eyre::{anyhow, ContextCompat, Error},
+    Result,
+};
+use crossterm::{csi, queue, Command};
 use dialoguer::console::{Key, Term};
 use image::{
     codecs::{gif::GifDecoder, webp::WebPDecoder},
+    imageops::FilterType,
     io::Reader,
-    AnimationDecoder, ImageDecoder, ImageFormat, Rgba,
+    AnimationDecoder, DynamicImage, GenericImageView, ImageDecoder, ImageFormat, Rgba,
 };
 use std::{
     env, fmt, fs,
     fs::File,
     io::{BufReader, Write},
-    mem,
     path::PathBuf,
 };
 
-use crate::{
-    handlers::data::EmoteData,
-    utils::pathing::{
-        create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
-    },
+use crate::utils::pathing::{
+    create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
 };
 
 /// Macro to add the graphics protocol escape sequence around a command.
@@ -34,10 +34,12 @@ macro_rules! gp {
 /// string to be deleted by the terminal.
 const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 
-type Result<T = ()> = color_eyre::Result<T>;
-
 pub trait Size {
-    fn size(&self) -> (u32, u32);
+    fn width(&self) -> u32;
+
+    fn calculate_resize_ratio(height: u32, cell_h: f32) -> f32 {
+        cell_h / height as f32
+    }
 }
 
 pub struct StaticImage {
@@ -48,11 +50,20 @@ pub struct StaticImage {
 }
 
 impl StaticImage {
-    pub fn new(id: u32, image: Reader<BufReader<File>>) -> Result<Self> {
-        let image = image.decode()?.to_rgba8();
+    pub fn new(id: u32, image: Reader<BufReader<File>>, cell_size: (f32, f32)) -> Result<Self> {
+        let image = image.decode()?;
         let (width, height) = image.dimensions();
+        let ratio = Self::calculate_resize_ratio(height, cell_size.1);
+
+        let image = image.resize(
+            (width as f32 * ratio) as u32,
+            cell_size.1 as u32,
+            FilterType::Lanczos3,
+        );
+        let (width, height) = image.dimensions();
+
         let (mut tempfile, pathbuf) = create_temp_file(GP_PREFIX)?;
-        if let Err(e) = save_in_temp_file(image.as_raw(), &mut tempfile) {
+        if let Err(e) = save_in_temp_file(image.to_rgba8().as_raw(), &mut tempfile) {
             remove_temp_file(&pathbuf);
             return Err(e);
         }
@@ -85,40 +96,52 @@ impl Command for StaticImage {
 }
 
 impl Size for StaticImage {
-    fn size(&self) -> (u32, u32) {
-        (self.width, self.height)
+    fn width(&self) -> u32 {
+        self.width
     }
 }
 
 pub struct AnimatedImage {
     id: u32,
     width: u32,
-    height: u32,
-    frames: Vec<(PathBuf, u32)>,
+    frames: Vec<(PathBuf, u32, u32, u32)>,
 }
 
 impl AnimatedImage {
-    pub fn new<'a>(id: u32, decoder: impl ImageDecoder<'a> + AnimationDecoder<'a>) -> Result<Self> {
+    pub fn new<'a>(
+        id: u32,
+        decoder: impl ImageDecoder<'a> + AnimationDecoder<'a>,
+        cell_size: (f32, f32),
+    ) -> Result<Self> {
         let (width, height) = decoder.dimensions();
-        let frames = decoder.into_frames().collect_frames()?;
-        let iter = frames.iter();
+        let resize_ratio = Self::calculate_resize_ratio(height, cell_size.1);
+        let frames = decoder.into_frames();
 
-        let (ok, err): (Vec<_>, Vec<_>) = iter
+        let (ok, err): (Vec<_>, Vec<_>) = frames
             .map(|f| {
+                let frame = f?;
+                let delay = frame.delay().numer_denom_ms().0;
+                let image = DynamicImage::from(frame.into_buffer());
+                let (w, h) = image.dimensions();
+                let image = image.resize(
+                    (w as f32 * resize_ratio).ceil() as u32,
+                    (h as f32 * resize_ratio).ceil() as u32,
+                    FilterType::Lanczos3,
+                );
+                let (w, h) = image.dimensions();
                 let (mut tempfile, pathbuf) = create_temp_file(GP_PREFIX)?;
-                save_in_temp_file(f.buffer().as_raw(), &mut tempfile)?;
-                let delay = f.delay().numer_denom_ms().0;
+                save_in_temp_file(image.to_rgba8().as_raw(), &mut tempfile)?;
 
-                Ok((pathbuf, delay))
+                Ok::<(PathBuf, u32, u32, u32), Error>((pathbuf, delay, w, h))
             })
             .partition(Result::is_ok);
 
-        let frames: Vec<(PathBuf, u32)> = ok.into_iter().filter_map(Result::ok).collect();
+        let frames: Vec<(PathBuf, u32, u32, u32)> = ok.into_iter().flatten().collect();
 
         // If we had any error, we need to delete the temp files, as the terminal won't do it for us.
         if !err.is_empty() {
-            for (path, _) in &frames {
-                mem::drop(fs::remove_file(path));
+            for (path, ..) in &frames {
+                drop(fs::remove_file(path));
             }
             return Err(anyhow!("Invalid frame in gif."));
         }
@@ -128,8 +151,7 @@ impl AnimatedImage {
         } else {
             Ok(Self {
                 id,
-                width,
-                height,
+                width: (width as f32 * resize_ratio) as u32,
                 frames,
             })
         }
@@ -146,13 +168,14 @@ impl Command for AnimatedImage {
 
         // We need to send the data for the first frame as a normal image.
         // We can unwrap here because we checked above if frames was empty.
-        let (path, delay) = frames.next().unwrap();
+        let (path, delay, width, height) = frames.next().unwrap();
+
         write!(
             f,
             gp!("a=t,t=t,f=32,s={width},v={height},i={id},q=2;{path}"),
             id = self.id,
-            width = self.width,
-            height = self.height,
+            width = width,
+            height = height,
             path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
         )?;
         // r=1: First frame
@@ -163,13 +186,13 @@ impl Command for AnimatedImage {
             delay = delay,
         )?;
 
-        for (path, delay) in frames {
+        for (path, delay, width, height) in frames {
             write!(
                 f,
                 gp!("a=f,t=t,f=32,s={width},v={height},i={id},z={delay},q=2;{path}"),
                 id = self.id,
-                width = self.width,
-                height = self.height,
+                width = width,
+                height = height,
                 delay = delay,
                 path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
             )?;
@@ -186,8 +209,8 @@ impl Command for AnimatedImage {
 }
 
 impl Size for AnimatedImage {
-    fn size(&self) -> (u32, u32) {
-        (self.width, self.height)
+    fn width(&self) -> u32 {
+        self.width
     }
 }
 
@@ -197,7 +220,7 @@ pub enum Load {
 }
 
 impl Load {
-    pub fn new(id: u32, path: &str) -> Result<Self> {
+    pub fn new(id: u32, path: &str, cell_size: (f32, f32)) -> Result<Self> {
         let path = std::path::PathBuf::from(path);
         let image = Reader::open(&path)?.with_guessed_format()?;
 
@@ -210,18 +233,18 @@ impl Load {
                     // Some animated webp images have a default white background color
                     // We replace it by a transparent background
                     decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
-                    Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
+                    Ok(Self::Animated(AnimatedImage::new(id, decoder, cell_size)?))
                 } else {
                     let image = Reader::open(&path)?.with_guessed_format()?;
 
-                    Ok(Self::Static(StaticImage::new(id, image)?))
+                    Ok(Self::Static(StaticImage::new(id, image, cell_size)?))
                 }
             }
             Some(ImageFormat::Gif) => {
                 let decoder = GifDecoder::new(image.into_inner())?;
-                Ok(Self::Animated(AnimatedImage::new(id, decoder)?))
+                Ok(Self::Animated(AnimatedImage::new(id, decoder, cell_size)?))
             }
-            Some(_) => Ok(Self::Static(StaticImage::new(id, image)?)),
+            Some(_) => Ok(Self::Static(StaticImage::new(id, image, cell_size)?)),
         }
     }
 }
@@ -241,55 +264,99 @@ impl Command for Load {
 }
 
 impl Size for Load {
-    fn size(&self) -> (u32, u32) {
+    fn width(&self) -> u32 {
         match self {
-            Self::Static(s) => s.size(),
-            Self::Animated(a) => a.size(),
+            Self::Static(s) => s.width(),
+            Self::Animated(a) => a.width(),
         }
     }
 }
 
+pub struct Clear;
+
+impl Command for Clear {
+    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
+        write!(f, gp!("a=d,d=A,q=2;"))
+    }
+
+    #[cfg(windows)]
+    fn execute_winapi(&self) -> std::result::Result<(), std::io::Error> {
+        panic!("Windows version not supported.")
+    }
+}
+
 pub struct Display {
-    x: u16,
-    y: u16,
     id: u32,
     pid: u32,
-    width: u16,
-    offset: u16,
-    layer: u16,
+    cols: u16,
 }
 
 impl Display {
-    pub const fn new(
-        (x, y): (u16, u16),
-        EmoteData { id, pid, layer, .. }: &EmoteData,
-        width: u16,
-        offset: u16,
-    ) -> Self {
-        Self {
-            x,
-            y,
-            id: *id,
-            pid: *pid,
-            width,
-            offset,
-            layer: *layer,
-        }
+    pub const fn new(id: u32, pid: u32, cols: u16) -> Self {
+        Self { id, pid, cols }
     }
 }
 
 impl Command for Display {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        MoveTo(self.x, self.y).write_ansi(f)?;
         // r=1: Set height to 1 row
         write!(
             f,
-            gp!("a=p,i={id},p={pid},r=1,c={width},X={offset},z={z},q=2;"),
+            gp!("a=p,U=1,i={id},p={pid},r=1,c={cols},q=2;"),
             id = self.id,
             pid = self.pid,
-            width = self.width,
-            offset = self.offset,
-            z = self.layer
+            cols = self.cols
+        )
+    }
+
+    #[cfg(windows)]
+    fn execute_winapi(&self) -> std::result::Result<(), std::io::Error> {
+        panic!("Windows version not supported.")
+    }
+}
+pub struct Chain {
+    id: u32,
+    pid: u32,
+    parent_id: u32,
+    parent_placement_id: u32,
+    z: u32,
+    col_offset: i16,
+    pixel_offset: u16,
+}
+
+impl Chain {
+    pub const fn new(
+        id: u32,
+        pid: u32,
+        (parent_id, parent_placement_id): (u32, u32),
+        z: u32,
+        col_offset: i16,
+        pixel_offset: u16,
+    ) -> Self {
+        Self {
+            id,
+            pid,
+            parent_id,
+            parent_placement_id,
+            z,
+            col_offset,
+            pixel_offset,
+        }
+    }
+}
+
+impl Command for Chain {
+    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
+        write!(
+            f,
+            gp!("a=p,i={id},p={pid},P={parent_id},Q={parent_pid},z={z},H={co},X={pxo},q=2;"),
+            id = self.id,
+            pid = self.pid,
+            parent_id = self.parent_id,
+            parent_pid = self.parent_placement_id,
+            z = self.z,
+            co = self.col_offset,
+            pxo = self.pixel_offset
         )
     }
 
@@ -299,32 +366,13 @@ impl Command for Display {
     }
 }
 
-#[derive(Eq, PartialEq)]
-pub struct Clear(pub u32, pub u32);
-
-impl Command for Clear {
-    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        if *self == Self(0, 0) {
-            // Delete and unload all images
-            write!(f, gp!("a=d,d=A,q=2;"))
-        } else if self.0 == 0 {
-            // Delete all images
-            write!(f, gp!("a=d,d=a,q=2;"))
-        } else {
-            write!(
-                f,
-                gp!("a=d,d=i,i={id},p={pid},q=2;"),
-                id = self.0,
-                pid = self.1,
-            )
-        }
-    }
-
-    #[cfg(windows)]
-    fn execute_winapi(&self) -> std::result::Result<(), std::io::Error> {
-        panic!("Windows version not supported.")
+pub trait ApplyCommand: Command {
+    fn apply(&self) -> Result<()> {
+        Ok(queue!(std::io::stdout(), self)?)
     }
 }
+
+impl<T: Command> ApplyCommand for T {}
 
 /// Send a csi query to the terminal. The terminal must respond in the format `<ESC>[(a)(r)(c)`,
 /// where `(a)` can be any character, `(r)` is the terminal response, and `(c)` is the last character of the query.
@@ -339,8 +387,7 @@ fn query_terminal(command: &[u8]) -> Result<String> {
 
     // Empty stdout buffer until we find the terminal response.
     loop {
-        let c = stdout.read_key()?;
-        if let Key::UnknownEscSeq(_) = c {
+        if let Key::UnknownEscSeq(_) = stdout.read_key()? {
             break;
         }
     }
@@ -357,44 +404,17 @@ fn query_terminal(command: &[u8]) -> Result<String> {
     Ok(response)
 }
 
-pub fn get_terminal_cell_size() -> Result<(u16, u16)> {
-    // Request the terminal size in pixels.
-    let res = query_terminal(csi!("14t").as_bytes())?;
-
-    // Response has the format <height>;<width>
-    let mut values = res.split(';');
-    let height_px = values
-        .next()
-        .context("Invalid response from terminal")?
-        .parse::<u16>()?;
-    let width_px = values
-        .next()
-        .context("Invalid response from terminal")?
-        .parse::<u16>()?;
-
-    // Size of terminal: (columns, rows)
-    let (ncols, nrows) = crossterm::terminal::size()?;
-
-    Ok((width_px / ncols, height_px / nrows))
-}
-
-/// First check if the terminal is `kitty` or `WezTerm`, theses are the only terminals that fully support the graphics protocol as of 2023-04-09.
+/// First check if the terminal is `kitty`, this is the only terminal that supports the graphics protocol using unicode placeholders as of 2023-07-13.
 /// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
 /// If we receive the terminal attributes without receiving the response for the graphics protocol, it does not support it.
 pub fn support_graphics_protocol() -> Result<bool> {
-    Ok(
-        (env::var("TERM")? == "xterm-kitty" || env::var("TERM_PROGRAM")? == "WezTerm")
-            && query_terminal(
-                format!(
-                    concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
-                    STANDARD.encode("AAAA"),
-                )
-                .as_bytes(),
-            )?
-            .contains("OK"),
-    )
-}
-
-pub fn command(c: impl Command) -> Result {
-    Ok(queue!(std::io::stdout(), c)?)
+    Ok(env::var("TERM")? == "xterm-kitty"
+        && query_terminal(
+            format!(
+                concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
+                STANDARD.encode("AAAA"),
+            )
+            .as_bytes(),
+        )?
+        .contains("OK"))
 }

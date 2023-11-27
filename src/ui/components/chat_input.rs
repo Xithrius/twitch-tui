@@ -1,7 +1,6 @@
 use tui::{layout::Rect, Frame};
 
 use crate::{
-    emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
         storage::SharedStorage,
@@ -95,8 +94,8 @@ impl ToString for ChatInputWidget {
 }
 
 impl Component for ChatInputWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
-        self.input.draw(f, area, emotes);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+        self.input.draw(f, area);
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

@@ -118,14 +118,12 @@ impl App {
         if (size.height < 10 || size.width < 60)
             && self.config.borrow().frontend.show_unsupported_screen_size
         {
-            self.components
-                .window_size_error
-                .draw(f, Some(f.size()), None);
+            self.components.window_size_error.draw(f, Some(f.size()));
         } else {
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None, None),
-                State::Normal => self.components.chat.draw(f, None, Some(&mut self.emotes)),
-                State::Help => self.components.help.draw(f, None, None),
+                State::Dashboard => self.components.dashboard.draw(f, None),
+                State::Normal => self.components.chat.draw(f, None),
+                State::Help => self.components.help.draw(f, None),
             }
         }
 
@@ -137,7 +135,7 @@ impl App {
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(new_rect)[1];
 
-            self.components.debug.draw(f, Some(rect), None);
+            self.components.debug.draw(f, Some(rect));
         }
     }
 
@@ -170,7 +168,6 @@ impl App {
     }
 
     pub fn clear_messages(&mut self) {
-        self.emotes.clear();
         self.messages.borrow_mut().clear();
 
         self.components.chat.scroll_offset.jump_to(0);
@@ -210,7 +207,6 @@ impl App {
     }
 
     pub fn set_state(&mut self, other: State) {
-        self.emotes.clear();
         self.previous_state = Some(self.state.clone());
         self.state = other;
     }

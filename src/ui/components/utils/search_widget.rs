@@ -17,7 +17,6 @@ use tui::{
 };
 
 use crate::{
-    emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
         user_input::events::{Event, Key},
@@ -147,11 +146,11 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         if self.error_widget.is_focused() {
-            self.error_widget.draw(f, Some(r), emotes);
+            self.error_widget.draw(f, Some(r));
 
             return;
         }
@@ -264,7 +263,7 @@ where
 
         let input_rect = Rect::new(rect.x, rect.bottom(), rect.width, 3);
 
-        self.search_input.draw(f, Some(input_rect), emotes);
+        self.search_input.draw(f, Some(input_rect));
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

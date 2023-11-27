@@ -1,7 +1,6 @@
 use log::{debug, info};
 use std::time::Duration;
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
-use tui::layout::Rect;
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
@@ -51,13 +50,19 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
-    let mut terminal_size = Rect::default();
-
     loop {
         if let Ok(e) = erx.try_recv() {
             // If the user switched channels too quickly,
             // emotes will be from the wrong channel for a short time.
             // Clear the emotes to use the ones from the right channel.
+            //
+            // Note:
+            // This might cause a bug if two channels have an emote with the same name
+            // and with a different width. As already parsed messages will have been replaced by the
+            // wrong length of unicode characters.
+            // The emotes affected by this will be cut of if they are larger than the wrong emote width.
+            // This is negligible as it will only affect emotes already parsed.
+            // Todo: abort recv/send if another request is pending?
             app.emotes.unload();
             app.emotes.emotes = e;
             for message in &mut *app.messages.borrow_mut() {
@@ -147,19 +152,7 @@ pub async fn ui_driver(
             }
         }
 
-        terminal
-            .draw(|f| {
-                let size = f.size();
-
-                if size != terminal_size {
-                    terminal_size = size;
-                    app.emotes.clear();
-                    app.emotes.loaded.clear();
-                }
-
-                app.draw(f);
-            })
-            .unwrap();
+        terminal.draw(|f| app.draw(f)).unwrap();
     }
 
     app.cleanup();

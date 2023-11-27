@@ -15,7 +15,6 @@ use tui::{
 };
 
 use crate::{
-    emotes::Emotes,
     handlers::{
         config::SharedCompleteConfig,
         storage::SharedStorage,
@@ -141,7 +140,7 @@ impl ToString for ChannelSwitcherWidget {
 }
 
 impl Component for ChannelSwitcherWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>, emotes: Option<&mut Emotes>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
         let channels = self.storage.borrow().get("channels");
@@ -252,7 +251,7 @@ impl Component for ChannelSwitcherWidget {
 
         let input_rect = Rect::new(r.x, r.bottom(), r.width, 3);
 
-        self.search_input.draw(f, Some(input_rect), emotes);
+        self.search_input.draw(f, Some(input_rect));
     }
 
     fn event(&mut self, event: &Event) -> Option<TerminalAction> {

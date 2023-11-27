@@ -20,10 +20,7 @@ use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
 
-use crate::{
-    emotes::graphics_protocol::get_terminal_cell_size,
-    handlers::{app::App, args::Cli, config::CompleteConfig},
-};
+use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
 
 mod commands;
 mod emotes;
@@ -90,10 +87,13 @@ async fn main() -> Result<()> {
 
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
-        match get_terminal_cell_size() {
-            Ok(cell_size) => {
-                app.emotes.cell_size = cell_size;
-
+        match crossterm::terminal::window_size() {
+            Ok(size) => {
+                app.emotes.cell_size = (
+                    f32::from(size.width / size.columns),
+                    f32::from(size.height / size.rows),
+                );
+                info!("{:?}", app.emotes.cell_size);
                 tokio::task::spawn(async move {
                     emotes::emotes(cloned_config, emotes_tx, twitch_rx).await;
                 });
