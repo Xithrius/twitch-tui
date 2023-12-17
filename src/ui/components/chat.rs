@@ -228,12 +228,12 @@ impl Component for ChatWidget {
 
         let list = List::new(&*final_messages)
             .block(
-                if !self.config.borrow().frontend.hide_chat_border {
+                if self.config.borrow().frontend.hide_chat_border {
+                    Block::default()
+                } else {
                     Block::default()
                         .borders(Borders::ALL)
                         .border_type(self.config.borrow().frontend.border_type.clone().into())
-                } else {
-                    Block::default()
                 }
                 .title(chat_title),
             )
