@@ -131,6 +131,8 @@ pub struct FrontendConfig {
     pub recent_channel_count: u16,
     /// A border wrapper around [`BorderType`].
     pub border_type: Border,
+    /// If chat border should be hidden
+    pub hide_chat_border: bool,
     /// If the usernames should be aligned to the right.
     pub right_align_usernames: bool,
     /// Do not display the window size warning.
@@ -184,6 +186,7 @@ impl Default for FrontendConfig {
             favorite_channels: vec![],
             recent_channel_count: 5,
             border_type: Border::default(),
+            hide_chat_border: false,
             right_align_usernames: false,
             show_unsupported_screen_size: true,
         }
