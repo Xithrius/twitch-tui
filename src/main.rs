@@ -12,7 +12,8 @@
     clippy::too_many_lines,
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
-    clippy::must_use_candidate
+    clippy::must_use_candidate,
+    clippy::struct_field_names
 )]
 
 use clap::Parser;
