@@ -281,19 +281,19 @@ impl Component for ChatWidget {
         }
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
             if self.chat_input.is_focused() {
-                self.chat_input.event(event)
+                self.chat_input.event(event).await
             } else if self.channel_input.is_focused() {
-                self.channel_input.event(event)
+                self.channel_input.event(event).await
             } else if self.search_input.is_focused() {
-                self.search_input.event(event)
+                self.search_input.event(event).await
             } else if self.following.is_focused() {
-                self.following.event(event)
+                self.following.event(event).await
             } else {
                 match key {
                     Key::Char('i' | 'c') => self.chat_input.toggle_focus(),
@@ -301,7 +301,7 @@ impl Component for ChatWidget {
                     Key::Char('/') => self.chat_input.toggle_focus_with("/"),
                     Key::Char('s') => self.channel_input.toggle_focus(),
                     Key::Ctrl('f') => self.search_input.toggle_focus(),
-                    Key::Char('f') => self.following.toggle_focus(),
+                    Key::Char('f') => self.following.toggle_focus().await,
                     Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
                     Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),

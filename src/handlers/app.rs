@@ -139,10 +139,10 @@ impl App {
         }
     }
 
-    pub fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    pub async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             if self.components.debug.is_focused() {
-                return self.components.debug.event(event);
+                return self.components.debug.event(event).await;
             }
 
             match key {
@@ -152,9 +152,9 @@ impl App {
                 }
                 _ => {
                     return match self.state {
-                        State::Dashboard => self.components.dashboard.event(event),
-                        State::Normal => self.components.chat.event(event),
-                        State::Help => self.components.help.event(event),
+                        State::Dashboard => self.components.dashboard.event(event).await,
+                        State::Normal => self.components.chat.event(event).await,
+                        State::Help => self.components.help.event(event).await,
                     };
                 }
             }

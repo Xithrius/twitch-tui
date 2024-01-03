@@ -223,19 +223,19 @@ impl Component for DashboardWidget {
         }
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             if self.channel_input.is_focused() {
-                return self.channel_input.event(event);
+                return self.channel_input.event(event).await;
             } else if self.following.is_focused() {
-                return self.following.event(event);
+                return self.following.event(event).await;
             }
 
             match key {
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Char('q') => return Some(TerminalAction::Quit),
                 Key::Char('s') => self.channel_input.toggle_focus(),
-                Key::Char('f') => self.following.toggle_focus(),
+                Key::Char('f') => self.following.toggle_focus().await,
                 Key::Enter => {
                     let action = TerminalAction::Enter(TwitchAction::Join(
                         self.config.borrow().twitch.channel.clone(),

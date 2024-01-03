@@ -98,7 +98,7 @@ impl Component for ChatInputWidget {
         self.input.draw(f, area);
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Enter => {
@@ -129,7 +129,7 @@ impl Component for ChatInputWidget {
                     self.input.toggle_focus();
                 }
                 _ => {
-                    self.input.event(event);
+                    self.input.event(event).await;
                 }
             }
         }

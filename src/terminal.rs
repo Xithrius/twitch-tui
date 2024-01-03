@@ -95,7 +95,7 @@ pub async fn ui_driver(
         }
 
         if let Some(event) = events.next().await {
-            if let Some(action) = app.event(&event) {
+            if let Some(action) = app.event(&event).await {
                 match action {
                     TerminalAction::Quit => {
                         quit_terminal(terminal);

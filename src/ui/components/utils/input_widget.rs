@@ -173,7 +173,7 @@ impl Component for InputWidget {
         }
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Ctrl('f') | Key::Right => {

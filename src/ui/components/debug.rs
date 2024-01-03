@@ -123,7 +123,7 @@ impl Component for DebugWidget {
         f.render_widget(bottom_block, rect);
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Char('q') => return Some(TerminalAction::Quit),

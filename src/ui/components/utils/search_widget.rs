@@ -35,7 +35,7 @@ pub trait SearchItemGetter<T>
 where
     T: ToString,
 {
-    fn get_items(&mut self) -> Result<Vec<T>>;
+    async fn get_items(&mut self) -> Result<Vec<T>>;
 }
 
 pub struct SearchWidget<T, U>
@@ -128,9 +128,9 @@ where
         self.focused
     }
 
-    pub fn toggle_focus(&mut self) {
+    pub async fn toggle_focus(&mut self) {
         if !self.focused {
-            self.items = self.item_getter.get_items();
+            self.items = self.item_getter.get_items().await;
         }
 
         if self.items.is_err() {
@@ -266,10 +266,10 @@ where
         self.search_input.draw(f, Some(input_rect));
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
             self.error_widget.toggle_focus();
-            self.toggle_focus();
+            self.toggle_focus().await;
 
             return None;
         }
@@ -280,7 +280,7 @@ where
                     if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
-                        self.toggle_focus();
+                        self.toggle_focus().await;
                     }
                 }
                 Key::ScrollDown | Key::Down => self.next(),
@@ -298,7 +298,7 @@ where
                         }
                         .to_lowercase();
 
-                        self.toggle_focus();
+                        self.toggle_focus().await;
 
                         self.unselect();
 
@@ -306,7 +306,7 @@ where
                     }
                 }
                 _ => {
-                    self.search_input.event(event);
+                    self.search_input.event(event).await;
 
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_items {

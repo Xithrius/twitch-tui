@@ -254,7 +254,7 @@ impl Component for ChannelSwitcherWidget {
         self.search_input.draw(f, Some(input_rect));
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {
@@ -355,7 +355,7 @@ impl Component for ChannelSwitcherWidget {
                     }
                 }
                 _ => {
-                    self.search_input.event(event);
+                    self.search_input.event(event).await;
 
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_channels {

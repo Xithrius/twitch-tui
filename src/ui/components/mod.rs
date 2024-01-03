@@ -50,7 +50,8 @@ pub trait Component {
         todo!()
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    #[allow(clippy::unused_async)]
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
                 Key::Char('q') => return Some(TerminalAction::Quit),

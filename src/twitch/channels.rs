@@ -92,7 +92,7 @@ impl Following {
 }
 
 impl SearchItemGetter<String> for Following {
-    fn get_items(&mut self) -> Result<Vec<String>> {
+    async fn get_items(&mut self) -> Result<Vec<String>> {
         let following = get_followed_channels(self.twitch_config.clone());
 
         following.map(|v| {

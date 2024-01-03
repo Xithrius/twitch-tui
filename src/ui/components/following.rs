@@ -48,8 +48,8 @@ impl FollowingWidget {
         self.search_widget.is_focused()
     }
 
-    pub fn toggle_focus(&mut self) {
-        self.search_widget.toggle_focus();
+    pub async fn toggle_focus(&mut self) {
+        self.search_widget.toggle_focus().await;
     }
 }
 
@@ -58,8 +58,8 @@ impl Component for FollowingWidget {
         self.search_widget.draw(f, area);
     }
 
-    fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        let action = self.search_widget.event(event);
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        let action = self.search_widget.event(event).await;
 
         if let Some(TerminalAction::Enter(TwitchAction::Join(channel))) = &action {
             self.config.borrow_mut().twitch.channel = channel.clone();
