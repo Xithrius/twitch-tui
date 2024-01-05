@@ -6,7 +6,6 @@ use std::{
 use color_eyre::Result;
 use reqwest::Client;
 use serde::Deserialize;
-use tokio::{runtime::Handle, task};
 
 use crate::{handlers::config::TwitchConfig, ui::components::utils::SearchItemGetter};
 
@@ -76,12 +75,6 @@ pub async fn get_following(twitch_config: &TwitchConfig) -> Result<FollowingList
     get_user_following(&client, user_id).await
 }
 
-fn get_followed_channels(twitch_config: TwitchConfig) -> Result<FollowingList> {
-    task::block_in_place(move || {
-        Handle::current().block_on(async move { get_following(&twitch_config.clone()).await })
-    })
-}
-
 impl Following {
     pub fn new(twitch_config: TwitchConfig) -> Self {
         Self {
@@ -93,7 +86,7 @@ impl Following {
 
 impl SearchItemGetter<String> for Following {
     async fn get_items(&mut self) -> Result<Vec<String>> {
-        let following = get_followed_channels(self.twitch_config.clone());
+        let following = get_following(&self.twitch_config).await;
 
         following.map(|v| {
             v.data
