@@ -9,14 +9,13 @@ use tui::{
     text::{Line, Span},
 };
 
-use crate::emotes::{display_emote, overlay_emote, EmoteData};
-use crate::handlers::data::Word::{Emote, Text};
 use crate::{
-    emotes::{load_emote, Emotes},
+    emotes::{display_emote, load_emote, overlay_emote, EmoteData, Emotes},
     handlers::config::{FrontendConfig, Palette, Theme},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::hsl_to_rgb,
+        emotes::get_emote_offset,
         styles::{
             DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
         },
@@ -335,13 +334,13 @@ impl MessageData {
                     Ok(loaded_emote) => {
                         if loaded_emote.overlay {
                             // Check if last word is emote.
-                            if let Some(Emote(v)) = words.last_mut() {
+                            if let Some(Word::Emote(v)) = words.last_mut() {
                                 v.push(loaded_emote.into());
                                 return;
                             }
                         }
 
-                        words.push(Emote(vec![loaded_emote.into()]));
+                        words.push(Word::Emote(vec![loaded_emote.into()]));
                         return;
                     }
                     Err(err) => {
@@ -350,30 +349,42 @@ impl MessageData {
                     }
                 }
             }
-            words.push(Text(word.to_string()));
+            words.push(Word::Text(word.to_string()));
         });
 
         let words = words
             .into_iter()
             .filter_map(|w| match w {
-                Text(s) => Some(s),
-                Emote(v) => {
-                    let max_width = v.iter().max_by_key(|e| e.width)?.width as f32;
-                    let cols = (max_width / emotes.cell_size.0).ceil() as u16;
+                Word::Text(s) => Some(s),
+                Word::Emote(v) => {
+                    let max_width = v.iter().max_by_key(|e| e.width)?.width;
+                    let cols = (max_width as f32 / emotes.cell_size.0).ceil() as u16;
 
                     let &EmoteData { id, pid, width } = v.first()?;
+
+                    let (_, col_offset) =
+                        get_emote_offset(width as u16, emotes.cell_size.0 as u16, cols);
+
                     if let Err(e) = display_emote(id, pid, cols) {
                         warn!("Unable to display emote: {e}");
                         return None;
                     }
 
-                    v.iter().enumerate().skip(1).for_each(|(layer, emote)| {
-                        if let Err(e) =
-                            overlay_emote((id, pid), emote, layer as u32, width, emotes.cell_size.0)
-                        {
-                            warn!("Unable to display overlay: {e}");
-                        }
-                    });
+                    v.into_iter()
+                        .enumerate()
+                        .skip(1)
+                        .for_each(|(layer, emote)| {
+                            if let Err(e) = overlay_emote(
+                                (id, pid),
+                                emote,
+                                layer as u32,
+                                cols,
+                                col_offset,
+                                emotes.cell_size.0 as u16,
+                            ) {
+                                warn!("Unable to display overlay: {e}");
+                            }
+                        });
 
                     let to_rgb = |i: u32| Rgb((i >> 16) as u8, (i >> 8) as u8, i as u8);
 
