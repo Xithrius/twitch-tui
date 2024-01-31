@@ -9,7 +9,7 @@ use crate::{
         downloader::get_emotes,
         graphics_protocol::{ApplyCommand, Size},
     },
-    handlers::config::{CompleteConfig, FrontendConfig},
+    handlers::config::CompleteConfig,
     twitch::TwitchAction,
     utils::{emotes::get_emote_offset, pathing::cache_path},
 };
@@ -67,11 +67,6 @@ impl From<LoadedEmote> for EmoteData {
             width,
         }
     }
-}
-
-#[inline]
-pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
-    frontend.twitch_emotes || frontend.betterttv_emotes || frontend.seventv_emotes
 }
 
 pub async fn send_emotes(config: &CompleteConfig, tx: &Sender<DownloadedEmotes>, channel: &str) {

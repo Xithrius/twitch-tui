@@ -40,6 +40,7 @@ tempfile = "3.9.0"
 serde_with = "3.6.0"
 once_cell = "1.19.0"
 webbrowser = "0.8.12"
+memchr = "2.7.1"
 
 [[bin]]
 bench = false
