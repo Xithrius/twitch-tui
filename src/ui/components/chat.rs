@@ -184,7 +184,7 @@ impl Component for ChatWidget {
                 .truncate(self.config.borrow().terminal.maximum_messages);
         }
 
-        let messages_data = self.messages.clone().borrow().to_owned();
+        let messages_data = self.messages.borrow();
 
         let messages = self.get_messages(f, *first_v_chunk, &messages_data);
 
