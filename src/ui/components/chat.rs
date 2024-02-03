@@ -226,7 +226,7 @@ impl Component for ChatWidget {
             final_messages.push(ListItem::new(Text::from(item)));
         }
 
-        let list = List::new(&*final_messages)
+        let list = List::new(final_messages)
             .block(
                 if self.config.borrow().frontend.hide_chat_border {
                     Block::default()

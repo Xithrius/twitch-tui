@@ -52,7 +52,7 @@ impl Component for HelpWidget {
             rows.push(Row::new(vec![Cell::from("")]));
         }
 
-        let help_table = Table::new(rows)
+        let help_table = Table::new(rows, TABLE_CONSTRAINTS)
             .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(COLUMN_TITLE))
             .block(
                 Block::default()
@@ -60,7 +60,6 @@ impl Component for HelpWidget {
                     .title("[ Keybinds ]")
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .widths(&TABLE_CONSTRAINTS)
             .column_spacing(2);
 
         f.render_widget(help_table, r);

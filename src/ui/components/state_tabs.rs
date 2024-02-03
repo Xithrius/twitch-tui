@@ -28,7 +28,7 @@ impl StateTabsWidget {
         let tab_titles = TABS_TO_RENDER
             .iter()
             .map(|t| Line::from(capitalize_first_char(&t.to_string())))
-            .collect();
+            .collect::<Vec<Line>>();
 
         let tabs = Tabs::new(tab_titles)
             .block(Block::default())

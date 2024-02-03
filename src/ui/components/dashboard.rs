@@ -56,23 +56,17 @@ impl DashboardWidget {
         items: &'a [String],
         index_offset: usize,
     ) -> List<'_> {
-        List::new(
-            items
-                .iter()
-                .enumerate()
-                .map(|(i, s)| {
-                    ListItem::new(Line::from(vec![
-                        Span::raw("["),
-                        Span::styled(
-                            (i + index_offset).to_string(),
-                            Style::default().fg(Color::LightMagenta),
-                        ),
-                        Span::raw("] "),
-                        Span::raw(s),
-                    ]))
-                })
-                .collect::<Vec<ListItem>>(),
-        )
+        List::new(items.iter().enumerate().map(|(i, s)| {
+            ListItem::new(Line::from(vec![
+                Span::raw("["),
+                Span::styled(
+                    (i + index_offset).to_string(),
+                    Style::default().fg(Color::LightMagenta),
+                ),
+                Span::raw("] "),
+                Span::raw(s),
+            ]))
+        }))
         .style(Style::default().fg(Color::White))
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }

@@ -85,18 +85,15 @@ impl Component for DebugWidget {
 
         let title_binding = [TitleStyle::Single("Debug")];
 
-        let table = Table::new(rows)
-            .block(
-                Block::default()
-                    .title(title_line(
-                        &title_binding,
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ))
-                    .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
-            )
-            // TODO: Automatically calculate the constraints
-            .widths(&[Constraint::Length(25), Constraint::Length(25)]);
+        let table = Table::new(rows, &[Constraint::Length(25), Constraint::Length(25)]).block(
+            Block::default()
+                .title(title_line(
+                    &title_binding,
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ))
+                .borders(Borders::ALL)
+                .border_type(self.config.borrow().frontend.border_type.clone().into()),
+        );
 
         f.render_widget(Clear, r);
         f.render_widget(table, r);
