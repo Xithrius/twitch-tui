@@ -1,6 +1,7 @@
-use std::borrow::Cow;
-
+use memchr::memmem::Finder;
+use once_cell::sync::Lazy;
 use rustyline::line_buffer::LineBuffer;
+use std::borrow::Cow;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -89,6 +90,47 @@ pub fn capitalize_first_char(s: &str) -> String {
     })
 }
 
+/// Some twitch clients bypass the 30s timeout for duplicate messages by appending a space followed
+/// by the `'\u{e0000}'` character to the end of the message.
+///
+/// This character should not be rendered, and should have a width of 0.
+/// ratatui, which uses the crate `unicode-width`, and multiple terminals assume it has a width of 1.
+/// This creates rendering issues in terminals that correctly avoid rendering this character.
+///
+/// As it is not meant to be rendered, we can just remove this character from the message.
+pub fn clean_message(msg: &str) -> String {
+    const U_E0000: char = '\u{e0000}';
+    const U_E0000_STR: &str = "\u{e0000}";
+    const U_E0000_LEN: usize = U_E0000.len_utf8();
+
+    static FINDER: Lazy<Finder> = Lazy::new(|| Finder::new(U_E0000_STR));
+
+    // First trim the message, which should handle most cases.
+    let msg = msg.trim_matches(['\0', ' ', U_E0000]);
+
+    let bytes = msg.as_bytes();
+    let matches = FINDER.find_iter(bytes).collect::<Vec<_>>();
+
+    if matches.is_empty() {
+        return msg.to_string();
+    }
+
+    // For the unlikely (but possible) case where this character appears in the middle of the message, remove it.
+    // Do it manually instead of the naive `msg.replace(U_E0000, "")` which is slow.
+    let mut output = Vec::with_capacity(msg.len() - U_E0000_LEN * matches.len());
+    let mut last_match = 0;
+
+    for idx in matches {
+        output.extend_from_slice(&bytes[last_match..idx]);
+        last_match = idx + U_E0000_LEN;
+    }
+
+    output.extend_from_slice(&bytes[last_match..]);
+
+    // Unwrapping here is safe as the input is already valid utf8, and we only remove `U_E0000` from the string.
+    String::from_utf8(output).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use tui::{
@@ -166,5 +208,26 @@ mod tests {
         let output = first_similarity(&[], "asdf");
 
         assert_eq!(output, None);
+    }
+
+    #[test]
+    fn clean_message_end() {
+        let output = clean_message("foo \u{e0000}");
+
+        assert_eq!(output, "foo");
+    }
+
+    #[test]
+    fn clean_message_multiple_end() {
+        let output = clean_message("foo \u{e0000} \u{e0000} \u{e0000}");
+
+        assert_eq!(output, "foo");
+    }
+
+    #[test]
+    fn clean_message_middle() {
+        let output = clean_message("foo\u{e0000}bar \u{e0000} baz \u{e0000}");
+
+        assert_eq!(output, "foobar  baz");
     }
 }

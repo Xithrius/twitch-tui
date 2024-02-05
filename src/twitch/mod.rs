@@ -24,6 +24,7 @@ use crate::{
         badges::retrieve_user_badges,
         connection::{client_stream_reconnect, wait_client_stream},
     },
+    utils::text::clean_message,
 };
 
 #[derive(Debug, Clone)]
@@ -174,22 +175,22 @@ async fn handle_message_command(
                 retrieve_user_badges(&mut name, &message);
             }
 
-            // An attempt to remove null bytes from the message.
-            let cleaned_message = msg.trim_matches(char::from(0));
+            // Remove invalid unicode characters from the message.
+            let cleaned_message = clean_message(msg);
 
             let message_id = tags.get("id").map(|&s| s.to_string());
             let user_id = tags.get("user-id").map(|&s| s.to_string());
 
+            debug!("Message received from twitch: {name} - {cleaned_message:?}");
+
             tx.send(DataBuilder::user(
-                name.to_string(),
+                name,
                 user_id,
-                cleaned_message.to_string(),
+                cleaned_message,
                 message_id,
             ))
             .await
             .unwrap();
-
-            debug!("Message received from twitch: {} - {}", name, msg);
         }
         Command::NOTICE(ref _target, ref msg) => {
             tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
