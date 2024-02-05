@@ -2,8 +2,6 @@ use crate::handlers::config::FrontendConfig;
 use std::iter;
 
 pub const PRIVATE_USE_UNICODE: char = '\u{10EEEE}';
-pub const DIACRITICS_ZERO: char = '\u{305}';
-
 pub const ZERO_WIDTH_SPACE: char = '\u{200B}';
 pub const ZERO_WIDTH_SPACE_STR: &str = "\u{200B}";
 
@@ -32,13 +30,7 @@ pub const fn get_emote_offset(width: u16, cell_width: u16, cols: u16) -> (u16, u
 ///
 /// A unicode placeholder consists of multiple [`PRIVATE_USE_UNICODE`] so that it takes the same amount of space on screen as the image.
 ///
-/// [`PRIVATE_USE_UNICODE`] characters need to be followed by a diacritic indicating their position in the image.
-/// For [`PRIVATE_USE_UNICODE`] adjacent to each other, only the first one needs to indicate its position.
-/// The position for the other ones will be deduced automatically.
-///
-/// As all twitch emotes have a height of 1 row, we only need the [`DIACRITICS_ZERO`], which indicates a position of `(col, row) = (0, 0)`.
-///
-/// The format for a Unicode placeholder is `{PRIVATE_USE_UNICODE} + {DIACRITICS_ZERO} + {PRIVATE_USE_UNICODE} * (width - 1)`
+/// The format for a Unicode placeholder is `{PRIVATE_USE_UNICODE} * width`
 ///
 /// [Reference](https://sw.kovidgoyal.net/kitty/graphics-protocol/#unicode-placeholders)
 pub struct UnicodePlaceholder(usize);
@@ -46,13 +38,12 @@ pub struct UnicodePlaceholder(usize);
 impl UnicodePlaceholder {
     pub const fn new(width: usize) -> Self {
         assert!(width > 0);
-        // Add 1 for the diacritic
-        Self(width + 1)
+        Self(width)
     }
 
     #[allow(unused)]
     pub const fn len(&self) -> usize {
-        DIACRITICS_ZERO.len_utf8() + PRIVATE_USE_UNICODE.len_utf8() * (self.0 - 1)
+        PRIVATE_USE_UNICODE.len_utf8() * self.0
     }
 
     pub fn iter(&'_ self) -> impl Iterator<Item = char> + '_ {
@@ -62,8 +53,6 @@ impl UnicodePlaceholder {
 
             if count > self.0 {
                 None
-            } else if count == 2 {
-                Some(DIACRITICS_ZERO)
             } else {
                 Some(PRIVATE_USE_UNICODE)
             }
@@ -172,30 +161,24 @@ mod tests {
     fn unicode_placeholders() {
         assert_eq!(
             UnicodePlaceholder::new(1).string(),
-            format!("{PRIVATE_USE_UNICODE}{DIACRITICS_ZERO}")
+            format!("{PRIVATE_USE_UNICODE}")
         );
         assert_eq!(
             UnicodePlaceholder::new(2).string(),
-            format!("{PRIVATE_USE_UNICODE}{DIACRITICS_ZERO}{PRIVATE_USE_UNICODE}")
+            format!("{PRIVATE_USE_UNICODE}{PRIVATE_USE_UNICODE}")
         );
         assert_eq!(
             UnicodePlaceholder::new(3).string(),
-            format!(
-                "{PRIVATE_USE_UNICODE}{DIACRITICS_ZERO}{PRIVATE_USE_UNICODE}{PRIVATE_USE_UNICODE}"
-            )
+            format!("{PRIVATE_USE_UNICODE}{PRIVATE_USE_UNICODE}{PRIVATE_USE_UNICODE}")
         );
 
         let up = UnicodePlaceholder::new(3);
 
-        assert_eq!(
-            up.len(),
-            PRIVATE_USE_UNICODE.len_utf8() * 3 + DIACRITICS_ZERO.len_utf8()
-        );
+        assert_eq!(up.len(), PRIVATE_USE_UNICODE.len_utf8() * 3);
 
         let mut iter = up.iter();
 
         assert_eq!(iter.next(), Some(PRIVATE_USE_UNICODE));
-        assert_eq!(iter.next(), Some(DIACRITICS_ZERO));
         assert_eq!(iter.next(), Some(PRIVATE_USE_UNICODE));
         assert_eq!(iter.next(), Some(PRIVATE_USE_UNICODE));
         assert_eq!(iter.next(), None);

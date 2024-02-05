@@ -17,8 +17,8 @@ use crate::{
     utils::{
         colors::{hsl_to_rgb, u32_to_color},
         emotes::{
-            get_emote_offset, UnicodePlaceholder, DIACRITICS_ZERO, PRIVATE_USE_UNICODE,
-            ZERO_WIDTH_SPACE, ZERO_WIDTH_SPACE_STR,
+            get_emote_offset, UnicodePlaceholder, PRIVATE_USE_UNICODE, ZERO_WIDTH_SPACE,
+            ZERO_WIDTH_SPACE_STR,
         },
         styles::{
             DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
@@ -197,11 +197,9 @@ impl MessageData {
                     ));
                 }
                 *start_index += ZERO_WIDTH_SPACE_STR.len();
-                spans.push(Span::raw(ZERO_WIDTH_SPACE_STR));
             }
 
             *start_index = start_index.saturating_sub(ZERO_WIDTH_SPACE_STR.len());
-            spans.pop();
             spans
         }
     }
@@ -396,15 +394,12 @@ impl MessageData {
             match w {
                 Word::Text(s) => {
                     if !self.payload.is_empty() {
-                        self.payload.push(
-                            if self.payload.ends_with(PRIVATE_USE_UNICODE)
-                                || self.payload.ends_with(DIACRITICS_ZERO)
-                            {
+                        self.payload
+                            .push(if self.payload.ends_with(PRIVATE_USE_UNICODE) {
                                 ZERO_WIDTH_SPACE
                             } else {
                                 ' '
-                            },
-                        );
+                            });
                     }
                     self.payload.push_str(&s);
                 }
@@ -674,13 +669,9 @@ mod tests {
             spans,
             vec![
                 Span::raw("foo"),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled(emote_w_3, STYLES[0]),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled(emote_w_1, STYLES[1]),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::raw("bar baz"),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled(emote_w_2, STYLES[2]),
             ]
         );
@@ -762,11 +753,8 @@ mod tests {
             spans,
             vec![
                 Span::raw("foo"),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled(emote_w_3, STYLES[0]),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled(emote_w_1, STYLES[1]),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled("b", STYLES[1]),
                 Span::styled("a", STYLES[1]),
                 Span::raw("r"),
@@ -776,7 +764,6 @@ mod tests {
                 Span::styled("b", STYLES[0]),
                 Span::styled("a", STYLES[1]),
                 Span::raw("z"),
-                Span::raw(ZERO_WIDTH_SPACE_STR),
                 Span::styled(emote_w_2, STYLES[2]),
             ]
         );
