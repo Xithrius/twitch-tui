@@ -21,7 +21,10 @@ use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
 
-use crate::handlers::{app::App, args::Cli, config::CompleteConfig};
+use crate::{
+    handlers::{app::App, args::Cli, config::CompleteConfig},
+    utils::emotes::emotes_enabled,
+};
 
 mod commands;
 mod emotes;
@@ -82,7 +85,7 @@ async fn main() -> Result<()> {
 
     info!("Started tokio communication channels.");
 
-    if emotes::emotes_enabled(&config.frontend) {
+    if emotes_enabled(&config.frontend) {
         let cloned_config = config.clone();
         let twitch_rx = twitch_rx.resubscribe();
 

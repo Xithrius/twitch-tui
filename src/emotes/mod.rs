@@ -9,9 +9,9 @@ use crate::{
         downloader::get_emotes,
         graphics_protocol::{ApplyCommand, Size},
     },
-    handlers::config::{CompleteConfig, FrontendConfig},
+    handlers::config::CompleteConfig,
     twitch::TwitchAction,
-    utils::pathing::cache_path,
+    utils::{emotes::get_emote_offset, pathing::cache_path},
 };
 use color_eyre::Result;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
@@ -67,11 +67,6 @@ impl From<LoadedEmote> for EmoteData {
             width,
         }
     }
-}
-
-#[inline]
-pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
-    frontend.twitch_emotes || frontend.betterttv_emotes || frontend.seventv_emotes
 }
 
 pub async fn send_emotes(config: &CompleteConfig, tx: &Sender<DownloadedEmotes>, channel: &str) {
@@ -142,18 +137,24 @@ pub fn display_emote(id: u32, pid: u32, cols: u16) -> Result<()> {
 
 pub fn overlay_emote(
     parent: (u32, u32),
-    emote: &EmoteData,
+    emote: EmoteData,
     layer: u32,
-    root_width: u32,
-    cell_width: f32,
+    cols: u16,
+    root_col_offset: u16,
+    cell_width: u16,
 ) -> Result<()> {
-    // Center the overlay on top of the emote
-    let pixel_offset = (root_width as f32 - emote.width as f32) / 2.0;
-    let (col_offset, pixel_offset) = (
-        (pixel_offset / cell_width) as i16,
-        pixel_offset.rem_euclid(cell_width) as u16,
-    );
+    // Center the overlay on top of the root emote.
+    let (pixel_offset, col_offset) = get_emote_offset(emote.width as u16, cell_width, cols);
 
-    graphics_protocol::Chain::new(emote.id, emote.pid, parent, layer, col_offset, pixel_offset)
-        .apply()
+    let relative_col_offset = i32::from(root_col_offset) - i32::from(col_offset);
+
+    graphics_protocol::Chain::new(
+        emote.id,
+        emote.pid,
+        parent,
+        layer,
+        relative_col_offset,
+        pixel_offset,
+    )
+    .apply()
 }

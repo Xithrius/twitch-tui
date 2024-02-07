@@ -14,13 +14,16 @@ use tokio::{runtime::Handle, task};
 use tui::widgets::BorderType;
 
 use crate::{
-    emotes::{emotes_enabled, graphics_protocol},
+    emotes::graphics_protocol,
     handlers::{
         args::{merge_args_into_config, Cli},
         interactive::interactive_config,
         state::State,
     },
-    utils::pathing::{cache_path, config_path},
+    utils::{
+        emotes::emotes_enabled,
+        pathing::{cache_path, config_path},
+    },
 };
 
 pub type SharedCompleteConfig = Rc<RefCell<CompleteConfig>>;

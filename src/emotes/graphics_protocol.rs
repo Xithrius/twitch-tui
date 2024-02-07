@@ -320,7 +320,7 @@ pub struct Chain {
     parent_id: u32,
     parent_placement_id: u32,
     z: u32,
-    col_offset: i16,
+    col_offset: i32,
     pixel_offset: u16,
 }
 
@@ -330,7 +330,7 @@ impl Chain {
         pid: u32,
         (parent_id, parent_placement_id): (u32, u32),
         z: u32,
-        col_offset: i16,
+        col_offset: i32,
         pixel_offset: u16,
     ) -> Self {
         Self {
