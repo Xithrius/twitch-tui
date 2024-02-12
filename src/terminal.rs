@@ -1,10 +1,10 @@
-use log::{debug, info};
+use log::{debug, info, warn};
 use std::time::Duration;
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::DownloadedEmotes,
+    emotes::{display_emote, query_emotes, ApplyCommand, DecodedEmote},
     handlers::{
         app::App,
         config::CompleteConfig,
@@ -28,7 +28,7 @@ pub async fn ui_driver(
     mut app: App,
     tx: Sender<TwitchAction>,
     mut rx: Receiver<TwitchToTerminalAction>,
-    mut erx: Receiver<DownloadedEmotes>,
+    mut drx: Option<Receiver<Result<DecodedEmote, String>>>,
 ) {
     info!("Started UI driver.");
 
@@ -46,34 +46,46 @@ pub async fn ui_driver(
         tick_rate: Duration::from_millis(config.terminal.delay),
     });
 
+    let mut erx = query_emotes(&config, config.twitch.channel.clone());
+
     let mut terminal = init_terminal(&config.frontend);
 
     terminal.clear().unwrap();
 
     loop {
+        // Check if we have received any emotes
         if let Ok(e) = erx.try_recv() {
-            // If the user switched channels too quickly,
-            // emotes will be from the wrong channel for a short time.
-            // Clear the emotes to use the ones from the right channel.
-            //
-            // Note:
-            // This might cause a bug if two channels have an emote with the same name
-            // and with a different width. As already parsed messages will have been replaced by the
-            // wrong length of unicode characters.
-            // The emotes affected by this will be cut of if they are larger than the wrong emote width.
-            // This is negligible as it will only affect emotes already parsed.
-            // Todo: abort recv/send if another request is pending?
-            app.emotes.unload();
-            app.emotes.emotes = e;
+            *app.emotes.emotes.borrow_mut() = e;
+
             for message in &mut *app.messages.borrow_mut() {
-                message.parse_emotes(&mut app.emotes);
+                message.parse_emotes(&app.emotes);
             }
         };
+
+        // Check if we need to load a decoded emote
+        if let Some(rx) = &mut drx {
+            if let Ok(r) = rx.try_recv() {
+                match r {
+                    Ok(d) => {
+                        if let Err(e) = d.apply() {
+                            warn!("Unable to send command to load emote. {e}");
+                        } else if let Err(e) = display_emote(d.id(), 1, d.cols()) {
+                            warn!("Unable to send command to display emote. {e}");
+                        }
+                    }
+                    Err(name) => {
+                        warn!("Unable to load emote: {name}.");
+                        app.emotes.emotes.borrow_mut().remove(&name);
+                        app.emotes.info.borrow_mut().remove(&name);
+                    }
+                }
+            }
+        }
 
         if let Ok(msg) = rx.try_recv() {
             match msg {
                 TwitchToTerminalAction::Message(mut m) => {
-                    m.parse_emotes(&mut app.emotes);
+                    m.parse_emotes(&app.emotes);
                     app.messages.borrow_mut().push_front(m);
 
                     // If scrolling is enabled, pad for more messages.
@@ -133,7 +145,7 @@ pub async fn ui_driver(
                             );
 
                             if let TwitchToTerminalAction::Message(mut msg) = message_data {
-                                msg.parse_emotes(&mut app.emotes);
+                                msg.parse_emotes(&app.emotes);
 
                                 app.messages.borrow_mut().push_front(msg);
 
@@ -144,7 +156,8 @@ pub async fn ui_driver(
                             app.clear_messages();
                             app.emotes.unload();
 
-                            tx.send(TwitchAction::Join(channel)).unwrap();
+                            tx.send(TwitchAction::Join(channel.clone())).unwrap();
+                            erx = query_emotes(&config, channel);
 
                             app.set_state(State::Normal);
                         }

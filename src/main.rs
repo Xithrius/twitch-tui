@@ -19,6 +19,7 @@
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
+use std::thread;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::{
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
 
     color_eyre::install().unwrap();
 
-    let config = CompleteConfig::new(Cli::parse())
+    let mut config = CompleteConfig::new(Cli::parse())
         .wrap_err("Configuration error.")
         .unwrap();
 
@@ -79,34 +80,46 @@ async fn main() -> Result<()> {
 
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
-    let (emotes_tx, emotes_rx) = mpsc::channel(1);
 
-    let mut app = App::new(config.clone(), startup_time);
+    let app = App::new(config.clone(), startup_time);
 
     info!("Started tokio communication channels.");
 
-    if emotes_enabled(&config.frontend) {
-        let cloned_config = config.clone();
-        let twitch_rx = twitch_rx.resubscribe();
-
+    let decoded_rx = if emotes_enabled(&config.frontend) {
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
         match crossterm::terminal::window_size() {
             Ok(size) => {
-                app.emotes.cell_size = (
-                    f32::from(size.width / size.columns),
-                    f32::from(size.height / size.rows),
-                );
-                info!("{:?}", app.emotes.cell_size);
-                tokio::task::spawn(async move {
-                    emotes::emotes(cloned_config, emotes_tx, twitch_rx).await;
+                app.emotes.cell_size.get_or_init(|| {
+                    (
+                        f32::from(size.width / size.columns),
+                        f32::from(size.height / size.rows),
+                    )
                 });
+
+                let (decoder_tx, decoder_rx) = mpsc::channel(100);
+                emotes::DECODE_EMOTE_SENDER.get_or_init(|| decoder_tx);
+
+                let (decoded_tx, decoded_rx) = mpsc::channel(100);
+
+                // As decoding an image is a blocking task, spawn a separate thread to handle it.
+                // We cannot use tokio tasks here as it will create noticeable freezes.
+                thread::spawn(move || emotes::decoder(decoder_rx, &decoded_tx));
+
+                Some(decoded_rx)
             }
             Err(e) => {
+                config.frontend.twitch_emotes = false;
+                config.frontend.betterttv_emotes = false;
+                config.frontend.seventv_emotes = false;
+                config.frontend.frankerfacez_emotes = false;
                 warn!("Unable to query terminal for it's dimensions, disabling emotes. {e}");
+                None
             }
         }
-    }
+    } else {
+        None
+    };
 
     let cloned_config = config.clone();
 
@@ -114,7 +127,7 @@ async fn main() -> Result<()> {
         twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
     });
 
-    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, emotes_rx).await;
+    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, decoded_rx).await;
 
     std::process::exit(0)
 }

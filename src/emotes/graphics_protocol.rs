@@ -98,12 +98,10 @@ pub struct DecodedEmote {
 }
 
 impl DecodedEmote {
-    #[allow(unused)]
     pub const fn id(&self) -> u32 {
         self.id
     }
 
-    #[allow(unused)]
     pub const fn cols(&self) -> u16 {
         self.cols
     }
@@ -400,6 +398,10 @@ impl Command for Chain {
 }
 
 pub trait ApplyCommand: Command {
+    // While the structs that implement this trait can be sent between thread safely, this function is not thread safe,
+    // and needs to be called from the main thread.
+    // A solution would be to call it with `std::io::stdout().lock()`, but this creates noticeable freezes when commands
+    // are issued and the user is typing.
     fn apply(&self) -> Result<()> {
         Ok(queue!(std::io::stdout(), self)?)
     }
