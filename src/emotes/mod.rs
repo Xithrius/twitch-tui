@@ -1,26 +1,25 @@
+use color_eyre::Result;
 use log::{info, warn};
 use std::{
-    collections::{hash_map::DefaultHasher, HashMap},
+    collections::{hash_map::DefaultHasher, BTreeMap, HashMap},
     hash::{Hash, Hasher},
 };
+use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 
 use crate::{
-    emotes::{
-        downloader::get_emotes,
-        graphics_protocol::{ApplyCommand, Size},
-    },
+    emotes::{downloader::get_emotes, graphics_protocol::Image},
     handlers::config::CompleteConfig,
     twitch::TwitchAction,
     utils::{emotes::get_emote_offset, pathing::cache_path},
 };
-use color_eyre::Result;
-use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 
 mod downloader;
-pub mod graphics_protocol;
+mod graphics_protocol;
+
+pub use graphics_protocol::{support_graphics_protocol, ApplyCommand};
 
 // HashMap of emote name, emote filename, and if the emote is an overlay
-pub type DownloadedEmotes = HashMap<String, (String, bool)>;
+pub type DownloadedEmotes = BTreeMap<String, (String, bool)>;
 
 #[derive(Copy, Clone, Debug)]
 pub struct EmoteData {
@@ -35,13 +34,13 @@ pub struct LoadedEmote {
     pub hash: u32,
     /// Number of emotes that have been displayed
     pub n: u32,
-    /// Width of the emote in pixels
+    /// Width of the emote in pixels (resized so that it's height is equal to cell height)
     pub width: u32,
     /// If the emote should be displayed over the previous emote, if no text is between them.
     pub overlay: bool,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug)]
 pub struct Emotes {
     /// Map of emote name, filename, and if the emote is an overlay
     pub emotes: DownloadedEmotes,
@@ -51,9 +50,19 @@ pub struct Emotes {
     pub cell_size: (f32, f32),
 }
 
+// This Drop impl is only here to cleanup in case of panics.
+// The unload method should be called before exiting the alternate screen instead of relying on the drop impl.
+impl Drop for Emotes {
+    fn drop(&mut self) {
+        self.unload();
+    }
+}
+
 impl Emotes {
     pub fn unload(&mut self) {
-        graphics_protocol::Clear.apply().unwrap_or_default();
+        self.info.iter().for_each(|(_, LoadedEmote { hash, .. })| {
+            graphics_protocol::Clear(*hash).apply().unwrap_or_default();
+        });
         self.emotes.clear();
         self.info.clear();
     }
@@ -115,9 +124,25 @@ pub fn load_emote(
         let hash = hasher.finish() as u32 & 0x00FF_FFFF;
 
         // Tells the terminal to load the image for later use
-        let loaded_image = graphics_protocol::Load::new(hash, &cache_path(filename), cell_size)?;
-        let width = loaded_image.width();
-        loaded_image.apply()?;
+        let image = Image::new(
+            hash,
+            word.to_string(),
+            &cache_path(filename),
+            overlay,
+            cell_size,
+        )?;
+
+        let width = image.width;
+        let cols = image.cols;
+
+        let decoded = image.decode()?;
+
+        decoded.apply()?;
+
+        // Emote with placement id 1 is reserved for emote picker
+        // We tell kitty to display it now, but as it is a unicode placeholder,
+        // it will only be displayed once we print the unicode placeholder.
+        display_emote(hash, 1, cols)?;
 
         let emote = LoadedEmote {
             hash,

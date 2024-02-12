@@ -98,6 +98,8 @@ pub async fn ui_driver(
             if let Some(action) = app.event(&event).await {
                 match action {
                     TerminalAction::Quit => {
+                        // Emotes need to be unloaded before we exit the alternate screen
+                        app.emotes.unload();
                         quit_terminal(terminal);
 
                         break;
