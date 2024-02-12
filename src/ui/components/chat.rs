@@ -10,6 +10,7 @@ use tui::{
 };
 
 use crate::{
+    emotes::SharedEmotes,
     handlers::{
         app::SharedMessages,
         config::SharedCompleteConfig,
@@ -47,9 +48,10 @@ impl ChatWidget {
         config: SharedCompleteConfig,
         messages: SharedMessages,
         storage: &SharedStorage,
+        emotes: &SharedEmotes,
         filters: SharedFilters,
     ) -> Self {
-        let chat_input = ChatInputWidget::new(config.clone(), storage.clone());
+        let chat_input = ChatInputWidget::new(config.clone(), storage.clone(), emotes.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
         let following = FollowingWidget::new(config.clone());

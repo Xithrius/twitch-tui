@@ -183,7 +183,6 @@ pub fn load_emote(
     }
 }
 
-#[allow(unused)]
 pub fn load_picker_emote(
     word: &str,
     filename: &str,

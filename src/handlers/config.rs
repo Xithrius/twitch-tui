@@ -517,7 +517,7 @@ impl CompleteConfig {
 
                 if emotes_enabled(&config.frontend) && !support_graphics_protocol().unwrap_or(false)
                 {
-                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty or WezTerm, or disable emotes.");
+                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty, or disable emotes.");
                     std::process::exit(1);
                 }
             }

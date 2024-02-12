@@ -10,7 +10,6 @@ use tui::{
 use crate::{
     handlers::{
         config::SharedCompleteConfig,
-        storage::SharedStorage,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -20,28 +19,28 @@ use crate::{
 
 use super::centered_rect;
 
-pub type InputValidator = Box<dyn Fn(String) -> bool>;
+pub type InputValidator<T> = Box<dyn Fn(T, String) -> bool>;
 pub type VisualValidator = Box<dyn Fn(String) -> String>;
-pub type InputSuggester = Box<dyn Fn(SharedStorage, String) -> Option<String>>;
+pub type InputSuggester<T> = Box<dyn Fn(T, String) -> Option<String>>;
 
-pub struct InputWidget {
+pub struct InputWidget<T: Clone> {
     config: SharedCompleteConfig,
     input: LineBuffer,
     title: String,
     focused: bool,
-    input_validator: Option<InputValidator>,
+    input_validator: Option<(T, InputValidator<T>)>,
     visual_indicator: Option<VisualValidator>,
-    input_suggester: Option<(SharedStorage, InputSuggester)>,
+    input_suggester: Option<(T, InputSuggester<T>)>,
     suggestion: Option<String>,
 }
 
-impl InputWidget {
+impl<T: Clone> InputWidget<T> {
     pub fn new(
         config: SharedCompleteConfig,
         title: &str,
-        input_validator: Option<InputValidator>,
+        input_validator: Option<(T, InputValidator<T>)>,
         visual_indicator: Option<VisualValidator>,
-        input_suggester: Option<(SharedStorage, InputSuggester)>,
+        input_suggester: Option<(T, InputSuggester<T>)>,
     ) -> Self {
         Self {
             config,
@@ -75,17 +74,30 @@ impl InputWidget {
     pub fn is_valid(&self) -> bool {
         self.input_validator
             .as_ref()
-            .map_or(true, |validator| validator(self.input.to_string()))
+            .map_or(true, |(items, validator)| {
+                validator(items.clone(), self.input.to_string())
+            })
+    }
+
+    pub fn accept_suggestion(&mut self) {
+        if let Some(suggestion) = &self.suggestion {
+            self.input.update(suggestion, 0);
+        }
+    }
+
+    pub fn insert(&mut self, s: &str) {
+        self.input.insert_str(self.input.pos(), s);
+        self.input.set_pos(self.input.pos() + s.len());
     }
 }
 
-impl ToString for InputWidget {
+impl<T: Clone> ToString for InputWidget<T> {
     fn to_string(&self) -> String {
         self.input.to_string()
     }
 }
 
-impl Component for InputWidget {
+impl<T: Clone> Component for InputWidget<T> {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
 
@@ -106,15 +118,17 @@ impl Component for InputWidget {
             Color::Red
         };
 
-        self.suggestion = if self.config.borrow().storage.channels {
-            if let Some((storage, suggester)) = &self.input_suggester {
-                suggester(storage.clone(), self.input.to_string())
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+        self.suggestion = self
+            .config
+            .borrow()
+            .storage
+            .channels
+            .then(|| {
+                self.input_suggester
+                    .as_ref()
+                    .and_then(|(items, suggester)| suggester(items.clone(), self.input.to_string()))
+            })
+            .flatten();
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -177,7 +191,12 @@ impl Component for InputWidget {
         if let Event::Input(key) = event {
             match key {
                 Key::Ctrl('f') | Key::Right => {
-                    self.input.move_forward(1);
+                    if self.input.next_pos(1).is_none() {
+                        self.accept_suggestion();
+                        self.input.move_end();
+                    } else {
+                        self.input.move_forward(1);
+                    }
                 }
                 Key::Ctrl('b') | Key::Left => {
                     self.input.move_backward(1);

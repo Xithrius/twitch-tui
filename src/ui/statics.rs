@@ -59,6 +59,7 @@ pub static HELP_KEYBINDS: Lazy<Vec<(&str, Vec<(&str, &str)>)>> = Lazy::new(|| {
                 ("Alt + f", "Move to the end of the next word"),
                 ("Alt + b", "Move to the start of the previous word"),
                 ("Alt + t", "Swap previous word with current word"),
+                ("Alt + e", "Toggle emote picker"),
             ],
         ),
     ]

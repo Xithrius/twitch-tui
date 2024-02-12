@@ -85,6 +85,7 @@ impl App {
             storage.clone(),
             filters.clone(),
             messages.clone(),
+            &emotes,
             startup_time,
         );
 
