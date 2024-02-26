@@ -120,7 +120,7 @@ impl Component for EmotePickerWidget {
         let mut items = Vec::with_capacity(max_len);
         let mut bad_emotes = vec![];
 
-        let current_input = self.input.to_string();
+        let mut current_input = self.input.to_string();
 
         let cell_size = *self
             .emotes
@@ -131,6 +131,7 @@ impl Component for EmotePickerWidget {
         let finder = if current_input.is_empty() {
             None
         } else {
+            current_input.make_ascii_lowercase();
             Some(memmem::Finder::new(&current_input))
         };
 
@@ -142,7 +143,7 @@ impl Component for EmotePickerWidget {
             // Skip emotes that do not contain the current input, if it is not empty.
             let Some(pos) = finder
                 .as_ref()
-                .map_or_else(|| Some(0), |f| f.find(name.as_bytes()))
+                .map_or_else(|| Some(0), |f| f.find(name.to_ascii_lowercase().as_bytes()))
             else {
                 continue;
             };
