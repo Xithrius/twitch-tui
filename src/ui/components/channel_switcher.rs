@@ -141,7 +141,9 @@ impl ToString for ChannelSwitcherWidget {
 
 impl Component for ChannelSwitcherWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.size()), |a| a);
+        // Make sure we have space for the input widget, which has a height of 3.
+        r.height -= 3;
 
         let channels = self.storage.borrow().get("channels");
 
