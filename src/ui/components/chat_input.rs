@@ -1,6 +1,7 @@
 use tui::{layout::Rect, Frame};
 
 use crate::{
+    emotes::SharedEmotes,
     handlers::{
         config::SharedCompleteConfig,
         storage::SharedStorage,
@@ -9,22 +10,23 @@ use crate::{
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
-        components::{utils::InputWidget, Component},
+        components::{emote_picker::EmotePickerWidget, utils::InputWidget, Component},
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
-    utils::text::first_similarity,
+    utils::{emotes::emotes_enabled, text::first_similarity},
 };
 
 pub struct ChatInputWidget {
     config: SharedCompleteConfig,
     storage: SharedStorage,
-    input: InputWidget,
+    input: InputWidget<SharedStorage>,
+    emote_picker: EmotePickerWidget,
 }
 
 impl ChatInputWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+    pub fn new(config: SharedCompleteConfig, storage: SharedStorage, emotes: SharedEmotes) -> Self {
         let input_validator =
-            Box::new(|s: String| -> bool { !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT });
+            Box::new(|_, s: String| -> bool { !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT });
 
         // User should be known of how close they are to the message length limit.
         let visual_indicator =
@@ -62,15 +64,18 @@ impl ChatInputWidget {
         let input = InputWidget::new(
             config.clone(),
             "Chat",
-            Some(input_validator),
+            Some((storage.clone(), input_validator)),
             Some(visual_indicator),
             Some((storage.clone(), input_suggester)),
         );
+
+        let emote_picker = EmotePickerWidget::new(config.clone(), emotes);
 
         Self {
             config,
             storage,
             input,
+            emote_picker,
         }
     }
 
@@ -96,10 +101,21 @@ impl ToString for ChatInputWidget {
 impl Component for ChatInputWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         self.input.draw(f, area);
+
+        if self.emote_picker.is_focused() {
+            self.emote_picker.draw(f, None);
+        }
     }
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        if let Event::Input(key) = event {
+        if self.emote_picker.is_focused() {
+            if let Some(TerminalAction::Enter(TwitchAction::Privmsg(emote))) =
+                self.emote_picker.event(event).await
+            {
+                self.input.insert(&emote);
+                self.input.insert(" ");
+            }
+        } else if let Event::Input(key) = event {
             match key {
                 Key::Enter => {
                     if self.input.is_valid() {
@@ -123,6 +139,11 @@ impl Component for ChatInputWidget {
                         }
 
                         return Some(action);
+                    }
+                }
+                Key::Alt('e') => {
+                    if emotes_enabled(&self.config.borrow().frontend) {
+                        self.emote_picker.toggle_focus();
                     }
                 }
                 Key::Esc => {

@@ -37,7 +37,7 @@ pub struct ChannelSwitcherWidget {
     config: SharedCompleteConfig,
     focused: bool,
     storage: SharedStorage,
-    search_input: InputWidget,
+    search_input: InputWidget<SharedStorage>,
     list_state: ListState,
     filtered_channels: Option<Vec<String>>,
     vertical_scroll_state: ScrollbarState,
@@ -46,7 +46,7 @@ pub struct ChannelSwitcherWidget {
 
 impl ChannelSwitcherWidget {
     pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
-        let input_validator = Box::new(|s: String| -> bool {
+        let input_validator = Box::new(|_, s: String| -> bool {
             Regex::new(&NAME_RESTRICTION_REGEX)
                 .unwrap()
                 .is_match(s.as_str())
@@ -71,7 +71,7 @@ impl ChannelSwitcherWidget {
         let search_input = InputWidget::new(
             config.clone(),
             "Channel switcher",
-            Some(input_validator),
+            Some((storage.clone(), input_validator)),
             Some(visual_indicator),
             Some((storage.clone(), input_suggester)),
         );
@@ -141,7 +141,9 @@ impl ToString for ChannelSwitcherWidget {
 
 impl Component for ChannelSwitcherWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.size()), |a| a);
+        // Make sure we have space for the input widget, which has a height of 3.
+        r.height -= 3;
 
         let channels = self.storage.borrow().get("channels");
 

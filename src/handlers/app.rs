@@ -8,7 +8,7 @@ use tui::{
 };
 
 use crate::{
-    emotes::Emotes,
+    emotes::SharedEmotes,
     handlers::{
         config::{CompleteConfig, SharedCompleteConfig, Theme},
         data::MessageData,
@@ -48,7 +48,7 @@ pub struct App {
     /// The theme selected by the user.
     pub theme: Theme,
     /// Emotes
-    pub emotes: Emotes,
+    pub emotes: SharedEmotes,
 }
 
 macro_rules! shared {
@@ -78,11 +78,14 @@ impl App {
             shared_config_borrow.terminal.maximum_messages,
         ));
 
+        let emotes = SharedEmotes::default();
+
         let components = Components::new(
             &shared_config,
             storage.clone(),
             filters.clone(),
             messages.clone(),
+            &emotes,
             startup_time,
         );
 
@@ -97,7 +100,7 @@ impl App {
             input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             buffer_suggestion: None,
             theme: shared_config_borrow.frontend.theme.clone(),
-            emotes: Emotes::default(),
+            emotes,
         }
     }
 
@@ -165,6 +168,7 @@ impl App {
 
     pub fn cleanup(&self) {
         self.storage.borrow().dump_data();
+        self.emotes.unload();
     }
 
     pub fn clear_messages(&mut self) {

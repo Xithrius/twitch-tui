@@ -63,12 +63,18 @@ pub fn title_line<'a>(contents: &'a [TitleStyle<'a>], style: Style) -> Vec<Span<
 
 /// Within an array of strings, find the first partial or full match, if any.
 pub fn first_similarity(possibilities: &[String], search: &str) -> Option<String> {
+    first_similarity_iter(possibilities.iter(), search)
+}
+
+pub fn first_similarity_iter<'a>(
+    possibilities: impl Iterator<Item = &'a String>,
+    search: &str,
+) -> Option<String> {
     if search.is_empty() {
         return None;
     }
 
     possibilities
-        .iter()
         .filter(|s| s.starts_with(search))
         .collect::<Vec<&String>>()
         .first()

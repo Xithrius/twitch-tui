@@ -14,7 +14,7 @@ use tokio::{runtime::Handle, task};
 use tui::widgets::BorderType;
 
 use crate::{
-    emotes::graphics_protocol,
+    emotes::support_graphics_protocol,
     handlers::{
         args::{merge_args_into_config, Cli},
         interactive::interactive_config,
@@ -515,10 +515,9 @@ impl CompleteConfig {
                     bail!("Twitch config section is missing one or more of the following: username, channel, token.");
                 }
 
-                if emotes_enabled(&config.frontend)
-                    && !graphics_protocol::support_graphics_protocol().unwrap_or(false)
+                if emotes_enabled(&config.frontend) && !support_graphics_protocol().unwrap_or(false)
                 {
-                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty or WezTerm, or disable emotes.");
+                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty, or disable emotes.");
                     std::process::exit(1);
                 }
             }

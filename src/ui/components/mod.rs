@@ -9,6 +9,7 @@ mod help;
 mod message_search;
 mod state_tabs;
 
+mod emote_picker;
 pub mod utils;
 
 pub use channel_switcher::ChannelSwitcherWidget;
@@ -26,6 +27,7 @@ use chrono::{DateTime, Local};
 use tui::{layout::Rect, Frame};
 
 use crate::{
+    emotes::SharedEmotes,
     handlers::{
         app::SharedMessages,
         config::SharedCompleteConfig,
@@ -85,6 +87,7 @@ impl Components {
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,
+        emotes: &SharedEmotes,
         startup_time: DateTime<Local>,
     ) -> Self {
         let window_size_error = ErrorWidget::new(WINDOW_SIZE_TOO_SMALL_ERROR.to_vec());
@@ -93,7 +96,7 @@ impl Components {
             tabs: StateTabsWidget::new(config.clone()),
             debug: DebugWidget::new(config.clone(), startup_time),
 
-            chat: ChatWidget::new(config.clone(), messages, &storage, filters),
+            chat: ChatWidget::new(config.clone(), messages, &storage, emotes, filters),
             dashboard: DashboardWidget::new(config.clone(), storage),
             help: HelpWidget::new(config.clone()),
             window_size_error,

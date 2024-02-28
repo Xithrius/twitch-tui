@@ -14,13 +14,13 @@ use crate::{
 
 pub struct MessageSearchWidget {
     _config: SharedCompleteConfig,
-    input: InputWidget,
+    input: InputWidget<()>,
 }
 
 impl MessageSearchWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
         let input_validator =
-            Box::new(|s: String| -> bool { !s.is_empty() && s.len() <= TWITCH_MESSAGE_LIMIT });
+            Box::new(|(), s: String| -> bool { !s.is_empty() && s.len() <= TWITCH_MESSAGE_LIMIT });
 
         // Indication that user won't get any good results near the twitch message length limit.
         // TODO: In the future, this should be replaced with how many results have been found.
@@ -30,7 +30,7 @@ impl MessageSearchWidget {
         let input = InputWidget::new(
             config.clone(),
             "Message search",
-            Some(input_validator),
+            Some(((), input_validator)),
             Some(visual_indicator),
             None,
         );

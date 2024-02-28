@@ -51,7 +51,7 @@ where
     filtered_items: Option<Vec<T>>,
 
     list_state: ListState,
-    search_input: InputWidget,
+    search_input: InputWidget<()>,
     vertical_scroll_state: ScrollbarState,
     vertical_scroll: usize,
 

@@ -1,22 +1,21 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use color_eyre::{
-    eyre::{anyhow, ContextCompat, Error},
+    eyre::{anyhow, ContextCompat},
     Result,
 };
 use crossterm::{csi, queue, Command};
 use dialoguer::console::{Key, Term};
 use image::{
-    codecs::{gif::GifDecoder, webp::WebPDecoder},
-    imageops::FilterType,
-    io::Reader,
-    AnimationDecoder, DynamicImage, GenericImageView, ImageDecoder, ImageFormat, Rgba,
+    codecs::gif::GifDecoder, imageops::FilterType, io::Reader, AnimationDecoder, DynamicImage,
+    GenericImageView, ImageDecoder, ImageFormat, RgbaImage,
 };
 use std::{
-    env, fmt, fs,
+    env, fmt,
     fs::File,
-    io::{BufReader, Write},
+    io::{BufReader, Read, Write},
     path::PathBuf,
 };
+use webp_animation::Decoder;
 
 use crate::utils::pathing::{
     create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
@@ -34,141 +33,96 @@ macro_rules! gp {
 /// string to be deleted by the terminal.
 const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 
-pub trait Size {
-    fn width(&self) -> u32;
+struct StaticDecoder(DynamicImage);
+struct AnimatedDecoder(GifDecoder<BufReader<File>>);
+struct WebPDecoder(Vec<u8>);
 
-    fn calculate_resize_ratio(height: u32, cell_h: f32) -> f32 {
-        cell_h / height as f32
+trait IntoFrames: Send {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>>;
+}
+
+impl IntoFrames for StaticDecoder {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>> {
+        Box::new(std::iter::once(Ok((self.0.to_rgba8(), 0))))
     }
 }
 
-pub struct StaticImage {
-    id: u32,
+impl IntoFrames for AnimatedDecoder {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>> {
+        Box::new(self.0.into_frames().map(|f| {
+            let frame = f?;
+
+            let delay = frame.delay().numer_denom_ms().0;
+
+            Ok((frame.into_buffer(), delay))
+        }))
+    }
+}
+
+impl IntoFrames for WebPDecoder {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>> {
+        let Ok(decoder) = Decoder::new(&self.0) else {
+            return Box::new(std::iter::empty());
+        };
+
+        let mut timestamp = 0;
+        Box::new(
+            decoder
+                .into_iter()
+                .collect::<Vec<_>>()
+                .into_iter()
+                .map(move |frame| {
+                    let current_timestamp = frame.timestamp();
+
+                    let delay = (current_timestamp - timestamp) as u32;
+
+                    timestamp = current_timestamp;
+
+                    Ok((frame.into_rgba_image()?, delay))
+                }),
+        )
+    }
+}
+
+pub struct DecodedImage {
     width: u32,
     height: u32,
     path: PathBuf,
+    delay: u32,
 }
 
-impl StaticImage {
-    pub fn new(id: u32, image: Reader<BufReader<File>>, cell_size: (f32, f32)) -> Result<Self> {
-        let image = image.decode()?;
-        let (width, height) = image.dimensions();
-        let ratio = Self::calculate_resize_ratio(height, cell_size.1);
-
-        let image = image.resize(
-            (width as f32 * ratio) as u32,
-            cell_size.1 as u32,
-            FilterType::Lanczos3,
-        );
-        let (width, height) = image.dimensions();
-
-        let (mut tempfile, pathbuf) = create_temp_file(GP_PREFIX)?;
-        if let Err(e) = save_in_temp_file(image.to_rgba8().as_raw(), &mut tempfile) {
-            remove_temp_file(&pathbuf);
-            return Err(e);
-        }
-
-        Ok(Self {
-            id,
-            width,
-            height,
-            path: pathbuf,
-        })
-    }
-}
-
-impl Command for StaticImage {
-    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        write!(
-            f,
-            gp!("a=t,t=t,f=32,s={width},v={height},i={id},q=2;{path}"),
-            width = self.width,
-            height = self.height,
-            id = self.id,
-            path = STANDARD.encode(pathbuf_try_to_string(&self.path).map_err(|_| fmt::Error)?)
-        )
-    }
-
-    #[cfg(windows)]
-    fn execute_winapi(&self) -> std::result::Result<(), std::io::Error> {
-        panic!("Windows version not supported.")
-    }
-}
-
-impl Size for StaticImage {
-    fn width(&self) -> u32 {
-        self.width
-    }
-}
-
-pub struct AnimatedImage {
+pub struct DecodedEmote {
     id: u32,
-    width: u32,
-    frames: Vec<(PathBuf, u32, u32, u32)>,
+    cols: u16,
+    images: Vec<DecodedImage>,
 }
 
-impl AnimatedImage {
-    pub fn new<'a>(
-        id: u32,
-        decoder: impl ImageDecoder<'a> + AnimationDecoder<'a>,
-        cell_size: (f32, f32),
-    ) -> Result<Self> {
-        let (width, height) = decoder.dimensions();
-        let resize_ratio = Self::calculate_resize_ratio(height, cell_size.1);
-        let frames = decoder.into_frames();
+impl DecodedEmote {
+    pub const fn id(&self) -> u32 {
+        self.id
+    }
 
-        let (ok, err): (Vec<_>, Vec<_>) = frames
-            .map(|f| {
-                let frame = f?;
-                let delay = frame.delay().numer_denom_ms().0;
-                let image = DynamicImage::from(frame.into_buffer());
-                let (w, h) = image.dimensions();
-                let image = image.resize(
-                    (w as f32 * resize_ratio).ceil() as u32,
-                    (h as f32 * resize_ratio).ceil() as u32,
-                    FilterType::Lanczos3,
-                );
-                let (w, h) = image.dimensions();
-                let (mut tempfile, pathbuf) = create_temp_file(GP_PREFIX)?;
-                save_in_temp_file(image.to_rgba8().as_raw(), &mut tempfile)?;
-
-                Ok::<(PathBuf, u32, u32, u32), Error>((pathbuf, delay, w, h))
-            })
-            .partition(Result::is_ok);
-
-        let frames: Vec<(PathBuf, u32, u32, u32)> = ok.into_iter().flatten().collect();
-
-        // If we had any error, we need to delete the temp files, as the terminal won't do it for us.
-        if !err.is_empty() {
-            for (path, ..) in &frames {
-                drop(fs::remove_file(path));
-            }
-            return Err(anyhow!("Invalid frame in gif."));
-        }
-
-        if frames.is_empty() {
-            Err(anyhow!("Image has no frames"))
-        } else {
-            Ok(Self {
-                id,
-                width: (width as f32 * resize_ratio) as u32,
-                frames,
-            })
-        }
+    pub const fn cols(&self) -> u16 {
+        self.cols
     }
 }
 
-impl Command for AnimatedImage {
+impl Command for DecodedEmote {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        if self.frames.is_empty() {
+        if self.images.is_empty() {
             return Err(fmt::Error);
         }
 
-        let mut frames = self.frames.iter();
+        let mut frames = self.images.iter();
 
-        // We need to send the data for the first frame as a normal image.
+        // Sending a static image and an animated one is done with the same command for the first frame.
         // We can unwrap here because we checked above if frames was empty.
-        let (path, delay, width, height) = frames.next().unwrap();
+        let DecodedImage {
+            path,
+            delay,
+            width,
+            height,
+        } = frames.next().unwrap();
 
         write!(
             f,
@@ -178,6 +132,11 @@ impl Command for AnimatedImage {
             height = height,
             path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
         )?;
+
+        if self.images.len() == 1 {
+            return Ok(());
+        }
+
         // r=1: First frame
         write!(
             f,
@@ -186,7 +145,13 @@ impl Command for AnimatedImage {
             delay = delay,
         )?;
 
-        for (path, delay, width, height) in frames {
+        for DecodedImage {
+            path,
+            delay,
+            width,
+            height,
+        } in frames
+        {
             write!(
                 f,
                 gp!("a=f,t=t,f=32,s={width},v={height},i={id},z={delay},q=2;{path}"),
@@ -208,75 +173,141 @@ impl Command for AnimatedImage {
     }
 }
 
-impl Size for AnimatedImage {
-    fn width(&self) -> u32 {
-        self.width
-    }
+pub struct Image {
+    pub name: String,
+    id: u32,
+    pub width: u32,
+    ratio: f32,
+    overlay: bool,
+    pub cols: u16,
+    decoder: Box<dyn IntoFrames>,
 }
 
-pub enum Load {
-    Static(StaticImage),
-    Animated(AnimatedImage),
-}
-
-impl Load {
-    pub fn new(id: u32, path: &str, cell_size: (f32, f32)) -> Result<Self> {
+impl Image {
+    pub fn new(
+        id: u32,
+        name: String,
+        path: &str,
+        overlay: bool,
+        (cell_w, cell_h): (f32, f32),
+    ) -> Result<Self> {
         let path = std::path::PathBuf::from(path);
-        let image = Reader::open(&path)?.with_guessed_format()?;
+        let image = Reader::open(path)?.with_guessed_format()?;
 
-        match image.format() {
-            None => Err(anyhow!("Could not guess image format.")),
+        let (width, height, decoder) = match image.format() {
+            None => return Err(anyhow!("Could not guess image format.")),
             Some(ImageFormat::WebP) => {
-                let mut decoder = WebPDecoder::new(image.into_inner())?;
+                let mut reader = image.into_inner();
+                let mut buffer = vec![];
+                reader.read_to_end(&mut buffer)?;
 
-                if decoder.has_animation() {
-                    // Some animated webp images have a default white background color
-                    // We replace it by a transparent background
-                    decoder.set_background_color(Rgba([0, 0, 0, 0]))?;
-                    Ok(Self::Animated(AnimatedImage::new(id, decoder, cell_size)?))
-                } else {
-                    let image = Reader::open(&path)?.with_guessed_format()?;
+                let decoder = Decoder::new(&buffer)?;
+                let (width, height) = decoder.dimensions();
 
-                    Ok(Self::Static(StaticImage::new(id, image, cell_size)?))
-                }
+                (
+                    width,
+                    height,
+                    Box::new(WebPDecoder(buffer)) as Box<dyn IntoFrames>,
+                )
             }
             Some(ImageFormat::Gif) => {
                 let decoder = GifDecoder::new(image.into_inner())?;
-                Ok(Self::Animated(AnimatedImage::new(id, decoder, cell_size)?))
+                let (width, height) = decoder.dimensions();
+
+                (
+                    width,
+                    height,
+                    Box::new(AnimatedDecoder(decoder)) as Box<dyn IntoFrames>,
+                )
             }
-            Some(_) => Ok(Self::Static(StaticImage::new(id, image, cell_size)?)),
+            Some(_) => {
+                let image = image.decode()?;
+                let (width, height) = image.dimensions();
+
+                (
+                    width,
+                    height,
+                    Box::new(StaticDecoder(image)) as Box<dyn IntoFrames>,
+                )
+            }
+        };
+
+        let ratio = cell_h / height as f32;
+        let width = (width as f32 * ratio).round() as u32;
+        let cols = (width as f32 / cell_w).ceil() as u16;
+
+        Ok(Self {
+            name,
+            id,
+            width,
+            ratio,
+            overlay,
+            cols,
+            decoder,
+        })
+    }
+
+    pub fn decode(self) -> Result<DecodedEmote> {
+        let frames = self.decoder.frames().map(|f| {
+            let (image, delay) = f?;
+            let image = if self.overlay {
+                let (w, h) = image.dimensions();
+                image::imageops::resize(
+                    &image,
+                    (w as f32 * self.ratio).round() as u32,
+                    (h as f32 * self.ratio).round() as u32,
+                    FilterType::Lanczos3,
+                )
+            } else {
+                image
+            };
+
+            let (width, height) = image.dimensions();
+            let (mut tempfile, path) = create_temp_file(GP_PREFIX)?;
+            if let Err(e) = save_in_temp_file(image.as_raw(), &mut tempfile) {
+                remove_temp_file(&path);
+                return Err(e);
+            }
+
+            Ok(DecodedImage {
+                width,
+                height,
+                path,
+                delay,
+            })
+        });
+
+        let mut images = vec![];
+        for f in frames {
+            match f {
+                Ok(i) => images.push(i),
+                Err(e) => {
+                    for DecodedImage { path, .. } in images {
+                        remove_temp_file(&path);
+                    }
+
+                    return Err(anyhow!("Unable to decode frame: {e}"));
+                }
+            }
         }
+
+        if images.is_empty() {
+            return Err(anyhow!("Image has no frames"));
+        }
+
+        Ok(DecodedEmote {
+            id: self.id,
+            cols: self.cols,
+            images,
+        })
     }
 }
 
-impl Command for Load {
-    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        match self {
-            Self::Static(s) => s.write_ansi(f),
-            Self::Animated(a) => a.write_ansi(f),
-        }
-    }
-
-    #[cfg(windows)]
-    fn execute_winapi(&self) -> std::result::Result<(), std::io::Error> {
-        panic!("Windows version not supported.")
-    }
-}
-
-impl Size for Load {
-    fn width(&self) -> u32 {
-        match self {
-            Self::Static(s) => s.width(),
-            Self::Animated(a) => a.width(),
-        }
-    }
-}
-
-pub struct Clear;
+pub struct Clear(pub u32);
 
 impl Command for Clear {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        write!(f, gp!("a=d,d=A,q=2;"))
+        write!(f, gp!("a=d,d=I,i={id},q=2;"), id = self.0)
     }
 
     #[cfg(windows)]
@@ -367,6 +398,10 @@ impl Command for Chain {
 }
 
 pub trait ApplyCommand: Command {
+    // While the structs that implement this trait can be sent between thread safely, this function is not thread safe,
+    // and needs to be called from the main thread.
+    // A solution would be to call it with `std::io::stdout().lock()`, but this creates noticeable freezes when commands
+    // are issued and the user is typing.
     fn apply(&self) -> Result<()> {
         Ok(queue!(std::io::stdout(), self)?)
     }
@@ -417,4 +452,118 @@ pub fn support_graphics_protocol() -> Result<bool> {
             .as_bytes(),
         )?
         .contains("OK"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn load_static_image() {
+        let mut s = String::new();
+
+        let path = "/tmp/foo/bar.baz";
+        let image = DecodedImage {
+            width: 30,
+            height: 42,
+            path: path.into(),
+            delay: 0,
+        };
+
+        let emote = DecodedEmote {
+            id: 1,
+            cols: 3,
+            images: vec![image],
+        };
+        emote.write_ansi(&mut s).unwrap();
+
+        assert_eq!(
+            s,
+            format!(
+                gp!("a=t,t=t,f=32,s=30,v=42,i=1,q=2;{path}"),
+                path = STANDARD.encode(path)
+            )
+        );
+    }
+
+    #[test]
+    fn load_animated_image() {
+        let mut s = String::new();
+
+        let paths = ["/tmp/foo/bar.baz", "a/b/c", "foo bar-baz/123"];
+
+        let images = vec![
+            DecodedImage {
+                width: 30,
+                height: 42,
+                path: paths[0].into(),
+                delay: 0,
+            },
+            DecodedImage {
+                width: 12,
+                height: 74,
+                path: paths[1].into(),
+                delay: 89,
+            },
+            DecodedImage {
+                width: 54,
+                height: 45,
+                path: paths[2].into(),
+                delay: 4,
+            },
+        ];
+
+        let emote = DecodedEmote {
+            id: 1,
+            cols: 3,
+            images,
+        };
+
+        emote.write_ansi(&mut s).unwrap();
+
+        assert_eq!(
+            s,
+            format!(
+                gp!("a=t,t=t,f=32,s=30,v=42,i=1,q=2;{path}"),
+                path = STANDARD.encode(paths[0])
+            ) + gp!("a=a,i=1,r=1,z=0,q=2;")
+                + &format!(
+                    gp!("a=f,t=t,f=32,s=12,v=74,i=1,z=89,q=2;{path}"),
+                    path = STANDARD.encode(paths[1])
+                )
+                + &format!(
+                    gp!("a=f,t=t,f=32,s=54,v=45,i=1,z=4,q=2;{path}"),
+                    path = STANDARD.encode(paths[2])
+                )
+                + gp!("a=a,i=1,s=3,v=1,q=2;")
+        );
+    }
+
+    #[test]
+    fn clear_image() {
+        let mut s = String::new();
+
+        Clear(1).write_ansi(&mut s).unwrap();
+
+        assert_eq!(s, gp!("a=d,d=I,i=1,q=2;"));
+    }
+
+    #[test]
+    fn display_image() {
+        let mut s = String::new();
+
+        Display::new(1, 2, 3).write_ansi(&mut s).unwrap();
+
+        assert_eq!(s, gp!("a=p,U=1,i=1,p=2,r=1,c=3,q=2;"));
+    }
+
+    #[test]
+    fn overlay_image() {
+        let mut s = String::new();
+        Chain::new(1, 2, (3, 4), 1, 1, 4)
+            .write_ansi(&mut s)
+            .unwrap();
+
+        assert_eq!(s, gp!("a=p,i=1,p=2,P=3,Q=4,z=1,H=1,X=4,q=2;"));
+    }
 }

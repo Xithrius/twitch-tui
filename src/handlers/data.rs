@@ -11,7 +11,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    emotes::{display_emote, load_emote, overlay_emote, EmoteData, Emotes},
+    emotes::{display_emote, load_emote, overlay_emote, EmoteData, SharedEmotes},
     handlers::config::{FrontendConfig, Palette, Theme},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
@@ -350,15 +350,21 @@ impl MessageData {
     /// If they do, tell the terminal to load the emote, and replace the word by a [`UnicodePlaceholder`].
     /// The emote will then be displayed by the terminal by encoding its id in its foreground color, and its pid in its underline color.
     /// Ratatui removes all ansi escape sequences, so the id/pid of the emote is stored and encoded in [`MessageData::to_vec`].
-    pub fn parse_emotes(&mut self, emotes: &mut Emotes) {
-        if emotes.emotes.is_empty() {
+    pub fn parse_emotes(&mut self, emotes: &SharedEmotes) {
+        if emotes.emotes.borrow().is_empty() {
             return;
         }
 
         let mut words = Vec::new();
 
+        let cell_size = *emotes
+            .cell_size
+            .get()
+            .expect("Terminal cell_size must be defined when emotes are enabled");
+
         self.payload.split(' ').for_each(|word| {
-            let Some((filename, zero_width)) = emotes.emotes.get(word) else {
+            let emotes_ref = emotes.emotes.borrow();
+            let Some((filename, zero_width)) = emotes_ref.get(word) else {
                 words.push(Word::Text(word.to_string()));
                 return;
             };
@@ -367,11 +373,12 @@ impl MessageData {
                 word,
                 filename,
                 *zero_width,
-                &mut emotes.info,
-                emotes.cell_size,
+                &mut emotes.info.borrow_mut(),
+                cell_size,
             )
             .map_err(|e| warn!("Unable to load emote {word} ({filename}): {e}")) else {
-                emotes.emotes.remove(word);
+                drop(emotes_ref);
+                emotes.emotes.borrow_mut().remove(word);
                 words.push(Word::Text(word.to_string()));
                 return;
             };
@@ -410,14 +417,13 @@ impl MessageData {
                         .max_by_key(|e| e.width)
                         .expect("Emotes should never be empty")
                         .width as f32;
-                    let cols = (max_width / emotes.cell_size.0).ceil() as u16;
+                    let cols = (max_width / cell_size.0).ceil() as u16;
 
                     let mut iter = v.into_iter();
 
                     let EmoteData { id, pid, width } = iter.next().unwrap();
 
-                    let (_, col_offset) =
-                        get_emote_offset(width as u16, emotes.cell_size.0 as u16, cols);
+                    let (_, col_offset) = get_emote_offset(width as u16, cell_size.0 as u16, cols);
 
                     if let Err(e) = display_emote(id, pid, cols) {
                         warn!("Unable to display emote: {e}");
@@ -431,7 +437,7 @@ impl MessageData {
                             layer as u32,
                             cols,
                             col_offset,
-                            emotes.cell_size.0 as u16,
+                            cell_size.0 as u16,
                         ) {
                             warn!("Unable to display overlay: {e}");
                         }
