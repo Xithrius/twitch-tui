@@ -16,7 +16,7 @@ categories = ["command-line-utilities"]
 crossterm = "0.27.0"
 tui = { package = "ratatui", version = "0.26.0", default-features = false, features = [ "crossterm", "serde", "underline-color" ] }
 tokio = { version = "1.36.0", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
-clap = { version = "4.5.0", features = [ "derive", "cargo" ] }
+clap = { version = "4.5.2", features = [ "derive", "cargo" ] }
 serde = { version = "1.0.196", features = [ "derive" ] }
 serde_json = "1.0.113"
 unicode-width = "0.1.11"
