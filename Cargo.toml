@@ -29,7 +29,7 @@ textwrap = "0.16.0"
 rustyline = "10.1.1"
 fuzzy-matcher = "0.3.7"
 regex = "1.10.3"
-color-eyre = "0.6.2"
+color-eyre = "0.6.3"
 log = "0.4.21"
 fern = "0.6.2"
 dialoguer = { version = "0.11.0", default-features = false }
