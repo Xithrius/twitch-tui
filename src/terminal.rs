@@ -8,7 +8,7 @@ use crate::{
     handlers::{
         app::App,
         config::CompleteConfig,
-        data::{DataBuilder, TwitchToTerminalAction},
+        data::{MessageData, TwitchToTerminalAction},
         state::State,
         user_input::events::{Config, Events, Key},
     },
@@ -137,20 +137,27 @@ pub async fn ui_driver(
                     }
                     TerminalAction::Enter(action) => match action {
                         TwitchAction::Privmsg(message) => {
-                            let message_data = DataBuilder::user(
-                                config.twitch.username.to_string(),
-                                None,
-                                message.to_string(),
-                                None,
+                            const ME_COMMAND: &str = "/me ";
+
+                            let (msg, highlight) = message.strip_prefix(ME_COMMAND).map_or_else(
+                                || (message.clone(), false),
+                                |msg| (msg.to_string(), true),
                             );
 
-                            if let TwitchToTerminalAction::Message(mut msg) = message_data {
-                                msg.parse_emotes(&app.emotes);
+                            let mut message_data = MessageData::new(
+                                config.twitch.username.to_string(),
+                                None,
+                                false,
+                                msg.to_string(),
+                                None,
+                                highlight,
+                            );
 
-                                app.messages.borrow_mut().push_front(msg);
+                            message_data.parse_emotes(&app.emotes);
 
-                                tx.send(TwitchAction::Privmsg(message)).unwrap();
-                            }
+                            app.messages.borrow_mut().push_front(message_data);
+
+                            tx.send(TwitchAction::Privmsg(message)).unwrap();
                         }
                         TwitchAction::Join(channel) => {
                             app.clear_messages();
