@@ -176,7 +176,7 @@ async fn handle_message_command(
             }
 
             // Remove invalid unicode characters from the message.
-            let cleaned_message = clean_message(msg);
+            let (cleaned_message, highlight) = clean_message(msg);
 
             let message_id = tags.get("id").map(|&s| s.to_string());
             let user_id = tags.get("user-id").map(|&s| s.to_string());
@@ -188,6 +188,7 @@ async fn handle_message_command(
                 user_id,
                 cleaned_message,
                 message_id,
+                highlight,
             ))
             .await
             .unwrap();
@@ -312,6 +313,7 @@ pub async fn handle_roomstate<S: BuildHasher>(
         None,
         room_state,
         message_id,
+        false,
     ))
     .await
     .unwrap();

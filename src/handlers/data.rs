@@ -49,6 +49,7 @@ pub struct MessageData {
     pub payload: String,
     pub emotes: Vec<(Color, Color)>,
     pub message_id: Option<String>,
+    pub highlight: bool,
 }
 
 type Highlight<'a> = (&'a [usize], Style);
@@ -60,6 +61,7 @@ impl MessageData {
         system: bool,
         payload: String,
         message_id: Option<String>,
+        highlight: bool,
     ) -> Self {
         Self {
             time_sent: Local::now(),
@@ -69,6 +71,7 @@ impl MessageData {
             payload,
             emotes: vec![],
             message_id,
+            highlight,
         }
     }
 
@@ -125,6 +128,7 @@ impl MessageData {
     fn highlight<'s>(
         line: Cow<'s, str>,
         start_index: &mut usize,
+        default_style: Style,
         (search_highlight, search_theme): Highlight,
         (username_highlight, username_theme): Highlight,
     ) -> Vec<Span<'s>> {
@@ -141,7 +145,7 @@ impl MessageData {
         if HAS_NO_HIGHLIGHTS(search_highlight, &offset, start_index)
             && HAS_NO_HIGHLIGHTS(username_highlight, &offset, start_index)
         {
-            return vec![Span::raw(line)];
+            return vec![Span::styled(line, default_style)];
         }
 
         line.char_indices()
@@ -152,7 +156,7 @@ impl MessageData {
                 } else if username_highlight.binary_search(&i).is_ok() {
                     Span::styled(c.to_string(), username_theme)
                 } else {
-                    Span::raw(c.to_string())
+                    Span::styled(c.to_string(), default_style)
                 }
             })
             .collect()
@@ -161,6 +165,7 @@ impl MessageData {
     fn build_line<'s>(
         line: Cow<'s, str>,
         start_index: &mut usize,
+        default_style: Style,
         search_highlight: Highlight,
         username_highlight: Highlight,
         emotes: &mut &[(Color, Color)],
@@ -173,7 +178,13 @@ impl MessageData {
             || (!line.starts_with(PRIVATE_USE_UNICODE)
                 && EMOTE_FINDER.find(line.as_bytes()).is_none())
         {
-            Self::highlight(line, start_index, search_highlight, username_highlight)
+            Self::highlight(
+                line,
+                start_index,
+                default_style,
+                search_highlight,
+                username_highlight,
+            )
         } else {
             let mut spans: Vec<Span<'s>> = vec![];
 
@@ -192,6 +203,7 @@ impl MessageData {
                     spans.extend(Self::highlight(
                         s,
                         start_index,
+                        default_style,
                         search_highlight,
                         username_highlight,
                     ));
@@ -212,6 +224,13 @@ impl MessageData {
         username_highlight: Option<&str>,
     ) -> Vec<Line> {
         // Theme styles
+        let fg = self.hash_username(&frontend_config.palette);
+
+        let message_theme = if self.highlight {
+            Style::default().fg(fg).add_modifier(Modifier::ITALIC)
+        } else {
+            Style::default()
+        };
         let username_theme = match frontend_config.theme {
             Theme::Dark => HIGHLIGHT_NAME_DARK,
             _ => HIGHLIGHT_NAME_LIGHT,
@@ -219,7 +238,7 @@ impl MessageData {
         let author_theme = if self.system {
             SYSTEM_CHAT
         } else {
-            Style::default().fg(self.hash_username(&frontend_config.palette))
+            Style::default().fg(fg)
         };
         let datetime_theme = match frontend_config.theme {
             Theme::Dark => DATETIME_DARK,
@@ -326,6 +345,7 @@ impl MessageData {
         first_row.extend(Self::build_line(
             first_line_msg,
             &mut next_index,
+            message_theme,
             search,
             username,
             &mut emotes,
@@ -337,6 +357,7 @@ impl MessageData {
             Line::from(Self::build_line(
                 line,
                 &mut next_index,
+                message_theme,
                 search,
                 username,
                 &mut emotes,
@@ -472,8 +493,11 @@ impl<'conf> DataBuilder<'conf> {
         user_id: Option<String>,
         payload: String,
         message_id: Option<String>,
+        highlight: bool,
     ) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new(user, user_id, false, payload, message_id))
+        TwitchToTerminalAction::Message(MessageData::new(
+            user, user_id, false, payload, message_id, highlight,
+        ))
     }
 
     pub fn system(self, payload: String) -> TwitchToTerminalAction {
@@ -483,6 +507,7 @@ impl<'conf> DataBuilder<'conf> {
             true,
             payload,
             None,
+            false,
         ))
     }
 
@@ -493,6 +518,7 @@ impl<'conf> DataBuilder<'conf> {
             true,
             payload,
             None,
+            false,
         ))
     }
 }
@@ -509,7 +535,8 @@ mod tests {
                 None,
                 false,
                 "beep boop".to_string(),
-                None
+                None,
+                false
             )
             .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
@@ -553,8 +580,6 @@ mod tests {
         assert_eq!(span, Span::styled("", STYLES[2]));
     }
 
-    //todo: test mutliple lines
-
     #[test]
     fn highlight_line() {
         let line = Cow::Borrowed("foo bar baz");
@@ -568,6 +593,7 @@ mod tests {
         let spans = MessageData::highlight(
             line,
             &mut start_index,
+            Style::default(),
             (search_highlight, STYLES[0]),
             (username_highlight, STYLES[1]),
         );
@@ -606,6 +632,7 @@ mod tests {
             let spans = MessageData::build_line(
                 Cow::Owned(line.to_owned()),
                 &mut start_index,
+                Style::default(),
                 search_highlight,
                 username_highlight,
                 &mut emotes,
@@ -621,6 +648,7 @@ mod tests {
             let spans = MessageData::build_line(
                 Cow::Borrowed(line),
                 &mut start_index,
+                Style::default(),
                 search_highlight,
                 username_highlight,
                 &mut emotes,
