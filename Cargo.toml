@@ -40,7 +40,7 @@ tempfile = "3.10.1"
 serde_with = "3.6.0"
 once_cell = "1.19.0"
 webbrowser = "0.8.12"
-memchr = "2.7.1"
+memchr = "2.7.2"
 webp-animation = { version = "0.9.0", features = ["image"] }
 
 [features]
