@@ -21,7 +21,7 @@ serde = { version = "1.0.196", features = [ "derive" ] }
 serde_json = "1.0.113"
 unicode-width = "0.1.11"
 unicode-segmentation = "1.11.0"
-chrono = "0.4.33"
+chrono = "0.4.37"
 irc = "0.15.0"
 futures = "0.3.30"
 toml = "0.8.9"
