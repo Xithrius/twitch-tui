@@ -30,6 +30,7 @@ mod twitch {
         id: String,
         name: String,
         images: Image,
+        format: Vec<String>,
     }
 
     #[derive(Deserialize)]
@@ -61,7 +62,18 @@ mod twitch {
         Ok(channel_emotes
             .into_iter()
             .chain(global_emotes)
-            .map(|emote| (emote.name, (emote.id, emote.images.url_1x, false)))
+            .map(|emote| {
+                let (id, url) = if emote.format.contains(&String::from("animated")) {
+                    (
+                        emote.id + "-animated",
+                        emote.images.url_1x.replace("/static/", "/animated/"),
+                    )
+                } else {
+                    (emote.id, emote.images.url_1x)
+                };
+
+                (emote.name, (id, url, false))
+            })
             .collect())
     }
 }
