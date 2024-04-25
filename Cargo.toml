@@ -1,6 +1,6 @@
 [package]
 name = "twitch-tui"
-version = "2.6.6"
+version = "2.6.7"
 authors = ["Xithrius <xithrius@gmail.com>"]
 edition = "2021"
 rust-version = "1.75.0"
@@ -14,10 +14,19 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 crossterm = "0.27.0"
-tui = { package = "ratatui", version = "0.26.0", default-features = false, features = [ "crossterm", "serde", "underline-color" ] }
-tokio = { version = "1.37.0", features = [ "rt", "macros", "rt-multi-thread", "fs" ] }
-clap = { version = "4.5.0", features = [ "derive", "cargo" ] }
-serde = { version = "1.0.196", features = [ "derive" ] }
+tui = { package = "ratatui", version = "0.26.0", default-features = false, features = [
+  "crossterm",
+  "serde",
+  "underline-color",
+] }
+tokio = { version = "1.37.0", features = [
+  "rt",
+  "macros",
+  "rt-multi-thread",
+  "fs",
+] }
+clap = { version = "4.5.0", features = ["derive", "cargo"] }
+serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
 unicode-width = "0.1.11"
 unicode-segmentation = "1.11.0"
@@ -33,7 +42,7 @@ color-eyre = "0.6.2"
 log = "0.4.21"
 fern = "0.6.2"
 dialoguer = { version = "0.11.0", default-features = false }
-reqwest = { version = "0.12.4", features = [ "json" ] }
+reqwest = { version = "0.12.4", features = ["json"] }
 image = "0.24.8"
 base64 = "0.22.0"
 tempfile = "3.10.1"
