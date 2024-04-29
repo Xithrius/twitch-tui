@@ -83,7 +83,12 @@ jobs:
         run: cargo clippy -- -D warnings
 
   coverage:
+    name: Coverage
+
+    needs: build-test
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
