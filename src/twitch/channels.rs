@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use crate::{handlers::config::TwitchConfig, ui::components::utils::SearchItemGetter};
 
-use super::oauth::{get_channel_id, get_twitch_client};
+use super::oauth::{get_twitch_client, get_twitch_client_id};
 
 const FOLLOWER_COUNT: usize = 100;
 
@@ -53,7 +53,7 @@ pub struct Following {
 }
 
 // https://dev.twitch.tv/docs/api/reference/#get-followed-channels
-pub async fn get_user_following(client: &Client, user_id: i32) -> Result<FollowingList> {
+pub async fn get_user_following(client: &Client, user_id: &str) -> Result<FollowingList> {
     Ok(client
         .get(format!(
             "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
@@ -66,12 +66,8 @@ pub async fn get_user_following(client: &Client, user_id: i32) -> Result<Followi
 }
 
 pub async fn get_following(twitch_config: &TwitchConfig) -> Result<FollowingList> {
-    let oauth_token = twitch_config.token.clone();
-    let app_user = twitch_config.username.clone();
-
-    let client = get_twitch_client(oauth_token).await.unwrap();
-
-    let user_id = get_channel_id(&client, &app_user).await.unwrap();
+    let client = get_twitch_client(twitch_config.token.as_deref()).await?;
+    let user_id = &get_twitch_client_id(None).await?.user_id;
 
     get_user_following(&client, user_id).await
 }

@@ -376,7 +376,7 @@ fn get_enabled_emote_providers(config: &FrontendConfig) -> Vec<EmoteProvider> {
 
 pub async fn get_emotes(config: &CompleteConfig, channel: &str) -> Result<DownloadedEmotes> {
     // Reuse the same client and headers for twitch requests
-    let twitch_client = get_twitch_client(config.twitch.token.clone()).await?;
+    let twitch_client = get_twitch_client(config.twitch.token.as_deref()).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 
