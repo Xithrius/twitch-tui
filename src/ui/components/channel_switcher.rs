@@ -1,6 +1,7 @@
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::fmt::Display;
 use tui::{
     layout::Rect,
     prelude::{Alignment, Margin},
@@ -133,9 +134,9 @@ impl ChannelSwitcherWidget {
     }
 }
 
-impl ToString for ChannelSwitcherWidget {
-    fn to_string(&self) -> String {
-        self.search_input.to_string()
+impl Display for ChannelSwitcherWidget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.search_input)
     }
 }
 
@@ -310,8 +311,11 @@ impl Component for ChannelSwitcherWidget {
 
                                     self.search_input.update("");
 
-                                    self.config.borrow_mut().twitch.channel =
-                                        selected_channel.clone();
+                                    self.config
+                                        .borrow_mut()
+                                        .twitch
+                                        .channel
+                                        .clone_from(&selected_channel);
 
                                     return Some(TerminalAction::Enter(TwitchAction::Join(
                                         selected_channel,
@@ -332,7 +336,11 @@ impl Component for ChannelSwitcherWidget {
 
                         self.search_input.update("");
 
-                        self.config.borrow_mut().twitch.channel = selected_channel.clone();
+                        self.config
+                            .borrow_mut()
+                            .twitch
+                            .channel
+                            .clone_from(selected_channel);
 
                         return Some(TerminalAction::Enter(TwitchAction::Join(
                             selected_channel.to_string(),
@@ -351,7 +359,11 @@ impl Component for ChannelSwitcherWidget {
 
                         self.search_input.update("");
 
-                        self.config.borrow_mut().twitch.channel = selected_channel.clone();
+                        self.config
+                            .borrow_mut()
+                            .twitch
+                            .channel
+                            .clone_from(&selected_channel);
 
                         return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
                     }

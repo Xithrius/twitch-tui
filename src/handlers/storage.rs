@@ -78,7 +78,7 @@ impl Storage {
 
     pub fn add(&mut self, key: &str, value: String) {
         if ITEM_KEYS.contains(&key) {
-            if let Some(item) = self.items.get_mut(&key.to_string()) {
+            if let Some(item) = self.items.get_mut(key) {
                 if item.enabled {
                     if let Some(position) = item.content.iter().position(|x| x == &value) {
                         item.content.remove(position);
@@ -94,7 +94,7 @@ impl Storage {
     pub fn get(&self, key: &str) -> Vec<String> {
         if ITEM_KEYS.contains(&key) {
             self.items
-                .get(&key.to_string())
+                .get(key)
                 .map_or_else(Vec::new, |item| item.content.clone())
         } else {
             panic!("Attempted to get key {key} from JSON storage.");
@@ -123,7 +123,7 @@ impl Storage {
 
     pub fn remove_inner_with(&mut self, key: &str, value: &str) -> String {
         if ITEM_KEYS.contains(&key) {
-            let item = self.items.get_mut(&key.to_string()).unwrap();
+            let item = self.items.get_mut(key).unwrap();
 
             if let Some(position) = item.content.iter().position(|x| x == value) {
                 item.content.remove(position)

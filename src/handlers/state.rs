@@ -1,5 +1,6 @@
 use std::{
     cmp::{Eq, PartialEq},
+    fmt::Display,
     str::FromStr,
 };
 
@@ -13,13 +14,16 @@ pub enum NormalMode {
     Search,
 }
 
-impl ToString for NormalMode {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Insert => "insert",
-            Self::Search => "search",
-        }
-        .to_string()
+impl Display for NormalMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Insert => "insert",
+                Self::Search => "search",
+            }
+        )
     }
 }
 
@@ -48,14 +52,17 @@ impl Default for State {
     }
 }
 
-impl ToString for State {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Dashboard => "dashboard",
-            Self::Normal => "normal",
-            Self::Help => "help",
-        }
-        .to_string()
+impl Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Dashboard => "dashboard",
+                Self::Normal => "normal",
+                Self::Help => "help",
+            }
+        )
     }
 }
 

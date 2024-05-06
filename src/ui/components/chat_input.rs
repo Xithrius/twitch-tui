@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use tui::{layout::Rect, Frame};
 
 use crate::{
@@ -92,9 +93,9 @@ impl ChatInputWidget {
     }
 }
 
-impl ToString for ChatInputWidget {
-    fn to_string(&self) -> String {
-        self.input.to_string()
+impl Display for ChatInputWidget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.input)
     }
 }
 

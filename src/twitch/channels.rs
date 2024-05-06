@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     string::{String, ToString},
     vec::Vec,
 };
@@ -22,9 +23,9 @@ pub struct FollowingUser {
     followed_at: String,
 }
 
-impl ToString for FollowingUser {
-    fn to_string(&self) -> String {
-        self.broadcaster_login.to_string()
+impl Display for FollowingUser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.broadcaster_login)
     }
 }
 
