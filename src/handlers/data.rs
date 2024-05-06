@@ -3,7 +3,7 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use log::{error, warn};
 use memchr::memmem;
 use once_cell::sync::Lazy;
-use std::{borrow::Cow, string::ToString};
+use std::{borrow::Cow, mem::swap, string::ToString};
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
@@ -11,7 +11,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    emotes::{display_emote, load_emote, overlay_emote, EmoteData, SharedEmotes},
+    emotes::{display_emote, load_emote, overlay_emote, DownloadedEmotes, EmoteData, SharedEmotes},
     handlers::config::{FrontendConfig, Palette, Theme},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
@@ -30,7 +30,7 @@ use crate::{
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 pub enum TwitchToTerminalAction {
-    Message(MessageData),
+    Message(RawMessageData),
     ClearChat(Option<String>),
     DeleteMessage(String),
 }
@@ -52,14 +52,25 @@ pub struct MessageData {
     pub highlight: bool,
 }
 
-type Highlight<'a> = (&'a [usize], Style);
+#[derive(Debug, Clone)]
+pub struct RawMessageData {
+    pub time_sent: DateTime<Local>,
+    pub author: String,
+    pub user_id: Option<String>,
+    pub system: bool,
+    pub payload: String,
+    pub emotes: DownloadedEmotes,
+    pub message_id: Option<String>,
+    pub highlight: bool,
+}
 
-impl MessageData {
+impl RawMessageData {
     pub fn new(
         author: String,
         user_id: Option<String>,
         system: bool,
         payload: String,
+        emotes: DownloadedEmotes,
         message_id: Option<String>,
         highlight: bool,
     ) -> Self {
@@ -69,10 +80,208 @@ impl MessageData {
             user_id,
             system,
             payload,
-            emotes: vec![],
+            emotes,
             message_id,
             highlight,
         }
+    }
+}
+
+type Highlight<'a> = (&'a [usize], Style);
+
+impl MessageData {
+    /// Used to create a message and parse its emotes using both global emotes and the current user emotes.
+    pub fn new_user_message(
+        author: String,
+        user_id: Option<String>,
+        system: bool,
+        payload: String,
+        message_id: Option<String>,
+        highlight: bool,
+        emotes: &SharedEmotes,
+    ) -> Self {
+        let (payload, emotes) = Self::parse_emotes(
+            payload,
+            emotes,
+            &emotes.user_emotes.borrow(),
+            &emotes.global_emotes.borrow(),
+        );
+
+        Self {
+            time_sent: Local::now(),
+            author,
+            user_id,
+            system,
+            payload,
+            emotes,
+            message_id,
+            highlight,
+        }
+    }
+
+    /// Used to create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
+    pub fn from_twitch_message(msg: RawMessageData, emotes: &SharedEmotes) -> Self {
+        let (payload, emotes) = Self::parse_emotes(
+            msg.payload,
+            emotes,
+            &msg.emotes,
+            &emotes.global_emotes.borrow(),
+        );
+
+        Self {
+            time_sent: msg.time_sent,
+            author: msg.author,
+            user_id: msg.user_id,
+            system: msg.system,
+            payload,
+            emotes,
+            message_id: msg.message_id,
+            highlight: msg.highlight,
+        }
+    }
+
+    pub fn reparse_emotes(&mut self, emotes: &SharedEmotes) {
+        // Small hack to avoid cloning `self.payload`
+        let mut payload = String::new();
+        swap(&mut payload, &mut self.payload);
+
+        let (payload, emotes) = Self::parse_emotes(
+            payload,
+            emotes,
+            &emotes.global_emotes.borrow(),
+            &DownloadedEmotes::default(),
+        );
+
+        self.payload = payload;
+        self.emotes.extend(emotes);
+    }
+
+    fn is_emote<'a>(
+        word: &str,
+        set1: &'a DownloadedEmotes,
+        set2: &'a DownloadedEmotes,
+    ) -> Option<(&'a str, bool)> {
+        if let Some((filename, zero_width)) = set1.get(word) {
+            Some((filename, *zero_width))
+        } else if let Some((filename, zero_width)) = set2.get(word) {
+            Some((filename, *zero_width))
+        } else {
+            None
+        }
+    }
+
+    /// Splits the payload by spaces, then check every word to see if they match an emote.
+    /// If they do, tell the terminal to load the emote, and replace the word by a [`UnicodePlaceholder`].
+    /// The emote will then be displayed by the terminal by encoding its id in its foreground color, and its pid in its underline color.
+    /// Ratatui removes all ansi escape sequences, so the id/pid of the emote is stored and encoded in [`MessageData::to_vec`].
+    fn parse_emotes(
+        mut payload: String,
+        emotes: &SharedEmotes,
+        emotes_set1: &DownloadedEmotes,
+        emotes_set2: &DownloadedEmotes,
+    ) -> (String, Vec<(Color, Color)>) {
+        let cell_size = *emotes
+            .cell_size
+            .get()
+            .expect("Terminal cell_size must be defined when emotes are enabled");
+
+        if emotes_set1.is_empty() && emotes_set2.is_empty() {
+            return (payload, vec![]);
+        }
+
+        let mut words = Vec::new();
+
+        payload.split([' ', ZERO_WIDTH_SPACE]).for_each(|word| {
+            let Some((filename, zero_width)) = Self::is_emote(word, emotes_set1, emotes_set2)
+            else {
+                words.push(Word::Text(word.to_string()));
+                return;
+            };
+
+            let Ok(loaded_emote) = load_emote(
+                word,
+                filename,
+                zero_width,
+                &mut emotes.info.borrow_mut(),
+                cell_size,
+            )
+            .map_err(|e| warn!("Unable to load emote {word} ({filename}): {e}")) else {
+                words.push(Word::Text(word.to_string()));
+                return;
+            };
+
+            if loaded_emote.overlay {
+                // Check if last word is an emote.
+                if let Some(Word::Emote(v)) = words.last_mut() {
+                    v.push(loaded_emote.into());
+                    return;
+                }
+            }
+
+            words.push(Word::Emote(vec![loaded_emote.into()]));
+        });
+
+        payload.clear();
+
+        let mut emotes = vec![];
+        // Join words by space, or by zero-width spaces if one of them is an emote.
+        for w in words {
+            match w {
+                Word::Text(s) => {
+                    if !payload.is_empty() {
+                        payload.push(if payload.ends_with(PRIVATE_USE_UNICODE) {
+                            ZERO_WIDTH_SPACE
+                        } else {
+                            ' '
+                        });
+                    }
+                    payload.push_str(&s);
+                }
+                Word::Emote(v) => {
+                    // Unwrapping here is fine as v is never empty.
+                    let max_width = v
+                        .iter()
+                        .max_by_key(|e| e.width)
+                        .expect("Emotes should never be empty")
+                        .width as f32;
+                    let cols = (max_width / cell_size.0).ceil() as u16;
+
+                    let mut iter = v.into_iter();
+
+                    let EmoteData { id, pid, width } = iter.next().unwrap();
+
+                    let (_, col_offset) = get_emote_offset(width as u16, cell_size.0 as u16, cols);
+
+                    if let Err(e) = display_emote(id, pid, cols) {
+                        warn!("Unable to display emote: {e}");
+                        continue;
+                    }
+
+                    iter.enumerate().for_each(|(layer, emote)| {
+                        if let Err(e) = overlay_emote(
+                            (id, pid),
+                            emote,
+                            layer as u32,
+                            cols,
+                            col_offset,
+                            cell_size.0 as u16,
+                        ) {
+                            warn!("Unable to display overlay: {e}");
+                        }
+                    });
+
+                    emotes.push((u32_to_color(id), u32_to_color(pid)));
+
+                    if !payload.is_empty() {
+                        payload.push(ZERO_WIDTH_SPACE);
+                    }
+
+                    payload.extend(UnicodePlaceholder::new(cols as usize).iter());
+                }
+            }
+        }
+
+        (payload, emotes)
     }
 
     fn hash_username(&self, palette: &Palette) -> Color {
@@ -366,116 +575,6 @@ impl MessageData {
 
         rows
     }
-
-    /// Splits the payload by spaces, then check every word to see if they match an emote.
-    /// If they do, tell the terminal to load the emote, and replace the word by a [`UnicodePlaceholder`].
-    /// The emote will then be displayed by the terminal by encoding its id in its foreground color, and its pid in its underline color.
-    /// Ratatui removes all ansi escape sequences, so the id/pid of the emote is stored and encoded in [`MessageData::to_vec`].
-    pub fn parse_emotes(&mut self, emotes: &SharedEmotes) {
-        if emotes.emotes.borrow().is_empty() {
-            return;
-        }
-
-        let mut words = Vec::new();
-
-        let cell_size = *emotes
-            .cell_size
-            .get()
-            .expect("Terminal cell_size must be defined when emotes are enabled");
-
-        self.payload.split(' ').for_each(|word| {
-            let emotes_ref = emotes.emotes.borrow();
-            let Some((filename, zero_width)) = emotes_ref.get(word) else {
-                words.push(Word::Text(word.to_string()));
-                return;
-            };
-
-            let Ok(loaded_emote) = load_emote(
-                word,
-                filename,
-                *zero_width,
-                &mut emotes.info.borrow_mut(),
-                cell_size,
-            )
-            .map_err(|e| warn!("Unable to load emote {word} ({filename}): {e}")) else {
-                drop(emotes_ref);
-                emotes.emotes.borrow_mut().remove(word);
-                words.push(Word::Text(word.to_string()));
-                return;
-            };
-
-            if loaded_emote.overlay {
-                // Check if last word is emote.
-                if let Some(Word::Emote(v)) = words.last_mut() {
-                    v.push(loaded_emote.into());
-                    return;
-                }
-            }
-
-            words.push(Word::Emote(vec![loaded_emote.into()]));
-        });
-
-        self.payload.clear();
-
-        // Join words by space, or by zero-width spaces if one of them is an emote.
-        for w in words {
-            match w {
-                Word::Text(s) => {
-                    if !self.payload.is_empty() {
-                        self.payload
-                            .push(if self.payload.ends_with(PRIVATE_USE_UNICODE) {
-                                ZERO_WIDTH_SPACE
-                            } else {
-                                ' '
-                            });
-                    }
-                    self.payload.push_str(&s);
-                }
-                Word::Emote(v) => {
-                    // Unwrapping here is fine as v is never empty.
-                    let max_width = v
-                        .iter()
-                        .max_by_key(|e| e.width)
-                        .expect("Emotes should never be empty")
-                        .width as f32;
-                    let cols = (max_width / cell_size.0).ceil() as u16;
-
-                    let mut iter = v.into_iter();
-
-                    let EmoteData { id, pid, width } = iter.next().unwrap();
-
-                    let (_, col_offset) = get_emote_offset(width as u16, cell_size.0 as u16, cols);
-
-                    if let Err(e) = display_emote(id, pid, cols) {
-                        warn!("Unable to display emote: {e}");
-                        continue;
-                    }
-
-                    iter.enumerate().for_each(|(layer, emote)| {
-                        if let Err(e) = overlay_emote(
-                            (id, pid),
-                            emote,
-                            layer as u32,
-                            cols,
-                            col_offset,
-                            cell_size.0 as u16,
-                        ) {
-                            warn!("Unable to display overlay: {e}");
-                        }
-                    });
-
-                    self.emotes.push((u32_to_color(id), u32_to_color(pid)));
-
-                    if !self.payload.is_empty() {
-                        self.payload.push(ZERO_WIDTH_SPACE);
-                    }
-
-                    self.payload
-                        .extend(UnicodePlaceholder::new(cols as usize).iter());
-                }
-            }
-        }
-    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -492,31 +591,34 @@ impl<'conf> DataBuilder<'conf> {
         user: String,
         user_id: Option<String>,
         payload: String,
+        emotes: DownloadedEmotes,
         message_id: Option<String>,
         highlight: bool,
     ) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new(
-            user, user_id, false, payload, message_id, highlight,
+        TwitchToTerminalAction::Message(RawMessageData::new(
+            user, user_id, false, payload, emotes, message_id, highlight,
         ))
     }
 
     pub fn system(self, payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new(
+        TwitchToTerminalAction::Message(RawMessageData::new(
             "System".to_string(),
             None,
             true,
             payload,
+            DownloadedEmotes::default(),
             None,
             false,
         ))
     }
 
     pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(MessageData::new(
+        TwitchToTerminalAction::Message(RawMessageData::new(
             "Twitch".to_string(),
             None,
             true,
             payload,
+            DownloadedEmotes::default(),
             None,
             false,
         ))
@@ -530,14 +632,16 @@ mod tests {
     #[test]
     fn test_username_hash() {
         assert_eq!(
-            MessageData::new(
-                "human".to_string(),
-                None,
-                false,
-                "beep boop".to_string(),
-                None,
-                false
-            )
+            MessageData {
+                time_sent: DateTime::default(),
+                author: "human".to_string(),
+                user_id: None,
+                system: false,
+                payload: "beep boop".to_string(),
+                emotes: vec![],
+                message_id: None,
+                highlight: false,
+            }
             .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
         );

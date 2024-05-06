@@ -45,11 +45,19 @@ impl EmotePickerWidget {
         let input_validator = Box::new(|emotes: SharedEmotes, s: String| -> bool {
             !s.is_empty()
                 && s.len() < TWITCH_MESSAGE_LIMIT
-                && emotes.emotes.borrow().contains_key(&s)
+                && (emotes.user_emotes.borrow().contains_key(&s)
+                    || emotes.global_emotes.borrow().contains_key(&s))
         });
 
         let input_suggester = Box::new(|emotes: SharedEmotes, s: String| -> Option<String> {
-            first_similarity_iter(emotes.emotes.borrow().keys(), &s)
+            first_similarity_iter(
+                emotes
+                    .user_emotes
+                    .borrow()
+                    .keys()
+                    .chain(emotes.global_emotes.borrow().keys()),
+                &s,
+            )
         });
 
         let input = InputWidget::new(
@@ -137,7 +145,13 @@ impl Component for EmotePickerWidget {
             Some(memmem::Finder::new(&current_input))
         };
 
-        for (name, (filename, zero_width)) in self.emotes.emotes.borrow().iter() {
+        for (name, (filename, zero_width)) in self
+            .emotes
+            .user_emotes
+            .borrow()
+            .iter()
+            .chain(self.emotes.global_emotes.borrow().iter())
+        {
             if items.len() >= max_len {
                 break;
             }
@@ -186,7 +200,8 @@ impl Component for EmotePickerWidget {
         // Remove emotes that could not be loaded from list of emotes
         for emote in bad_emotes {
             self.emotes.info.borrow_mut().remove(&emote);
-            self.emotes.emotes.borrow_mut().remove(&emote);
+            self.emotes.user_emotes.borrow_mut().remove(&emote);
+            self.emotes.global_emotes.borrow_mut().remove(&emote);
         }
 
         let (names, list_items) = items.into_iter().unzip();

@@ -12,7 +12,7 @@ use crate::{
         state::State,
         user_input::events::{Config, Events, Key},
     },
-    twitch::TwitchAction,
+    twitch::{oauth::get_twitch_client_id, TwitchAction},
 };
 
 pub enum TerminalAction {
@@ -54,11 +54,12 @@ pub async fn ui_driver(
 
     loop {
         // Check if we have received any emotes
-        if let Ok(e) = erx.try_recv() {
-            *app.emotes.emotes.borrow_mut() = e;
+        if let Ok((user_emotes, global_emotes)) = erx.try_recv() {
+            *app.emotes.user_emotes.borrow_mut() = user_emotes;
+            *app.emotes.global_emotes.borrow_mut() = global_emotes;
 
             for message in &mut *app.messages.borrow_mut() {
-                message.parse_emotes(&app.emotes);
+                message.reparse_emotes(&app.emotes);
             }
         };
 
@@ -75,7 +76,8 @@ pub async fn ui_driver(
                     }
                     Err(name) => {
                         warn!("Unable to load emote: {name}.");
-                        app.emotes.emotes.borrow_mut().remove(&name);
+                        app.emotes.user_emotes.borrow_mut().remove(&name);
+                        app.emotes.global_emotes.borrow_mut().remove(&name);
                         app.emotes.info.borrow_mut().remove(&name);
                     }
                 }
@@ -84,9 +86,10 @@ pub async fn ui_driver(
 
         if let Ok(msg) = rx.try_recv() {
             match msg {
-                TwitchToTerminalAction::Message(mut m) => {
-                    m.parse_emotes(&app.emotes);
-                    app.messages.borrow_mut().push_front(m);
+                TwitchToTerminalAction::Message(m) => {
+                    app.messages
+                        .borrow_mut()
+                        .push_front(MessageData::from_twitch_message(m, &app.emotes));
 
                     // If scrolling is enabled, pad for more messages.
                     if app.components.chat.scroll_offset.get_offset() > 0 {
@@ -144,16 +147,20 @@ pub async fn ui_driver(
                                 |msg| (msg.to_string(), true),
                             );
 
-                            let mut message_data = MessageData::new(
+                            let user_id = get_twitch_client_id(config.twitch.token.as_deref())
+                                .await
+                                .map(|x| x.user_id.clone())
+                                .ok();
+
+                            let message_data = MessageData::new_user_message(
                                 config.twitch.username.to_string(),
-                                None,
+                                user_id,
                                 false,
-                                msg.to_string(),
+                                msg,
                                 None,
                                 highlight,
+                                &app.emotes,
                             );
-
-                            message_data.parse_emotes(&app.emotes);
 
                             app.messages.borrow_mut().push_front(message_data);
 

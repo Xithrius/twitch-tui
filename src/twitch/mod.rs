@@ -3,9 +3,9 @@ pub mod channels;
 mod connection;
 pub mod oauth;
 
-use ::std::hash::BuildHasher;
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::BuildHasher};
 
+use color_eyre::Result;
 use futures::StreamExt;
 use irc::{
     client::prelude::Capability,
@@ -15,6 +15,7 @@ use log::{debug, info};
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 
 use crate::{
+    emotes::{get_twitch_emote, DownloadedEmotes},
     handlers::{
         config::CompleteConfig,
         data::{DataBuilder, TwitchToTerminalAction},
@@ -24,7 +25,7 @@ use crate::{
         badges::retrieve_user_badges,
         connection::{client_stream_reconnect, wait_client_stream},
     },
-    utils::text::clean_message,
+    utils::{emotes::emotes_enabled, text::clean_message},
 };
 
 #[derive(Debug, Clone)]
@@ -55,6 +56,8 @@ pub async fn twitch_irc(
             }
         }
     }
+
+    let enable_emotes = emotes_enabled(&config.frontend);
 
     let data_builder = DataBuilder::new(&config.frontend.datetime_format);
     let mut room_state_startup = false;
@@ -130,7 +133,7 @@ pub async fn twitch_irc(
                             connected = true;
                         }
 
-                        if let Some(b) = handle_message_command(message, tx.clone(), data_builder, config.frontend.badges, room_state_startup).await {
+                        if let Some(b) = handle_message_command(message, tx.clone(), data_builder, config.frontend.badges, room_state_startup, enable_emotes).await {
                             room_state_startup = b;
                         }
                     }
@@ -149,12 +152,34 @@ pub async fn twitch_irc(
     }
 }
 
+/// Emotes comming from twitch arrive in the `emote` tag.
+/// They have the format `<emote-id1>:<start>-<end>,.../<emote-id2>:...`
+/// This functions returns a list of emote name and id,
+/// using the first position of each emote to get the emote name from the message.
+/// <https://dev.twitch.tv/docs/irc/tags/> (emotes tag in PRIVMSG tags section)
+fn retrieve_twitch_emotes(message: &str, emotes: &str) -> Vec<(String, String)> {
+    emotes
+        .split('/')
+        .filter_map(|e| {
+            let (id, pos) = e.split_once(':')?;
+
+            let pos = pos.split(',').next()?;
+            let (s, e) = pos.split_once('-')?;
+
+            let (start, end) = (s.parse().ok()?, e.parse().ok()?);
+
+            Some((message.get(start..=end)?.to_string(), id.to_string()))
+        })
+        .collect()
+}
+
 async fn handle_message_command(
     message: Message,
     tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     badges: bool,
     room_state_startup: bool,
+    enable_emotes: bool,
 ) -> Option<bool> {
     let mut tags: HashMap<&str, &str> = HashMap::new();
 
@@ -168,6 +193,22 @@ async fn handle_message_command(
 
     match message.command {
         Command::PRIVMSG(ref _target, ref msg) => {
+            // Parse emotes from message tags
+            let emotes = enable_emotes
+                .then(|| tags.get("emotes").map(|&e| retrieve_twitch_emotes(msg, e)))
+                .unwrap_or_default()
+                .unwrap_or_default();
+
+            // Download emotes if they are not downloaded yet.
+            // Small optimisation of starting the download here, and only await this block at the last moment.
+            let emotes =
+                futures::stream::iter(emotes.into_iter().map(|(name, filename)| async move {
+                    get_twitch_emote(&filename).await?;
+                    Ok((name, (filename, false)))
+                }))
+                .buffer_unordered(10)
+                .collect::<Vec<Result<(String, (String, bool))>>>();
+
             // lowercase username from message
             let mut name = message.source_nickname().unwrap().to_string();
 
@@ -181,10 +222,13 @@ async fn handle_message_command(
 
             debug!("Message received from twitch: {name} - {cleaned_message:?}");
 
+            let emotes = emotes.await.into_iter().flatten().collect();
+
             tx.send(DataBuilder::user(
                 name,
                 user_id,
                 cleaned_message,
+                emotes,
                 message_id,
                 highlight,
             ))
@@ -310,6 +354,7 @@ pub async fn handle_roomstate<S: BuildHasher>(
         String::from("Info"),
         None,
         room_state,
+        DownloadedEmotes::default(),
         message_id,
         false,
     ))
