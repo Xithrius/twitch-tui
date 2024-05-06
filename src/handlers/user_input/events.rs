@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use crossterm::event::{
     self, Event as CEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind,
@@ -30,13 +30,16 @@ pub enum Key {
     ScrollDown,
 }
 
-impl ToString for Key {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Char(c) | Self::Ctrl(c) | Self::Alt(c) => c,
-            _ => unimplemented!(),
-        }
-        .to_string()
+impl Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Char(c) | Self::Ctrl(c) | Self::Alt(c) => c,
+                _ => unimplemented!(),
+            }
+        )
     }
 }
 

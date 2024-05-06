@@ -62,7 +62,7 @@ impl Component for FollowingWidget {
         let action = self.search_widget.event(event).await;
 
         if let Some(TerminalAction::Enter(TwitchAction::Join(channel))) = &action {
-            self.config.borrow_mut().twitch.channel = channel.clone();
+            self.config.borrow_mut().twitch.channel.clone_from(channel);
         }
 
         action

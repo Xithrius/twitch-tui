@@ -126,7 +126,7 @@ pub struct FrontendConfig {
     pub betterttv_emotes: bool,
     /// If 7tv emotes should be displayed (requires kitty terminal).
     pub seventv_emotes: bool,
-    /// If FrankerFacez emotes should be displayed (requires kitty terminal).
+    /// If frankerfacez emotes should be displayed (requires kitty terminal).
     pub frankerfacez_emotes: bool,
     /// Channels to always be displayed in the start screen.
     pub favorite_channels: Vec<String>,

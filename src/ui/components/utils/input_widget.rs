@@ -1,4 +1,5 @@
 use rustyline::{line_buffer::LineBuffer, At, Word};
+use std::fmt::Display;
 use tui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -91,9 +92,9 @@ impl<T: Clone> InputWidget<T> {
     }
 }
 
-impl<T: Clone> ToString for InputWidget<T> {
-    fn to_string(&self) -> String {
-        self.input.to_string()
+impl<T: Clone> Display for InputWidget<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.input.as_str())
     }
 }
 
