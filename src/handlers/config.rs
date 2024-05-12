@@ -501,7 +501,7 @@ impl CompleteConfig {
             let token = env::var("TWT_TOKEN").ok();
             if let Some(env_token) = token {
                 if !env_token.is_empty() {
-                    config.twitch.token = Some(env_token.to_string());
+                    config.twitch.token = Some(env_token);
                 }
             }
 
