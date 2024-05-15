@@ -17,37 +17,61 @@ type EmoteMap = HashMap<String, (String, String, bool)>;
 mod twitch {
     use crate::emotes::downloader::EmoteMap;
     use color_eyre::Result;
+    use log::warn;
     use reqwest::Client;
     use serde::Deserialize;
 
-    #[derive(Deserialize)]
-    struct Image {
-        url_1x: String,
-    }
-
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Debug)]
     struct Emote {
         id: String,
         name: String,
-        images: Image,
         format: Vec<String>,
+        scale: Vec<String>,
+        theme_mode: Vec<String>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Debug)]
     struct EmoteList {
         data: Vec<Emote>,
+        template: String,
     }
 
-    fn parse_emote_list(v: Vec<Emote>) -> EmoteMap {
-        v.into_iter()
-            .map(|emote| {
-                let url = if emote.format.contains(&String::from("animated")) {
-                    emote.images.url_1x.replace("/static/", "/animated/")
-                } else {
-                    emote.images.url_1x
-                };
+    fn parse_emote_list(v: EmoteList) -> EmoteMap {
+        let template = v.template;
 
-                (emote.name, (emote.id, url, false))
+        v.data
+            .into_iter()
+            .filter_map(|emote| {
+                let url = template.replace("{{id}}", &emote.id);
+
+                let url = url.replace(
+                    "{{format}}",
+                    if emote.format.contains(&String::from("animated")) {
+                        "animated"
+                    } else {
+                        emote.format.first()?
+                    },
+                );
+
+                let url = url.replace(
+                    "{{theme_mode}}",
+                    if emote.theme_mode.contains(&String::from("dark")) {
+                        "dark"
+                    } else {
+                        emote.theme_mode.first()?
+                    },
+                );
+
+                let url = url.replace(
+                    "{{scale}}",
+                    if emote.scale.contains(&String::from("1.0")) {
+                        "1.0"
+                    } else {
+                        emote.scale.first()?
+                    },
+                );
+
+                Some((emote.name, (emote.id, url, false)))
             })
             .collect()
     }
@@ -59,8 +83,7 @@ mod twitch {
             .await?
             .error_for_status()?
             .json::<EmoteList>()
-            .await?
-            .data;
+            .await?;
 
         Ok(parse_emote_list(global_emotes))
     }
@@ -72,10 +95,9 @@ mod twitch {
             ))
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status().map_err(|e| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope."); e})?
             .json::<EmoteList>()
-            .await?
-            .data;
+            .await?;
 
         Ok(parse_emote_list(user_emotes))
     }
