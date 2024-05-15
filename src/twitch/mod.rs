@@ -25,7 +25,10 @@ use crate::{
         badges::retrieve_user_badges,
         connection::{client_stream_reconnect, wait_client_stream},
     },
-    utils::{emotes::emotes_enabled, text::clean_message},
+    utils::{
+        emotes::emotes_enabled,
+        text::{clean_message, parse_message_action},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -166,9 +169,12 @@ fn retrieve_twitch_emotes(message: &str, emotes: &str) -> Vec<(String, String)> 
             let pos = pos.split(',').next()?;
             let (s, e) = pos.split_once('-')?;
 
-            let (start, end) = (s.parse().ok()?, e.parse().ok()?);
+            let (start, end): (usize, usize) = (s.parse().ok()?, e.parse().ok()?);
 
-            Some((message.get(start..=end)?.to_string(), id.to_string()))
+            Some((
+                message.chars().skip(start).take(end - start + 1).collect(),
+                id.to_string(),
+            ))
         })
         .collect()
 }
@@ -193,6 +199,11 @@ async fn handle_message_command(
 
     match message.command {
         Command::PRIVMSG(ref _target, ref msg) => {
+            // Detects if the message contains an IRC CTCP Action, and return the message content.
+            // WARNING: Emote parsing needs to be done *after* the message has been extracted from the action,
+            // but *before* problematic unicode characters have been removed from it.
+            let (msg, highlight) = parse_message_action(msg);
+
             // Parse emotes from message tags
             let emotes = enable_emotes
                 .then(|| tags.get("emotes").map(|&e| retrieve_twitch_emotes(msg, e)))
@@ -215,7 +226,7 @@ async fn handle_message_command(
             retrieve_user_badges(&mut name, &message, badges);
 
             // Remove invalid unicode characters from the message.
-            let (cleaned_message, highlight) = clean_message(msg);
+            let cleaned_message = clean_message(msg);
 
             let message_id = tags.get("id").map(|&s| s.to_string());
             let user_id = tags.get("user-id").map(|&s| s.to_string());
