@@ -28,6 +28,9 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> f
 <td> Open the followed channel search popup
 <tr>
+<td> o
+<td> Open the current channel stream in a web browser
+<tr>
 <td> S
 <td> Go to the dashboard screen (start screen).
 <tr>
