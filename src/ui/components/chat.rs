@@ -88,7 +88,10 @@ impl ChatWidget {
 
         let mut messages = VecDeque::new();
 
-        let general_chunk_height = area.height as usize - 2;
+        let mut general_chunk_height = area.height as usize;
+        if !self.config.borrow().frontend.hide_chat_border {
+            general_chunk_height -= 2;
+        }
 
         let mut scroll = self.scroll_offset.get_offset();
 
@@ -228,18 +231,17 @@ impl Component for ChatWidget {
             final_messages.push(ListItem::new(Text::from(item)));
         }
 
-        let list = List::new(final_messages)
-            .block(
-                if self.config.borrow().frontend.hide_chat_border {
-                    Block::default()
-                } else {
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .border_type(self.config.borrow().frontend.border_type.clone().into())
-                }
-                .title(chat_title),
+        let list = if self.config.borrow().frontend.hide_chat_border {
+            List::new(final_messages)
+        } else {
+            List::new(final_messages).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(self.config.borrow().frontend.border_type.clone().into())
+                    .title(chat_title),
             )
-            .style(Style::default().fg(Color::White));
+        }
+        .style(Style::default().fg(Color::White));
 
         f.render_widget(list, *first_v_chunk);
 
