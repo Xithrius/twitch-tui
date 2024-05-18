@@ -238,7 +238,7 @@ impl Component for EmotePickerWidget {
                         let emote = self.filtered_emotes[idx].clone();
 
                         self.toggle_focus();
-                        self.input.update("");
+                        self.input.clear();
                         self.unselect();
                         self.filtered_emotes.clear();
 

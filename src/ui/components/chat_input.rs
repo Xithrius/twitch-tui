@@ -125,7 +125,7 @@ impl Component for ChatInputWidget {
                         let action =
                             TerminalAction::Enter(TwitchAction::Privmsg(current_input.clone()));
 
-                        self.input.update("");
+                        self.input.clear();
 
                         if let Some(message) = current_input.strip_prefix('@') {
                             if self.config.borrow().storage.mentions {

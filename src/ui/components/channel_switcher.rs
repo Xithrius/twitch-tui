@@ -1,4 +1,5 @@
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use log::debug;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::fmt::Display;
@@ -195,7 +196,7 @@ impl Component for ChannelSwitcherWidget {
             self.filtered_channels = Some(matched);
         }
 
-        let title_binding = [TitleStyle::Single("Following")];
+        let title_binding = [TitleStyle::Single("Channel switcher")];
 
         let list = List::new(items.clone())
             .block(
@@ -265,6 +266,7 @@ impl Component for ChannelSwitcherWidget {
                         self.unselect();
                     } else {
                         self.toggle_focus();
+                        self.search_input.clear();
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
@@ -300,16 +302,13 @@ impl Component for ChannelSwitcherWidget {
                                 let selected_channel = self.search_input.to_string();
 
                                 if !selected_channel.is_empty() {
-                                    self.toggle_focus();
-                                    self.unselect();
-
                                     if self.config.borrow().storage.channels {
                                         self.storage
                                             .borrow_mut()
                                             .add("channels", selected_channel.clone());
                                     }
 
-                                    self.search_input.update("");
+                                    self.search_input.clear();
 
                                     self.config
                                         .borrow_mut()
@@ -334,13 +333,18 @@ impl Component for ChannelSwitcherWidget {
                                 .add("channels", selected_channel.clone());
                         }
 
-                        self.search_input.update("");
+                        self.search_input.clear();
 
                         self.config
                             .borrow_mut()
                             .twitch
                             .channel
                             .clone_from(selected_channel);
+
+                        debug!(
+                            "Joining previously joined channel {:?}",
+                            selected_channel.to_string()
+                        );
 
                         return Some(TerminalAction::Enter(TwitchAction::Join(
                             selected_channel.to_string(),
@@ -357,13 +361,15 @@ impl Component for ChannelSwitcherWidget {
                                 .add("channels", selected_channel.clone());
                         }
 
-                        self.search_input.update("");
+                        self.search_input.clear();
 
                         self.config
                             .borrow_mut()
                             .twitch
                             .channel
                             .clone_from(&selected_channel);
+
+                        debug!("Joining new channel {:?}", selected_channel);
 
                         return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
                     }

@@ -55,8 +55,13 @@ impl<T: Clone> InputWidget<T> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn update(&mut self, s: &str) {
         self.input.update(s, 0);
+    }
+
+    pub fn clear(&mut self) {
+        self.input.update("", 0);
     }
 
     pub const fn is_focused(&self) -> bool {
