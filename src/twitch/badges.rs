@@ -5,7 +5,7 @@ const MODERATOR_BADGE: char = '\u{1F528}';
 const SUBSCRIBER_BADGE: char = '\u{2B50}';
 const PRIME_GAMING_BADGE: char = '\u{1F451}';
 
-pub fn retrieve_user_badges(name: &mut String, message: &Message) {
+pub fn retrieve_user_badges(name: &mut String, message: &Message, badges_enabled: bool) {
     let mut badges = String::new();
 
     if let Some(ref tags) = message.tags {
@@ -19,6 +19,12 @@ pub fn retrieve_user_badges(name: &mut String, message: &Message) {
             if tag.0 == *"display-name" {
                 if let Some(ref value) = tag.1 {
                     display_name = Some(value.to_string());
+
+                    // Assuming when found, that there is only one instance of
+                    // the 'display-name' tag.
+                    if !badges_enabled {
+                        break;
+                    }
                 }
             }
 
@@ -42,6 +48,10 @@ pub fn retrieve_user_badges(name: &mut String, message: &Message) {
 
         if let Some(display_name) = display_name {
             *name = display_name;
+
+            if !badges_enabled {
+                return;
+            }
         }
 
         if let Some(badge) = vip_badge {

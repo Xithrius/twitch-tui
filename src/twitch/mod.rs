@@ -171,9 +171,7 @@ async fn handle_message_command(
             // lowercase username from message
             let mut name = message.source_nickname().unwrap().to_string();
 
-            if badges {
-                retrieve_user_badges(&mut name, &message);
-            }
+            retrieve_user_badges(&mut name, &message, badges);
 
             // Remove invalid unicode characters from the message.
             let (cleaned_message, highlight) = clean_message(msg);
