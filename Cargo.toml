@@ -19,7 +19,7 @@ tui = { package = "ratatui", version = "0.26.0", default-features = false, featu
   "serde",
   "underline-color",
 ] }
-tokio = { version = "1.37.0", features = [
+tokio = { version = "1.38.0", features = [
   "rt",
   "macros",
   "rt-multi-thread",
