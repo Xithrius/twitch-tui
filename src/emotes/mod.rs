@@ -24,6 +24,7 @@ use crate::{
 mod downloader;
 mod graphics_protocol;
 
+pub use downloader::get_twitch_emote;
 pub use graphics_protocol::{support_graphics_protocol, ApplyCommand, DecodedEmote};
 
 // HashMap of emote name, emote filename, and if the emote is an overlay
@@ -50,8 +51,12 @@ pub struct LoadedEmote {
 
 #[derive(Default, Debug)]
 pub struct Emotes {
-    /// Map of emote name, filename, and if the emote is an overlay
-    pub emotes: RefCell<DownloadedEmotes>,
+    /// Map of emote name, filename, and if the emote is an overlay.
+    /// We keep track of both emotes that can be used by the current user, and emotes that can be used and received.
+    /// `user_emotes` is only used in the emote picker, and when the current user sends a message.
+    /// `global_emotes` is used everywhere.
+    pub user_emotes: RefCell<DownloadedEmotes>,
+    pub global_emotes: RefCell<DownloadedEmotes>,
     /// Info about loaded emotes
     pub info: RefCell<HashMap<String, LoadedEmote>>,
     /// Terminal cell size in pixels: (width, height)
@@ -76,7 +81,8 @@ impl Emotes {
             .for_each(|(_, LoadedEmote { hash, .. })| {
                 graphics_protocol::Clear(*hash).apply().unwrap_or_default();
             });
-        self.emotes.borrow_mut().clear();
+        self.user_emotes.borrow_mut().clear();
+        self.global_emotes.borrow_mut().clear();
         self.info.borrow_mut().clear();
     }
 }
@@ -91,7 +97,10 @@ impl From<LoadedEmote> for EmoteData {
     }
 }
 
-pub fn query_emotes(config: &CompleteConfig, channel: String) -> OSReceiver<DownloadedEmotes> {
+pub fn query_emotes(
+    config: &CompleteConfig,
+    channel: String,
+) -> OSReceiver<(DownloadedEmotes, DownloadedEmotes)> {
     let (tx, mut rx) = tokio::sync::oneshot::channel();
 
     if emotes_enabled(&config.frontend) {
@@ -104,7 +113,11 @@ pub fn query_emotes(config: &CompleteConfig, channel: String) -> OSReceiver<Down
     rx
 }
 
-pub async fn send_emotes(config: &CompleteConfig, tx: OSSender<DownloadedEmotes>, channel: String) {
+pub async fn send_emotes(
+    config: &CompleteConfig,
+    tx: OSSender<(DownloadedEmotes, DownloadedEmotes)>,
+    channel: String,
+) {
     info!("Starting emotes download.");
     match get_emotes(config, &channel).await {
         Ok(emotes) => {
