@@ -25,7 +25,7 @@ tokio = { version = "1.37.0", features = [
   "rt-multi-thread",
   "fs",
 ] }
-clap = { version = "4.5.0", features = ["derive", "cargo"] }
+clap = { version = "4.5.6", features = ["derive", "cargo"] }
 serde = { version = "1.0.199", features = ["derive"] }
 serde_json = "1.0.113"
 unicode-width = "0.1.12"
