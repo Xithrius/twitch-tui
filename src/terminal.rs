@@ -13,6 +13,7 @@ use crate::{
         user_input::events::{Config, Events, Key},
     },
     twitch::{oauth::get_twitch_client_id, TwitchAction},
+    utils::emotes::emotes_enabled,
 };
 
 pub enum TerminalAction {
@@ -52,33 +53,37 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
+    let is_emotes_enabled = emotes_enabled(&config.frontend);
+
     loop {
-        // Check if we have received any emotes
-        if let Ok((user_emotes, global_emotes)) = erx.try_recv() {
-            *app.emotes.user_emotes.borrow_mut() = user_emotes;
-            *app.emotes.global_emotes.borrow_mut() = global_emotes;
+        if is_emotes_enabled {
+            // Check if we have received any emotes
+            if let Ok((user_emotes, global_emotes)) = erx.try_recv() {
+                *app.emotes.user_emotes.borrow_mut() = user_emotes;
+                *app.emotes.global_emotes.borrow_mut() = global_emotes;
 
-            for message in &mut *app.messages.borrow_mut() {
-                message.reparse_emotes(&app.emotes);
-            }
-        };
+                for message in &mut *app.messages.borrow_mut() {
+                    message.reparse_emotes(&app.emotes, is_emotes_enabled);
+                }
+            };
 
-        // Check if we need to load a decoded emote
-        if let Some(rx) = &mut drx {
-            if let Ok(r) = rx.try_recv() {
-                match r {
-                    Ok(d) => {
-                        if let Err(e) = d.apply() {
-                            warn!("Unable to send command to load emote. {e}");
-                        } else if let Err(e) = display_emote(d.id(), 1, d.cols()) {
-                            warn!("Unable to send command to display emote. {e}");
+            // Check if we need to load a decoded emote
+            if let Some(rx) = &mut drx {
+                if let Ok(r) = rx.try_recv() {
+                    match r {
+                        Ok(d) => {
+                            if let Err(e) = d.apply() {
+                                warn!("Unable to send command to load emote. {e}");
+                            } else if let Err(e) = display_emote(d.id(), 1, d.cols()) {
+                                warn!("Unable to send command to display emote. {e}");
+                            }
                         }
-                    }
-                    Err(name) => {
-                        warn!("Unable to load emote: {name}.");
-                        app.emotes.user_emotes.borrow_mut().remove(&name);
-                        app.emotes.global_emotes.borrow_mut().remove(&name);
-                        app.emotes.info.borrow_mut().remove(&name);
+                        Err(name) => {
+                            warn!("Unable to load emote: {name}.");
+                            app.emotes.user_emotes.borrow_mut().remove(&name);
+                            app.emotes.global_emotes.borrow_mut().remove(&name);
+                            app.emotes.info.borrow_mut().remove(&name);
+                        }
                     }
                 }
             }
@@ -89,7 +94,11 @@ pub async fn ui_driver(
                 TwitchToTerminalAction::Message(m) => {
                     app.messages
                         .borrow_mut()
-                        .push_front(MessageData::from_twitch_message(m, &app.emotes));
+                        .push_front(MessageData::from_twitch_message(
+                            m,
+                            &app.emotes,
+                            is_emotes_enabled,
+                        ));
 
                     // If scrolling is enabled, pad for more messages.
                     if app.components.chat.scroll_offset.get_offset() > 0 {
@@ -160,6 +169,7 @@ pub async fn ui_driver(
                                 None,
                                 highlight,
                                 &app.emotes,
+                                is_emotes_enabled,
                             );
 
                             app.messages.borrow_mut().push_front(message_data);
