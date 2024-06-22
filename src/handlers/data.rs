@@ -592,6 +592,7 @@ impl MessageData {
 
 #[derive(Debug, Copy, Clone)]
 pub struct DataBuilder<'conf> {
+    #[allow(dead_code)]
     pub datetime_format: &'conf str,
 }
 

@@ -26,6 +26,7 @@ use crate::{
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
+#[allow(dead_code)]
 pub struct App {
     /// All the available components.
     pub components: Components,

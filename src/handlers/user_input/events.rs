@@ -54,6 +54,7 @@ pub struct Events {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
+    #[allow(dead_code)]
     pub exit_key: Key,
     pub tick_rate: Duration,
 }
