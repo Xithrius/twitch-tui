@@ -31,9 +31,15 @@ mod twitch {
     }
 
     #[derive(Deserialize, Debug)]
+    struct Cursor {
+        cursor: Option<String>,
+    }
+
+    #[derive(Deserialize, Debug)]
     struct EmoteList {
         data: Vec<Emote>,
         template: String,
+        pagination: Cursor,
     }
 
     fn parse_emote_list(v: EmoteList) -> EmoteMap {
@@ -76,20 +82,9 @@ mod twitch {
             .collect()
     }
 
-    pub async fn get_global_emotes(client: &Client) -> Result<EmoteMap> {
-        let global_emotes = client
-            .get("https://api.twitch.tv/helix/chat/emotes/global")
-            .send()
-            .await?
-            .error_for_status()?
-            .json::<EmoteList>()
-            .await?;
-
-        Ok(parse_emote_list(global_emotes))
-    }
-
+    // Twitch will not send all the emotes in one response, we use the cursor they return to query further emotes.
     pub async fn get_user_emotes(client: &Client, user_id: &str) -> Result<EmoteMap> {
-        let user_emotes = client
+        let mut user_emotes = client
             .get(format!(
                 "https://api.twitch.tv/helix/chat/emotes/user?user_id={user_id}",
             ))
@@ -98,6 +93,20 @@ mod twitch {
             .error_for_status().map_err(|e| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope."); e})?
             .json::<EmoteList>()
             .await?;
+
+        while let Some(c) = user_emotes.pagination.cursor {
+            let emotes =   client
+            .get(format!(
+                "https://api.twitch.tv/helix/chat/emotes/user?user_id={user_id}&after={c}",
+            ))
+            .send()
+            .await?
+            .error_for_status().map_err(|e| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope."); e})?
+            .json::<EmoteList>().await?;
+
+            user_emotes.pagination = emotes.pagination;
+            user_emotes.data.extend(emotes.data);
+        }
 
         Ok(parse_emote_list(user_emotes))
     }
@@ -426,13 +435,11 @@ pub async fn get_emotes(
         HashMap::default()
     };
 
-    let twitch_get_global_emotes = || twitch::get_global_emotes(&twitch_client);
-
     // Concurrently get the list of emotes for each provider
     let global_emotes =
         futures::stream::iter(enabled_emotes.into_iter().map(|emote_provider| async move {
             match emote_provider {
-                EmoteProvider::Twitch => twitch_get_global_emotes().await,
+                EmoteProvider::Twitch => Ok(HashMap::new()),
                 EmoteProvider::BetterTTV => betterttv::get_emotes(channel_id).await,
                 EmoteProvider::SevenTV => seventv::get_emotes(channel_id).await,
                 EmoteProvider::FrankerFaceZ => frankerfacez::get_emotes(channel_id).await,
