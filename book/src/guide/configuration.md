@@ -20,7 +20,7 @@ The latter is needed for emotes and what users you follow. If you want those fea
 
 The minimal scope generator will only give you scopes of `chat:read`, `chat:edit`, `whispers:read`, `whispers:edit`, and `channel:moderate`. Be aware that whispers are currently not supported.
 
-Once you have your token, put `:oauth` at the start if it's not there already, then place it in one of two places:
+Once you have your token, put `oauth:` at the start if it's not there already, then place it in one of two places:
 
 1. The `token` variable in the `config.toml` that was previously generated.
 2. The environment variable `TWT_TOKEN`.
