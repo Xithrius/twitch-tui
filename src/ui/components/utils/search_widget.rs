@@ -233,7 +233,7 @@ where
                 .symbols(scrollbar::VERTICAL)
                 .begin_symbol(None)
                 .end_symbol(None),
-            r.inner(&Margin {
+            r.inner(Margin {
                 vertical: 1,
                 horizontal: 0,
             }),

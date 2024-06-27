@@ -153,13 +153,16 @@ mod tests {
         text::Line,
     };
 
+    use crate::ui::components::utils::InputListener;
+
     use super::*;
 
     #[test]
     fn test_get_cursor_position_with_single_byte_graphemes() {
         let text = "never gonna give you up";
         let mut line_buffer = LineBuffer::with_capacity(25);
-        line_buffer.insert_str(0, text);
+        let mut input_listener = InputListener;
+        line_buffer.insert_str(0, text, &mut input_listener);
 
         assert_eq!(get_cursor_position(&line_buffer), 0);
         line_buffer.move_forward(1);
@@ -172,7 +175,8 @@ mod tests {
     fn test_get_cursor_position_with_three_byte_graphemes() {
         let text = "绝对不会放弃你";
         let mut line_buffer = LineBuffer::with_capacity(25);
-        line_buffer.insert_str(0, text);
+        let mut input_listener = InputListener;
+        line_buffer.insert_str(0, text, &mut input_listener);
 
         assert_eq!(get_cursor_position(&line_buffer), 0);
         line_buffer.move_forward(1);

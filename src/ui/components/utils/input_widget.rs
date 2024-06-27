@@ -1,4 +1,7 @@
-use rustyline::{line_buffer::LineBuffer, At, Word};
+use rustyline::{
+    line_buffer::{ChangeListener, DeleteListener, LineBuffer},
+    At, Word,
+};
 use std::fmt::Display;
 use tui::{
     layout::Rect,
@@ -24,11 +27,29 @@ pub type InputValidator<T> = Box<dyn Fn(T, String) -> bool>;
 pub type VisualValidator = Box<dyn Fn(String) -> String>;
 pub type InputSuggester<T> = Box<dyn Fn(T, String) -> Option<String>>;
 
+#[derive(Debug)]
+pub struct InputListener;
+
+#[allow(dead_code, unused_variables)]
+impl ChangeListener for InputListener {
+    fn insert_char(&mut self, idx: usize, c: char) {}
+
+    fn insert_str(&mut self, idx: usize, string: &str) {}
+
+    fn replace(&mut self, idx: usize, old: &str, new: &str) {}
+}
+
+#[allow(dead_code, unused_variables)]
+impl DeleteListener for InputListener {
+    fn delete(&mut self, idx: usize, string: &str, dir: rustyline::line_buffer::Direction) {}
+}
+
 pub struct InputWidget<T: Clone> {
     config: SharedCompleteConfig,
     input: LineBuffer,
     title: String,
     focused: bool,
+    input_listener: InputListener,
     input_validator: Option<(T, InputValidator<T>)>,
     visual_indicator: Option<VisualValidator>,
     input_suggester: Option<(T, InputSuggester<T>)>,
@@ -48,6 +69,7 @@ impl<T: Clone> InputWidget<T> {
             input: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             title: title.to_string(),
             focused: false,
+            input_listener: InputListener,
             input_validator,
             visual_indicator,
             input_suggester,
@@ -57,11 +79,11 @@ impl<T: Clone> InputWidget<T> {
 
     #[allow(dead_code)]
     pub fn update(&mut self, s: &str) {
-        self.input.update(s, 0);
+        self.input.update(s, 0, &mut self.input_listener);
     }
 
     pub fn clear(&mut self) {
-        self.input.update("", 0);
+        self.input.update("", 0, &mut self.input_listener);
     }
 
     pub const fn is_focused(&self) -> bool {
@@ -74,7 +96,7 @@ impl<T: Clone> InputWidget<T> {
 
     pub fn toggle_focus_with(&mut self, s: &str) {
         self.focused = !self.focused;
-        self.input.update(s, 1);
+        self.input.update(s, 1, &mut self.input_listener);
     }
 
     pub fn is_valid(&self) -> bool {
@@ -87,12 +109,13 @@ impl<T: Clone> InputWidget<T> {
 
     pub fn accept_suggestion(&mut self) {
         if let Some(suggestion) = &self.suggestion {
-            self.input.update(suggestion, 0);
+            self.input.update(suggestion, 0, &mut self.input_listener);
         }
     }
 
     pub fn insert(&mut self, s: &str) {
-        self.input.insert_str(self.input.pos(), s);
+        self.input
+            .insert_str(self.input.pos(), s, &mut self.input_listener);
         self.input.set_pos(self.input.pos() + s.len());
     }
 }
@@ -220,37 +243,42 @@ impl<T: Clone> Component for InputWidget<T> {
                     self.input.move_to_prev_word(Word::Emacs, 1);
                 }
                 Key::Ctrl('t') => {
-                    self.input.transpose_chars();
+                    self.input.transpose_chars(&mut self.input_listener);
                 }
                 Key::Alt('t') => {
-                    self.input.transpose_words(1);
+                    self.input.transpose_words(1, &mut self.input_listener);
                 }
                 Key::Ctrl('u') => {
-                    self.input.discard_line();
+                    self.input.discard_line(&mut self.input_listener);
                 }
                 Key::Ctrl('k') => {
-                    self.input.kill_line();
+                    self.input.kill_line(&mut self.input_listener);
                 }
                 Key::Ctrl('w') => {
-                    self.input.delete_prev_word(Word::Emacs, 1);
+                    self.input
+                        .delete_prev_word(Word::Emacs, 1, &mut self.input_listener);
                 }
                 Key::Ctrl('d') => {
-                    self.input.delete(1);
+                    self.input.delete(1, &mut self.input_listener);
                 }
                 Key::Backspace | Key::Delete => {
-                    self.input.backspace(1);
+                    self.input.backspace(1, &mut self.input_listener);
                 }
                 Key::Tab => {
                     if self.config.borrow().storage.channels {
                         if let Some(suggestion) = &self.suggestion {
-                            self.input.update(suggestion, suggestion.len());
+                            self.input.update(
+                                suggestion,
+                                suggestion.len(),
+                                &mut self.input_listener,
+                            );
                         }
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
                 Key::Ctrl('q') => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
-                    self.input.insert(*c, 1);
+                    self.input.insert(*c, 1, &mut self.input_listener);
                 }
                 _ => {}
             }
