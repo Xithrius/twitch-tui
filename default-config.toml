@@ -14,7 +14,7 @@ token = ""
 
 [terminal]
 # The delay in milliseconds between terminal updates.
-tick_delay = 30
+delay = 30
 # The maximum amount of messages that can be rendered.
 maximum_messages = 500
 # The file to put logs in.
