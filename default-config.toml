@@ -93,6 +93,8 @@ recent_channel_count = 5
 # What style the border of the terminal should have.
 # Options: plain, rounded, double, and thick.
 border_type = "plain"
+# If chat border should be hidden
+hide_chat_border = false
 # If the usernames should be aligned to the right.
 # They will be shown to the left if this is disabled.
 right_align_usernames = false
