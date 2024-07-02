@@ -5,7 +5,10 @@ use std::{
 
 use crossterm::{
     cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::{
+        DisableMouseCapture, EnableMouseCapture, KeyboardEnhancementFlags,
+        PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    },
     execute, queue,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     Command,
@@ -33,7 +36,13 @@ impl Command for ResetCursorShape {
 pub fn reset_terminal() {
     disable_raw_mode().unwrap();
 
-    execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
+    execute!(
+        stdout(),
+        LeaveAlternateScreen,
+        ResetCursorShape,
+        PopKeyboardEnhancementFlags
+    )
+    .unwrap();
 }
 
 pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
@@ -52,6 +61,12 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBack
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
+        PushKeyboardEnhancementFlags(
+            KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+                | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+                | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
+                | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+        ),
         cursor_style,
     )
     .unwrap();
@@ -76,6 +91,7 @@ pub fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture,
+        PopKeyboardEnhancementFlags
     )
     .unwrap();
 
