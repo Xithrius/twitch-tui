@@ -27,7 +27,7 @@ tokio = { version = "1.38.0", features = [
 ] }
 clap = { version = "4.5.7", features = ["derive", "cargo"] }
 serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.118"
+serde_json = "1.0.120"
 unicode-width = "0.1.13"
 unicode-segmentation = "1.11.0"
 chrono = "0.4.38"
