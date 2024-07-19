@@ -2,7 +2,6 @@ use chrono::{DateTime, Local};
 use tui::{
     layout::{Constraint, Rect},
     prelude::Alignment,
-    style::{Color, Modifier, Style},
     widgets::{block::Position, Block, Borders, Clear, Row, Table},
     Frame,
 };
@@ -14,7 +13,10 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::components::Component,
-    utils::text::{title_line, TitleStyle},
+    utils::{
+        styles::{BOLD_STYLE, TITLE_STYLE},
+        text::{title_line, TitleStyle},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -67,12 +69,10 @@ impl Component for DebugWidget {
                 let mut inner_rows = if i > 0 {
                     vec![
                         Row::new::<Vec<String>>(vec![]),
-                        Row::new(vec![t.to_string()])
-                            .style(Style::default().add_modifier(Modifier::BOLD)),
+                        Row::new(vec![t.to_string()]).style(*BOLD_STYLE),
                     ]
                 } else {
-                    vec![Row::new(vec![t.to_string()])
-                        .style(Style::default().add_modifier(Modifier::BOLD))]
+                    vec![Row::new(vec![t.to_string()]).style(*BOLD_STYLE)]
                 };
 
                 for (k, v) in values {
@@ -87,10 +87,7 @@ impl Component for DebugWidget {
 
         let table = Table::new(rows, &[Constraint::Length(25), Constraint::Length(25)]).block(
             Block::default()
-                .title(title_line(
-                    &title_binding,
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ))
+                .title(title_line(&title_binding, *TITLE_STYLE))
                 .borders(Borders::ALL)
                 .border_type(self.config.borrow().frontend.border_type.clone().into()),
         );
@@ -108,10 +105,7 @@ impl Component for DebugWidget {
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
             .border_type(self.config.borrow().frontend.border_type.clone().into())
-            .title(title_line(
-                &title,
-                Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
-            ))
+            .title(title_line(&title, *TITLE_STYLE))
             .title_position(Position::Bottom)
             .title_alignment(Alignment::Left);
 

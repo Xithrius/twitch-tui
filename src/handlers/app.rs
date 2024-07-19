@@ -178,7 +178,7 @@ impl App {
         self.components.chat.scroll_offset.jump_to(0);
     }
 
-    pub fn purge_user_messages(&mut self, user_id: &str) {
+    pub fn purge_user_messages(&self, user_id: &str) {
         let messages = self
             .messages
             .borrow_mut()
@@ -190,7 +190,7 @@ impl App {
         self.messages.replace(messages);
     }
 
-    pub fn remove_message_with(&mut self, message_id: &str) {
+    pub fn remove_message_with(&self, message_id: &str) {
         let index = self
             .messages
             .borrow_mut()
@@ -217,7 +217,7 @@ impl App {
     }
 
     #[allow(dead_code)]
-    pub fn rotate_theme(&mut self) {
+    pub fn rotate_theme(&self) {
         todo!("Rotate through different themes")
     }
 }

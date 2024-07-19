@@ -21,7 +21,8 @@ use crate::{
             ZERO_WIDTH_SPACE_STR,
         },
         styles::{
-            DATETIME_DARK, DATETIME_LIGHT, HIGHLIGHT_NAME_DARK, HIGHLIGHT_NAME_LIGHT, SYSTEM_CHAT,
+            DATETIME_DARK_STYLE, DATETIME_LIGHT_STYLE, HIGHLIGHT_NAME_DARK_STYLE,
+            HIGHLIGHT_NAME_LIGHT_STYLE, SEARCH_STYLE, SYSTEM_CHAT_STYLE,
         },
         text::split_cow_in_place,
     },
@@ -454,19 +455,18 @@ impl MessageData {
             Style::default()
         };
         let username_theme = match frontend_config.theme {
-            Theme::Dark => HIGHLIGHT_NAME_DARK,
-            _ => HIGHLIGHT_NAME_LIGHT,
+            Theme::Dark => *HIGHLIGHT_NAME_DARK_STYLE,
+            _ => *HIGHLIGHT_NAME_LIGHT_STYLE,
         };
         let author_theme = if self.system {
-            SYSTEM_CHAT
+            *SYSTEM_CHAT_STYLE
         } else {
             Style::default().fg(fg)
         };
         let datetime_theme = match frontend_config.theme {
-            Theme::Dark => DATETIME_DARK,
-            _ => DATETIME_LIGHT,
+            Theme::Dark => *DATETIME_DARK_STYLE,
+            _ => *DATETIME_LIGHT_STYLE,
         };
-        let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
 
         // All indices to highlight like a user
         let username_highlight = username_highlight
@@ -491,7 +491,7 @@ impl MessageData {
             })
             .unwrap_or_default();
 
-        let search = (&search_highlight as &[usize], search_theme);
+        let search = (&search_highlight as &[usize], *SEARCH_STYLE);
         let username = (&username_highlight as &[usize], username_theme);
 
         // Message prefix

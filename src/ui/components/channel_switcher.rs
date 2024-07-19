@@ -28,7 +28,10 @@ use crate::{
         components::{utils::InputWidget, Component},
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
-    utils::text::{first_similarity, title_line, TitleStyle},
+    utils::{
+        styles::TITLE_STYLE,
+        text::{first_similarity, title_line, TitleStyle},
+    },
 };
 
 use super::utils::centered_rect;
@@ -175,14 +178,12 @@ impl Component for ChannelSwitcherWidget {
                     continue;
                 }
 
-                let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
-
                 let line = channel
                     .chars()
                     .enumerate()
                     .map(|(i, c)| {
                         if matched_indices.contains(&i) {
-                            Span::styled(c.to_string(), search_theme)
+                            Span::styled(c.to_string(), *TITLE_STYLE)
                         } else {
                             Span::raw(c.to_string())
                         }
@@ -201,10 +202,7 @@ impl Component for ChannelSwitcherWidget {
         let list = List::new(items.clone())
             .block(
                 Block::default()
-                    .title(title_line(
-                        &title_binding,
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ))
+                    .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )

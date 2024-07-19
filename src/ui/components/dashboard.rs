@@ -18,7 +18,7 @@ use crate::{
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::components::{ChannelSwitcherWidget, Component},
-    utils::styles::DASHBOARD_TITLE_COLOR,
+    utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };
 
 use super::following::FollowingWidget;
@@ -67,7 +67,7 @@ impl DashboardWidget {
                 Span::raw(s),
             ]))
         }))
-        .style(Style::default().fg(Color::White))
+        .style(*TEXT_DARK_STYLE)
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
@@ -78,7 +78,7 @@ impl DashboardWidget {
                 .map(|&s| Line::from(vec![Span::raw(s)]))
                 .collect::<Vec<Line>>(),
         )
-        .style(DASHBOARD_TITLE_COLOR);
+        .style(*DASHBOARD_TITLE_COLOR_STYLE);
 
         frame.render_widget(w, *v_chunks.next().unwrap());
     }
@@ -91,8 +91,7 @@ impl DashboardWidget {
         default_channels: &[String],
     ) {
         frame.render_widget(
-            Paragraph::new("Currently selected channel")
-                .style(Style::default().fg(Color::LightRed)),
+            Paragraph::new("Currently selected channel").style(*DASHBOARD_SECTION_STYLE),
             *v_chunks.next().unwrap(),
         );
 
@@ -109,7 +108,7 @@ impl DashboardWidget {
         frame.render_widget(current_channel_selection, *v_chunks.next().unwrap());
 
         frame.render_widget(
-            Paragraph::new("Favorite channels").style(Style::default().fg(Color::LightRed)),
+            Paragraph::new("Favorite channels").style(*DASHBOARD_SECTION_STYLE),
             *v_chunks.next().unwrap(),
         );
 
@@ -122,7 +121,7 @@ impl DashboardWidget {
         }
 
         frame.render_widget(
-            Paragraph::new("Most recent channels").style(Style::default().fg(Color::LightRed)),
+            Paragraph::new("Most recent channels").style(*DASHBOARD_SECTION_STYLE),
             *v_chunks.next().unwrap(),
         );
 

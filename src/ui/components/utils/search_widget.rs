@@ -24,7 +24,10 @@ use crate::{
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::components::{Component, ErrorWidget},
-    utils::text::{title_line, TitleStyle},
+    utils::{
+        styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
+        text::{title_line, TitleStyle},
+    },
 };
 
 use super::{centered_rect, InputWidget};
@@ -182,15 +185,13 @@ where
                     continue;
                 }
 
-                let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
-
                 let line = item
                     .to_string()
                     .chars()
                     .enumerate()
                     .map(|(i, c)| {
                         if matched_indices.contains(&i) {
-                            Span::styled(c.to_string(), search_theme)
+                            Span::styled(c.to_string(), *SEARCH_STYLE)
                         } else {
                             Span::raw(c.to_string())
                         }
@@ -209,18 +210,17 @@ where
         let list = List::new(items.clone())
             .block(
                 Block::default()
-                    .title(title_line(
-                        &title_binding,
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ))
+                    .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .highlight_style(
+            .highlight_style(if *NO_COLOR {
+                Style::default()
+            } else {
                 Style::default()
                     .bg(Color::LightGreen)
-                    .add_modifier(Modifier::BOLD),
-            );
+                    .add_modifier(Modifier::BOLD)
+            });
 
         f.render_widget(Clear, r);
         f.render_stateful_widget(list, r, &mut self.list_state);

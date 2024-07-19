@@ -27,6 +27,7 @@ use crate::{
     utils::{
         colors::u32_to_color,
         emotes::UnicodePlaceholder,
+        styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
         text::{first_similarity_iter, title_line, TitleStyle},
     },
 };
@@ -68,13 +69,11 @@ impl EmotePickerWidget {
             Some((emotes.clone(), input_suggester)),
         );
 
-        let search_theme = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
-
         Self {
             config,
             emotes,
             input,
-            search_theme,
+            search_theme: *SEARCH_STYLE,
             list_state: ListState::default(),
             filtered_emotes: vec![],
         }
@@ -212,18 +211,17 @@ impl Component for EmotePickerWidget {
         let list = List::new::<Vec<ListItem>>(list_items)
             .block(
                 Block::default()
-                    .title(title_line(
-                        &title_binding,
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ))
+                    .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
                     .border_type(self.config.borrow().frontend.border_type.clone().into()),
             )
-            .highlight_style(
+            .highlight_style(if *NO_COLOR {
+                Style::default()
+            } else {
                 Style::default()
                     .bg(Color::LightGreen)
-                    .add_modifier(Modifier::BOLD),
-            );
+                    .add_modifier(Modifier::BOLD)
+            });
 
         f.render_widget(Clear, r);
         f.render_stateful_widget(list, r, &mut self.list_state);
