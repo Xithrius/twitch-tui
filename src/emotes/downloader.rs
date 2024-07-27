@@ -475,7 +475,7 @@ pub async fn get_twitch_emote(name: &str) -> Result<()> {
 
     let res = if res.is_err() {
         client
-            .get(&url.replace("animated", "static"))
+            .get(url.replace("animated", "static"))
             .send()
             .await?
             .error_for_status()
