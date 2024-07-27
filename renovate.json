@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "groupName": "cargo"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker"
+    }
+  ],
+  "prHourlyLimit": 0,
+  "commitBodyTable": true,
+  "rebaseWhen": "behind-base-branch"
+}
