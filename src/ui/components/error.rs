@@ -6,7 +6,10 @@ use tui::{
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
 };
 
-use crate::ui::components::Component;
+use crate::{
+    ui::components::Component,
+    utils::styles::{NO_COLOR, TEXT_DARK_STYLE},
+};
 
 #[derive(Debug, Clone)]
 pub struct ErrorWidget {
@@ -44,10 +47,14 @@ impl Component for ErrorWidget {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Red))
+                .border_style(if *NO_COLOR {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::Red)
+                })
                 .title(Title::from("[ ERROR ]").alignment(Alignment::Center)),
         )
-        .style(Style::default().fg(Color::White))
+        .style(*TEXT_DARK_STYLE)
         .alignment(Alignment::Center);
 
         f.render_widget(Clear, r);

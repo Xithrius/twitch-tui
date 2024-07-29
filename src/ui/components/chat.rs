@@ -28,7 +28,10 @@ use crate::{
         following::FollowingWidget, ChannelSwitcherWidget, ChatInputWidget, Component,
         MessageSearchWidget,
     },
-    utils::text::{title_line, TitleStyle},
+    utils::{
+        styles::{NO_COLOR, TEXT_DARK_STYLE, TITLE_STYLE},
+        text::{title_line, TitleStyle},
+    },
 };
 
 pub struct ChatWidget {
@@ -206,21 +209,22 @@ impl Component for ChatWidget {
                 } else {
                     "Filter"
                 },
-                Style::default().add_modifier(Modifier::BOLD).fg(
-                    if self.filters.borrow().enabled() {
-                        Color::Green
-                    } else {
-                        Color::Red
-                    },
-                ),
+                if *NO_COLOR {
+                    Style::default()
+                } else {
+                    Style::default().add_modifier(Modifier::BOLD).fg(
+                        if self.filters.borrow().enabled() {
+                            Color::Green
+                        } else {
+                            Color::Red
+                        },
+                    )
+                },
             )),
         ];
 
         let chat_title = if self.config.borrow().frontend.title_shown {
-            Line::from(title_line(
-                &spans,
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ))
+            Line::from(title_line(&spans, *TITLE_STYLE))
         } else {
             Line::default()
         };
@@ -241,7 +245,7 @@ impl Component for ChatWidget {
                     .title(chat_title),
             )
         }
-        .style(Style::default().fg(Color::White));
+        .style(*TEXT_DARK_STYLE);
 
         f.render_widget(list, *first_v_chunk);
 

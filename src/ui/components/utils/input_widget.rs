@@ -18,7 +18,10 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
-    utils::text::{get_cursor_position, title_line, TitleStyle},
+    utils::{
+        styles::NO_COLOR,
+        text::{get_cursor_position, title_line, TitleStyle},
+    },
 };
 
 use super::centered_rect;
@@ -165,9 +168,13 @@ impl<T: Clone> Component for InputWidget<T> {
             .border_style(Style::default().fg(status_color))
             .title(title_line(
                 &binding,
-                Style::default()
-                    .fg(status_color)
-                    .add_modifier(Modifier::BOLD),
+                if *NO_COLOR {
+                    Style::default()
+                } else {
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD)
+                },
             ));
 
         let paragraph_lines = Line::from(vec![
@@ -201,9 +208,13 @@ impl<T: Clone> Component for InputWidget<T> {
             let bottom_block = Block::default()
                 .title(title_line(
                     &title,
-                    Style::default()
-                        .fg(status_color)
-                        .add_modifier(Modifier::BOLD),
+                    if *NO_COLOR {
+                        Style::default()
+                    } else {
+                        Style::default()
+                            .fg(status_color)
+                            .add_modifier(Modifier::BOLD)
+                    },
                 ))
                 .title_position(Position::Bottom)
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)

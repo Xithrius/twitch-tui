@@ -9,7 +9,7 @@ use tui::{
 
 use crate::{
     handlers::{config::SharedCompleteConfig, state::State},
-    utils::text::capitalize_first_char,
+    utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 
 const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help];
@@ -32,7 +32,7 @@ impl StateTabsWidget {
 
         let tabs = Tabs::new(tab_titles)
             .block(Block::default())
-            .style(Style::default().fg(Color::Gray).add_modifier(Modifier::DIM))
+            .style(*STATE_TABS_STYLE)
             .highlight_style(
                 Style::default()
                     .fg(Color::Yellow)

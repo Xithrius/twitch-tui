@@ -1,6 +1,5 @@
 use tui::{
     layout::{Constraint, Rect},
-    style::{Modifier, Style},
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
@@ -11,7 +10,7 @@ use crate::{
         components::Component,
         statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
     },
-    utils::styles::COLUMN_TITLE,
+    utils::styles::{BOLD_STYLE, COLUMN_TITLE_STYLE},
 };
 
 // Once a solution is found to calculate constraints, this will be removed.
@@ -40,10 +39,10 @@ impl Component for HelpWidget {
                 rows.push(Row::new(vec![
                     if i == 0 {
                         Cell::from((*s).to_string())
-                            .style(Style::default().add_modifier(Modifier::BOLD))
                     } else {
                         Cell::from("")
-                    },
+                    }
+                    .style(*BOLD_STYLE),
                     Cell::from((*key).to_string()),
                     Cell::from((*desc).to_string()),
                 ]));
@@ -53,7 +52,7 @@ impl Component for HelpWidget {
         }
 
         let help_table = Table::new(rows, TABLE_CONSTRAINTS)
-            .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(COLUMN_TITLE))
+            .header(Row::new(HELP_COLUMN_TITLES.iter().copied()).style(*COLUMN_TITLE_STYLE))
             .block(
                 Block::default()
                     .borders(Borders::ALL)
