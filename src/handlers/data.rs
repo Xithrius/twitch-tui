@@ -395,9 +395,10 @@ impl MessageData {
     ) -> Vec<Span<'s>> {
         static EMOTE_FINDER: Lazy<memmem::Finder> =
             Lazy::new(|| memmem::Finder::new(ZERO_WIDTH_SPACE_STR));
+        let line_is_empty = line.is_empty();
 
         // A line contains emotes if `emotes` is not empty and `line` starts with a unicode placeholder or contains ZWS.
-        if emotes.is_empty()
+        let spans = if emotes.is_empty()
             || (!line.starts_with(PRIVATE_USE_UNICODE)
                 && EMOTE_FINDER.find(line.as_bytes()).is_none())
         {
@@ -436,7 +437,9 @@ impl MessageData {
 
             *start_index = start_index.saturating_sub(ZERO_WIDTH_SPACE_STR.len());
             spans
-        }
+        };
+        *start_index += usize::from(!line_is_empty);
+        spans
     }
 
     pub fn to_vec(
@@ -846,7 +849,7 @@ mod tests {
 
         assert_eq!(emotes, EMOTES_ID_PID);
 
-        assert_eq!(start_index, line.len());
+        assert_eq!(start_index - 1, line.len());
 
         assert_eq!(
             spans,
@@ -899,7 +902,7 @@ mod tests {
         );
 
         assert!(emotes.is_empty());
-        assert_eq!(start_index, line.len());
+        assert_eq!(start_index - 1, line.len());
 
         assert_eq!(
             spans,
