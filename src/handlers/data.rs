@@ -1,7 +1,7 @@
 use chrono::{offset::Local, DateTime};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use log::{error, warn};
-use memchr::memmem;
+use memchr::{memchr_iter, memmem};
 use once_cell::sync::Lazy;
 use std::{borrow::Cow, mem::swap, string::ToString};
 use tui::{
@@ -395,10 +395,9 @@ impl MessageData {
     ) -> Vec<Span<'s>> {
         static EMOTE_FINDER: Lazy<memmem::Finder> =
             Lazy::new(|| memmem::Finder::new(ZERO_WIDTH_SPACE_STR));
-        let line_is_empty = line.is_empty();
 
         // A line contains emotes if `emotes` is not empty and `line` starts with a unicode placeholder or contains ZWS.
-        let spans = if emotes.is_empty()
+        if emotes.is_empty()
             || (!line.starts_with(PRIVATE_USE_UNICODE)
                 && EMOTE_FINDER.find(line.as_bytes()).is_none())
         {
@@ -437,9 +436,7 @@ impl MessageData {
 
             *start_index = start_index.saturating_sub(ZERO_WIDTH_SPACE_STR.len());
             spans
-        };
-        *start_index += usize::from(!line_is_empty);
-        spans
+        }
     }
 
     pub fn to_vec(
@@ -565,6 +562,10 @@ impl MessageData {
         let mut first_line = lines.next().unwrap();
         let first_line_msg = split_cow_in_place(&mut first_line, prefix_len);
 
+        // Find all spaces in `self.payload`, to increment `next_index` when a space at the end of a line
+        // is encountered. Wrapping the message above removes spaces at eol, which makes the highlight indices off by 1.
+        let mut space_iter = memchr_iter(b' ', self.payload.as_bytes());
+
         let mut emotes = &self.emotes[..];
 
         first_row.extend(Self::build_line(
@@ -576,9 +577,20 @@ impl MessageData {
             &mut emotes,
         ));
 
+        let mut space_idx = space_iter.next();
+
         let mut rows = vec![Line::from(first_row)];
 
         rows.extend(lines.map(|line| {
+            while space_idx.is_some_and(|x| x < next_index) {
+                space_idx = space_iter.next();
+            }
+
+            if space_idx == Some(next_index) {
+                next_index += 1;
+                space_idx = space_iter.next();
+            }
+
             Line::from(Self::build_line(
                 line,
                 &mut next_index,
@@ -645,6 +657,7 @@ impl<'conf> DataBuilder<'conf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
 
     #[test]
     fn test_username_hash() {
@@ -809,7 +822,7 @@ mod tests {
         let emote_w_3 = UnicodePlaceholder::new(3).string();
 
         let line =
-        format!("foo{ZERO_WIDTH_SPACE}{emote_w_3}{ZERO_WIDTH_SPACE}{emote_w_1}{ZERO_WIDTH_SPACE}bar baz{ZERO_WIDTH_SPACE}{emote_w_2}");
+            format!("foo{ZERO_WIDTH_SPACE}{emote_w_3}{ZERO_WIDTH_SPACE}{emote_w_1}{ZERO_WIDTH_SPACE}bar baz{ZERO_WIDTH_SPACE}{emote_w_2}");
 
         let (spans, _, emotes) = assert_build_line(
             &line,
@@ -849,7 +862,7 @@ mod tests {
 
         assert_eq!(emotes, EMOTES_ID_PID);
 
-        assert_eq!(start_index - 1, line.len());
+        assert_eq!(start_index, line.len());
 
         assert_eq!(
             spans,
@@ -902,7 +915,7 @@ mod tests {
         );
 
         assert!(emotes.is_empty());
-        assert_eq!(start_index - 1, line.len());
+        assert_eq!(start_index, line.len());
 
         assert_eq!(
             spans,
@@ -920,6 +933,57 @@ mod tests {
                 Span::styled("a", STYLES[1]),
                 Span::raw("z"),
                 Span::styled(emote_w_2, STYLES[2]),
+            ]
+        );
+    }
+
+    #[test]
+    fn build_vec_with_wraps_and_highlights() {
+        let raw_message = RawMessageData::new(
+            "foo".to_string(),
+            None,
+            false,
+            "foo bar baz".to_string(),
+            BTreeMap::new(),
+            None,
+            false,
+        );
+
+        let data = MessageData::from_twitch_message(raw_message, &SharedEmotes::default(), false);
+
+        let frontendconfig = FrontendConfig {
+            show_datetimes: false,
+            ..FrontendConfig::default()
+        };
+
+        let lines = data.to_vec(&frontendconfig, 13, Some("bar"), None);
+
+        assert_eq!(
+            lines,
+            vec![
+                Line::from(vec![
+                    Span::styled("foo", data.hash_username(&Palette::Pastel)),
+                    Span::raw(": "),
+                    Span::raw("foo")
+                ]),
+                Line::from(vec![
+                    Span::styled(
+                        "b",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+                    ),
+                    Span::styled(
+                        "a",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+                    ),
+                    Span::styled(
+                        "r",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+                    ),
+                    Span::raw(" "),
+                    Span::raw("b"),
+                    Span::raw("a"),
+                    Span::raw("z")
+                ])
             ]
         );
     }
