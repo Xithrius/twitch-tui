@@ -1,9 +1,9 @@
 use tui::{
     layout::{Alignment, Rect},
     style::{Color, Style},
-    terminal::Frame,
     text::{Line, Span},
     widgets::{block::Title, Block, Borders, Clear, Paragraph},
+    Frame,
 };
 
 use crate::{
@@ -36,7 +36,7 @@ impl ErrorWidget {
 
 impl Component for ErrorWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.size(), |a| a);
+        let r = area.map_or_else(|| f.area(), |a| a);
 
         let paragraph = Paragraph::new(
             self.message

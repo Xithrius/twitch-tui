@@ -102,7 +102,7 @@ impl ChatWidget {
         let h_chunk = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Min(1)])
-            .split(frame.size());
+            .split(frame.area());
 
         let message_chunk_width = h_chunk[0].width as usize;
 
@@ -166,7 +166,7 @@ impl ChatWidget {
 
 impl Component for ChatWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.size(), |a| a);
+        let r = area.map_or_else(|| f.area(), |a| a);
 
         let config = self.config.borrow();
 

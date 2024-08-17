@@ -58,7 +58,7 @@ impl DebugWidget {
 
 impl Component for DebugWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.size(), |a| a);
+        let r = area.map_or_else(|| f.area(), |a| a);
 
         let configs = self.get_config_values();
 

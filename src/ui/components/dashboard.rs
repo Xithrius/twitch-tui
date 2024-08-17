@@ -3,9 +3,9 @@ use std::slice::Iter;
 use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    terminal::Frame,
     text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
+    Frame,
 };
 
 use crate::{
@@ -151,7 +151,7 @@ impl DashboardWidget {
 
 impl Component for DashboardWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.size(), |a| a);
+        let r = area.map_or_else(|| f.area(), |a| a);
 
         let favorite_channels_len = {
             let l = self.config.borrow().frontend.favorite_channels.len() as u16;

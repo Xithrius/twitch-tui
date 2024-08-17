@@ -116,7 +116,7 @@ impl EmotePickerWidget {
 
 impl Component for EmotePickerWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.size()), |a| a);
+        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.area()), |a| a);
         // Make sure we have space for the input widget, which has a height of 3.
         r.height -= 3;
 

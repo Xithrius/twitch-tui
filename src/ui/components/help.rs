@@ -30,7 +30,7 @@ impl HelpWidget {
 
 impl Component for HelpWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.size(), |a| a);
+        let r = area.map_or_else(|| f.area(), |a| a);
 
         let mut rows = vec![];
 

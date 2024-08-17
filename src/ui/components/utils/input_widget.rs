@@ -4,10 +4,10 @@ use rustyline::{
 };
 use std::fmt::Display;
 use tui::{
-    layout::Rect,
+    layout::{Position as LayoutPosition, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{block::Position, Block, Borders, Clear, Paragraph},
+    widgets::{block::Position as BlockPosition, Block, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -131,14 +131,14 @@ impl<T: Clone> Display for InputWidget<T> {
 
 impl<T: Clone> Component for InputWidget<T> {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.area()), |a| a);
 
         let cursor_pos = get_cursor_position(&self.input);
 
-        f.set_cursor(
+        f.set_cursor_position(LayoutPosition::new(
             (r.x + cursor_pos as u16 + 1).min(r.x + r.width.saturating_sub(2)),
             r.y + 1,
-        );
+        ));
 
         let current_input = self.input.as_str();
 
@@ -216,7 +216,7 @@ impl<T: Clone> Component for InputWidget<T> {
                             .add_modifier(Modifier::BOLD)
                     },
                 ))
-                .title_position(Position::Bottom)
+                .title_position(BlockPosition::Bottom)
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
                 .border_type(self.config.borrow().frontend.border_type.clone().into());
 

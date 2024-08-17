@@ -106,13 +106,13 @@ impl App {
     }
 
     pub fn draw(&mut self, f: &mut Frame) {
-        let mut size = f.size();
+        let mut size = f.area();
 
         if self.config.borrow().frontend.state_tabs {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
-                .split(f.size());
+                .split(f.area());
 
             size = layout[0];
 
@@ -122,7 +122,7 @@ impl App {
         if (size.height < 10 || size.width < 60)
             && self.config.borrow().frontend.show_unsupported_screen_size
         {
-            self.components.window_size_error.draw(f, Some(f.size()));
+            self.components.window_size_error.draw(f, Some(f.area()));
         } else {
             match self.state {
                 State::Dashboard => self.components.dashboard.draw(f, None),

@@ -150,7 +150,7 @@ where
     U: SearchItemGetter<T>,
 {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.size()), |a| a);
+        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.area()), |a| a);
 
         if self.error_widget.is_focused() {
             self.error_widget.draw(f, Some(r));
