@@ -177,6 +177,14 @@ impl Component for EmotePickerWidget {
 
             let cols = (loaded_emote.width as f32 / cell_size.0).ceil() as u16;
 
+            let underline_style = if cfg!(not(target_os = "windows")) {
+                Style::default()
+                    .fg(u32_to_color(loaded_emote.hash))
+                    .underline_color(u32_to_color(1))
+            } else {
+                Style::default().fg(u32_to_color(loaded_emote.hash))
+            };
+
             let row = vec![
                 Span::raw(name[0..pos].to_owned()),
                 Span::styled(
@@ -187,9 +195,7 @@ impl Component for EmotePickerWidget {
                 Span::raw(" - "),
                 Span::styled(
                     UnicodePlaceholder::new(cols as usize).string(),
-                    Style::default()
-                        .fg(u32_to_color(loaded_emote.hash))
-                        .underline_color(u32_to_color(1)),
+                    underline_style,
                 ),
             ];
 

@@ -341,7 +341,16 @@ impl MessageData {
     ) -> Span<'s> {
         if let Some(&(id, pid)) = emotes.first() {
             *emotes = &emotes[1..];
-            Span::styled(content, Style::default().fg(id).underline_color(pid))
+
+            #[cfg(not(target_os = "windows"))]
+            {
+                Span::styled(content, Style::default().fg(id).underline_color(pid))
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                Span::styled(content, Style::default().fg(id))
+            }
         } else {
             error!("Emote index >= emotes.len()");
             Span::raw(content)
