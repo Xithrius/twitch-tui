@@ -21,128 +21,79 @@ macro_rules! color {
     };
 }
 
-pub static BOLD_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: None,
-    bg: None,
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+macro_rules! define_style {
+    ($name:ident, $($key:ident: $value:expr),*) => {
+        pub static $name: Lazy<Style> = Lazy::new(|| Style {
+            $(
+                $key: $value,
+            )*
+            ..Style::default()
+        });
+    };
+}
 
-pub static STATE_TABS_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(
+    BOLD_STYLE,
+    add_modifier: *BOLD
+);
+
+define_style!(STATE_TABS_STYLE,
     fg: color!(Color::Gray),
-    bg: None,
-    underline_color: None,
     add_modifier: if *NO_COLOR {
         Modifier::empty()
     } else {
         Modifier::DIM
-    },
-    sub_modifier: Modifier::empty(),
-});
+    }
+);
 
-pub static TEXT_DARK_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::White),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
+define_style!(TEXT_DARK_STYLE,
+    fg: color!(Color::White)
+);
 
-pub static DASHBOARD_SECTION_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::LightRed),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
+define_style!(DASHBOARD_SECTION_STYLE,
+    fg: color!(Color::LightRed)
+);
 
-#[allow(dead_code)]
-pub static BORDER_NAME_DARK_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::White),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
+define_style!(DATETIME_DARK_STYLE,
+    fg: color!(Color::Rgb(173, 173, 184))
+);
 
-#[allow(dead_code)]
-pub static BORDER_NAME_LIGHT_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::Black),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
+define_style!(DATETIME_LIGHT_STYLE,
+    fg: color!(Color::Rgb(83, 83, 95))
+);
 
-pub static DATETIME_DARK_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::Rgb(173, 173, 184)),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
-
-pub static DATETIME_LIGHT_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::Rgb(83, 83, 95)),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
-
-pub static HIGHLIGHT_NAME_DARK_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(HIGHLIGHT_NAME_DARK_STYLE,
     fg: color!(Color::Black),
     bg: color!(Color::White),
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+    add_modifier: *BOLD
+);
 
-pub static HIGHLIGHT_NAME_LIGHT_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(HIGHLIGHT_NAME_LIGHT_STYLE,
     fg: color!(Color::White),
     bg: color!(Color::Black),
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+    add_modifier: *BOLD
+);
 
-pub static COLUMN_TITLE_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(COLUMN_TITLE_STYLE,
     fg: color!(Color::LightCyan),
-    bg: None,
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+    add_modifier: *BOLD
+);
 
-pub static SYSTEM_CHAT_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(SYSTEM_CHAT_STYLE,
     fg: color!(Color::Red),
-    bg: None,
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+    add_modifier: *BOLD
+);
 
-pub static DASHBOARD_TITLE_COLOR_STYLE: Lazy<Style> = Lazy::new(|| Style {
-    fg: color!(Color::Rgb(135, 120, 165)),
-    bg: None,
-    underline_color: None,
-    add_modifier: Modifier::empty(),
-    sub_modifier: Modifier::empty(),
-});
+define_style!(DASHBOARD_TITLE_COLOR_STYLE,
+    fg: color!(Color::Rgb(135, 120, 165))
+);
 
-pub static SEARCH_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(SEARCH_STYLE,
     fg: color!(Color::Red),
-    bg: None,
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+    add_modifier: *BOLD
+);
 
-pub static TITLE_STYLE: Lazy<Style> = Lazy::new(|| Style {
+define_style!(TITLE_STYLE,
     fg: color!(Color::Red),
-    bg: None,
-    underline_color: None,
-    add_modifier: *BOLD,
-    sub_modifier: Modifier::empty(),
-});
+    add_modifier: *BOLD
+);
