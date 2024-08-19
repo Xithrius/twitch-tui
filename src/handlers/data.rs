@@ -339,6 +339,7 @@ impl MessageData {
         content: impl Into<Cow<'s, str>>,
         emotes: &mut &[(Color, Color)],
     ) -> Span<'s> {
+        #[allow(unused_variables)]
         if let Some(&(id, pid)) = emotes.first() {
             *emotes = &emotes[1..];
 
