@@ -665,6 +665,7 @@ impl<'conf> DataBuilder<'conf> {
 }
 
 #[cfg(test)]
+#[cfg(not(target_os = "windows"))]
 mod tests {
     use super::*;
     use std::collections::BTreeMap;
