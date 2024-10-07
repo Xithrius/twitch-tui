@@ -20,7 +20,7 @@ pub struct StateTabsWidget {
 }
 
 impl StateTabsWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub const fn new(config: SharedCompleteConfig) -> Self {
         Self { _config: config }
     }
 
