@@ -27,7 +27,7 @@ pub struct DebugWidget {
 }
 
 impl DebugWidget {
-    pub fn new(config: SharedCompleteConfig, startup_time: DateTime<Local>) -> Self {
+    pub const fn new(config: SharedCompleteConfig, startup_time: DateTime<Local>) -> Self {
         Self {
             config,
             focused: false,

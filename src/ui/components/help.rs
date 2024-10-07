@@ -23,7 +23,7 @@ pub struct HelpWidget {
 }
 
 impl HelpWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub const fn new(config: SharedCompleteConfig) -> Self {
         Self { config }
     }
 }
