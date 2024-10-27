@@ -225,7 +225,7 @@ pub fn load_picker_emote(
         // Decode emote in another thread, to avoid blocking main thread as decoding images is slow.
         DECODE_EMOTE_SENDER
             .get()
-            .ok_or(anyhow!("Decoding channel has not been initialized."))?
+            .ok_or_else(|| anyhow!("Decoding channel has not been initialized."))?
             .try_send(image)
             .map_err(|e| anyhow!("Unable to send emote to decoder thread. {e}"))?;
 
