@@ -1,5 +1,6 @@
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use log::warn;
-use memchr::memmem;
+use once_cell::sync::Lazy;
 use std::cmp::max;
 use tui::{
     layout::Rect,
@@ -31,6 +32,8 @@ use crate::{
         text::{first_similarity_iter, title_line, TitleStyle},
     },
 };
+
+static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 
 pub struct EmotePickerWidget {
     config: SharedCompleteConfig,
@@ -129,7 +132,7 @@ impl Component for EmotePickerWidget {
         let mut items = Vec::with_capacity(max_len);
         let mut bad_emotes = vec![];
 
-        let mut current_input = self.input.to_string();
+        let current_input = self.input.to_string();
 
         let cell_size = *self
             .emotes
@@ -137,69 +140,74 @@ impl Component for EmotePickerWidget {
             .get()
             .expect("Terminal cell size should be set when emotes are enabled.");
 
-        let finder = if current_input.is_empty() {
-            None
-        } else {
-            current_input.make_ascii_lowercase();
-            Some(memmem::Finder::new(&current_input))
-        };
-
-        for (name, (filename, zero_width)) in self
-            .emotes
-            .user_emotes
-            .borrow()
-            .iter()
-            .chain(self.emotes.global_emotes.borrow().iter())
+        // Enter a new scope to drop the user/global emotes borrow when we don't need them anymore.
         {
-            if items.len() >= max_len {
-                break;
-            }
+            let user_emotes = self.emotes.user_emotes.borrow();
+            let global_emotes = self.emotes.global_emotes.borrow();
 
-            // Skip emotes that do not contain the current input, if it is not empty.
-            let Some(pos) = finder
-                .as_ref()
-                .map_or_else(|| Some(0), |f| f.find(name.to_ascii_lowercase().as_bytes()))
-            else {
-                continue;
-            };
+            // First find all the emotes that match the input
+            let mut matched_emotes = user_emotes
+                .iter()
+                .chain(global_emotes.iter())
+                .filter_map(|(name, data)| {
+                    Some((
+                        name,
+                        data,
+                        FUZZY_FINDER.fuzzy_indices(&name.to_ascii_lowercase(), &current_input)?,
+                    ))
+                })
+                .collect::<Vec<_>>();
 
-            let Ok(loaded_emote) = load_picker_emote(
-                name,
-                filename,
-                *zero_width,
-                &mut self.emotes.info.borrow_mut(),
-                cell_size,
-            )
-            .map_err(|e| warn!("{e}")) else {
-                bad_emotes.push(name.clone());
-                continue;
-            };
+            // Sort them by match score
+            matched_emotes.sort_by(|a, b| b.2 .0.cmp(&a.2 .0));
 
-            let cols = (loaded_emote.width as f32 / cell_size.0).ceil() as u16;
+            for (name, (filename, zero_width), (_, matched_indices)) in matched_emotes {
+                if items.len() >= max_len {
+                    break;
+                }
 
-            #[cfg(not(target_os = "windows"))]
-            let underline_style = Style::default()
-                .fg(u32_to_color(loaded_emote.hash))
-                .underline_color(u32_to_color(1));
+                let Ok(loaded_emote) = load_picker_emote(
+                    name,
+                    filename,
+                    *zero_width,
+                    &mut self.emotes.info.borrow_mut(),
+                    cell_size,
+                )
+                .map_err(|e| warn!("{e}")) else {
+                    bad_emotes.push(name.clone());
+                    continue;
+                };
 
-            #[cfg(target_os = "windows")]
-            let underline_style = { Style::default().fg(u32_to_color(loaded_emote.hash)) };
+                let cols = (loaded_emote.width as f32 / cell_size.0).ceil() as u16;
 
-            let row = vec![
-                Span::raw(name[0..pos].to_owned()),
-                Span::styled(
-                    name[pos..(pos + current_input.len())].to_owned(),
-                    self.search_theme,
-                ),
-                Span::raw(name[(pos + current_input.len())..].to_owned()),
-                Span::raw(" - "),
-                Span::styled(
+                #[cfg(not(target_os = "windows"))]
+                let underline_style = Style::default()
+                    .fg(u32_to_color(loaded_emote.hash))
+                    .underline_color(u32_to_color(1));
+
+                #[cfg(target_os = "windows")]
+                let underline_style = { Style::default().fg(u32_to_color(loaded_emote.hash)) };
+
+                let mut row = name
+                    .chars()
+                    .enumerate()
+                    .map(|(i, c)| {
+                        if matched_indices.contains(&i) {
+                            Span::styled(c.to_string(), self.search_theme)
+                        } else {
+                            Span::raw(c.to_string())
+                        }
+                    })
+                    .collect::<Vec<Span>>();
+
+                row.push(Span::raw(" - "));
+                row.push(Span::styled(
                     UnicodePlaceholder::new(cols as usize).string(),
                     underline_style,
-                ),
-            ];
+                ));
 
-            items.push((name.clone(), ListItem::new(vec![Line::from(row)])));
+                items.push((name.clone(), ListItem::new(vec![Line::from(row)])));
+            }
         }
 
         // Remove emotes that could not be loaded from list of emotes
