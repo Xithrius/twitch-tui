@@ -6,21 +6,16 @@ use color_eyre::{
 use crossterm::{csi, queue, Command};
 use dialoguer::console::{Key, Term};
 use image::{
-    codecs::gif::GifDecoder, imageops::FilterType, io::Reader, AnimationDecoder, DynamicImage,
-    GenericImageView, ImageDecoder, ImageFormat, RgbaImage,
+    codecs::{gif::GifDecoder, webp::WebPDecoder},
+    imageops::FilterType,
+    AnimationDecoder, DynamicImage, GenericImageView, ImageDecoder, ImageFormat, ImageReader, Rgba,
+    RgbaImage,
 };
-use std::{
-    env, fmt,
-    fs::File,
-    io::{BufReader, Read, Write},
-    path::PathBuf,
-};
-use webp_animation::Decoder;
+use std::{env, fmt, io::Write, path::PathBuf};
 
 use crate::utils::pathing::{
     create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
 };
-
 /// Macro to add the graphics protocol escape sequence around a command.
 /// See <https://sw.kovidgoyal.net/kitty/graphics-protocol/> for documentation of the terminal graphics protocol
 macro_rules! gp {
@@ -34,21 +29,20 @@ macro_rules! gp {
 const GP_PREFIX: &str = "twt.tty-graphics-protocol.";
 
 struct StaticDecoder(DynamicImage);
-struct AnimatedDecoder(GifDecoder<BufReader<File>>);
-struct WebPDecoder(Vec<u8>);
+struct AnimatedDecoder<T: for<'a> AnimationDecoder<'a> + Send>(T);
 
-trait IntoFrames: Send {
-    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>>;
+trait IntoFrames<'a>: Send {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>> + 'a>;
 }
 
-impl IntoFrames for StaticDecoder {
-    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>> {
+impl<'a> IntoFrames<'a> for StaticDecoder {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>> + 'a> {
         Box::new(std::iter::once(Ok((self.0.to_rgba8(), 0))))
     }
 }
 
-impl IntoFrames for AnimatedDecoder {
-    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>> {
+impl<'a, T: for<'b> AnimationDecoder<'b> + Send> IntoFrames<'a> for AnimatedDecoder<T> {
+    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>> + 'a> {
         Box::new(self.0.into_frames().map(|f| {
             let frame = f?;
 
@@ -56,31 +50,6 @@ impl IntoFrames for AnimatedDecoder {
 
             Ok((frame.into_buffer(), delay))
         }))
-    }
-}
-
-impl IntoFrames for WebPDecoder {
-    fn frames(self: Box<Self>) -> Box<dyn Iterator<Item = Result<(RgbaImage, u32)>>> {
-        let Ok(decoder) = Decoder::new(&self.0) else {
-            return Box::new(std::iter::empty());
-        };
-
-        let mut timestamp = 0;
-        Box::new(
-            decoder
-                .into_iter()
-                .collect::<Vec<_>>()
-                .into_iter()
-                .map(move |frame| {
-                    let current_timestamp = frame.timestamp();
-
-                    let delay = (current_timestamp - timestamp) as u32;
-
-                    timestamp = current_timestamp;
-
-                    Ok((frame.into_rgba_image()?, delay))
-                }),
-        )
     }
 }
 
@@ -173,17 +142,17 @@ impl Command for DecodedEmote {
     }
 }
 
-pub struct Image {
+pub struct Image<'a> {
     pub name: String,
     id: u32,
     pub width: u32,
     ratio: f32,
     overlay: bool,
     pub cols: u16,
-    decoder: Box<dyn IntoFrames>,
+    decoder: Box<dyn IntoFrames<'a> + 'a>,
 }
 
-impl Image {
+impl<'a> Image<'a> {
     pub fn new(
         id: u32,
         name: String,
@@ -192,23 +161,31 @@ impl Image {
         (cell_w, cell_h): (f32, f32),
     ) -> Result<Self> {
         let path = std::path::PathBuf::from(path);
-        let image = Reader::open(path)?.with_guessed_format()?;
+        let image = ImageReader::open(path)?.with_guessed_format()?;
 
         let (width, height, decoder) = match image.format() {
             None => return Err(anyhow!("Could not guess image format.")),
             Some(ImageFormat::WebP) => {
-                let mut reader = image.into_inner();
-                let mut buffer = vec![];
-                reader.read_to_end(&mut buffer)?;
-
-                let decoder = Decoder::new(&buffer)?;
+                let mut decoder = WebPDecoder::new(image.into_inner())?;
                 let (width, height) = decoder.dimensions();
 
-                (
-                    width,
-                    height,
-                    Box::new(WebPDecoder(buffer)) as Box<dyn IntoFrames>,
-                )
+                if decoder.has_animation() {
+                    decoder.set_background_color(Rgba([0; 4]))?;
+
+                    (
+                        width,
+                        height,
+                        Box::new(AnimatedDecoder(decoder)) as Box<dyn IntoFrames + 'a>,
+                    )
+                } else {
+                    let img = DynamicImage::from_decoder(decoder)?;
+
+                    (
+                        width,
+                        height,
+                        Box::new(StaticDecoder(img)) as Box<dyn IntoFrames + 'a>,
+                    )
+                }
             }
             Some(ImageFormat::Gif) => {
                 let decoder = GifDecoder::new(image.into_inner())?;
@@ -217,7 +194,7 @@ impl Image {
                 (
                     width,
                     height,
-                    Box::new(AnimatedDecoder(decoder)) as Box<dyn IntoFrames>,
+                    Box::new(AnimatedDecoder(decoder)) as Box<dyn IntoFrames + 'a>,
                 )
             }
             Some(_) => {
@@ -227,7 +204,7 @@ impl Image {
                 (
                     width,
                     height,
-                    Box::new(StaticDecoder(image)) as Box<dyn IntoFrames>,
+                    Box::new(StaticDecoder(image)) as Box<dyn IntoFrames + 'a>,
                 )
             }
         };
