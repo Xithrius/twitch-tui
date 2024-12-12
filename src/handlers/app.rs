@@ -1,4 +1,9 @@
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    process::{Child, Stdio},
+    rc::Rc,
+};
 
 use chrono::{DateTime, Local};
 use rustyline::line_buffer::LineBuffer;
@@ -50,6 +55,8 @@ pub struct App {
     pub theme: Theme,
     /// Emotes
     pub emotes: SharedEmotes,
+    /// Running stream.
+    pub running_stream: Rc<RefCell<Option<Child>>>,
 }
 
 macro_rules! shared {
@@ -93,6 +100,7 @@ impl App {
         Self {
             components,
             config: shared_config.clone(),
+            running_stream: shared!(None),
             messages,
             storage,
             filters,
@@ -167,7 +175,44 @@ impl App {
         None
     }
 
+    // TODO:
+    // This probably sucks.
+    // Should Properly handle if a stream is not available.
+    // WARN:
+    // closes a previous stream if open. This is technically overloading this function, but
+    // whatever.
+    pub fn open_stream(&self, channel: &str) {
+        let mut t = self.running_stream.borrow_mut();
+        if let Some(c) = t.as_mut() {
+            c.kill().unwrap();
+        }
+        *t = Some(
+            std::process::Command::new("streamlink")
+                .args([
+                    (String::from("twitch.tv/") + channel).as_str(),
+                    "--default-stream",
+                    "720p, 720p60, best",
+                    "--player",
+                    "mpv",
+                ])
+                .stdout(Stdio::null())
+                .spawn()
+                .expect("Pog"),
+        );
+    }
+
+    // TODO:
+    // This probably sucks
+    pub fn close_stream(&self) {
+        let mut t = self.running_stream.borrow_mut();
+        if let Some(c) = t.as_mut() {
+            c.kill().unwrap();
+        }
+        *t = None;
+    }
+
     pub fn cleanup(&self) {
+        self.close_stream();
         self.storage.borrow().dump_data();
         self.emotes.unload();
     }

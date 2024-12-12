@@ -120,6 +120,7 @@ pub async fn twitch_irc(
                             tx.send(data_builder.twitch(err.to_string())).await.unwrap();
                         }
 
+
                         // Set old channel to new channel
                         config.twitch.channel = channel;
                     }

@@ -181,10 +181,12 @@ pub async fn ui_driver(
                             app.emotes.unload();
 
                             tx.send(TwitchAction::Join(channel.clone())).unwrap();
+                            app.open_stream(channel.as_str());
                             erx = query_emotes(&config, channel);
 
                             app.set_state(State::Normal);
                         }
+
                         TwitchAction::ClearMessages => {}
                     },
                 }
