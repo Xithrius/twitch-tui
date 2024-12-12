@@ -5,7 +5,10 @@ use tui::{layout::Rect, Frame};
 use crate::{
     handlers::{config::SharedCompleteConfig, user_input::events::Event},
     terminal::TerminalAction,
-    twitch::{channels::Following, TwitchAction},
+    twitch::{
+        channels::{Following, FollowingStreaming, FollowingUser, StreamingUser},
+        TwitchAction,
+    },
     ui::components::Component,
 };
 
@@ -25,12 +28,14 @@ static INCORRECT_SCOPES_ERROR_MESSAGE: Lazy<Vec<&'static str>> = Lazy::new(|| {
 pub struct FollowingWidget {
     #[allow(dead_code)]
     config: SharedCompleteConfig,
-    pub search_widget: SearchWidget<String, Following>,
+    pub search_widget: SearchWidget<StreamingUser, FollowingStreaming>,
+    // pub search_widget: SearchWidget<String, Following>,
 }
 
 impl FollowingWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
-        let item_getter = Following::new(config.borrow().twitch.clone());
+        let item_getter = FollowingStreaming::new(config.borrow().twitch.clone());
+        // let item_getter = Following::new(config.borrow().twitch.clone());
 
         let search_widget = SearchWidget::new(
             config.clone(),
@@ -53,16 +58,22 @@ impl FollowingWidget {
     }
 }
 
-impl Component for FollowingWidget {
+impl Component<TwitchAction> for FollowingWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         self.search_widget.draw(f, area);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        let action = self.search_widget.event(event).await;
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction<TwitchAction>> {
+        let action = self.search_widget.event(event).await.map(|ta| match ta {
+            TerminalAction::Enter(su) => TerminalAction::Enter(TwitchAction::Join(su.user_login)),
+            TerminalAction::Quit => TerminalAction::Quit,
+            TerminalAction::BackOneLayer => TerminalAction::BackOneLayer,
+            TerminalAction::SwitchState(s) => TerminalAction::SwitchState(s),
+            TerminalAction::ClearMessages => TerminalAction::ClearMessages,
+        });
 
         if let Some(TerminalAction::Enter(TwitchAction::Join(channel))) = &action {
-            self.config.borrow_mut().twitch.channel.clone_from(channel);
+            self.config.borrow_mut().twitch.channel.clone_from(&channel);
         }
 
         action

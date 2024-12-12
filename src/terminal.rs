@@ -16,12 +16,24 @@ use crate::{
     utils::emotes::emotes_enabled,
 };
 
-pub enum TerminalAction {
+pub enum TerminalAction<T> {
     Quit,
     BackOneLayer,
     SwitchState(State),
     ClearMessages,
-    Enter(TwitchAction),
+    Enter(T),
+}
+
+impl<T> TerminalAction<T> {
+    pub fn map_enter<B>(&self, e_action: B) -> TerminalAction<B> {
+        match self {
+            TerminalAction::Quit => TerminalAction::Quit,
+            TerminalAction::BackOneLayer => TerminalAction::BackOneLayer,
+            TerminalAction::SwitchState(s) => TerminalAction::SwitchState(*s),
+            TerminalAction::ClearMessages => TerminalAction::ClearMessages,
+            TerminalAction::Enter(_) => TerminalAction::Enter(e_action),
+        }
+    }
 }
 
 pub async fn ui_driver(

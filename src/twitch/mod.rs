@@ -5,6 +5,7 @@ pub mod oauth;
 
 use std::{collections::HashMap, hash::BuildHasher};
 
+use channels::StreamingUser;
 use color_eyre::Result;
 use futures::StreamExt;
 use irc::{

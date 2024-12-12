@@ -23,6 +23,7 @@ use crate::{
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
+    twitch::TwitchAction,
     ui::{
         components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
@@ -151,10 +152,15 @@ impl App {
         }
     }
 
-    pub async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    pub async fn event(&mut self, event: &Event) -> Option<TerminalAction<TwitchAction>> {
         if let Event::Input(key) = event {
             if self.components.debug.is_focused() {
-                return self.components.debug.event(event).await;
+                return self
+                    .components
+                    .debug
+                    .event(event)
+                    .await
+                    .map(|ta| ta.map_enter(TwitchAction::Join("".into())));
             }
 
             match key {
@@ -166,7 +172,12 @@ impl App {
                     return match self.state {
                         State::Dashboard => self.components.dashboard.event(event).await,
                         State::Normal => self.components.chat.event(event).await,
-                        State::Help => self.components.help.event(event).await,
+                        State::Help => self
+                            .components
+                            .help
+                            .event(event)
+                            .await
+                            .map(|ta| ta.map_enter(TwitchAction::Join("".into()))),
                     };
                 }
             }
