@@ -41,6 +41,9 @@ where
     async fn get_items(&mut self) -> Result<Vec<T>>;
 }
 
+// TODO:
+// Add live channels to the list in a different color.
+
 pub struct SearchWidget<T, U>
 where
     T: ToString + Clone,
