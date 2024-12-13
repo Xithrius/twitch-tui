@@ -306,7 +306,7 @@ impl Component<TwitchAction> for ChatWidget {
                 self.search_input
                     .event(event)
                     .await
-                    .map(|ta| ta.map_enter(TwitchAction::Join("".into())))
+                    .map(|ta| ta.map_enter(|_| TwitchAction::Join("".into())))
             } else if self.following.is_focused() {
                 self.following.event(event).await
             } else {

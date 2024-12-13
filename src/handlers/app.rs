@@ -162,7 +162,7 @@ impl App {
                     .debug
                     .event(event)
                     .await
-                    .map(|ta| ta.map_enter(TwitchAction::Join("".into())));
+                    .map(|ta| ta.map_enter(|()| TwitchAction::Join("".into())));
             }
 
             match key {
@@ -179,7 +179,7 @@ impl App {
                             .help
                             .event(event)
                             .await
-                            .map(|ta| ta.map_enter(TwitchAction::Join("".into()))),
+                            .map(|ta| ta.map_enter(|()| TwitchAction::Join("".into()))),
                     };
                 }
             }

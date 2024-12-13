@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use once_cell::sync::Lazy;
 
 use tui::{layout::Rect, Frame};
@@ -44,27 +42,24 @@ pub struct FollowingWidget {
 
 impl FollowingWidget {
     pub fn new(config: SharedCompleteConfig) -> Self {
-        // let search_widget = if config.borrow().frontend {
-        //     SearchWidgetType::Live(SearchWidget::new(
-        //         config.clone(),
-        //         FollowingStreaming::new(config.borrow().twitch.clone()),
-        //         INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
-        //     ))
-        // } else {
-        //     SearchWidgetType::All(SearchWidget::new(
-        //         config.clone(),
-        //         Following::new(config.borrow().twitch.clone()),
-        //         INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
-        //     ))
-        // };
+        let search_widget = if config.borrow().frontend.only_show_live_channels {
+            SearchWidgetType::Live(SearchWidget::new(
+                config.clone(),
+                FollowingStreaming::new(config.borrow().twitch.clone()),
+                INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
+            ))
+        } else {
+            SearchWidgetType::All(SearchWidget::new(
+                config.clone(),
+                Following::new(config.borrow().twitch.clone()),
+                INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
+            ))
+        };
 
-        let item_getter = Following::new(config.borrow().twitch.clone());
-
-        todo!()
-        // Self {
-        //     config,
-        //     search_widget,
-        // }
+        Self {
+            config,
+            search_widget,
+        }
     }
 
     pub const fn is_focused(&self) -> bool {
@@ -95,11 +90,11 @@ impl Component<TwitchAction> for FollowingWidget {
             SearchWidgetType::All(w) => w
                 .event(event)
                 .await
-                .map(|ta| ta.map_enter(|a| a.to_string())),
+                .map(|ta| ta.map_enter(|a| a.broadcaster_name.clone())),
             SearchWidgetType::Live(w) => w
                 .event(event)
                 .await
-                .map(|ta| ta.map_enter(|a| a.to_string())),
+                .map(|ta| ta.map_enter(|a| a.user_login.clone())),
         };
 
         let action = w_event.map(|ta| match ta {
