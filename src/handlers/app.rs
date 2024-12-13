@@ -57,6 +57,8 @@ pub struct App {
     /// Emotes
     pub emotes: SharedEmotes,
     /// Running stream.
+    // TODO:
+    // Review if this needs to be a `Rc<RefCell>`. I haven't bothered to check
     pub running_stream: Rc<RefCell<Option<Child>>>,
 }
 
@@ -187,7 +189,6 @@ impl App {
     }
 
     // TODO:
-    // This probably sucks.
     // Should Properly handle if a stream is not available.
     // WARN:
     // closes a previous stream if open. This is technically overloading this function, but

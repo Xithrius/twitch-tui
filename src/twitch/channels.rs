@@ -26,6 +26,12 @@ pub struct FollowingUser {
     followed_at: String,
 }
 
+impl ToQueryString for FollowingUser {
+    fn to_query_string(&self) -> String {
+        self.broadcaster_name.clone()
+    }
+}
+
 // "id": "42170724654",
 // "user_id": "132954738",
 // "user_login": "aws",
@@ -171,16 +177,8 @@ impl Following {
     }
 }
 
-impl SearchItemGetter<String> for Following {
-    async fn get_items(&mut self) -> Result<Vec<String>> {
-        let streaming = get_streams(&self.twitch_config).await;
-        let following = get_following(&self.twitch_config).await;
-
-        following.map(|v| {
-            v.data
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<String>>()
-        })
+impl SearchItemGetter<FollowingUser> for Following {
+    async fn get_items(&mut self) -> Result<Vec<FollowingUser>> {
+        get_following(&self.twitch_config).await.map(|v| v.data)
     }
 }

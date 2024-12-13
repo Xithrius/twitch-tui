@@ -25,13 +25,13 @@ pub enum TerminalAction<T> {
 }
 
 impl<T> TerminalAction<T> {
-    pub fn map_enter<B>(&self, e_action: B) -> TerminalAction<B> {
+    pub fn map_enter<B, F: Fn(&T) -> B>(&self, a_map: F) -> TerminalAction<B> {
         match self {
             TerminalAction::Quit => TerminalAction::Quit,
             TerminalAction::BackOneLayer => TerminalAction::BackOneLayer,
             TerminalAction::SwitchState(s) => TerminalAction::SwitchState(*s),
             TerminalAction::ClearMessages => TerminalAction::ClearMessages,
-            TerminalAction::Enter(_) => TerminalAction::Enter(e_action),
+            TerminalAction::Enter(a) => TerminalAction::Enter(a_map(a)),
         }
     }
 }
@@ -193,7 +193,11 @@ pub async fn ui_driver(
                             app.emotes.unload();
 
                             tx.send(TwitchAction::Join(channel.clone())).unwrap();
-                            app.open_stream(channel.as_str());
+
+                            if config.frontend.auto_start_streamlink {
+                                app.open_stream(channel.as_str());
+                            }
+
                             erx = query_emotes(&config, channel);
 
                             app.set_state(State::Normal);
