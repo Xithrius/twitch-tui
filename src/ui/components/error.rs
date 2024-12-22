@@ -2,7 +2,7 @@ use tui::{
     layout::{Alignment, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{block::Title, Block, Borders, Clear, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -52,7 +52,7 @@ impl Component for ErrorWidget {
                 } else {
                     Style::default().fg(Color::Red)
                 })
-                .title(Title::from("[ ERROR ]").alignment(Alignment::Center)),
+                .title_top(Line::from("[ ERROR ]").centered()),
         )
         .style(*TEXT_DARK_STYLE)
         .alignment(Alignment::Center);
