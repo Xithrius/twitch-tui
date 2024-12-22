@@ -55,7 +55,7 @@ impl DashboardWidget {
         &'a self,
         items: &'a [String],
         index_offset: usize,
-    ) -> List<'_> {
+    ) -> List<'a> {
         List::new(items.iter().enumerate().map(|(i, s)| {
             ListItem::new(Line::from(vec![
                 Span::raw("["),
