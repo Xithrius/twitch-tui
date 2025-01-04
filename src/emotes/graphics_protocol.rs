@@ -420,15 +420,19 @@ fn query_terminal(command: &[u8]) -> Result<String> {
 /// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
 /// If we receive the terminal attributes without receiving the response for the graphics protocol, it does not support it.
 pub fn support_graphics_protocol() -> Result<bool> {
-    Ok(env::var("TERM")? == "xterm-kitty"
-        && query_terminal(
-            format!(
-                concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
-                STANDARD.encode("AAAA"),
-            )
-            .as_bytes(),
-        )?
-        .contains("OK"))
+    let supported_terminals = ["xterm-kitty", "xterm-ghostty"];
+
+    Ok(
+        env::var("TERM").map_or(false, |term| supported_terminals.contains(&term.as_str()))
+            && query_terminal(
+                format!(
+                    concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
+                    STANDARD.encode("AAAA"),
+                )
+                .as_bytes(),
+            )?
+            .contains("OK"),
+    )
 }
 
 #[cfg(test)]
