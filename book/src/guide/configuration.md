@@ -11,16 +11,11 @@ You can find the default configuration values [here](https://github.com/Xithrius
 
 ## Authentication
 
-You can get a Twitch token to use for authentication from one of two places:
+The most convenient way to get a Twitch token is to use twitchtokengenerator.com. [Here is a quick link with the required scopes already enabled](https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes&auth=auth_stay). Once generated copy the "ACCESS TOKEN".
 
-- https://twitchapps.com/tmi/: Generates a token with minimal scopes
-- https://twitchtokengenerator.com/: Generates a token with custom scopes
+If using other methods to generate the token, the scopes used by `twt` are: `chat:read`, `chat:edit`, `channel:moderate`, `user:read:follows`, and `user:read:emotes`.
 
-The latter is needed for emotes and what users you follow. If you want those features, enable the `user:read:follows` and `user:read:emotes` scopes.
-
-The minimal scope generator will only give you scopes of `chat:read`, `chat:edit`, `whispers:read`, `whispers:edit`, and `channel:moderate`. Be aware that whispers are currently not supported.
-
-Once you have your token, put `oauth:` at the start if it's not there already, then place it in one of two places:
+Once you have a token, put `oauth:` at the start if it's not there already, then place it in one of two places:
 
 1. The `token` variable in the `config.toml` that was previously generated.
 2. The environment variable `TWT_TOKEN`.
