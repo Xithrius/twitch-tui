@@ -416,14 +416,14 @@ fn query_terminal(command: &[u8]) -> Result<String> {
     Ok(response)
 }
 
+const SUPPORTED_TERMINALS: [&str; 2] = ["xterm-kitty", "xterm-ghostty"];
+
 /// First check if the terminal is `kitty`, this is the only terminal that supports the graphics protocol using unicode placeholders as of 2023-07-13.
 /// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
 /// If we receive the terminal attributes without receiving the response for the graphics protocol, it does not support it.
 pub fn support_graphics_protocol() -> Result<bool> {
-    let supported_terminals = ["xterm-kitty", "xterm-ghostty"];
-
     Ok(
-        env::var("TERM").map_or(false, |term| supported_terminals.contains(&term.as_str()))
+        env::var("TERM").is_ok_and(|term| SUPPORTED_TERMINALS.contains(&term.as_str()))
             && query_terminal(
                 format!(
                     concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),

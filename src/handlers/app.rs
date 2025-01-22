@@ -195,7 +195,7 @@ impl App {
             .messages
             .borrow_mut()
             .iter()
-            .position(|f| f.message_id.clone().map_or(false, |id| id == message_id));
+            .position(|f| f.message_id.clone().is_some_and(|id| id == message_id));
 
         if let Some(i) = index {
             self.messages.borrow_mut().remove(i).unwrap();
