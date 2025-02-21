@@ -1,7 +1,7 @@
 use tui::{
+    Frame,
     layout::{Constraint, Rect},
     widgets::{Block, Borders, Cell, Row, Table},
-    Frame,
 };
 
 use crate::{

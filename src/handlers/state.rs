@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-use color_eyre::eyre::{bail, Error, Result};
+use color_eyre::eyre::{Error, Result, bail};
 use serde::Serialize;
 use serde_with::DeserializeFromStr;
 

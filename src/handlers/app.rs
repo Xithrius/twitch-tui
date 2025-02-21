@@ -3,8 +3,8 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 use chrono::{DateTime, Local};
 use rustyline::line_buffer::LineBuffer;
 use tui::{
-    layout::{Constraint, Direction, Layout, Rect},
     Frame,
+    layout::{Constraint, Direction, Layout, Rect},
 };
 
 use crate::{
@@ -183,7 +183,7 @@ impl App {
             .messages
             .borrow_mut()
             .iter()
-            .filter(|&m| m.user_id.clone().map_or(true, |user| user != user_id))
+            .filter(|&m| m.user_id.clone().is_none_or(|user| user != user_id))
             .cloned()
             .collect::<VecDeque<MessageData>>();
 

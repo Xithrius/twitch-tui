@@ -1,21 +1,22 @@
 use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
 use color_eyre::Result;
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use once_cell::sync::Lazy;
 use tui::{
+    Frame,
     layout::Rect,
     prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
     symbols::scrollbar,
     text::{Line, Span},
     widgets::{
-        block::Position, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
-        ScrollbarOrientation, ScrollbarState,
+        Block, Borders, Clear, List, ListItem, ListState, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, block::Position,
     },
-    Frame,
 };
 
+use super::{InputWidget, centered_rect};
 use crate::{
     handlers::{
         config::SharedCompleteConfig,
@@ -26,11 +27,9 @@ use crate::{
     ui::components::{Component, ErrorWidget},
     utils::{
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
-        text::{title_line, TitleStyle},
+        text::{TitleStyle, title_line},
     },
 };
-
-use super::{centered_rect, InputWidget};
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 

@@ -1,5 +1,6 @@
 use std::fmt::Display;
-use tui::{layout::Rect, Frame};
+
+use tui::{Frame, layout::Rect};
 
 use crate::{
     handlers::{
@@ -8,7 +9,7 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::{
-        components::{utils::InputWidget, Component},
+        components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
     },
 };

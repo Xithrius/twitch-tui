@@ -2,11 +2,11 @@ use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
 use tui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{block::Position, Block, Borders, List, ListItem},
-    Frame,
+    widgets::{Block, Borders, List, ListItem, block::Position},
 };
 
 use crate::{
@@ -25,12 +25,12 @@ use crate::{
     },
     terminal::TerminalAction,
     ui::components::{
-        following::FollowingWidget, ChannelSwitcherWidget, ChatInputWidget, Component,
-        MessageSearchWidget,
+        ChannelSwitcherWidget, ChatInputWidget, Component, MessageSearchWidget,
+        following::FollowingWidget,
     },
     utils::{
         styles::{NO_COLOR, TEXT_DARK_STYLE, TITLE_STYLE},
-        text::{title_line, TitleStyle},
+        text::{TitleStyle, title_line},
     },
 };
 

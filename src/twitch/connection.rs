@@ -1,8 +1,7 @@
-use std::cmp::min;
-use std::time::Duration;
+use std::{cmp::min, time::Duration};
 
 use irc::{
-    client::{prelude::Config, Client, ClientStream},
+    client::{Client, ClientStream, prelude::Config},
     error::Error::{self, PingTimeout},
 };
 use tokio::{sync::mpsc::Sender, time::sleep};

@@ -1,12 +1,12 @@
-use color_eyre::{eyre::anyhow, Result};
 use std::{
     env,
-    fs::remove_file,
-    fs::File,
+    fs::{File, remove_file},
     io::Write,
     mem::drop,
     path::{Path, PathBuf},
 };
+
+use color_eyre::{Result, eyre::anyhow};
 
 const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 

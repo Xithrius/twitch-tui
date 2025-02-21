@@ -1,10 +1,10 @@
 use tui::{
+    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     symbols::DOT,
     text::Line,
     widgets::{Block, Tabs},
-    Frame,
 };
 
 use crate::{

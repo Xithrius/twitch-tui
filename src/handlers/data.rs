@@ -1,9 +1,10 @@
-use chrono::{offset::Local, DateTime};
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use std::{borrow::Cow, mem::swap, string::ToString};
+
+use chrono::{DateTime, offset::Local};
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use log::{error, warn};
 use memchr::{memchr_iter, memmem};
 use once_cell::sync::Lazy;
-use std::{borrow::Cow, mem::swap, string::ToString};
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
@@ -11,14 +12,14 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    emotes::{display_emote, load_emote, overlay_emote, DownloadedEmotes, EmoteData, SharedEmotes},
+    emotes::{DownloadedEmotes, EmoteData, SharedEmotes, display_emote, load_emote, overlay_emote},
     handlers::config::{FrontendConfig, Palette, Theme},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::{hsl_to_rgb, u32_to_color},
         emotes::{
-            get_emote_offset, UnicodePlaceholder, PRIVATE_USE_UNICODE, ZERO_WIDTH_SPACE,
-            ZERO_WIDTH_SPACE_STR,
+            PRIVATE_USE_UNICODE, UnicodePlaceholder, ZERO_WIDTH_SPACE, ZERO_WIDTH_SPACE_STR,
+            get_emote_offset,
         },
         styles::{
             DATETIME_DARK_STYLE, DATETIME_LIGHT_STYLE, HIGHLIGHT_NAME_DARK_STYLE,
@@ -667,8 +668,9 @@ impl<'conf> DataBuilder<'conf> {
 #[cfg(test)]
 #[cfg(not(target_os = "windows"))]
 mod tests {
-    use super::*;
     use std::collections::BTreeMap;
+
+    use super::*;
 
     #[test]
     fn test_username_hash() {
@@ -832,8 +834,9 @@ mod tests {
         let emote_w_2 = UnicodePlaceholder::new(2).string();
         let emote_w_3 = UnicodePlaceholder::new(3).string();
 
-        let line =
-            format!("foo{ZERO_WIDTH_SPACE}{emote_w_3}{ZERO_WIDTH_SPACE}{emote_w_1}{ZERO_WIDTH_SPACE}bar baz{ZERO_WIDTH_SPACE}{emote_w_2}");
+        let line = format!(
+            "foo{ZERO_WIDTH_SPACE}{emote_w_3}{ZERO_WIDTH_SPACE}{emote_w_1}{ZERO_WIDTH_SPACE}bar baz{ZERO_WIDTH_SPACE}{emote_w_2}"
+        );
 
         let (spans, _, emotes) = assert_build_line(
             &line,
@@ -900,8 +903,9 @@ mod tests {
         let emote_w_3 = UnicodePlaceholder::new(3).string();
 
         // Line corresponds to "foo{EMOTE3}{EMOTE1}bar {EMOJI} baz{EMOTE2}".
-        let line =
-            format!("foo{ZERO_WIDTH_SPACE}{emote_w_3}{ZERO_WIDTH_SPACE}{emote_w_1}{ZERO_WIDTH_SPACE}bar \u{1f7ea} baz{ZERO_WIDTH_SPACE}{emote_w_2}");
+        let line = format!(
+            "foo{ZERO_WIDTH_SPACE}{emote_w_3}{ZERO_WIDTH_SPACE}{emote_w_1}{ZERO_WIDTH_SPACE}bar \u{1f7ea} baz{ZERO_WIDTH_SPACE}{emote_w_2}"
+        );
 
         // "ba" in "bar" will be highlighted with the username highlight.
         // " b" in " baz" will be highlighted with the search highlight.

@@ -1,21 +1,23 @@
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use std::fmt::Display;
+
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use log::debug;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::fmt::Display;
 use tui::{
+    Frame,
     layout::Rect,
     prelude::{Alignment, Margin},
     style::{Color, Modifier, Style},
     symbols::scrollbar,
     text::{Line, Span},
     widgets::{
-        block::Position, Block, Borders, Clear, List, ListItem, ListState, Scrollbar,
-        ScrollbarOrientation, ScrollbarState,
+        Block, Borders, Clear, List, ListItem, ListState, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, block::Position,
     },
-    Frame,
 };
 
+use super::utils::centered_rect;
 use crate::{
     handlers::{
         config::SharedCompleteConfig,
@@ -25,16 +27,14 @@ use crate::{
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
-        components::{utils::InputWidget, Component},
+        components::{Component, utils::InputWidget},
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
     utils::{
         styles::TITLE_STYLE,
-        text::{first_similarity, title_line, TitleStyle},
+        text::{TitleStyle, first_similarity, title_line},
     },
 };
-
-use super::utils::centered_rect;
 
 static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
 

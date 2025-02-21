@@ -1,13 +1,14 @@
 use std::slice::Iter;
 
 use tui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
-    Frame,
 };
 
+use super::following::FollowingWidget;
 use crate::{
     handlers::{
         config::SharedCompleteConfig,
@@ -20,8 +21,6 @@ use crate::{
     ui::components::{ChannelSwitcherWidget, Component},
     utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };
-
-use super::following::FollowingWidget;
 
 const DASHBOARD_TITLE: [&str; 5] = [
     "   __           _ __       __          __        _ ",
@@ -156,11 +155,7 @@ impl Component for DashboardWidget {
         let favorite_channels_len = {
             let l = self.config.borrow().frontend.favorite_channels.len() as u16;
 
-            if l == 0 {
-                2
-            } else {
-                l + 1
-            }
+            if l == 0 { 2 } else { l + 1 }
         };
 
         let recent_channels_len = {

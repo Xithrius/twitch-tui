@@ -1,4 +1,4 @@
-use dialoguer::{console::Style, theme::ColorfulTheme, Confirm, Input};
+use dialoguer::{Confirm, Input, console::Style, theme::ColorfulTheme};
 
 use crate::handlers::config::{CompleteConfig, TwitchConfig};
 

@@ -1,10 +1,11 @@
-use color_eyre::{eyre::ContextCompat, Result};
+use std::sync::OnceLock;
+
+use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::{
-    header::{HeaderMap, HeaderValue, AUTHORIZATION},
     Client,
+    header::{AUTHORIZATION, HeaderMap, HeaderValue},
 };
 use serde::Deserialize;
-use std::sync::OnceLock;
 
 #[derive(Deserialize)]
 #[allow(dead_code)]

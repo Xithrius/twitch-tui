@@ -1,5 +1,6 @@
 use std::fmt::Display;
-use tui::{layout::Rect, Frame};
+
+use tui::{Frame, layout::Rect};
 
 use crate::{
     emotes::SharedEmotes,
@@ -11,7 +12,7 @@ use crate::{
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
-        components::{emote_picker::EmotePickerWidget, utils::InputWidget, Component},
+        components::{Component, emote_picker::EmotePickerWidget, utils::InputWidget},
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
     utils::{emotes::emotes_enabled, text::first_similarity},

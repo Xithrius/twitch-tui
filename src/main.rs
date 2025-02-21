@@ -17,10 +17,11 @@
     clippy::too_many_arguments
 )]
 
+use std::thread;
+
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
-use std::thread;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::{

@@ -1,9 +1,9 @@
 use chrono::{DateTime, Local};
 use tui::{
+    Frame,
     layout::{Constraint, Rect},
     prelude::Alignment,
-    widgets::{block::Position, Block, Borders, Clear, Row, Table},
-    Frame,
+    widgets::{Block, Borders, Clear, Row, Table, block::Position},
 };
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
     ui::components::Component,
     utils::{
         styles::{BOLD_STYLE, TITLE_STYLE},
-        text::{title_line, TitleStyle},
+        text::{TitleStyle, title_line},
     },
 };
 

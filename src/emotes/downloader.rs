@@ -1,7 +1,8 @@
+use std::{borrow::BorrowMut, collections::HashMap, path::Path};
+
 use color_eyre::Result;
 use futures::StreamExt;
 use reqwest::{Client, Response};
-use std::{borrow::BorrowMut, collections::HashMap, path::Path};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
@@ -15,11 +16,12 @@ use crate::{
 type EmoteMap = HashMap<String, (String, String, bool)>;
 
 mod twitch {
-    use crate::emotes::downloader::EmoteMap;
     use color_eyre::Result;
     use log::warn;
     use reqwest::Client;
     use serde::Deserialize;
+
+    use crate::emotes::downloader::EmoteMap;
 
     #[derive(Deserialize, Debug)]
     struct Emote {
@@ -90,7 +92,7 @@ mod twitch {
             ))
             .send()
             .await?
-            .error_for_status().map_err(|e| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope."); e})?
+            .error_for_status().inspect_err(|_| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope.");})?
             .json::<EmoteList>()
             .await?;
 
@@ -101,7 +103,7 @@ mod twitch {
             ))
             .send()
             .await?
-            .error_for_status().map_err(|e| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope."); e})?
+            .error_for_status().inspect_err(|_| { warn!("Unable to get user emotes, please verify that the access token includes the user:read:emotes scope.");})?
             .json::<EmoteList>().await?;
 
             user_emotes.pagination = emotes.pagination;
@@ -113,10 +115,11 @@ mod twitch {
 }
 
 mod betterttv {
-    use crate::emotes::downloader::EmoteMap;
     use color_eyre::Result;
     use reqwest::Client;
     use serde::Deserialize;
+
+    use crate::emotes::downloader::EmoteMap;
 
     #[derive(Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -182,10 +185,11 @@ mod betterttv {
 }
 
 mod seventv {
-    use crate::emotes::downloader::EmoteMap;
     use color_eyre::Result;
     use reqwest::Client;
     use serde::Deserialize;
+
+    use crate::emotes::downloader::EmoteMap;
 
     #[derive(Deserialize)]
     struct Emote {
@@ -244,11 +248,12 @@ mod seventv {
 }
 
 mod frankerfacez {
-    use crate::emotes::downloader::EmoteMap;
     use color_eyre::Result;
     use futures::StreamExt;
     use reqwest::Client;
     use serde::Deserialize;
+
+    use crate::emotes::downloader::EmoteMap;
 
     #[derive(Deserialize)]
     struct Emote {

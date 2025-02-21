@@ -1,5 +1,6 @@
-use once_cell::sync::Lazy;
 use std::env;
+
+use once_cell::sync::Lazy;
 use tui::style::{Color, Modifier, Style};
 
 pub static NO_COLOR: Lazy<bool> = Lazy::new(|| env::var("NO_COLOR").is_ok());
@@ -13,11 +14,7 @@ pub static BOLD: Lazy<Modifier> = Lazy::new(|| {
 
 macro_rules! color {
     ($color:expr) => {
-        if *NO_COLOR {
-            None
-        } else {
-            Some($color)
-        }
+        if *NO_COLOR { None } else { Some($color) }
     };
 }
 

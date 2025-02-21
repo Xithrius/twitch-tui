@@ -1,7 +1,8 @@
+use std::borrow::Cow;
+
 use memchr::memmem::Finder;
 use once_cell::sync::Lazy;
 use rustyline::line_buffer::LineBuffer;
-use std::borrow::Cow;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -153,9 +154,8 @@ mod tests {
         text::Line,
     };
 
-    use crate::ui::components::utils::InputListener;
-
     use super::*;
+    use crate::ui::components::utils::InputListener;
 
     #[test]
     fn test_get_cursor_position_with_single_byte_graphemes() {

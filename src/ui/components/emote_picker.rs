@@ -1,17 +1,18 @@
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use std::cmp::max;
+
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use log::warn;
 use once_cell::sync::Lazy;
-use std::cmp::max;
 use tui::{
+    Frame,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
-    Frame,
 };
 
 use crate::{
-    emotes::{load_picker_emote, SharedEmotes},
+    emotes::{SharedEmotes, load_picker_emote},
     handlers::{
         config::SharedCompleteConfig,
         user_input::events::{Event, Key},
@@ -20,8 +21,8 @@ use crate::{
     twitch::TwitchAction,
     ui::{
         components::{
-            utils::{centered_rect, InputWidget},
             Component,
+            utils::{InputWidget, centered_rect},
         },
         statics::TWITCH_MESSAGE_LIMIT,
     },
@@ -29,7 +30,7 @@ use crate::{
         colors::u32_to_color,
         emotes::UnicodePlaceholder,
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
-        text::{first_similarity_iter, title_line, TitleStyle},
+        text::{TitleStyle, first_similarity_iter, title_line},
     },
 };
 
@@ -159,7 +160,7 @@ impl Component for EmotePickerWidget {
                 .collect::<Vec<_>>();
 
             // Sort them by match score
-            matched_emotes.sort_by(|a, b| b.2 .0.cmp(&a.2 .0));
+            matched_emotes.sort_by(|a, b| b.2.0.cmp(&a.2.0));
 
             for (name, (filename, zero_width), (_, matched_indices)) in matched_emotes {
                 if items.len() >= max_len {

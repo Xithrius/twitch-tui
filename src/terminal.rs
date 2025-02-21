@@ -1,10 +1,11 @@
-use log::{debug, info, warn};
 use std::time::Duration;
+
+use log::{debug, info, warn};
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::{display_emote, query_emotes, ApplyCommand, DecodedEmote},
+    emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
         app::App,
         config::CompleteConfig,
@@ -12,7 +13,7 @@ use crate::{
         state::State,
         user_input::events::{Config, Events, Key},
     },
-    twitch::{oauth::get_twitch_client_id, TwitchAction},
+    twitch::{TwitchAction, oauth::get_twitch_client_id},
     utils::emotes::emotes_enabled,
 };
 

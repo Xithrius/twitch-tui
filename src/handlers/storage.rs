@@ -1,7 +1,7 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
-    fs::{read_to_string, File},
+    fs::{File, read_to_string},
     io::Write,
     path::Path,
     rc::Rc,

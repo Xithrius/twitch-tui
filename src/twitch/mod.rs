@@ -15,7 +15,7 @@ use log::{debug, info};
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 
 use crate::{
-    emotes::{get_twitch_emote, DownloadedEmotes},
+    emotes::{DownloadedEmotes, get_twitch_emote},
     handlers::{
         config::CompleteConfig,
         data::{DataBuilder, TwitchToTerminalAction},

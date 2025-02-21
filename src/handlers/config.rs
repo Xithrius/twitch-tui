@@ -1,22 +1,23 @@
-use color_eyre::eyre::{bail, Error, Result};
-use serde::{Deserialize, Serialize};
-use serde_with::DeserializeFromStr;
 use std::{
     cell::RefCell,
     env,
-    fs::{create_dir_all, read_to_string, File},
+    fs::{File, create_dir_all, read_to_string},
     io::Write,
     path::Path,
     rc::Rc,
     str::FromStr,
 };
+
+use color_eyre::eyre::{Error, Result, bail};
+use serde::{Deserialize, Serialize};
+use serde_with::DeserializeFromStr;
 use tokio::{runtime::Handle, task};
 use tui::widgets::BorderType;
 
 use crate::{
     emotes::support_graphics_protocol,
     handlers::{
-        args::{merge_args_into_config, Cli},
+        args::{Cli, merge_args_into_config},
         interactive::interactive_config,
         state::State,
     },
@@ -488,7 +489,9 @@ impl CompleteConfig {
                 Ok(config)
             } else {
                 persist_default_config(p);
-                bail!("Default configuration was generated at {path_str}, please fill it out with necessary information.")
+                bail!(
+                    "Default configuration was generated at {path_str}, please fill it out with necessary information."
+                )
             }
         } else if let Ok(file_content) = read_to_string(p) {
             let mut config: Self = match toml::from_str(&file_content) {
@@ -511,12 +514,16 @@ impl CompleteConfig {
                 let check_token = t.token.as_ref().map_or("", |t| t);
 
                 if t.username.is_empty() || t.channel.is_empty() || check_token.is_empty() {
-                    bail!("Twitch config section is missing one or more of the following: username, channel, token.");
+                    bail!(
+                        "Twitch config section is missing one or more of the following: username, channel, token."
+                    );
                 }
 
                 if emotes_enabled(&config.frontend) && !support_graphics_protocol().unwrap_or(false)
                 {
-                    eprintln!("This terminal does not support the graphics protocol.\nUse a terminal such as kitty, or disable emotes.");
+                    eprintln!(
+                        "This terminal does not support the graphics protocol.\nUse a terminal such as kitty, or disable emotes."
+                    );
                     std::process::exit(1);
                 }
             }
@@ -528,7 +535,10 @@ impl CompleteConfig {
         } else {
             bail!(
                 "Configuration could not be read correctly. See the following link for the example config: {}",
-                format!("{}/blob/main/default-config.toml", env!("CARGO_PKG_REPOSITORY"))
+                format!(
+                    "{}/blob/main/default-config.toml",
+                    env!("CARGO_PKG_REPOSITORY")
+                )
             )
         }
     }

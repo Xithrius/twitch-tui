@@ -1,21 +1,23 @@
-use base64::{engine::general_purpose::STANDARD, Engine};
+use std::{env, fmt, io::Write, path::PathBuf};
+
+use base64::{Engine, engine::general_purpose::STANDARD};
 use color_eyre::{
-    eyre::{anyhow, ContextCompat},
     Result,
+    eyre::{ContextCompat, anyhow},
 };
-use crossterm::{csi, queue, Command};
+use crossterm::{Command, csi, queue};
 use dialoguer::console::{Key, Term};
 use image::{
-    codecs::{gif::GifDecoder, webp::WebPDecoder},
-    imageops::FilterType,
     AnimationDecoder, DynamicImage, GenericImageView, ImageDecoder, ImageFormat, ImageReader, Rgba,
     RgbaImage,
+    codecs::{gif::GifDecoder, webp::WebPDecoder},
+    imageops::FilterType,
 };
-use std::{env, fmt, io::Write, path::PathBuf};
 
 use crate::utils::pathing::{
     create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
 };
+
 /// Macro to add the graphics protocol escape sequence around a command.
 /// See <https://sw.kovidgoyal.net/kitty/graphics-protocol/> for documentation of the terminal graphics protocol
 macro_rules! gp {

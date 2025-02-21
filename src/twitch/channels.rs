@@ -8,9 +8,8 @@ use color_eyre::Result;
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::{handlers::config::TwitchConfig, ui::components::utils::SearchItemGetter};
-
 use super::oauth::{get_twitch_client, get_twitch_client_id};
+use crate::{handlers::config::TwitchConfig, ui::components::utils::SearchItemGetter};
 
 const FOLLOWER_COUNT: usize = 100;
 

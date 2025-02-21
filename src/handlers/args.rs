@@ -1,4 +1,4 @@
-use clap::{builder::PossibleValue, Parser, ValueEnum};
+use clap::{Parser, ValueEnum, builder::PossibleValue};
 
 use crate::handlers::{
     config::{CompleteConfig, Palette, Theme},

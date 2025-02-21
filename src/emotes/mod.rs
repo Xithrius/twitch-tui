@@ -1,12 +1,13 @@
-use color_eyre::{eyre::anyhow, Result};
-use log::{error, info, warn};
 use std::{
     cell::{OnceCell, RefCell},
-    collections::{hash_map::DefaultHasher, BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, hash_map::DefaultHasher},
     hash::{Hash, Hasher},
     rc::Rc,
     sync::OnceLock,
 };
+
+use color_eyre::{Result, eyre::anyhow};
+use log::{error, info, warn};
 use tokio::sync::{
     mpsc::{Receiver, Sender},
     oneshot::{Receiver as OSReceiver, Sender as OSSender},
@@ -25,7 +26,7 @@ mod downloader;
 mod graphics_protocol;
 
 pub use downloader::get_twitch_emote;
-pub use graphics_protocol::{support_graphics_protocol, ApplyCommand, DecodedEmote};
+pub use graphics_protocol::{ApplyCommand, DecodedEmote, support_graphics_protocol};
 
 // HashMap of emote name, emote filename, and if the emote is an overlay
 pub type DownloadedEmotes = BTreeMap<String, (String, bool)>;

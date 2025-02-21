@@ -1,16 +1,18 @@
-use rustyline::{
-    line_buffer::{ChangeListener, DeleteListener, LineBuffer},
-    At, Word,
-};
 use std::fmt::Display;
+
+use rustyline::{
+    At, Word,
+    line_buffer::{ChangeListener, DeleteListener, LineBuffer},
+};
 use tui::{
+    Frame,
     layout::{Position as LayoutPosition, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{block::Position as BlockPosition, Block, Borders, Clear, Paragraph},
-    Frame,
+    widgets::{Block, Borders, Clear, Paragraph, block::Position as BlockPosition},
 };
 
+use super::centered_rect;
 use crate::{
     handlers::{
         config::SharedCompleteConfig,
@@ -20,11 +22,9 @@ use crate::{
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
     utils::{
         styles::NO_COLOR,
-        text::{get_cursor_position, title_line, TitleStyle},
+        text::{TitleStyle, get_cursor_position, title_line},
     },
 };
-
-use super::centered_rect;
 
 pub type InputValidator<T> = Box<dyn Fn(T, String) -> bool>;
 pub type VisualValidator = Box<dyn Fn(String) -> String>;
@@ -105,9 +105,7 @@ impl<T: Clone> InputWidget<T> {
     pub fn is_valid(&self) -> bool {
         self.input_validator
             .as_ref()
-            .map_or(true, |(items, validator)| {
-                validator(items.clone(), self.input.to_string())
-            })
+            .is_none_or(|(items, validator)| validator(items.clone(), self.input.to_string()))
     }
 
     pub fn accept_suggestion(&mut self) {

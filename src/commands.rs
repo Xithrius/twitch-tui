@@ -1,16 +1,16 @@
 use std::{
     fmt,
-    io::{stdout, Stdout, Write},
+    io::{Stdout, Write, stdout},
 };
 
 use crossterm::{
+    Command,
     cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
     event::{DisableMouseCapture, EnableMouseCapture},
     execute, queue,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    Command,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use tui::{backend::CrosstermBackend, Terminal};
+use tui::{Terminal, backend::CrosstermBackend};
 
 use crate::handlers::config::{CursorType, FrontendConfig};
 

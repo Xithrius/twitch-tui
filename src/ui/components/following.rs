@@ -1,15 +1,13 @@
 use once_cell::sync::Lazy;
+use tui::{Frame, layout::Rect};
 
-use tui::{layout::Rect, Frame};
-
+use super::utils::SearchWidget;
 use crate::{
     handlers::{config::SharedCompleteConfig, user_input::events::Event},
     terminal::TerminalAction,
-    twitch::{channels::Following, TwitchAction},
+    twitch::{TwitchAction, channels::Following},
     ui::components::Component,
 };
-
-use super::utils::SearchWidget;
 
 static INCORRECT_SCOPES_ERROR_MESSAGE: Lazy<Vec<&'static str>> = Lazy::new(|| {
     vec![
