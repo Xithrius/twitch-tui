@@ -1,10 +1,9 @@
-use std::env;
+use std::{env, sync::LazyLock};
 
-use once_cell::sync::Lazy;
 use tui::style::{Color, Modifier, Style};
 
-pub static NO_COLOR: Lazy<bool> = Lazy::new(|| env::var("NO_COLOR").is_ok());
-pub static BOLD: Lazy<Modifier> = Lazy::new(|| {
+pub static NO_COLOR: LazyLock<bool> = LazyLock::new(|| env::var("NO_COLOR").is_ok());
+pub static BOLD: LazyLock<Modifier> = LazyLock::new(|| {
     if *NO_COLOR {
         Modifier::empty()
     } else {
@@ -20,7 +19,7 @@ macro_rules! color {
 
 macro_rules! define_style {
     ($name:ident, $($key:ident: $value:expr),*) => {
-        pub static $name: Lazy<Style> = Lazy::new(|| Style {
+        pub static $name: std::sync::LazyLock<Style> = std::sync::LazyLock::new(|| Style {
             $(
                 $key: $value,
             )*

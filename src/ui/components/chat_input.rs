@@ -85,7 +85,7 @@ impl ChatInputWidget {
         self.input.is_focused()
     }
 
-    pub fn toggle_focus(&mut self) {
+    pub const fn toggle_focus(&mut self) {
         self.input.toggle_focus();
     }
 

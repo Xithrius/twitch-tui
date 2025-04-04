@@ -48,7 +48,7 @@ impl Filters {
         self.enabled
     }
 
-    pub fn toggle(&mut self) {
+    pub const fn toggle(&mut self) {
         self.enabled = !self.enabled;
     }
 
@@ -56,7 +56,7 @@ impl Filters {
         self.reversed
     }
 
-    pub fn reverse(&mut self) {
+    pub const fn reverse(&mut self) {
         self.reversed = !self.reversed;
     }
 }

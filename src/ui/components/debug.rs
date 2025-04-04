@@ -39,7 +39,7 @@ impl DebugWidget {
         self.focused
     }
 
-    pub fn toggle_focus(&mut self) {
+    pub const fn toggle_focus(&mut self) {
         self.focused = !self.focused;
     }
 

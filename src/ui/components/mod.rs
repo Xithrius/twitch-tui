@@ -12,6 +12,8 @@ mod state_tabs;
 mod emote_picker;
 pub mod utils;
 
+use std::sync::LazyLock;
+
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
 pub use chat_input::ChatInputWidget;
@@ -21,7 +23,6 @@ pub use debug::DebugWidget;
 pub use error::ErrorWidget;
 pub use help::HelpWidget;
 pub use message_search::MessageSearchWidget;
-use once_cell::sync::Lazy;
 pub use state_tabs::StateTabsWidget;
 use tui::{Frame, layout::Rect};
 
@@ -37,7 +38,7 @@ use crate::{
     terminal::TerminalAction,
 };
 
-static WINDOW_SIZE_TOO_SMALL_ERROR: Lazy<Vec<&'static str>> = Lazy::new(|| {
+static WINDOW_SIZE_TOO_SMALL_ERROR: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
     vec![
         "Window to small!",
         "Must allow for at least 60x10.",

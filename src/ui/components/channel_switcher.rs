@@ -1,8 +1,7 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::LazyLock};
 
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use log::debug;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use tui::{
     Frame,
@@ -36,7 +35,7 @@ use crate::{
     },
 };
 
-static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
+static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub struct ChannelSwitcherWidget {
     config: SharedCompleteConfig,
@@ -133,7 +132,7 @@ impl ChannelSwitcherWidget {
         self.focused
     }
 
-    pub fn toggle_focus(&mut self) {
+    pub const fn toggle_focus(&mut self) {
         self.focused = !self.focused;
     }
 }
@@ -367,7 +366,7 @@ impl Component for ChannelSwitcherWidget {
                             .channel
                             .clone_from(&selected_channel);
 
-                        debug!("Joining new channel {:?}", selected_channel);
+                        debug!("Joining new channel {selected_channel:?}");
 
                         return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
                     }

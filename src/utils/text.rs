@@ -1,7 +1,6 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::LazyLock};
 
 use memchr::memmem::Finder;
-use once_cell::sync::Lazy;
 use rustyline::line_buffer::LineBuffer;
 use tui::{style::Style, text::Span};
 use unicode_segmentation::UnicodeSegmentation;
@@ -120,7 +119,7 @@ pub fn clean_message(msg: &str) -> String {
     const U_E0000: char = '\u{e0000}';
     const U_E0000_LEN: usize = U_E0000.len_utf8();
     const U_E0000_STR: &str = "\u{e0000}";
-    static FINDER: Lazy<Finder> = Lazy::new(|| Finder::new(U_E0000_STR));
+    static FINDER: LazyLock<Finder> = LazyLock::new(|| Finder::new(U_E0000_STR));
 
     let msg = msg.trim_matches(['\0', ' ', U_E0000]);
 

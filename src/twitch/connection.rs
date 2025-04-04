@@ -55,7 +55,7 @@ pub async fn wait_client_stream(
                         .unwrap();
                 }
             },
-        };
+        }
 
         sleep(Duration::from_secs(timeout)).await;
 

@@ -1,8 +1,7 @@
-use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
+use std::{clone::Clone, convert::From, iter::Iterator, sync::LazyLock, vec::Vec};
 
 use color_eyre::Result;
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
-use once_cell::sync::Lazy;
 use tui::{
     Frame,
     layout::Rect,
@@ -31,7 +30,7 @@ use crate::{
     },
 };
 
-static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
+static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub trait SearchItemGetter<T>
 where

@@ -5,14 +5,14 @@ use std::{
     io::Write,
     path::Path,
     rc::Rc,
+    sync::LazyLock,
 };
 
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use crate::{handlers::config::StorageConfig, utils::pathing::config_path};
 
-static ITEM_KEYS: Lazy<Vec<&str>> = Lazy::new(|| vec!["channels", "mentions"]);
+static ITEM_KEYS: LazyLock<Vec<&str>> = LazyLock::new(|| vec!["channels", "mentions"]);
 
 pub type SharedStorage = Rc<RefCell<Storage>>;
 type StorageMap = HashMap<String, StorageItem>;

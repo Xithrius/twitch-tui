@@ -99,7 +99,7 @@ pub async fn twitch_irc(
 
                 match action {
                     TwitchAction::Privmsg(message) => {
-                        debug!("Sending message to Twitch: {}", message);
+                        debug!("Sending message to Twitch: {message}");
 
                         client
                             .send_privmsg(current_channel, message)
@@ -143,7 +143,7 @@ pub async fn twitch_irc(
                     Err(err) => {
                         connected = false;
 
-                        debug!("Twitch connection error encountered: {}, attempting to reconnect.", err);
+                        debug!("Twitch connection error encountered: {err}, attempting to reconnect.");
 
                         (client, stream) = client_stream_reconnect(err, tx.clone(), data_builder, &config).await;
 

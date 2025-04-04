@@ -14,7 +14,7 @@ pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
 }
 
 pub const fn get_emote_offset(width: u16, cell_width: u16, cols: u16) -> (u16, u16) {
-    let w = (width + if cols % 2 == 0 { 0 } else { cell_width } + 1) / 2;
+    let w = (width + if cols % 2 == 0 { 0 } else { cell_width }).div_ceil(2);
 
     let (pxo, co) = (w % cell_width, w / cell_width);
 

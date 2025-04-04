@@ -1,10 +1,9 @@
-use std::{borrow::Cow, mem::swap, string::ToString};
+use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
 use chrono::{DateTime, offset::Local};
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use log::{error, warn};
 use memchr::{memchr_iter, memmem};
-use once_cell::sync::Lazy;
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
@@ -29,7 +28,7 @@ use crate::{
     },
 };
 
-static FUZZY_FINDER: Lazy<SkimMatcherV2> = Lazy::new(SkimMatcherV2::default);
+static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub enum TwitchToTerminalAction {
     Message(RawMessageData),
@@ -404,8 +403,8 @@ impl MessageData {
         username_highlight: Highlight,
         emotes: &mut &[(Color, Color)],
     ) -> Vec<Span<'s>> {
-        static EMOTE_FINDER: Lazy<memmem::Finder> =
-            Lazy::new(|| memmem::Finder::new(ZERO_WIDTH_SPACE_STR));
+        static EMOTE_FINDER: LazyLock<memmem::Finder> =
+            LazyLock::new(|| memmem::Finder::new(ZERO_WIDTH_SPACE_STR));
 
         // A line contains emotes if `emotes` is not empty and `line` starts with a unicode placeholder or contains ZWS.
         if emotes.is_empty()

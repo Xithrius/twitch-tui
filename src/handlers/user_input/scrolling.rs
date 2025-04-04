@@ -17,15 +17,15 @@ impl Scrolling {
         self.inverted
     }
 
-    pub fn up(&mut self) {
+    pub const fn up(&mut self) {
         self.offset = self.offset.saturating_add(1);
     }
 
-    pub fn down(&mut self) {
+    pub const fn down(&mut self) {
         self.offset = self.offset.saturating_sub(1);
     }
 
-    pub fn jump_to(&mut self, index: usize) {
+    pub const fn jump_to(&mut self, index: usize) {
         self.offset = index;
     }
 

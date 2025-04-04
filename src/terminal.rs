@@ -66,7 +66,7 @@ pub async fn ui_driver(
                 for message in &mut *app.messages.borrow_mut() {
                     message.reparse_emotes(&app.emotes, is_emotes_enabled);
                 }
-            };
+            }
 
             // Check if we need to load a decoded emote
             if let Some(rx) = &mut drx {

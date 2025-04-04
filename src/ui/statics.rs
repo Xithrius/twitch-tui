@@ -1,11 +1,11 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
-pub static HELP_COLUMN_TITLES: Lazy<Vec<&str>> =
-    Lazy::new(|| vec!["State", "Keybind", "Description"]);
+pub static HELP_COLUMN_TITLES: LazyLock<Vec<&str>> =
+    LazyLock::new(|| vec!["State", "Keybind", "Description"]);
 
 // TODO: Make this type have less complexity
 #[allow(clippy::type_complexity)]
-pub static HELP_KEYBINDS: Lazy<Vec<(&str, Vec<(&str, &str)>)>> = Lazy::new(|| {
+pub static HELP_KEYBINDS: LazyLock<Vec<(&str, Vec<(&str, &str)>)>> = LazyLock::new(|| {
     vec![
         (
             "Dashboard",
@@ -66,7 +66,7 @@ pub static HELP_KEYBINDS: Lazy<Vec<(&str, Vec<(&str, &str)>)>> = Lazy::new(|| {
 });
 
 // https://help.twitch.tv/s/article/chat-commands?language=en_US
-pub static COMMANDS: Lazy<Vec<&str>> = Lazy::new(|| {
+pub static COMMANDS: LazyLock<Vec<&str>> = LazyLock::new(|| {
     vec![
         "ban",
         "unban",
@@ -113,4 +113,4 @@ pub static TWITCH_MESSAGE_LIMIT: usize = 500;
 // This thread is from 8 years ago, so this regex match may be outdated.
 // It is now possible to have channel names be 3 characters, such as "ppy".
 pub static NAME_MAX_CHARACTERS: usize = 25;
-pub static NAME_RESTRICTION_REGEX: Lazy<&str> = Lazy::new(|| "^[a-zA-Z0-9_]{3,25}$");
+pub static NAME_RESTRICTION_REGEX: LazyLock<&str> = LazyLock::new(|| "^[a-zA-Z0-9_]{3,25}$");

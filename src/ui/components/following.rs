@@ -1,4 +1,5 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
+
 use tui::{Frame, layout::Rect};
 
 use super::utils::SearchWidget;
@@ -9,7 +10,7 @@ use crate::{
     ui::components::Component,
 };
 
-static INCORRECT_SCOPES_ERROR_MESSAGE: Lazy<Vec<&'static str>> = Lazy::new(|| {
+static INCORRECT_SCOPES_ERROR_MESSAGE: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
     vec![
         "Failed to get the list of streamers you currently follow.",
         "Either you have incorrect scopes in your token, or the API is down.",
