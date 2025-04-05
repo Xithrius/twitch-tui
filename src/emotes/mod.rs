@@ -79,11 +79,11 @@ impl Drop for Emotes {
 impl Emotes {
     pub fn new(enabled: bool) -> Self {
         Self {
-            enabled,
             user_emotes: RefCell::default(),
             global_emotes: RefCell::default(),
             info: RefCell::default(),
             cell_size: OnceCell::default(),
+            enabled,
         }
     }
 
