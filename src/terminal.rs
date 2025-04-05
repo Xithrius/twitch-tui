@@ -14,7 +14,6 @@ use crate::{
         user_input::events::{Config, Events, Key},
     },
     twitch::{TwitchAction, oauth::get_twitch_client_id},
-    utils::emotes::emotes_enabled,
 };
 
 pub enum TerminalAction {
@@ -54,7 +53,7 @@ pub async fn ui_driver(
 
     terminal.clear().unwrap();
 
-    let is_emotes_enabled = emotes_enabled(&config.frontend);
+    let is_emotes_enabled = app.emotes.enabled;
 
     loop {
         if is_emotes_enabled {
@@ -64,7 +63,7 @@ pub async fn ui_driver(
                 *app.emotes.global_emotes.borrow_mut() = global_emotes;
 
                 for message in &mut *app.messages.borrow_mut() {
-                    message.reparse_emotes(&app.emotes, is_emotes_enabled);
+                    message.reparse_emotes(&app.emotes);
                 }
             }
 
@@ -95,11 +94,7 @@ pub async fn ui_driver(
                 TwitchToTerminalAction::Message(m) => {
                     app.messages
                         .borrow_mut()
-                        .push_front(MessageData::from_twitch_message(
-                            m,
-                            &app.emotes,
-                            is_emotes_enabled,
-                        ));
+                        .push_front(MessageData::from_twitch_message(m, &app.emotes));
 
                     // If scrolling is enabled, pad for more messages.
                     if app.components.chat.scroll_offset.get_offset() > 0 {
@@ -170,7 +165,6 @@ pub async fn ui_driver(
                                 None,
                                 highlight,
                                 &app.emotes,
-                                is_emotes_enabled,
                             );
 
                             app.messages.borrow_mut().push_front(message_data);

@@ -62,6 +62,8 @@ pub struct Emotes {
     pub info: RefCell<HashMap<String, LoadedEmote>>,
     /// Terminal cell size in pixels: (width, height)
     pub cell_size: OnceCell<(f32, f32)>,
+    /// Are emotes enabled?
+    pub enabled: bool,
 }
 
 pub type SharedEmotes = Rc<Emotes>;
@@ -75,6 +77,16 @@ impl Drop for Emotes {
 }
 
 impl Emotes {
+    pub fn new(enabled: bool) -> Self {
+        Self {
+            enabled,
+            user_emotes: RefCell::default(),
+            global_emotes: RefCell::default(),
+            info: RefCell::default(),
+            cell_size: OnceCell::default(),
+        }
+    }
+
     pub fn unload(&self) {
         self.info
             .borrow()

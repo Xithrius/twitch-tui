@@ -99,14 +99,12 @@ impl MessageData {
         message_id: Option<String>,
         highlight: bool,
         emotes: &SharedEmotes,
-        is_emotes_enabled: bool,
     ) -> Self {
         let (payload, emotes) = Self::parse_emotes(
             payload,
             emotes,
             &emotes.user_emotes.borrow(),
             &emotes.global_emotes.borrow(),
-            is_emotes_enabled,
         );
 
         Self {
@@ -122,17 +120,12 @@ impl MessageData {
     }
 
     /// Used to create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
-    pub fn from_twitch_message(
-        msg: RawMessageData,
-        emotes: &SharedEmotes,
-        is_emotes_enabled: bool,
-    ) -> Self {
+    pub fn from_twitch_message(msg: RawMessageData, emotes: &SharedEmotes) -> Self {
         let (payload, emotes) = Self::parse_emotes(
             msg.payload,
             emotes,
             &msg.emotes,
             &emotes.global_emotes.borrow(),
-            is_emotes_enabled,
         );
 
         Self {
@@ -147,7 +140,7 @@ impl MessageData {
         }
     }
 
-    pub fn reparse_emotes(&mut self, emotes: &SharedEmotes, is_emotes_enabled: bool) {
+    pub fn reparse_emotes(&mut self, emotes: &SharedEmotes) {
         // Small hack to avoid cloning `self.payload`
         let mut payload = String::new();
         swap(&mut payload, &mut self.payload);
@@ -157,7 +150,6 @@ impl MessageData {
             emotes,
             &emotes.global_emotes.borrow(),
             &DownloadedEmotes::default(),
-            is_emotes_enabled,
         );
 
         self.payload = payload;
@@ -187,9 +179,8 @@ impl MessageData {
         emotes: &SharedEmotes,
         emotes_set1: &DownloadedEmotes,
         emotes_set2: &DownloadedEmotes,
-        is_emotes_enabled: bool,
     ) -> (String, Vec<(Color, Color)>) {
-        if !is_emotes_enabled {
+        if !emotes.enabled {
             return (payload, vec![]);
         }
 
@@ -666,7 +657,9 @@ impl<'conf> DataBuilder<'conf> {
 #[cfg(test)]
 #[cfg(not(target_os = "windows"))]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::{collections::BTreeMap, rc::Rc};
+
+    use crate::emotes::Emotes;
 
     use super::*;
 
@@ -962,7 +955,8 @@ mod tests {
             false,
         );
 
-        let data = MessageData::from_twitch_message(raw_message, &SharedEmotes::default(), false);
+        let emotes = Rc::new(Emotes::new(false));
+        let data = MessageData::from_twitch_message(raw_message, &emotes);
 
         let frontendconfig = FrontendConfig {
             show_datetimes: false,
