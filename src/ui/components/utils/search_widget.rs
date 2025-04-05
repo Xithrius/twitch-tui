@@ -1,7 +1,6 @@
-use std::{clone::Clone, convert::From, iter::Iterator, sync::LazyLock, vec::Vec};
+use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
 use color_eyre::Result;
-use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use tui::{
     Frame,
     layout::Rect,
@@ -25,12 +24,11 @@ use crate::{
     twitch::TwitchAction,
     ui::components::{Component, ErrorWidget},
     utils::{
+        search::fuzzy_pattern_match,
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
         text::{TitleStyle, title_line},
     },
 };
-
-static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub trait SearchItemGetter<T>
 where
@@ -167,12 +165,8 @@ where
 
             self.filtered_items = None;
         } else {
-            let item_filter = |c: String| -> Vec<usize> {
-                FUZZY_FINDER
-                    .fuzzy_indices(&c, &current_input)
-                    .map(|(_, indices)| indices)
-                    .unwrap_or_default()
-            };
+            let item_filter =
+                |choice: String| -> Vec<usize> { fuzzy_pattern_match(&current_input, &choice) };
 
             let mut matched = vec![];
 

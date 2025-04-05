@@ -1,7 +1,7 @@
 use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
 use chrono::{DateTime, offset::Local};
-use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+use fuzzy_matcher::FuzzyMatcher;
 use log::{error, warn};
 use memchr::{memchr_iter, memmem};
 use tui::{
@@ -20,6 +20,7 @@ use crate::{
             PRIVATE_USE_UNICODE, UnicodePlaceholder, ZERO_WIDTH_SPACE, ZERO_WIDTH_SPACE_STR,
             get_emote_offset,
         },
+        search::FUZZY_FINDER,
         styles::{
             DATETIME_DARK_STYLE, DATETIME_LIGHT_STYLE, HIGHLIGHT_NAME_DARK_STYLE,
             HIGHLIGHT_NAME_LIGHT_STYLE, SEARCH_STYLE, SYSTEM_CHAT_STYLE,
@@ -27,8 +28,6 @@ use crate::{
         text::split_cow_in_place,
     },
 };
-
-static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub enum TwitchToTerminalAction {
     Message(RawMessageData),

@@ -1,6 +1,5 @@
-use std::{fmt::Display, sync::LazyLock};
+use std::fmt::Display;
 
-use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use log::debug;
 use regex::Regex;
 use tui::{
@@ -30,12 +29,11 @@ use crate::{
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
     utils::{
+        search::fuzzy_pattern_match,
         styles::TITLE_STYLE,
         text::{TitleStyle, first_similarity, title_line},
     },
 };
-
-static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub struct ChannelSwitcherWidget {
     config: SharedCompleteConfig,
@@ -161,12 +159,8 @@ impl Component for ChannelSwitcherWidget {
 
             self.filtered_channels = None;
         } else {
-            let channel_filter = |c: String| -> Vec<usize> {
-                FUZZY_FINDER
-                    .fuzzy_indices(&c, &current_input)
-                    .map(|(_, indices)| indices)
-                    .unwrap_or_default()
-            };
+            let channel_filter =
+                |choice: String| -> Vec<usize> { fuzzy_pattern_match(&current_input, &choice) };
 
             let mut matched = vec![];
 

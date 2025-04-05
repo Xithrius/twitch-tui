@@ -1,6 +1,6 @@
-use std::{cmp::max, sync::LazyLock};
+use std::cmp::max;
 
-use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+use fuzzy_matcher::FuzzyMatcher;
 use log::warn;
 use tui::{
     Frame,
@@ -28,12 +28,11 @@ use crate::{
     utils::{
         colors::u32_to_color,
         emotes::UnicodePlaceholder,
+        search::FUZZY_FINDER,
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
         text::{TitleStyle, first_similarity_iter, title_line},
     },
 };
-
-static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::default);
 
 pub struct EmotePickerWidget {
     config: SharedCompleteConfig,
