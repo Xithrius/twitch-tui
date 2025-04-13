@@ -267,10 +267,10 @@ impl<T: Clone> Component for InputWidget<T> {
                     self.input
                         .delete_prev_word(Word::Emacs, 1, &mut self.input_listener);
                 }
-                Key::Ctrl('d') => {
+                Key::Ctrl('d') | Key::Delete => {
                     self.input.delete(1, &mut self.input_listener);
                 }
-                Key::Backspace | Key::Delete => {
+                Key::Backspace => {
                     self.input.backspace(1, &mut self.input_listener);
                 }
                 Key::Tab => {
