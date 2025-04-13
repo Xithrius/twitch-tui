@@ -13,7 +13,7 @@ use crate::{
     emotes::SharedEmotes,
     handlers::{
         app::SharedMessages,
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         data::MessageData,
         filters::SharedFilters,
         state::State,
@@ -35,7 +35,7 @@ use crate::{
 };
 
 pub struct ChatWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     messages: SharedMessages,
     chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
@@ -48,7 +48,7 @@ pub struct ChatWidget {
 
 impl ChatWidget {
     pub fn new(
-        config: SharedCompleteConfig,
+        config: SharedCoreConfig,
         messages: SharedMessages,
         storage: &SharedStorage,
         emotes: &SharedEmotes,

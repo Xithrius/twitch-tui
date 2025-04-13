@@ -17,7 +17,7 @@ use tui::{
 use super::{InputWidget, centered_rect};
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -42,7 +42,7 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     focused: bool,
 
     item_getter: U,
@@ -62,11 +62,7 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    pub fn new(
-        config: SharedCompleteConfig,
-        item_getter: U,
-        error_message: Vec<&'static str>,
-    ) -> Self {
+    pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
         let error_widget = ErrorWidget::new(error_message);
 

@@ -27,11 +27,11 @@ use crate::{
     },
 };
 
-pub type SharedCompleteConfig = Rc<RefCell<CompleteConfig>>;
+pub type SharedCoreConfig = Rc<RefCell<CoreConfig>>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
-pub struct CompleteConfig {
+pub struct CoreConfig {
     /// Connecting to Twitch.
     pub twitch: TwitchConfig,
     /// Internal functionality.
@@ -437,7 +437,7 @@ impl ToVec<(String, String)> for FrontendConfig {
     }
 }
 
-fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
+fn persist_config(path: &Path, config: &CoreConfig) -> Result<()> {
     let toml_string = toml::to_string(&config)?;
     let mut file = File::create(path)?;
 
@@ -468,7 +468,7 @@ fn persist_default_config(path: &Path) {
     drop(file);
 }
 
-impl CompleteConfig {
+impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
         let path_str = cache_path("");
 

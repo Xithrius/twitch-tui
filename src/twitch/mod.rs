@@ -17,7 +17,7 @@ use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use crate::{
     emotes::{DownloadedEmotes, get_twitch_emote},
     handlers::{
-        config::CompleteConfig,
+        config::CoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },
@@ -39,7 +39,7 @@ pub enum TwitchAction {
 }
 
 pub async fn twitch_irc(
-    mut config: CompleteConfig,
+    mut config: CoreConfig,
     tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
 ) {

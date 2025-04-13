@@ -4,7 +4,7 @@ use tui::{Frame, layout::Rect};
 
 use super::utils::SearchWidget;
 use crate::{
-    handlers::{config::SharedCompleteConfig, user_input::events::Event},
+    handlers::{config::SharedCoreConfig, user_input::events::Event},
     terminal::TerminalAction,
     twitch::{TwitchAction, channels::Following},
     ui::components::Component,
@@ -23,12 +23,12 @@ static INCORRECT_SCOPES_ERROR_MESSAGE: LazyLock<Vec<&'static str>> = LazyLock::n
 
 pub struct FollowingWidget {
     #[allow(dead_code)]
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     pub search_widget: SearchWidget<String, Following>,
 }
 
 impl FollowingWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCoreConfig) -> Self {
         let item_getter = Following::new(config.borrow().twitch.clone());
 
         let search_widget = SearchWidget::new(

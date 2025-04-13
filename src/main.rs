@@ -25,7 +25,7 @@ use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
 
 use crate::{
-    handlers::{app::App, args::Cli, config::CompleteConfig},
+    handlers::{app::App, args::Cli, config::CoreConfig},
     utils::emotes::emotes_enabled,
 };
 
@@ -37,7 +37,7 @@ pub mod twitch;
 mod ui;
 mod utils;
 
-fn initialize_logging(config: &CompleteConfig) {
+fn initialize_logging(config: &CoreConfig) {
     let logger = fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
 
     color_eyre::install().unwrap();
 
-    let mut config = CompleteConfig::new(Cli::parse())
+    let mut config = CoreConfig::new(Cli::parse())
         .wrap_err("Configuration error.")
         .unwrap();
 

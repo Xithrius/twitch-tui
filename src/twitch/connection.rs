@@ -7,12 +7,12 @@ use irc::{
 use tokio::{sync::mpsc::Sender, time::sleep};
 
 use crate::handlers::{
-    config::CompleteConfig,
+    config::CoreConfig,
     data::{DataBuilder, TwitchToTerminalAction},
 };
 
 /// Initialize the config and send it to the client to connect to an IRC channel.
-async fn create_client_stream(config: CompleteConfig) -> Result<(Client, ClientStream), Error> {
+async fn create_client_stream(config: CoreConfig) -> Result<(Client, ClientStream), Error> {
     let irc_config = Config {
         nickname: Some(config.twitch.username.clone()),
         server: Some(config.twitch.server.clone()),
@@ -37,7 +37,7 @@ async fn create_client_stream(config: CompleteConfig) -> Result<(Client, ClientS
 pub async fn wait_client_stream(
     tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
-    config: CompleteConfig,
+    config: CoreConfig,
 ) -> (Client, ClientStream) {
     let mut timeout = 1;
 
@@ -68,7 +68,7 @@ pub async fn client_stream_reconnect(
     err: Error,
     tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
-    config: &CompleteConfig,
+    config: &CoreConfig,
 ) -> (Client, ClientStream) {
     match err {
         PingTimeout => {

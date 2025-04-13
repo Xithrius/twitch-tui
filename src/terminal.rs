@@ -8,7 +8,7 @@ use crate::{
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
         app::App,
-        config::CompleteConfig,
+        config::CoreConfig,
         data::{MessageData, TwitchToTerminalAction},
         state::State,
         user_input::events::{Config, Events, Key},
@@ -25,7 +25,7 @@ pub enum TerminalAction {
 }
 
 pub async fn ui_driver(
-    config: CompleteConfig,
+    config: CoreConfig,
     mut app: App,
     tx: Sender<TwitchAction>,
     mut rx: Receiver<TwitchToTerminalAction>,

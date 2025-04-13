@@ -7,7 +7,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     emotes::DownloadedEmotes,
-    handlers::config::{CompleteConfig, FrontendConfig},
+    handlers::config::{CoreConfig, FrontendConfig},
     twitch::oauth::{get_channel_id, get_twitch_client, get_twitch_client_id},
     utils::pathing::cache_path,
 };
@@ -421,7 +421,7 @@ fn get_enabled_emote_providers(config: &FrontendConfig) -> Vec<EmoteProvider> {
 }
 
 pub async fn get_emotes(
-    config: &CompleteConfig,
+    config: &CoreConfig,
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
     // Reuse the same client and headers for twitch requests

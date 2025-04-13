@@ -30,7 +30,7 @@ use crate::{
     emotes::SharedEmotes,
     handlers::{
         app::SharedMessages,
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         filters::SharedFilters,
         storage::SharedStorage,
         user_input::events::{Event, Key},
@@ -83,7 +83,7 @@ pub struct Components {
 
 impl Components {
     pub fn new(
-        config: &SharedCompleteConfig,
+        config: &SharedCoreConfig,
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,

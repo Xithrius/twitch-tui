@@ -15,7 +15,7 @@ use tui::{
 use super::centered_rect;
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -48,7 +48,7 @@ impl DeleteListener for InputListener {
 }
 
 pub struct InputWidget<T: Clone> {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     input: LineBuffer,
     title: String,
     focused: bool,
@@ -61,7 +61,7 @@ pub struct InputWidget<T: Clone> {
 
 impl<T: Clone> InputWidget<T> {
     pub fn new(
-        config: SharedCompleteConfig,
+        config: SharedCoreConfig,
         title: &str,
         input_validator: Option<(T, InputValidator<T>)>,
         visual_indicator: Option<VisualValidator>,

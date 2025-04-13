@@ -18,7 +18,7 @@ use tui::{
 use super::utils::centered_rect;
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         storage::SharedStorage,
         user_input::events::{Event, Key},
     },
@@ -36,7 +36,7 @@ use crate::{
 };
 
 pub struct ChannelSwitcherWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     focused: bool,
     storage: SharedStorage,
     search_input: InputWidget<SharedStorage>,
@@ -47,7 +47,7 @@ pub struct ChannelSwitcherWidget {
 }
 
 impl ChannelSwitcherWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+    pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
         let input_validator = Box::new(|_, s: String| -> bool {
             Regex::new(&NAME_RESTRICTION_REGEX)
                 .unwrap()

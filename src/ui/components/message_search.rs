@@ -4,7 +4,7 @@ use tui::{Frame, layout::Rect};
 
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -15,12 +15,12 @@ use crate::{
 };
 
 pub struct MessageSearchWidget {
-    _config: SharedCompleteConfig,
+    _config: SharedCoreConfig,
     input: InputWidget<()>,
 }
 
 impl MessageSearchWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCoreConfig) -> Self {
         let input_validator =
             Box::new(|(), s: String| -> bool { !s.is_empty() && s.len() <= TWITCH_MESSAGE_LIMIT });
 

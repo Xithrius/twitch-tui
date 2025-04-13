@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum, builder::PossibleValue};
 
 use crate::handlers::{
-    config::{CompleteConfig, Palette, Theme},
+    config::{CoreConfig, Palette, Theme},
     state::State,
 };
 
@@ -87,7 +87,7 @@ pub struct Cli {
     pub unsupported_screen_size: bool,
 }
 
-pub fn merge_args_into_config(config: &mut CompleteConfig, args: Cli) {
+pub fn merge_args_into_config(config: &mut CoreConfig, args: Cli) {
     // Terminal arguments
     if let Some(log_file) = args.log_file {
         config.terminal.log_file = Some(log_file);

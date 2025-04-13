@@ -10,7 +10,7 @@ use tui::{
 use crate::{
     emotes::{Emotes, SharedEmotes},
     handlers::{
-        config::{CompleteConfig, SharedCompleteConfig, Theme},
+        config::{CoreConfig, SharedCoreConfig, Theme},
         data::MessageData,
         filters::{Filters, SharedFilters},
         state::State,
@@ -32,7 +32,7 @@ pub struct App {
     /// All the available components.
     pub components: Components,
     /// A config for the app and components to share.
-    pub config: SharedCompleteConfig,
+    pub config: SharedCoreConfig,
     /// History of recorded messages (time, username, message, etc).
     pub messages: SharedMessages,
     /// Data loaded in from a JSON file.
@@ -60,7 +60,7 @@ macro_rules! shared {
 }
 
 impl App {
-    pub fn new(config: CompleteConfig, startup_time: DateTime<Local>) -> Self {
+    pub fn new(config: CoreConfig, startup_time: DateTime<Local>) -> Self {
         let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();

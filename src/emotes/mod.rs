@@ -15,7 +15,7 @@ use tokio::sync::{
 
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::config::CompleteConfig,
+    handlers::config::CoreConfig,
     utils::{
         emotes::{emotes_enabled, get_emote_offset},
         pathing::cache_path,
@@ -111,7 +111,7 @@ impl From<LoadedEmote> for EmoteData {
 }
 
 pub fn query_emotes(
-    config: &CompleteConfig,
+    config: &CoreConfig,
     channel: String,
 ) -> OSReceiver<(DownloadedEmotes, DownloadedEmotes)> {
     let (tx, mut rx) = tokio::sync::oneshot::channel();
@@ -127,7 +127,7 @@ pub fn query_emotes(
 }
 
 pub async fn send_emotes(
-    config: &CompleteConfig,
+    config: &CoreConfig,
     tx: OSSender<(DownloadedEmotes, DownloadedEmotes)>,
     channel: String,
 ) {

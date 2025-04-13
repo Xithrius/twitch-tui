@@ -1,8 +1,8 @@
 use dialoguer::{Confirm, Input, console::Style, theme::ColorfulTheme};
 
-use crate::handlers::config::{CompleteConfig, TwitchConfig};
+use crate::handlers::config::{CoreConfig, TwitchConfig};
 
-pub(super) fn interactive_config() -> Option<CompleteConfig> {
+pub(super) fn interactive_config() -> Option<CoreConfig> {
     let theme = ColorfulTheme {
         values_style: Style::new().yellow().dim(),
         ..ColorfulTheme::default()
@@ -38,7 +38,7 @@ pub(super) fn interactive_config() -> Option<CompleteConfig> {
         .interact_text()
         .unwrap();
 
-    Some(CompleteConfig {
+    Some(CoreConfig {
         twitch: TwitchConfig {
             username,
             channel,

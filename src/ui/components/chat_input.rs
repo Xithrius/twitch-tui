@@ -5,7 +5,7 @@ use tui::{Frame, layout::Rect};
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         storage::SharedStorage,
         user_input::events::{Event, Key},
     },
@@ -19,14 +19,14 @@ use crate::{
 };
 
 pub struct ChatInputWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     storage: SharedStorage,
     input: InputWidget<SharedStorage>,
     emote_picker: EmotePickerWidget,
 }
 
 impl ChatInputWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage, emotes: SharedEmotes) -> Self {
+    pub fn new(config: SharedCoreConfig, storage: SharedStorage, emotes: SharedEmotes) -> Self {
         let input_validator =
             Box::new(|_, s: String| -> bool { !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT });
 

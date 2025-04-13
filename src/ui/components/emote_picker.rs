@@ -13,7 +13,7 @@ use tui::{
 use crate::{
     emotes::{SharedEmotes, load_picker_emote},
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -35,7 +35,7 @@ use crate::{
 };
 
 pub struct EmotePickerWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     emotes: SharedEmotes,
     input: InputWidget<SharedEmotes>,
     search_theme: Style,
@@ -44,7 +44,7 @@ pub struct EmotePickerWidget {
 }
 
 impl EmotePickerWidget {
-    pub fn new(config: SharedCompleteConfig, emotes: SharedEmotes) -> Self {
+    pub fn new(config: SharedCoreConfig, emotes: SharedEmotes) -> Self {
         let input_validator = Box::new(|emotes: SharedEmotes, s: String| -> bool {
             !s.is_empty()
                 && s.len() < TWITCH_MESSAGE_LIMIT
