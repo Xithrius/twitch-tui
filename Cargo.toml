@@ -1,6 +1,6 @@
 [package]
 name = "twitch-tui"
-version = "2.6.18"
+version = "2.6.19"
 authors = ["Xithrius <xithrius@gmail.com>"]
 edition = "2024"
 rust-version = "1.85.0"
