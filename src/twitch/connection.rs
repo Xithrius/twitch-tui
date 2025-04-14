@@ -1,95 +1,129 @@
-use std::{cmp::min, time::Duration};
+use color_eyre::{Result, eyre::ContextCompat};
+use reqwest::Client;
 
-use irc::{
-    client::{Client, ClientStream, prelude::Config},
-    error::Error::{self, PingTimeout},
-};
-use tokio::{sync::mpsc::Sender, time::sleep};
-
-use crate::handlers::{
-    config::CoreConfig,
-    data::{DataBuilder, TwitchToTerminalAction},
+use super::{
+    messages::{ReceivedTwitchSubscription, TwitchSubscriptionResponse},
+    oauth::ClientId,
 };
 
-/// Initialize the config and send it to the client to connect to an IRC channel.
-async fn create_client_stream(config: CoreConfig) -> Result<(Client, ClientStream), Error> {
-    let irc_config = Config {
-        nickname: Some(config.twitch.username.clone()),
-        server: Some(config.twitch.server.clone()),
-        channels: vec![format!("#{}", config.twitch.channel)],
-        password: config.twitch.token.clone(),
-        port: Some(6697),
-        use_tls: Some(true),
-        ping_timeout: Some(10),
-        ping_time: Some(10),
-        ..Default::default()
-    };
+// https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription
+// No need to delete a subscription if session ends, since they're disabled automatically
+// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#which-events-is-my-websocket-subscribed-to
+pub async fn subscribe_to_channel(
+    client: &Client,
+    client_id: &ClientId,
+    session_id: Option<String>,
+    channel_id: String,
+) -> Result<TwitchSubscriptionResponse> {
+    let session_id = session_id.context("Session ID is empty")?;
 
-    let mut client = Client::from_config(irc_config.clone()).await?;
+    let url = "https://api.twitch.tv/helix/eventsub/subscriptions";
 
-    client.identify()?;
+    // TODO: Handle different subscription types
+    // https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#subscription-types
+    let subscription = ReceivedTwitchSubscription::new(
+        "channel.chat.message".to_string(),
+        channel_id,
+        client_id.user_id.clone(),
+        session_id,
+    );
 
-    let stream = client.stream()?;
+    let response = client
+        .post(url)
+        .header("Content-Type", "application/json")
+        .json(&subscription)
+        .send()
+        .await?;
 
-    Ok((client, stream))
+    // Example of a bad response:
+    // Object {
+    //     "error": String("Bad Request"),
+    //     "message": String("missing or unparseable subscription condition"),
+    //     "status": Number(400),
+    // }
+
+    let response_data: TwitchSubscriptionResponse = response.json().await?;
+
+    Ok(response_data)
 }
 
-pub async fn wait_client_stream(
-    tx: Sender<TwitchToTerminalAction>,
-    data_builder: DataBuilder<'_>,
-    config: CoreConfig,
-) -> (Client, ClientStream) {
-    let mut timeout = 1;
+// async fn create_client_stream(config: CoreConfig) -> Result<(Client, ClientStream), Error> {
+//     let irc_config = Config {
+//         nickname: Some(config.twitch.username.clone()),
+//         server: Some(config.twitch.server.clone()),
+//         channels: vec![format!("#{}", config.twitch.channel)],
+//         password: config.twitch.token.clone(),
+//         port: Some(6697),
+//         use_tls: Some(true),
+//         ping_timeout: Some(10),
+//         ping_time: Some(10),
+//         ..Default::default()
+//     };
 
-    loop {
-        match create_client_stream(config.clone()).await {
-            Ok(v) => return v,
-            Err(err) => match err {
-                Error::Io(io) => tx
-                    .send(data_builder.system(format!("Unable to connect: {io}")))
-                    .await
-                    .unwrap(),
-                _ => {
-                    tx.send(data_builder.system(format!("Fatal error: {err:?}").to_string()))
-                        .await
-                        .unwrap();
-                }
-            },
-        }
+//     let mut client = Client::from_config(irc_config.clone()).await?;
 
-        sleep(Duration::from_secs(timeout)).await;
+//     client.identify()?;
 
-        timeout = min(timeout * 2, 30);
-    }
-}
+//     let stream = client.stream()?;
 
-/// If an error of any kind occurs, attempt to reconnect to the IRC channel.
-pub async fn client_stream_reconnect(
-    err: Error,
-    tx: Sender<TwitchToTerminalAction>,
-    data_builder: DataBuilder<'_>,
-    config: &CoreConfig,
-) -> (Client, ClientStream) {
-    match err {
-        PingTimeout => {
-            tx.send(data_builder.system("Ping to Twitch has timed out.".to_string()))
-                .await
-                .unwrap();
-        }
-        _ => {
-            tx.send(data_builder.system(format!("Fatal error: {err:?}").to_string()))
-                .await
-                .unwrap();
-        }
-    }
+//     Ok((client, stream))
+// }
 
-    sleep(Duration::from_millis(1000)).await;
+// pub async fn wait_client_stream(
+//     tx: Sender<TwitchToTerminalAction>,
+//     data_builder: DataBuilder<'_>,
+//     config: CoreConfig,
+// ) -> (Client, ClientStream) {
+//     let mut timeout = 1;
 
-    tx.send(data_builder.system("Attempting reconnect...".to_string()))
-        .await
-        .unwrap();
+//     loop {
+//         match create_client_stream(config.clone()).await {
+//             Ok(v) => return v,
+//             Err(err) => match err {
+//                 Error::Io(io) => tx
+//                     .send(data_builder.system(format!("Unable to connect: {io}")))
+//                     .await
+//                     .unwrap(),
+//                 _ => {
+//                     tx.send(data_builder.system(format!("Fatal error: {err:?}").to_string()))
+//                         .await
+//                         .unwrap();
+//                 }
+//             },
+//         }
 
-    let (client, stream) = wait_client_stream(tx, data_builder, config.clone()).await;
+//         sleep(Duration::from_secs(timeout)).await;
 
-    (client, stream)
-}
+//         timeout = min(timeout * 2, 30);
+//     }
+// }
+
+// pub async fn client_stream_reconnect(
+//     err: Error,
+//     tx: Sender<TwitchToTerminalAction>,
+//     data_builder: DataBuilder<'_>,
+//     config: &CoreConfig,
+// ) -> (Client, ClientStream) {
+//     match err {
+//         PingTimeout => {
+//             tx.send(data_builder.system("Ping to Twitch has timed out.".to_string()))
+//                 .await
+//                 .unwrap();
+//         }
+//         _ => {
+//             tx.send(data_builder.system(format!("Fatal error: {err:?}").to_string()))
+//                 .await
+//                 .unwrap();
+//         }
+//     }
+
+//     sleep(Duration::from_millis(1000)).await;
+
+//     tx.send(data_builder.system("Attempting reconnect...".to_string()))
+//         .await
+//         .unwrap();
+
+//     let (client, stream) = wait_client_stream(tx, data_builder, config.clone()).await;
+
+//     (client, stream)
+// }

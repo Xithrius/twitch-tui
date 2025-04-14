@@ -55,6 +55,8 @@ pub struct TwitchConfig {
     pub server: String,
     /// The authentication token for the IRC.
     pub token: Option<String>,
+    /// Keepalive timeout
+    pub keepalive_timeout_seconds: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -148,8 +150,9 @@ impl Default for TwitchConfig {
         Self {
             username: String::new(),
             channel: String::new(),
-            server: "irc.chat.twitch.tv".to_string(),
+            server: "wss://eventsub.wss.twitch.tv/ws".to_string(),
             token: None,
+            keepalive_timeout_seconds: 30,
         }
     }
 }
@@ -434,6 +437,16 @@ impl ToVec<(String, String)> for FrontendConfig {
                 self.right_align_usernames.to_string(),
             ),
         ]
+    }
+}
+
+impl TwitchConfig {
+    #[must_use]
+    pub fn config_twitch_websocket_url(&self) -> String {
+        format!(
+            "{}?keepalive_timeout_seconds={}",
+            self.server, self.keepalive_timeout_seconds
+        )
     }
 }
 

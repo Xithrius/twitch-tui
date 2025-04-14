@@ -34,7 +34,13 @@ pub(super) fn interactive_config() -> Option<CoreConfig> {
 
     let server: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("IRC server: ")
-        .default("irc.chat.twitch.tv".to_string())
+        .default("wss://eventsub.wss.twitch.tv/ws".to_string())
+        .interact_text()
+        .unwrap();
+
+    let keepalive_timeout_seconds: usize = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Keep alive timeout: ")
+        .default(30)
         .interact_text()
         .unwrap();
 
@@ -44,6 +50,7 @@ pub(super) fn interactive_config() -> Option<CoreConfig> {
             channel,
             server,
             token: Some(token),
+            keepalive_timeout_seconds,
         },
         ..Default::default()
     })

@@ -126,7 +126,7 @@ async fn main() -> Result<()> {
     let cloned_config = config.clone();
 
     tokio::task::spawn(async move {
-        twitch::twitch_irc(config, twitch_tx, twitch_rx).await;
+        twitch::twitch_websocket(config, twitch_tx, twitch_rx).await;
     });
 
     terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, decoded_rx).await;

@@ -3,8 +3,8 @@
 username = ""
 # The streamer's username.
 channel = ""
-# The IRC server to connect to.
-server = "irc.chat.twitch.tv"
+# The websocket server to connect to.
+server = "wss://eventsub.wss.twitch.tv/ws"
 # The authentication token for the IRC.
 # Can be received here for default scopes: https://twitchapps.com/tmi/
 #   ["channel:moderate", "channel_editor", "chat:edit", "chat:read", "whispers:edit", "whispers:read"]
