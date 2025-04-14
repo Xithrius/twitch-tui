@@ -65,10 +65,10 @@ pub async fn get_user_following(client: &Client, user_id: &str) -> Result<Follow
 }
 
 pub async fn get_following(twitch_config: &TwitchConfig) -> Result<FollowingList> {
-    let client = get_twitch_client(twitch_config.token.as_deref()).await?;
-    let user_id = &get_twitch_client_id(None).await?.user_id;
+    let client_id = get_twitch_client_id(None).await?;
+    let client = get_twitch_client(client_id, twitch_config.token.as_deref()).await?;
 
-    get_user_following(&client, user_id).await
+    get_user_following(&client, &client_id.user_id).await
 }
 
 impl Following {

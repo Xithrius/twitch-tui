@@ -17,14 +17,17 @@ pub struct ClientId {
     pub expires_in: i32,
 }
 
-pub async fn get_twitch_client_id(token: Option<&str>) -> Result<&ClientId> {
+pub async fn get_twitch_client_id(oauth_token: Option<&str>) -> Result<&ClientId> {
     static TWITCH_CLIENT_ID: OnceLock<ClientId> = OnceLock::new();
 
     if let Some(id) = TWITCH_CLIENT_ID.get() {
         return Ok(id);
     }
 
-    let token = token.context("Twitch token is empty")?;
+    let token = oauth_token
+        .context("Twitch token is empty")?
+        .strip_prefix("oauth:")
+        .context("token does not start with `oauth:`")?;
 
     // Strips the `oauth:` prefix if it exists
     let token = token.strip_prefix("oauth:").unwrap_or(token);
@@ -44,20 +47,18 @@ pub async fn get_twitch_client_id(token: Option<&str>) -> Result<&ClientId> {
     Ok(TWITCH_CLIENT_ID.get_or_init(|| client_id))
 }
 
-pub async fn get_twitch_client(oauth_token: Option<&str>) -> Result<Client> {
+pub async fn get_twitch_client(client_id: &ClientId, oauth_token: Option<&str>) -> Result<Client> {
     let token = oauth_token
         .context("Twitch token is empty")?
         .strip_prefix("oauth:")
         .context("token does not start with `oauth:`")?;
-
-    let client_id = &get_twitch_client_id(Some(token)).await?.client_id;
 
     let mut headers = HeaderMap::new();
     headers.insert(
         AUTHORIZATION,
         HeaderValue::from_str(&format!("Bearer {token}"))?,
     );
-    headers.insert("Client-Id", HeaderValue::from_str(client_id)?);
+    headers.insert("Client-Id", HeaderValue::from_str(&client_id.client_id)?);
 
     Ok(Client::builder().default_headers(headers).build()?)
 }

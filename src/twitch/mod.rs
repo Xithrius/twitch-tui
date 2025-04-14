@@ -9,6 +9,8 @@ use std::{collections::HashMap, hash::BuildHasher};
 use color_eyre::Result;
 use futures::StreamExt;
 use log::{debug, error, info};
+use messages::ReceivedTwitchMessage;
+use oauth::{get_channel_id, get_twitch_client, get_twitch_client_id};
 use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -68,7 +70,11 @@ pub async fn twitch_websocket(
     let enable_emotes = emotes_enabled(&config.frontend);
 
     let data_builder = DataBuilder::new(&config.frontend.datetime_format);
-    let mut room_state_startup = false;
+
+    let oauth_token = config.twitch.token.clone();
+
+    let mut twitch_client: Option<Client> = None;
+    let mut session_id: Option<String> = None;
 
     // Request commands capabilities
     // if client
@@ -102,7 +108,66 @@ pub async fn twitch_websocket(
             Some(message) = stream.next() => {
                 match message {
                     Ok(message) => {
-                        handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
+                        let message_text = match message {
+                            Message::Text(message_text) => message_text,
+                            Message::Ping(_) => {
+                                println!("Ping");
+                                continue;
+                            }
+                            Message::Pong(_) => {
+                                println!("Pong");
+                                continue;
+                            }
+                            Message::Close(close_frame) => {
+                                println!("Close frame: {close_frame:?}");
+                                continue;
+                            }
+                            _ => continue,
+                        };
+
+                        let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
+                            Ok(received_message) => received_message,
+                            Err(err) => {
+                                panic!("Could not deserialize received message into JSON: {err} -- {message_text}");
+                            }
+                        };
+
+                        if received_message
+                            .message_type()
+                            .is_some_and(|message_type| message_type == "session_welcome" && session_id.is_none())
+                        {
+                            let client_id = get_twitch_client_id(oauth_token.as_deref()).await.unwrap();
+
+                            let new_twitch_client = get_twitch_client(client_id.clone(), oauth_token.as_deref())
+                                .await
+                                .expect("failed to authenticate twitch client");
+                            twitch_client = Some(new_twitch_client.clone());
+
+                            // let new_session_id = received_message.session_id();
+                            // session_id.clone_from(&new_session_id);
+
+                            // let channel_id = get_channel_id(&new_twitch_client, DEFAULT_TWITCH_CHANNEL)
+                            //     .await
+                            //     .unwrap();
+
+                            // let channel_subscription_response = subscribe_to_channel(
+                            //     &new_twitch_client,
+                            //     client_id,
+                            //     new_session_id,
+                            //     channel_id.to_string(),
+                            // )
+                            // .await
+                            // .unwrap();
+                            // println!("Channel subscription response: {channel_subscription_response:#?}");
+                            continue;
+                        }
+
+                        if let Some(event) = received_message.event() {
+                            let (chatter, message) = event.chatter_information();
+                            println!("{chatter}: {message}");
+                        }
+
+                        // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
                     }
                     Err(err) => {
                         error!("Twitch connection error encountered: {err}, attempting to reconnect.");
@@ -121,15 +186,6 @@ async fn handle_incoming_message(
     badges: bool,
     enable_emotes: bool,
 ) {
-    // let mut tags: HashMap<&str, &str> = HashMap::new();
-
-    // if let Some(ref ref_tags) = message.tags {
-    //     for tag in ref_tags {
-    //         if let Some(ref tag_value) = tag.1 {
-    //             tags.insert(&tag.0, tag_value);
-    //         }
-    //     }
-    // }
 
     // match message.command {
     //     Command::PRIVMSG(ref _target, ref msg) => {

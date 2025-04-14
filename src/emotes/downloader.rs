@@ -425,15 +425,15 @@ pub async fn get_emotes(
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
     // Reuse the same client and headers for twitch requests
-    let twitch_client = get_twitch_client(config.twitch.token.as_deref()).await?;
-    let user_id = &get_twitch_client_id(None).await?.user_id;
+    let client_id = &get_twitch_client_id(None).await?;
+    let twitch_client = get_twitch_client(client_id, config.twitch.token.as_deref()).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 
     let enabled_emotes = get_enabled_emote_providers(&config.frontend);
 
     let user_emotes = if enabled_emotes.contains(&EmoteProvider::Twitch) {
-        twitch::get_user_emotes(&twitch_client, user_id)
+        twitch::get_user_emotes(&twitch_client, &client_id.user_id)
             .await
             .unwrap_or_default()
     } else {
