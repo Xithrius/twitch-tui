@@ -7,6 +7,7 @@ pub mod oauth;
 use std::{collections::HashMap, hash::BuildHasher};
 
 use color_eyre::Result;
+use connection::subscribe_to_channel;
 use futures::StreamExt;
 use log::{debug, error, info};
 use messages::ReceivedTwitchMessage;
@@ -111,15 +112,15 @@ pub async fn twitch_websocket(
                         let message_text = match message {
                             Message::Text(message_text) => message_text,
                             Message::Ping(_) => {
-                                println!("Ping");
+                                // println!("Ping");
                                 continue;
                             }
                             Message::Pong(_) => {
-                                println!("Pong");
+                                // println!("Pong");
                                 continue;
                             }
                             Message::Close(close_frame) => {
-                                println!("Close frame: {close_frame:?}");
+                                // println!("Close frame: {close_frame:?}");
                                 continue;
                             }
                             _ => continue,
@@ -138,33 +139,32 @@ pub async fn twitch_websocket(
                         {
                             let client_id = get_twitch_client_id(oauth_token.as_deref()).await.unwrap();
 
-                            let new_twitch_client = get_twitch_client(client_id.clone(), oauth_token.as_deref())
+                            let new_twitch_client = get_twitch_client(client_id, oauth_token.as_deref())
                                 .await
                                 .expect("failed to authenticate twitch client");
                             twitch_client = Some(new_twitch_client.clone());
 
-                            // let new_session_id = received_message.session_id();
-                            // session_id.clone_from(&new_session_id);
+                            let new_session_id = received_message.session_id();
+                            session_id.clone_from(&new_session_id);
 
-                            // let channel_id = get_channel_id(&new_twitch_client, DEFAULT_TWITCH_CHANNEL)
-                            //     .await
-                            //     .unwrap();
+                            let channel_id = get_channel_id(&new_twitch_client, &config.twitch.channel)
+                                .await
+                                .unwrap();
 
-                            // let channel_subscription_response = subscribe_to_channel(
-                            //     &new_twitch_client,
-                            //     client_id,
-                            //     new_session_id,
-                            //     channel_id.to_string(),
-                            // )
-                            // .await
-                            // .unwrap();
-                            // println!("Channel subscription response: {channel_subscription_response:#?}");
+                            let channel_subscription_response = subscribe_to_channel(
+                                &new_twitch_client,
+                                client_id,
+                                new_session_id,
+                                channel_id.to_string(),
+                            )
+                            .await
+                            .unwrap();
+
                             continue;
                         }
 
                         if let Some(event) = received_message.event() {
-                            let (chatter, message) = event.chatter_information();
-                            println!("{chatter}: {message}");
+                            tx.send(event.build_user_data()).await.unwrap();
                         }
 
                         // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;

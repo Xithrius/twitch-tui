@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    emotes::DownloadedEmotes,
+    handlers::data::{DataBuilder, TwitchToTerminalAction},
+    utils::text::clean_message,
+};
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchMessageMetadata {
     message_id: String,
@@ -42,7 +48,7 @@ pub struct ReceivedTwitchEventMessageFragmentCheermote {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchEventMessageFragmentEmote {
-    id: String,
+    id: Option<String>,
     emote_set_id: String,
     owner_id: String,
     format: Vec<String>,
@@ -123,6 +129,22 @@ impl ReceivedTwitchEvent {
     #[must_use]
     pub fn chatter_information(&self) -> (String, String) {
         (self.chatter_user_name.clone(), self.message.text.clone())
+    }
+
+    pub fn build_user_data(&self) -> TwitchToTerminalAction {
+        let name = self.chatter_user_name.clone();
+        let user_id = self.chatter_user_id.clone();
+        let cleaned_message = clean_message(&self.message.text);
+        let message_id = self.message_id.clone();
+
+        DataBuilder::user(
+            name,
+            Some(user_id),
+            cleaned_message,
+            DownloadedEmotes::default(),
+            Some(message_id),
+            false,
+        )
     }
 }
 
