@@ -5,11 +5,8 @@ username = ""
 channel = ""
 # The websocket server to connect to.
 server = "wss://eventsub.wss.twitch.tv/ws"
-# The authentication token for the IRC.
-# Can be received here for default scopes: https://twitchapps.com/tmi/
-#   ["channel:moderate", "channel_editor", "chat:edit", "chat:read", "whispers:edit", "whispers:read"]
-# And here for custom scopes: https://twitchtokengenerator.com/
-#   "user:read:follows" to see who you are following
+# https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes+user:read:chat+user:write:chat&auth=auth_stay
+# chat:read, chat:edit, channel:moderate, user:read:follows, user:read:emotes, user:read:chat, user:write:chat
 token = ""
 
 [terminal]

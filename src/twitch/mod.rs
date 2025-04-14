@@ -102,7 +102,7 @@ pub async fn twitch_websocket(
             Some(message) = stream.next() => {
                 match message {
                     Ok(message) => {
-                        handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await
+                        handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
                     }
                     Err(err) => {
                         error!("Twitch connection error encountered: {err}, attempting to reconnect.");
