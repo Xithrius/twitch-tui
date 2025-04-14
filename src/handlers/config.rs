@@ -51,9 +51,9 @@ pub struct TwitchConfig {
     pub username: String,
     /// The streamer's channel name.
     pub channel: String,
-    /// The IRC channel to connect to.
+    /// The websocket server to connect to.
     pub server: String,
-    /// The authentication token for the IRC.
+    /// The authentication token for the websocket server.
     pub token: Option<String>,
     /// Keepalive timeout
     pub keepalive_timeout_seconds: usize,
@@ -541,7 +541,7 @@ impl CoreConfig {
                 }
             }
 
-            // Channel names for the IRC connection can only be in lowercase.
+            // Channel names for the websocket connection can only be in lowercase.
             config.twitch.channel = config.twitch.channel.to_lowercase();
 
             Ok(config)

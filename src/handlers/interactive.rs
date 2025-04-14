@@ -33,7 +33,7 @@ pub(super) fn interactive_config() -> Option<CoreConfig> {
         .unwrap();
 
     let server: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("IRC server: ")
+        .with_prompt("Websocket server: ")
         .default("wss://eventsub.wss.twitch.tv/ws".to_string())
         .interact_text()
         .unwrap();

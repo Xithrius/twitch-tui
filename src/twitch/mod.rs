@@ -54,7 +54,7 @@ pub async fn twitch_websocket(
     let mut session_id: Option<String> = None;
 
     // If the dashboard is the start state, wait until the user has selected
-    // a channel before connecting to Twitch's IRC.
+    // a channel before connecting to Twitch's websocket server.
     // if config.terminal.first_state == State::Dashboard {
     //     debug!("Waiting for user to select channel from debug screen");
 
@@ -76,24 +76,6 @@ pub async fn twitch_websocket(
 
     let mut twitch_client: Option<Client> = None;
     let mut session_id: Option<String> = None;
-
-    // Request commands capabilities
-    // if client
-    //     .send_cap_req(&[
-    //         Capability::Custom("twitch.tv/commands"),
-    //         Capability::Custom("twitch.tv/tags"),
-    //     ])
-    //     .is_err()
-    // {
-    //     tx.send(
-    //         data_builder.system(
-    //             "Unable to request commands/tags capability, certain features may be affected."
-    //                 .to_string(),
-    //         ),
-    //     )
-    //     .await
-    //     .unwrap();
-    // }
 
     loop {
         tokio::select! {
