@@ -40,7 +40,7 @@ use crate::{
 
 static WINDOW_SIZE_TOO_SMALL_ERROR: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
     vec![
-        "Window to small!",
+        "Window too small!",
         "Must allow for at least 60x10.",
         "Restart and resize.",
     ]
