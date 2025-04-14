@@ -8,7 +8,7 @@ use std::{collections::HashMap, hash::BuildHasher};
 
 use color_eyre::Result;
 use futures::StreamExt;
-use log::{debug, info};
+use log::{debug, error, info};
 use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -19,10 +19,6 @@ use crate::{
         config::CoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
-    },
-    twitch::{
-        badges::retrieve_user_badges,
-        connection::{client_stream_reconnect, wait_client_stream},
     },
     utils::{
         emotes::emotes_enabled,
@@ -47,7 +43,7 @@ pub async fn twitch_websocket(
 
     info!("Twitch websocket handshake successful");
 
-    let (write, mut read) = ws_stream.split();
+    let (_, mut stream) = ws_stream.split();
 
     let oauth_token = config.twitch.token.clone();
 
@@ -74,11 +70,6 @@ pub async fn twitch_websocket(
     let data_builder = DataBuilder::new(&config.frontend.datetime_format);
     let mut room_state_startup = false;
 
-    let (mut client, mut stream) =
-        wait_client_stream(tx.clone(), data_builder, config.clone()).await;
-
-    let sender = client.sender();
-
     // Request commands capabilities
     // if client
     //     .send_cap_req(&[
@@ -97,44 +88,12 @@ pub async fn twitch_websocket(
     //     .unwrap();
     // }
 
-    let mut connected = true;
-
     loop {
         tokio::select! {
             biased;
 
             Ok(action) = rx.recv() => {
-                let current_channel = format!("#{}", config.twitch.channel);
-
                 match action {
-                    // TwitchAction::Privmsg(message) => {
-                    //     debug!("Sending message to Twitch: {message}");
-
-                    //     client
-                    //         .send_privmsg(current_channel, message)
-                    //         .unwrap();
-                    // }
-                    TwitchAction::Join(channel) => {
-                        debug!("Switching to channel {channel}");
-
-                        let channel_list = format!("#{channel}");
-
-                        // Leave previous channel
-                        if let Err(err) = sender.send_part(current_channel) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
-                        }
-
-                        // Join specified channel
-                        if let Err(err) = sender.send_join(&channel_list) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
-                        }
-
-                        // Set old channel to new channel
-                        config.twitch.channel = channel;
-                    }
-                    // TwitchAction::ClearMessages => {
-                    //     client.send(Command::Raw("CLEARCHAT".to_string(), vec![])).unwrap();
-                    // }
                     _ => {
                         panic!("Unsupported Twitch action triggered");
                     }
@@ -143,22 +102,10 @@ pub async fn twitch_websocket(
             Some(message) = stream.next() => {
                 match message {
                     Ok(message) => {
-                        if !connected {
-                            tx.send(data_builder.system("Reconnect succcessful.".to_string())).await.unwrap();
-                            connected = true;
-                        }
-
-                        if let Some(b) = handle_message_command(message, tx.clone(), data_builder, config.frontend.badges, room_state_startup, enable_emotes).await {
-                            room_state_startup = b;
-                        }
+                        handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await
                     }
                     Err(err) => {
-                        connected = false;
-
-                        debug!("Twitch connection error encountered: {err}, attempting to reconnect.");
-
-                        (client, stream) = client_stream_reconnect(err, tx.clone(), data_builder, &config).await;
-
+                        error!("Twitch connection error encountered: {err}, attempting to reconnect.");
                     }
                 }
             }
@@ -167,14 +114,13 @@ pub async fn twitch_websocket(
     }
 }
 
-async fn handle_message_command(
+async fn handle_incoming_message(
     message: Message,
     tx: Sender<TwitchToTerminalAction>,
     data_builder: DataBuilder<'_>,
     badges: bool,
-    room_state_startup: bool,
     enable_emotes: bool,
-) -> Option<bool> {
+) {
     // let mut tags: HashMap<&str, &str> = HashMap::new();
 
     // if let Some(ref ref_tags) = message.tags {
@@ -291,8 +237,6 @@ async fn handle_message_command(
     //     }
     //     _ => (),
     // }
-
-    None
 }
 
 // pub async fn handle_roomstate<S: BuildHasher>(
