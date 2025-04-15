@@ -67,5 +67,8 @@ name = "twt"
 lto = "off"
 
 [profile.release]
-lto = "thin"
-debug = 1
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
