@@ -145,29 +145,29 @@ pub async fn ui_driver(
                     }
                     TerminalAction::Enter(action) => match action {
                         TwitchAction::SendMessage(message) => {
-                            const ME_COMMAND: &str = "/me ";
+                            // const ME_COMMAND: &str = "/me ";
 
-                            let (msg, highlight) = message.strip_prefix(ME_COMMAND).map_or_else(
-                                || (message.clone(), false),
-                                |msg| (msg.to_string(), true),
-                            );
+                            // let (msg, highlight) = message.strip_prefix(ME_COMMAND).map_or_else(
+                            //     || (message.clone(), false),
+                            //     |msg| (msg.to_string(), true),
+                            // );
 
-                            let user_id = get_twitch_client_oauth(config.twitch.token.as_deref())
-                                .await
-                                .map(|x| x.user_id.clone())
-                                .ok();
+                            // let user_id = get_twitch_client_oauth(config.twitch.token.as_deref())
+                            //     .await
+                            //     .map(|x| x.user_id)
+                            //     .ok();
 
-                            let message_data = MessageData::new_user_message(
-                                config.twitch.username.to_string(),
-                                user_id,
-                                false,
-                                msg,
-                                None,
-                                highlight,
-                                &app.emotes,
-                            );
+                            // let message_data = MessageData::new_user_message(
+                            //     config.twitch.username.to_string(),
+                            //     user_id,
+                            //     false,
+                            //     msg,
+                            //     None,
+                            //     highlight,
+                            //     &app.emotes,
+                            // );
 
-                            app.messages.borrow_mut().push_front(message_data);
+                            // app.messages.borrow_mut().push_front(message_data);
 
                             tx.send(TwitchAction::SendMessage(message)).unwrap();
                         }

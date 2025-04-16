@@ -105,7 +105,8 @@ pub async fn twitch_websocket(
                         };
 
                         let new_message = NewTwitchMessage::new(channel_id.to_string(), user_id.to_string(), message);
-                        let _ = send_twitch_message(twitch_client, new_message).await;
+                        let twitch_message_response = send_twitch_message(twitch_client, new_message).await;
+                        info!("{twitch_message_response:?}");
                     },
                     TwitchAction::JoinChannel(_) => {
                         panic!("Joining channels is not implemented at this moment");
@@ -178,9 +179,11 @@ pub async fn twitch_websocket(
                             continue;
                         }
 
-                        if let Some(event) = received_message.event() {
-                            tx.send(event.build_user_data()).await.unwrap();
-                        }
+                        let Some(event) = received_message.event() else {
+                            continue;
+                        };
+
+                        tx.send(event.build_user_data()).await.unwrap();
 
                         // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
                     }

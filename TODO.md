@@ -1,0 +1,3 @@
+- [ ] Client vs Twitch server user input processing
+    - [ ] Config to decide if user input is shown no matter what, or if we should receive it through Twitch
+- [ ] Commands

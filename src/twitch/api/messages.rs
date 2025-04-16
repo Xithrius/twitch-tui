@@ -6,7 +6,9 @@ use super::TWITCH_API_BASE_URL;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct NewTwitchMessage {
-    broadcaster_id: String,
+    #[serde(rename = "broadcaster_id")]
+    channel_id: String,
+    #[serde(rename = "sender_id")]
     user_id: String,
     message: String,
 }
@@ -14,7 +16,7 @@ pub struct NewTwitchMessage {
 impl NewTwitchMessage {
     pub const fn new(broadcaster_id: String, user_id: String, message: String) -> Self {
         Self {
-            broadcaster_id,
+            channel_id: broadcaster_id,
             user_id,
             message,
         }
