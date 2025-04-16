@@ -1,28 +1,34 @@
 use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 
-use super::{
+use crate::twitch::{
     models::{ReceivedTwitchSubscription, TwitchSubscriptionResponse},
-    oauth::ClientId,
+    oauth::TwitchOauth,
 };
 
-// https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription
-// No need to delete a subscription if session ends, since they're disabled automatically
-// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#which-events-is-my-websocket-subscribed-to
-pub async fn subscribe_to_channel(
+pub const CHANNEL_CHAT_MESSAGE_EVENT_SUB: &str = "channel.chat.message";
+
+/// Subscribe to a certain event
+/// <https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription>
+///
+/// Different subscription types
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#subscription-types>
+///
+/// No need to delete a subscription if/when session ends, since they're disabled automatically
+/// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#which-events-is-my-websocket-subscribed-to>
+pub async fn subscribe_to_event(
     client: &Client,
-    client_id: &ClientId,
+    client_id: &TwitchOauth,
     session_id: Option<String>,
     channel_id: String,
+    subscription_type: String,
 ) -> Result<TwitchSubscriptionResponse> {
     let session_id = session_id.context("Session ID is empty")?;
 
     let url = "https://api.twitch.tv/helix/eventsub/subscriptions";
 
-    // TODO: Handle different subscription types
-    // https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#subscription-types
     let subscription = ReceivedTwitchSubscription::new(
-        "channel.chat.message".to_string(),
+        subscription_type,
         channel_id,
         client_id.user_id.clone(),
         session_id,

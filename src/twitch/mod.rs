@@ -1,17 +1,22 @@
+pub mod api;
 mod badges;
 pub mod channels;
-mod connection;
+pub mod client;
 mod models;
 pub mod oauth;
 
 use std::{collections::HashMap, hash::BuildHasher};
 
+use api::{
+    channels::get_channel_id,
+    event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_event},
+    messages::send_twitch_message,
+};
 use color_eyre::Result;
-use connection::subscribe_to_channel;
 use futures::StreamExt;
 use log::{debug, error, info};
 use models::ReceivedTwitchMessage;
-use oauth::{get_channel_id, get_twitch_client, get_twitch_client_id, send_twitch_message};
+use oauth::{get_twitch_client, get_twitch_client_oauth};
 use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -123,7 +128,7 @@ pub async fn twitch_websocket(
                             .message_type()
                             .is_some_and(|message_type| message_type == "session_welcome" && session_id.is_none())
                         {
-                            let client_id = get_twitch_client_id(oauth_token.as_deref()).await.unwrap();
+                            let client_id = get_twitch_client_oauth(oauth_token.as_deref()).await.unwrap();
 
                             let new_twitch_client = get_twitch_client(client_id, oauth_token.as_deref())
                                 .await
@@ -137,11 +142,12 @@ pub async fn twitch_websocket(
                                 .await
                                 .unwrap();
 
-                            let channel_subscription_response = subscribe_to_channel(
+                            let channel_subscription_response = subscribe_to_event(
                                 &new_twitch_client,
                                 client_id,
                                 new_session_id,
                                 channel_id.to_string(),
+                                CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()
                             )
                             .await
                             .unwrap();

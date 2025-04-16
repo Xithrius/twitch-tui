@@ -8,7 +8,10 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     emotes::DownloadedEmotes,
     handlers::config::{CoreConfig, FrontendConfig},
-    twitch::oauth::{get_channel_id, get_twitch_client, get_twitch_client_id},
+    twitch::{
+        api::channels::get_channel_id,
+        oauth::{get_twitch_client, get_twitch_client_oauth},
+    },
     utils::pathing::cache_path,
 };
 
@@ -425,7 +428,7 @@ pub async fn get_emotes(
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
     // Reuse the same client and headers for twitch requests
-    let client_id = &get_twitch_client_id(None).await?;
+    let client_id = &get_twitch_client_oauth(None).await?;
     let twitch_client = get_twitch_client(client_id, config.twitch.token.as_deref()).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;

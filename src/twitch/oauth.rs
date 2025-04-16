@@ -8,8 +8,7 @@ use reqwest::{
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-#[allow(dead_code)]
-pub struct ClientId {
+pub struct TwitchOauth {
     pub client_id: String,
     pub login: String,
     pub scopes: Vec<String>,
@@ -17,8 +16,8 @@ pub struct ClientId {
     pub expires_in: i32,
 }
 
-pub async fn get_twitch_client_id(oauth_token: Option<&str>) -> Result<&ClientId> {
-    static TWITCH_CLIENT_ID: OnceLock<ClientId> = OnceLock::new();
+pub async fn get_twitch_client_oauth(oauth_token: Option<&str>) -> Result<&TwitchOauth> {
+    static TWITCH_CLIENT_ID: OnceLock<TwitchOauth> = OnceLock::new();
 
     if let Some(id) = TWITCH_CLIENT_ID.get() {
         return Ok(id);
@@ -42,12 +41,15 @@ pub async fn get_twitch_client_id(oauth_token: Option<&str>) -> Result<&ClientId
         .error_for_status()
         .unwrap();
 
-    let client_id = data.json::<ClientId>().await?;
+    let client_id = data.json::<TwitchOauth>().await?;
 
     Ok(TWITCH_CLIENT_ID.get_or_init(|| client_id))
 }
 
-pub async fn get_twitch_client(client_id: &ClientId, oauth_token: Option<&str>) -> Result<Client> {
+pub async fn get_twitch_client(
+    client_id: &TwitchOauth,
+    oauth_token: Option<&str>,
+) -> Result<Client> {
     let token = oauth_token
         .context("Twitch token is empty")?
         .strip_prefix("oauth:")
@@ -61,41 +63,4 @@ pub async fn get_twitch_client(client_id: &ClientId, oauth_token: Option<&str>) 
     headers.insert("Client-Id", HeaderValue::from_str(&client_id.client_id)?);
 
     Ok(Client::builder().default_headers(headers).build()?)
-}
-
-#[derive(Deserialize)]
-struct Channel {
-    id: String,
-}
-
-#[derive(Deserialize)]
-pub struct ChannelList {
-    data: Vec<Channel>,
-}
-
-/// <https://dev.twitch.tv/docs/api/reference/#get-users>
-pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
-    let response_channel_id = client
-        .get(format!("https://api.twitch.tv/helix/users?login={channel}",))
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<ChannelList>()
-        .await?
-        .data
-        .first()
-        .context("Could not get channel id.")?
-        .id
-        .parse()?;
-
-    Ok(response_channel_id)
-}
-
-/// Sends a message to the respective channel.
-/// This was chosen vs websocket stdin due to being able to handle errors
-/// in a cleaner way.
-///
-/// <https://dev.twitch.tv/docs/api/reference/#send-chat-message>
-pub async fn send_twitch_message(client: &Client, message: &str) -> Result<()> {
-    todo!()
 }

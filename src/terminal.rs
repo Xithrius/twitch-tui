@@ -13,7 +13,7 @@ use crate::{
         state::State,
         user_input::events::{Config, Events, Key},
     },
-    twitch::{TwitchAction, oauth::get_twitch_client_id},
+    twitch::{TwitchAction, oauth::get_twitch_client_oauth},
 };
 
 pub enum TerminalAction {
@@ -152,7 +152,7 @@ pub async fn ui_driver(
                                 |msg| (msg.to_string(), true),
                             );
 
-                            let user_id = get_twitch_client_id(config.twitch.token.as_deref())
+                            let user_id = get_twitch_client_oauth(config.twitch.token.as_deref())
                                 .await
                                 .map(|x| x.user_id.clone())
                                 .ok();
