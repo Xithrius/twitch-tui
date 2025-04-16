@@ -6,20 +6,17 @@ pub mod context;
 mod models;
 pub mod oauth;
 
-use std::{collections::HashMap, fmt::Write as _, hash::BuildHasher};
+use std::{fmt::Write as _, hash::BuildHasher};
 
-use color_eyre::Result;
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use log::{debug, error, info};
-use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::{
-    emotes::{DownloadedEmotes, get_twitch_emote},
     handlers::{
-        config::CoreConfig,
+        config::{CoreConfig, TwitchConfig},
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },
@@ -33,10 +30,7 @@ use crate::{
         models::ReceivedTwitchMessage,
         oauth::{get_twitch_client, get_twitch_client_oauth},
     },
-    utils::{
-        emotes::is_emotes_enabled,
-        text::{clean_message, parse_message_action},
-    },
+    utils::emotes::is_emotes_enabled,
 };
 
 #[derive(Debug, Clone)]
@@ -126,48 +120,7 @@ pub async fn twitch_websocket(
                             }
                         };
 
-                        if received_message
-                            .message_type()
-                            .is_some_and(|message_type| message_type == "session_welcome" && context.session_id().is_none())
-                        {
-                            let twitch_oauth = get_twitch_client_oauth(oauth_token.as_deref()).await.unwrap();
-
-                            let twitch_client = get_twitch_client(&twitch_oauth, oauth_token.as_deref())
-                                .await
-                                .expect("failed to authenticate twitch client");
-                            context.set_twitch_client(Some(twitch_client.clone()));
-
-                            let session_id = received_message.session_id();
-                            context.set_session_id(session_id.clone());
-
-                            let channel_id = get_channel_id(&twitch_client, &config.twitch.channel)
-                                .await
-                                .unwrap();
-
-                            let Ok(initial_subscriptions_response) = subscribe_to_events(
-                                &twitch_client,
-                                &twitch_oauth,
-                                session_id,
-                                channel_id.to_string(),
-                                vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()]
-                            )
-                            .await else {
-                                panic!("Something went wrong when sending message");
-                            };
-
-                            context.set_channel_id(Some(channel_id));
-                            context.set_user_id(Some(twitch_oauth.user_id));
-
-                            continue;
-                        }
-
-                        let Some(event) = received_message.event() else {
-                            continue;
-                        };
-
-                        tx.send(event.build_user_data()).await.unwrap();
-
-                        // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
+                        handle_incoming_message(&mut context, &tx.clone(), &received_message, oauth_token.as_deref(), &config.twitch).await;
                     }
                     Err(err) => {
                         error!("Twitch connection error encountered: {err}, attempting to reconnect.");
@@ -179,8 +132,59 @@ pub async fn twitch_websocket(
     }
 }
 
-fn handle_incoming_message() {
+async fn handle_welcome_message() {
     todo!()
+}
+
+async fn handle_incoming_message(
+    context: &mut TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    received_message: &ReceivedTwitchMessage,
+    oauth_token: Option<&str>,
+    twitch_config: &TwitchConfig,
+) {
+    // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
+
+    if received_message.message_type().is_some_and(|message_type| {
+        message_type == "session_welcome" && context.session_id().is_none()
+    }) {
+        let twitch_oauth = get_twitch_client_oauth(oauth_token).await.unwrap();
+
+        let twitch_client = get_twitch_client(&twitch_oauth, oauth_token)
+            .await
+            .expect("failed to authenticate twitch client");
+        context.set_twitch_client(Some(twitch_client.clone()));
+
+        let session_id = received_message.session_id();
+        context.set_session_id(session_id.clone());
+
+        let channel_id = get_channel_id(&twitch_client, &twitch_config.channel)
+            .await
+            .unwrap();
+
+        let Ok(initial_subscriptions_response) = subscribe_to_events(
+            &twitch_client,
+            &twitch_oauth,
+            session_id,
+            channel_id.to_string(),
+            vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
+        )
+        .await
+        else {
+            panic!("Something went wrong when sending message");
+        };
+
+        context.set_channel_id(Some(channel_id));
+        context.set_user_id(Some(twitch_oauth.user_id));
+
+        return;
+    }
+
+    let Some(event) = received_message.event() else {
+        return;
+    };
+
+    tx.send(event.build_user_data()).await.unwrap();
 }
 
 // fn handle_incoming_message(
