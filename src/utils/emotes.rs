@@ -6,7 +6,7 @@ pub const PRIVATE_USE_UNICODE: char = '\u{10EEEE}';
 pub const ZERO_WIDTH_SPACE: char = '\u{200B}';
 pub const ZERO_WIDTH_SPACE_STR: &str = "\u{200B}";
 
-pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
+pub const fn is_emotes_enabled(frontend: &FrontendConfig) -> bool {
     frontend.twitch_emotes
         || frontend.betterttv_emotes
         || frontend.seventv_emotes

@@ -121,20 +121,6 @@ pub struct ReceivedTwitchEvent {
 }
 
 impl ReceivedTwitchEvent {
-    #[must_use]
-    pub fn message_type(&self) -> String {
-        self.message_type.clone()
-    }
-
-    #[must_use]
-    pub fn chatter_information(&self) -> (String, String) {
-        (self.chatter_user_name.clone(), self.message.text.clone())
-    }
-
-    pub fn chatter_user_login(&self) -> &String {
-        &self.chatter_user_login
-    }
-
     pub fn build_user_data(&self) -> TwitchToTerminalAction {
         let name = self.chatter_user_name.clone();
         let user_id = self.chatter_user_id.clone();

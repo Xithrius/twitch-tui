@@ -15,7 +15,7 @@ use crate::{
         components::{Component, emote_picker::EmotePickerWidget, utils::InputWidget},
         statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
-    utils::{emotes::emotes_enabled, text::first_similarity},
+    utils::{emotes::is_emotes_enabled, text::first_similarity},
 };
 
 pub struct ChatInputWidget {
@@ -144,7 +144,7 @@ impl Component for ChatInputWidget {
                     }
                 }
                 Key::Alt('e') => {
-                    if emotes_enabled(&self.config.borrow().frontend) {
+                    if is_emotes_enabled(&self.config.borrow().frontend) {
                         self.emote_picker.toggle_focus();
                     }
                 }

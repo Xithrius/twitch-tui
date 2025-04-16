@@ -22,7 +22,7 @@ use crate::{
         components::{Component, Components},
         statics::LINE_BUFFER_CAPACITY,
     },
-    utils::emotes::emotes_enabled,
+    utils::emotes::is_emotes_enabled,
 };
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
@@ -80,7 +80,7 @@ impl App {
             shared_config_borrow.terminal.maximum_messages,
         ));
 
-        let emotes_enabled: bool = emotes_enabled(&shared_config.borrow().frontend);
+        let emotes_enabled: bool = is_emotes_enabled(&shared_config.borrow().frontend);
         let emotes = Rc::new(Emotes::new(emotes_enabled));
 
         let components = Components::new(

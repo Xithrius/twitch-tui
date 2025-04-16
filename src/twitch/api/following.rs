@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use color_eyre::{Result, eyre::Context};
+use color_eyre::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 

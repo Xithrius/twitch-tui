@@ -22,7 +22,7 @@ use crate::{
         state::State,
     },
     utils::{
-        emotes::emotes_enabled,
+        emotes::is_emotes_enabled,
         pathing::{cache_path, config_path},
     },
 };
@@ -532,7 +532,8 @@ impl CoreConfig {
                     );
                 }
 
-                if emotes_enabled(&config.frontend) && !support_graphics_protocol().unwrap_or(false)
+                if is_emotes_enabled(&config.frontend)
+                    && !support_graphics_protocol().unwrap_or(false)
                 {
                     eprintln!(
                         "This terminal does not support the graphics protocol.\nUse a terminal such as kitty, or disable emotes."
