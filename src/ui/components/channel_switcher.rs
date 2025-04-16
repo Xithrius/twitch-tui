@@ -307,7 +307,7 @@ impl Component for ChannelSwitcherWidget {
                                         .channel
                                         .clone_from(&selected_channel);
 
-                                    return Some(TerminalAction::Enter(TwitchAction::Join(
+                                    return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                                         selected_channel,
                                     )));
                                 }
@@ -337,7 +337,7 @@ impl Component for ChannelSwitcherWidget {
                             selected_channel.to_string()
                         );
 
-                        return Some(TerminalAction::Enter(TwitchAction::Join(
+                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                             selected_channel.to_string(),
                         )));
                     } else if self.search_input.is_valid() {
@@ -362,7 +362,9 @@ impl Component for ChannelSwitcherWidget {
 
                         debug!("Joining new channel {selected_channel:?}");
 
-                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
+                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                            selected_channel,
+                        )));
                     }
                 }
                 _ => {

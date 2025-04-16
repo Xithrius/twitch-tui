@@ -11,7 +11,7 @@ use connection::subscribe_to_channel;
 use futures::StreamExt;
 use log::{debug, error, info};
 use messages::ReceivedTwitchMessage;
-use oauth::{get_channel_id, get_twitch_client, get_twitch_client_id};
+use oauth::{get_channel_id, get_twitch_client, get_twitch_client_id, send_twitch_message};
 use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -31,8 +31,8 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum TwitchAction {
-    Privmsg(String),
-    Join(String),
+    SendMessage(String),
+    JoinChannel(String),
     ClearMessages,
 }
 
@@ -83,9 +83,13 @@ pub async fn twitch_websocket(
 
             Ok(action) = rx.recv() => {
                 match action {
-                    _ => {
-                        panic!("Unsupported Twitch action triggered");
-                    }
+                    TwitchAction::SendMessage(message) => {
+                        if let Some(twitch_client) = twitch_client.as_ref() {
+                            let _ = send_twitch_message(twitch_client, &message).await;
+                        }
+                    },
+                    TwitchAction::JoinChannel(_) => todo!(),
+                    TwitchAction::ClearMessages => todo!(),
                 }
             }
             Some(message) = stream.next() => {

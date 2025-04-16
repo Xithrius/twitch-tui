@@ -144,7 +144,7 @@ pub async fn ui_driver(
                         tx.send(TwitchAction::ClearMessages).unwrap();
                     }
                     TerminalAction::Enter(action) => match action {
-                        TwitchAction::Privmsg(message) => {
+                        TwitchAction::SendMessage(message) => {
                             const ME_COMMAND: &str = "/me ";
 
                             let (msg, highlight) = message.strip_prefix(ME_COMMAND).map_or_else(
@@ -169,13 +169,13 @@ pub async fn ui_driver(
 
                             app.messages.borrow_mut().push_front(message_data);
 
-                            tx.send(TwitchAction::Privmsg(message)).unwrap();
+                            tx.send(TwitchAction::SendMessage(message)).unwrap();
                         }
-                        TwitchAction::Join(channel) => {
+                        TwitchAction::JoinChannel(channel) => {
                             app.clear_messages();
                             app.emotes.unload();
 
-                            tx.send(TwitchAction::Join(channel.clone())).unwrap();
+                            tx.send(TwitchAction::JoinChannel(channel.clone())).unwrap();
                             erx = query_emotes(&config, channel);
 
                             app.set_state(State::Normal);

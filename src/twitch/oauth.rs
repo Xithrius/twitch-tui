@@ -74,7 +74,7 @@ pub struct ChannelList {
 }
 
 pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
-    Ok(client
+    let response_channel_id = client
         .get(format!("https://api.twitch.tv/helix/users?login={channel}",))
         .send()
         .await?
@@ -85,5 +85,11 @@ pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
         .first()
         .context("Could not get channel id.")?
         .id
-        .parse()?)
+        .parse()?;
+
+    Ok(response_channel_id)
+}
+
+pub async fn send_twitch_message(client: &Client, message: &str) -> Result<()> {
+    todo!()
 }

@@ -268,7 +268,7 @@ impl Component for EmotePickerWidget {
                         self.unselect();
                         self.filtered_emotes.clear();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Privmsg(emote)));
+                        return Some(TerminalAction::Enter(TwitchAction::SendMessage(emote)));
                     }
                 }
                 _ => {

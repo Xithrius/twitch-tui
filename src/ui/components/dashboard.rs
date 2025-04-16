@@ -225,7 +225,7 @@ impl Component for DashboardWidget {
                 Key::Char('s') => self.channel_input.toggle_focus(),
                 Key::Char('f') => self.following.toggle_focus().await,
                 Key::Enter => {
-                    let action = TerminalAction::Enter(TwitchAction::Join(
+                    let action = TerminalAction::Enter(TwitchAction::JoinChannel(
                         self.config.borrow().twitch.channel.clone(),
                     ));
 
@@ -241,8 +241,9 @@ impl Component for DashboardWidget {
                         channels.extend(selected_channels);
 
                         if let Some(channel) = channels.get(selection as usize) {
-                            let action =
-                                TerminalAction::Enter(TwitchAction::Join(channel.to_string()));
+                            let action = TerminalAction::Enter(TwitchAction::JoinChannel(
+                                channel.to_string(),
+                            ));
 
                             self.config.borrow_mut().twitch.channel = channel.to_string();
                             self.storage

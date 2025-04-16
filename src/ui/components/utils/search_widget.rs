@@ -290,7 +290,9 @@ where
 
                         self.unselect();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
+                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                            selected_channel,
+                        )));
                     }
                 }
                 _ => {

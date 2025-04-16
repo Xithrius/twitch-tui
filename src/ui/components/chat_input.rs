@@ -111,7 +111,7 @@ impl Component for ChatInputWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if self.emote_picker.is_focused() {
-            if let Some(TerminalAction::Enter(TwitchAction::Privmsg(emote))) =
+            if let Some(TerminalAction::Enter(TwitchAction::SendMessage(emote))) =
                 self.emote_picker.event(event).await
             {
                 self.input.insert(&emote);
@@ -124,7 +124,7 @@ impl Component for ChatInputWidget {
                         let current_input = self.input.to_string();
 
                         let action =
-                            TerminalAction::Enter(TwitchAction::Privmsg(current_input.clone()));
+                            TerminalAction::Enter(TwitchAction::SendMessage(current_input.clone()));
 
                         self.input.clear();
 
