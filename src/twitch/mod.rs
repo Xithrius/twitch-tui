@@ -10,7 +10,7 @@ use std::{collections::HashMap, hash::BuildHasher};
 use api::{
     channels::get_channel_id,
     event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_event},
-    messages::send_twitch_message,
+    messages::{NewTwitchMessage, send_twitch_message},
 };
 use color_eyre::Result;
 use futures::StreamExt;
@@ -90,7 +90,8 @@ pub async fn twitch_websocket(
                 match action {
                     TwitchAction::SendMessage(message) => {
                         if let Some(twitch_client) = twitch_client.as_ref() {
-                            let _ = send_twitch_message(twitch_client, &message).await;
+                            let new_message = todo!();
+                            let _ = send_twitch_message(twitch_client, new_message).await;
                         }
                     },
                     TwitchAction::JoinChannel(_) => todo!(),

@@ -1,6 +1,7 @@
 use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 
+use super::TWITCH_API_BASE_URL;
 use crate::twitch::{
     models::{ReceivedTwitchSubscription, TwitchSubscriptionResponse},
     oauth::TwitchOauth,
@@ -25,7 +26,7 @@ pub async fn subscribe_to_event(
 ) -> Result<TwitchSubscriptionResponse> {
     let session_id = session_id.context("Session ID is empty")?;
 
-    let url = "https://api.twitch.tv/helix/eventsub/subscriptions";
+    let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
 
     let subscription = ReceivedTwitchSubscription::new(
         subscription_type,

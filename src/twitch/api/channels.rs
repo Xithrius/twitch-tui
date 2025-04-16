@@ -2,6 +2,8 @@ use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+use super::TWITCH_API_BASE_URL;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Channel {
     id: String,
@@ -15,7 +17,7 @@ pub struct ChannelList {
 /// <https://dev.twitch.tv/docs/api/reference/#get-users>
 pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
     let response_channel_id = client
-        .get(format!("https://api.twitch.tv/helix/users?login={channel}",))
+        .get(format!("{TWITCH_API_BASE_URL}/users?login={channel}"))
         .send()
         .await?
         .error_for_status()?

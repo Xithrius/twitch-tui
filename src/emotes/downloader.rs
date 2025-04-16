@@ -24,7 +24,7 @@ mod twitch {
     use reqwest::Client;
     use serde::Deserialize;
 
-    use crate::emotes::downloader::EmoteMap;
+    use crate::{emotes::downloader::EmoteMap, twitch::api::TWITCH_API_BASE_URL};
 
     #[derive(Deserialize, Debug)]
     struct Emote {
@@ -91,7 +91,7 @@ mod twitch {
     pub async fn get_user_emotes(client: &Client, user_id: &str) -> Result<EmoteMap> {
         let mut user_emotes = client
             .get(format!(
-                "https://api.twitch.tv/helix/chat/emotes/user?user_id={user_id}",
+                "{TWITCH_API_BASE_URL}/chat/emotes/user?user_id={user_id}"
             ))
             .send()
             .await?
@@ -102,7 +102,7 @@ mod twitch {
         while let Some(c) = user_emotes.pagination.cursor {
             let emotes =   client
             .get(format!(
-                "https://api.twitch.tv/helix/chat/emotes/user?user_id={user_id}&after={c}",
+                "{TWITCH_API_BASE_URL}/chat/emotes/user?user_id={user_id}&after={c}",
             ))
             .send()
             .await?

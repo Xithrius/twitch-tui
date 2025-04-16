@@ -4,6 +4,8 @@ use color_eyre::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+use super::TWITCH_API_BASE_URL;
+
 const FOLLOWER_COUNT: usize = 100;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -36,7 +38,7 @@ pub struct FollowingList {
 pub async fn get_user_following(client: &Client, user_id: &str) -> Result<FollowingList> {
     Ok(client
         .get(format!(
-            "https://api.twitch.tv/helix/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}",
+            "{TWITCH_API_BASE_URL}/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}"
         ))
         .send()
         .await?
