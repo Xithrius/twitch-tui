@@ -1,10 +1,5 @@
-use std::sync::OnceLock;
-
 use color_eyre::{Result, eyre::ContextCompat};
-use reqwest::{
-    Client,
-    header::{AUTHORIZATION, HeaderMap, HeaderValue},
-};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use super::TWITCH_API_BASE_URL;
@@ -17,7 +12,7 @@ pub struct NewTwitchMessage {
 }
 
 impl NewTwitchMessage {
-    pub fn new(broadcaster_id: String, user_id: String, message: String) -> Self {
+    pub const fn new(broadcaster_id: String, user_id: String, message: String) -> Self {
         Self {
             broadcaster_id,
             user_id,
@@ -26,43 +21,40 @@ impl NewTwitchMessage {
     }
 }
 
-// curl -X POST 'https://api.twitch.tv/helix/chat/messages' \
-// -H 'Authorization: Bearer 2gbdx6oar67tqtcmt49t3wpcgycthx' \
-// -H 'Client-Id: wbmytr93xzw8zbg0p1izqyzzc5mbiz' \
-// -H 'Content-Type: application/json' \
-// -d '{
-//   "broadcaster_id": "12826",
-//   "sender_id": "141981764",
-//   "message": "Hello, world! twitchdevHype",
-// }'
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TwitchNewMessageResponse {
+    message_id: String,
+    is_sent: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+struct TwitchNewMessageResponseList {
+    data: Vec<TwitchNewMessageResponse>,
+}
 
 /// Sends a message to the respective channel.
 /// This was chosen vs websocket stdin due to being able to handle errors
 /// in a cleaner way.
 ///
 /// <https://dev.twitch.tv/docs/api/reference/#send-chat-message>
-pub async fn send_twitch_message(client: &Client, new_message: NewTwitchMessage) -> Result<()> {
-    let url = format!("{}/chat/messages", TWITCH_API_BASE_URL);
+pub async fn send_twitch_message(
+    client: &Client,
+    new_message: NewTwitchMessage,
+) -> Result<TwitchNewMessageResponse> {
+    let url = format!("{TWITCH_API_BASE_URL}/chat/messages");
 
-    Ok(())
+    let response_data = client
+        .post(url)
+        .json(&new_message)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<TwitchNewMessageResponseList>()
+        .await?
+        .data
+        .first()
+        .context("Could not get new Twitch message response")?
+        .clone();
 
-    // let session_id = session_id.context("Session ID is empty")?;
-
-    // let subscription = ReceivedTwitchSubscription::new(
-    //     subscription_type,
-    //     channel_id,
-    //     client_id.user_id.clone(),
-    //     session_id,
-    // );
-
-    // let response = client
-    //     .post(url)
-    //     .header("Content-Type", "application/json")
-    //     .json(&subscription)
-    //     .send()
-    //     .await?;
-
-    // let response_data: TwitchSubscriptionResponse = response.json().await?;
-
-    // Ok(response_data)
+    Ok(response_data)
 }
