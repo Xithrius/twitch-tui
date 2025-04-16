@@ -1,4 +1,5 @@
 pub mod channels;
+pub mod chat_settings;
 pub mod event_sub;
 pub mod following;
 pub mod messages;

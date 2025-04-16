@@ -5,18 +5,11 @@ pub mod client;
 mod models;
 pub mod oauth;
 
-use std::{collections::HashMap, hash::BuildHasher};
+use std::{collections::HashMap, fmt::Write as _, hash::BuildHasher};
 
-use api::{
-    channels::get_channel_id,
-    event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_events},
-    messages::{NewTwitchMessage, send_twitch_message},
-};
 use color_eyre::Result;
 use futures::StreamExt;
 use log::{debug, error, info};
-use models::ReceivedTwitchMessage;
-use oauth::{get_twitch_client, get_twitch_client_oauth};
 use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -27,6 +20,16 @@ use crate::{
         config::CoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
+    },
+    twitch::{
+        api::{
+            channels::get_channel_id,
+            chat_settings::TwitchChatSettingsResponse,
+            event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_events},
+            messages::{NewTwitchMessage, send_twitch_message},
+        },
+        models::ReceivedTwitchMessage,
+        oauth::{get_twitch_client, get_twitch_client_oauth},
     },
     utils::{
         emotes::emotes_enabled,
@@ -53,25 +56,20 @@ pub async fn twitch_websocket(
 
     let (_, mut stream) = ws_stream.split();
 
-    let oauth_token = config.twitch.token.clone();
-
-    let mut twitch_client: Option<Client> = None;
-    let mut session_id: Option<String> = None;
-
     // If the dashboard is the start state, wait until the user has selected
     // a channel before connecting to Twitch's websocket server.
-    // if config.terminal.first_state == State::Dashboard {
-    //     debug!("Waiting for user to select channel from debug screen");
+    if config.terminal.first_state == State::Dashboard {
+        debug!("Waiting for user to select channel from debug screen");
 
-    //     loop {
-    //         if let Ok(TwitchAction::Join(channel)) = rx.recv().await {
-    //             config.twitch.channel = channel;
+        loop {
+            if let Ok(TwitchAction::JoinChannel(channel)) = rx.recv().await {
+                config.twitch.channel = channel;
 
-    //             debug!("User has selected channel from start screen");
-    //             break;
-    //         }
-    //     }
-    // }
+                debug!("User has selected channel from start screen");
+                break;
+            }
+        }
+    }
 
     let enable_emotes = emotes_enabled(&config.frontend);
 
@@ -119,21 +117,8 @@ pub async fn twitch_websocket(
             Some(message) = stream.next() => {
                 match message {
                     Ok(message) => {
-                        let message_text = match message {
-                            Message::Text(message_text) => message_text,
-                            Message::Ping(_) => {
-                                // println!("Ping");
-                                continue;
-                            }
-                            Message::Pong(_) => {
-                                // println!("Pong");
-                                continue;
-                            }
-                            Message::Close(_) => {
-                                // println!("Close frame: {close_frame:?}");
-                                continue;
-                            }
-                            _ => continue,
+                        let Message::Text(message_text) = message else {
+                            continue;
                         };
 
                         let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
@@ -313,49 +298,51 @@ async fn handle_incoming_message(
     // }
 }
 
-// pub async fn handle_roomstate<S: BuildHasher>(
-//     tx: &Sender<TwitchToTerminalAction>,
-//     tags: &HashMap<&str, &str, S>,
-// ) {
-//     let mut room_state = String::new();
+pub async fn handle_roomstate<S: BuildHasher>(
+    tx: &Sender<TwitchToTerminalAction>,
+    chat_settings: &TwitchChatSettingsResponse,
+) {
+    let mut room_state = String::new();
 
-//     for (name, value) in tags {
-//         match *name {
-//             "emote-only" if *value == "1" => {
-//                 room_state.push_str("The channel is emote-only.\n");
-//             }
-//             "followers-only" if *value != "-1" => {
-//                 room_state.push_str("The channel is followers-only.\n");
-//             }
-//             "subs-only" if *value == "1" => {
-//                 room_state.push_str("The channel is subscribers-only.\n");
-//             }
-//             "slow" if *value != "0" => {
-//                 room_state.push_str("The channel has a ");
-//                 room_state.push_str(value);
-//                 room_state.push_str("s slowmode.\n");
-//             }
-//             _ => (),
-//         }
-//     }
+    if let Some(slow_mode_wait_time) = chat_settings.slow_mode() {
+        let _ = &writeln!(
+            room_state,
+            "The channel has a {slow_mode_wait_time} second slowmode."
+        );
+    }
 
-//     // Trim last newline
-//     room_state.pop();
+    if let Some(follower_mode_duration) = chat_settings.follower_mode() {
+        let _ = &writeln!(
+            room_state,
+            "The channel is followers-only. You must follow the channel for at least {follower_mode_duration} second(s) to chat."
+        );
+    }
 
-//     if room_state.is_empty() {
-//         return;
-//     }
+    if let Some(non_moderator_chat_delay_duration) = chat_settings.non_moderator_chat() {
+        let _ = &writeln!(
+            room_state,
+            "The channel has a non-moderator message delay. It will take {non_moderator_chat_delay_duration} second(s) for your message to show after sending."
+        );
+    }
 
-//     let message_id = tags.get("target-msg-id").map(|&s| s.to_string());
+    if chat_settings.subscriber_mode() {
+        room_state.push_str("The channel is subscribers-only.\n");
+    }
 
-//     tx.send(DataBuilder::user(
-//         String::from("Info"),
-//         None,
-//         room_state,
-//         DownloadedEmotes::default(),
-//         message_id,
-//         false,
-//     ))
-//     .await
-//     .unwrap();
-// }
+    if chat_settings.emote_mode() {
+        room_state.push_str("The channel is emote-only.\n");
+    }
+
+    if chat_settings.unique_chat_mode() {
+        room_state.push_str("The channel accepts only unique messages.\n");
+    }
+
+    // Trim last newline
+    room_state.pop();
+
+    if room_state.is_empty() {
+        return;
+    }
+
+    tx.send(DataBuilder::twitch(room_state)).await.unwrap();
+}

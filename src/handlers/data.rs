@@ -629,7 +629,7 @@ impl<'conf> DataBuilder<'conf> {
         ))
     }
 
-    pub fn system(self, payload: String) -> TwitchToTerminalAction {
+    pub fn system(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "System".to_string(),
             None,
@@ -641,7 +641,7 @@ impl<'conf> DataBuilder<'conf> {
         ))
     }
 
-    pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
+    pub fn twitch(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "Twitch".to_string(),
             None,

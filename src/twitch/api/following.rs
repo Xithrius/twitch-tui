@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Context};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -36,13 +36,16 @@ pub struct FollowingList {
 
 /// <https://dev.twitch.tv/docs/api/reference/#get-followed-channels>
 pub async fn get_user_following(client: &Client, user_id: &str) -> Result<FollowingList> {
-    Ok(client
-        .get(format!(
-            "{TWITCH_API_BASE_URL}/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}"
-        ))
+    let url =
+        format!("{TWITCH_API_BASE_URL}/channels/followed?user_id={user_id}&first={FOLLOWER_COUNT}");
+
+    let response_data = client
+        .get(url)
         .send()
         .await?
         .error_for_status()?
         .json::<FollowingList>()
-        .await?)
+        .await?;
+
+    Ok(response_data)
 }
