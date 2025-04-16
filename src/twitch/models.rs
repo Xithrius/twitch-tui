@@ -64,7 +64,7 @@ pub struct ReceivedTwitchEventMessageFragmentMention {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchEventMessageFragment {
     #[serde(rename = "type")]
-    sub_type: String,
+    fragment_type: String,
     text: String,
     cheermote: Option<ReceivedTwitchEventMessageFragmentEmote>,
     emote: Option<ReceivedTwitchEventMessageFragmentEmote>,
@@ -177,9 +177,9 @@ pub struct ReceivedTwitchSubscription {
     id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     status: Option<String>,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#subscription-types>
-    sub_type: String,
+    subscription_type: Option<String>,
     version: String,
     condition: ReceivedTwitchSubscriptionCondition,
     transport: ReceivedTwitchSubscriptionTransport,
@@ -191,14 +191,23 @@ pub struct ReceivedTwitchSubscription {
 
 impl ReceivedTwitchSubscription {
     #[must_use]
-    pub fn new(sub_type: String, channel_id: String, user_id: String, session_id: String) -> Self {
+    pub fn new(
+        maybe_subscription_type: Option<String>,
+        channel_id: String,
+        user_id: String,
+        session_id: String,
+    ) -> Self {
         Self {
-            sub_type,
+            subscription_type: maybe_subscription_type,
             version: "1".to_string(),
             condition: ReceivedTwitchSubscriptionCondition::new(channel_id, user_id),
             transport: ReceivedTwitchSubscriptionTransport::new(session_id),
             ..Default::default()
         }
+    }
+
+    pub fn set_subscription_type(&mut self, subscription_type: String) {
+        self.subscription_type = Some(subscription_type);
     }
 }
 

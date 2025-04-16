@@ -1,27 +1,40 @@
+use std::marker::PhantomData;
+
 use color_eyre::Result;
 use reqwest::Client;
 
-use super::oauth::{TwitchOauth, get_twitch_client};
+use super::oauth::{TwitchOauth, get_twitch_client, get_twitch_client_oauth};
 use crate::handlers::config::TwitchConfig;
 
-pub struct TwitchClient {
+struct Authenticated;
+struct Unauthenticated;
+
+pub struct TwitchClient<State> {
     client: Client,
     oauth: TwitchOauth,
-    session_id: Option<String>,
+    session_id: String,
+    state: PhantomData<State>,
 }
 
-impl TwitchClient {
+impl TwitchClient<Unauthenticated> {
     pub async fn new(
         twitch_config: &TwitchConfig,
-        oauth: TwitchOauth,
         session_id: String,
-    ) -> Result<Self> {
-        let client = get_twitch_client(&oauth, twitch_config.token.as_deref()).await?;
+    ) -> Result<TwitchClient<Authenticated>> {
+        let token = twitch_config.token.as_deref();
 
-        Ok(Self {
+        let oauth = get_twitch_client_oauth(token).await?;
+        let client = get_twitch_client(&oauth, token).await?;
+
+        let twitch_client = TwitchClient {
             client,
             oauth,
-            session_id: Some(session_id),
-        })
+            session_id,
+            state: PhantomData,
+        };
+
+        Ok(twitch_client)
     }
 }
+
+impl TwitchClient<Authenticated> {}

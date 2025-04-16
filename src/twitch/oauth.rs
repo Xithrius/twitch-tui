@@ -5,9 +5,9 @@ use reqwest::{
     Client,
     header::{AUTHORIZATION, HeaderMap, HeaderValue},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TwitchOauth {
     pub client_id: String,
     pub login: String,
@@ -16,11 +16,11 @@ pub struct TwitchOauth {
     pub expires_in: i32,
 }
 
-pub async fn get_twitch_client_oauth(oauth_token: Option<&str>) -> Result<&TwitchOauth> {
-    static TWITCH_CLIENT_ID: OnceLock<TwitchOauth> = OnceLock::new();
+pub async fn get_twitch_client_oauth(oauth_token: Option<&str>) -> Result<TwitchOauth> {
+    static TWITCH_CLIENT_OAUTH: OnceLock<TwitchOauth> = OnceLock::new();
 
-    if let Some(id) = TWITCH_CLIENT_ID.get() {
-        return Ok(id);
+    if let Some(id) = TWITCH_CLIENT_OAUTH.get() {
+        return Ok(id.clone());
     }
 
     let token = oauth_token
@@ -41,13 +41,13 @@ pub async fn get_twitch_client_oauth(oauth_token: Option<&str>) -> Result<&Twitc
         .error_for_status()
         .unwrap();
 
-    let client_id = data.json::<TwitchOauth>().await?;
+    let twitch_oauth = data.json::<TwitchOauth>().await?;
 
-    Ok(TWITCH_CLIENT_ID.get_or_init(|| client_id))
+    Ok(TWITCH_CLIENT_OAUTH.get_or_init(|| twitch_oauth)).cloned()
 }
 
 pub async fn get_twitch_client(
-    client_id: &TwitchOauth,
+    twitch_oauth: &TwitchOauth,
     oauth_token: Option<&str>,
 ) -> Result<Client> {
     let token = oauth_token
@@ -60,7 +60,7 @@ pub async fn get_twitch_client(
         AUTHORIZATION,
         HeaderValue::from_str(&format!("Bearer {token}"))?,
     );
-    headers.insert("Client-Id", HeaderValue::from_str(&client_id.client_id)?);
+    headers.insert("Client-Id", HeaderValue::from_str(&twitch_oauth.client_id)?);
 
     Ok(Client::builder().default_headers(headers).build()?)
 }

@@ -9,7 +9,7 @@ use std::{collections::HashMap, hash::BuildHasher};
 
 use api::{
     channels::get_channel_id,
-    event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_event},
+    event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_events},
     messages::{NewTwitchMessage, send_twitch_message},
 };
 use color_eyre::Result;
@@ -131,7 +131,7 @@ pub async fn twitch_websocket(
                         {
                             let client_id = get_twitch_client_oauth(oauth_token.as_deref()).await.unwrap();
 
-                            let new_twitch_client = get_twitch_client(client_id, oauth_token.as_deref())
+                            let new_twitch_client = get_twitch_client(&client_id, oauth_token.as_deref())
                                 .await
                                 .expect("failed to authenticate twitch client");
                             twitch_client = Some(new_twitch_client.clone());
@@ -143,12 +143,12 @@ pub async fn twitch_websocket(
                                 .await
                                 .unwrap();
 
-                            let channel_subscription_response = subscribe_to_event(
+                            let channel_subscription_response = subscribe_to_events(
                                 &new_twitch_client,
-                                client_id,
+                                &client_id,
                                 new_session_id,
                                 channel_id.to_string(),
-                                CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()
+                                vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()]
                             )
                             .await
                             .unwrap();

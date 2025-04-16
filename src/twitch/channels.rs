@@ -18,7 +18,7 @@ pub struct Following {
 
 pub async fn get_following(twitch_config: &TwitchConfig) -> Result<FollowingList> {
     let client_id = get_twitch_client_oauth(None).await?;
-    let client = get_twitch_client(client_id, twitch_config.token.as_deref()).await?;
+    let client = get_twitch_client(&client_id, twitch_config.token.as_deref()).await?;
 
     get_user_following(&client, &client_id.user_id).await
 }

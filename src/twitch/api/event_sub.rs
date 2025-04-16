@@ -17,30 +17,41 @@ pub const CHANNEL_CHAT_MESSAGE_EVENT_SUB: &str = "channel.chat.message";
 ///
 /// No need to delete a subscription if/when session ends, since they're disabled automatically
 /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#which-events-is-my-websocket-subscribed-to>
-pub async fn subscribe_to_event(
+pub async fn subscribe_to_events(
     client: &Client,
     client_id: &TwitchOauth,
     session_id: Option<String>,
     channel_id: String,
-    subscription_type: String,
-) -> Result<TwitchSubscriptionResponse> {
+    subscription_types: Vec<String>,
+) -> Result<Vec<TwitchSubscriptionResponse>> {
     let session_id = session_id.context("Session ID is empty")?;
 
     let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
 
-    let subscription = ReceivedTwitchSubscription::new(
-        subscription_type,
+    let mut responses = Vec::<TwitchSubscriptionResponse>::new();
+
+    let mut subscription = ReceivedTwitchSubscription::new(
+        // Set to None here so we can modify otherwise in the loop
+        None,
         channel_id,
         client_id.user_id.clone(),
         session_id,
     );
 
-    let response = client
-        .post(url)
-        .header("Content-Type", "application/json")
-        .json(&subscription)
-        .send()
-        .await?;
+    for subscription_type in subscription_types {
+        subscription.set_subscription_type(subscription_type);
+
+        let response = client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .json(&subscription)
+            .send()
+            .await?;
+
+        let response_data: TwitchSubscriptionResponse = response.json().await?;
+
+        responses.push(response_data);
+    }
 
     // Example of a bad response:
     // Object {
@@ -49,7 +60,5 @@ pub async fn subscribe_to_event(
     //     "status": Number(400),
     // }
 
-    let response_data: TwitchSubscriptionResponse = response.json().await?;
-
-    Ok(response_data)
+    Ok(responses)
 }
