@@ -45,8 +45,6 @@ pub struct FollowingList {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct Following {
-    // TODO: Don't re-create client on new requests
-    // client: &Client,
     twitch_config: TwitchConfig,
     list: FollowingList,
 }
