@@ -139,7 +139,7 @@ mod betterttv {
         shared_emotes: Vec<Emote>,
     }
 
-    pub async fn get_emotes(channel_id: i32) -> Result<EmoteMap> {
+    pub async fn get_emotes(channel_id: String) -> Result<EmoteMap> {
         let client = Client::new();
 
         let EmoteList {
@@ -211,7 +211,7 @@ mod seventv {
         emote_set: EmoteList,
     }
 
-    pub async fn get_emotes(channel_id: i32) -> Result<EmoteMap> {
+    pub async fn get_emotes(channel_id: String) -> Result<EmoteMap> {
         let client = Client::new();
 
         let channel_emotes = client
@@ -290,7 +290,7 @@ mod frankerfacez {
         room: SetId,
     }
 
-    pub async fn get_emotes(channel_id: i32) -> Result<EmoteMap> {
+    pub async fn get_emotes(channel_id: String) -> Result<EmoteMap> {
         let client = &Client::new();
 
         let mut sets = client
@@ -444,22 +444,25 @@ pub async fn get_emotes(
     };
 
     // Concurrently get the list of emotes for each provider
-    let global_emotes =
-        futures::stream::iter(enabled_emotes.into_iter().map(|emote_provider| async move {
+    let global_emotes = futures::stream::iter(enabled_emotes.into_iter().map(|emote_provider| {
+        let channel_id = channel_id.clone();
+
+        async move {
             match emote_provider {
                 EmoteProvider::Twitch => Ok(HashMap::new()),
                 EmoteProvider::BetterTTV => betterttv::get_emotes(channel_id).await,
                 EmoteProvider::SevenTV => seventv::get_emotes(channel_id).await,
                 EmoteProvider::FrankerFaceZ => frankerfacez::get_emotes(channel_id).await,
             }
-        }))
-        .buffer_unordered(4)
-        .collect::<Vec<Result<EmoteMap>>>()
-        .await
-        .into_iter()
-        .flatten()
-        .flatten()
-        .collect::<EmoteMap>();
+        }
+    }))
+    .buffer_unordered(4)
+    .collect::<Vec<Result<EmoteMap>>>()
+    .await
+    .into_iter()
+    .flatten()
+    .flatten()
+    .collect::<EmoteMap>();
 
     Ok((
         download_emotes(user_emotes).await,
