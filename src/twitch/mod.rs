@@ -82,6 +82,9 @@ pub async fn twitch_websocket(
     let mut twitch_client: Option<Client> = None;
     let mut session_id: Option<String> = None;
 
+    let mut channel_id: Option<String> = None;
+    let mut user_id: Option<String> = None;
+
     loop {
         tokio::select! {
             biased;
@@ -89,13 +92,27 @@ pub async fn twitch_websocket(
             Ok(action) = rx.recv() => {
                 match action {
                     TwitchAction::SendMessage(message) => {
-                        if let Some(twitch_client) = twitch_client.as_ref() {
-                            let new_message = todo!();
-                            let _ = send_twitch_message(twitch_client, new_message).await;
-                        }
+                        let Some(twitch_client) = twitch_client.as_ref() else {
+                            panic!("No twitch client at this stage");
+                        };
+
+                        let Some(channel_id) = channel_id.as_ref() else {
+                            panic!("No channel ID at this stage");
+                        };
+
+                        let Some(user_id) = user_id.as_ref() else {
+                            panic!("No user ID at this stage");
+                        };
+
+                        let new_message = NewTwitchMessage::new(channel_id.to_string(), user_id.to_string(), message);
+                        let _ = send_twitch_message(twitch_client, new_message).await;
                     },
-                    TwitchAction::JoinChannel(_) => todo!(),
-                    TwitchAction::ClearMessages => todo!(),
+                    TwitchAction::JoinChannel(_) => {
+                        panic!("Joining channels is not implemented at this moment");
+                    },
+                    TwitchAction::ClearMessages => {
+                        panic!("Clearning messages is not implemented at this moment");
+                    },
                 }
             }
             Some(message) = stream.next() => {
@@ -111,7 +128,7 @@ pub async fn twitch_websocket(
                                 // println!("Pong");
                                 continue;
                             }
-                            Message::Close(close_frame) => {
+                            Message::Close(_) => {
                                 // println!("Close frame: {close_frame:?}");
                                 continue;
                             }
@@ -129,9 +146,9 @@ pub async fn twitch_websocket(
                             .message_type()
                             .is_some_and(|message_type| message_type == "session_welcome" && session_id.is_none())
                         {
-                            let client_id = get_twitch_client_oauth(oauth_token.as_deref()).await.unwrap();
+                            let twitch_oauth = get_twitch_client_oauth(oauth_token.as_deref()).await.unwrap();
 
-                            let new_twitch_client = get_twitch_client(&client_id, oauth_token.as_deref())
+                            let new_twitch_client = get_twitch_client(&twitch_oauth, oauth_token.as_deref())
                                 .await
                                 .expect("failed to authenticate twitch client");
                             twitch_client = Some(new_twitch_client.clone());
@@ -139,19 +156,24 @@ pub async fn twitch_websocket(
                             let new_session_id = received_message.session_id();
                             session_id.clone_from(&new_session_id);
 
-                            let channel_id = get_channel_id(&new_twitch_client, &config.twitch.channel)
+                            let new_channel_id = get_channel_id(&new_twitch_client, &config.twitch.channel)
                                 .await
                                 .unwrap();
 
-                            let channel_subscription_response = subscribe_to_events(
+                            let Ok(initial_subscriptions_response) = subscribe_to_events(
                                 &new_twitch_client,
-                                &client_id,
+                                &twitch_oauth,
                                 new_session_id,
-                                channel_id.to_string(),
+                                new_channel_id.to_string(),
                                 vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()]
                             )
-                            .await
-                            .unwrap();
+                            .await else {
+                                panic!("Something went wrong when sending message");
+                            };
+
+
+                            channel_id = Some(new_channel_id);
+                            user_id = Some(twitch_oauth.user_id);
 
                             continue;
                         }
