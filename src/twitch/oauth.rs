@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::{
     Client,
-    header::{AUTHORIZATION, HeaderMap, HeaderValue},
+    header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
 
@@ -61,6 +61,7 @@ pub async fn get_twitch_client(
         HeaderValue::from_str(&format!("Bearer {token}"))?,
     );
     headers.insert("Client-Id", HeaderValue::from_str(&twitch_oauth.client_id)?);
+    headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
 
     Ok(Client::builder().default_headers(headers).build()?)
 }

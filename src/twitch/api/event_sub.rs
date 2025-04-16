@@ -41,12 +41,7 @@ pub async fn subscribe_to_events(
     for subscription_type in subscription_types {
         subscription.set_subscription_type(subscription_type);
 
-        let response = client
-            .post(&url)
-            .header("Content-Type", "application/json")
-            .json(&subscription)
-            .send()
-            .await?;
+        let response = client.post(&url).json(&subscription).send().await?;
 
         let response_data: TwitchSubscriptionResponse = response.json().await?;
 
