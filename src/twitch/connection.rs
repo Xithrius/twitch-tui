@@ -2,7 +2,7 @@ use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 
 use super::{
-    messages::{ReceivedTwitchSubscription, TwitchSubscriptionResponse},
+    models::{ReceivedTwitchSubscription, TwitchSubscriptionResponse},
     oauth::ClientId,
 };
 

@@ -1,7 +1,7 @@
 mod badges;
 pub mod channels;
 mod connection;
-mod messages;
+mod models;
 pub mod oauth;
 
 use std::{collections::HashMap, hash::BuildHasher};
@@ -10,7 +10,7 @@ use color_eyre::Result;
 use connection::subscribe_to_channel;
 use futures::StreamExt;
 use log::{debug, error, info};
-use messages::ReceivedTwitchMessage;
+use models::ReceivedTwitchMessage;
 use oauth::{get_channel_id, get_twitch_client, get_twitch_client_id, send_twitch_message};
 use reqwest::Client;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
