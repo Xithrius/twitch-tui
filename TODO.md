@@ -1,3 +1,7 @@
 - [ ] Client vs Twitch server user input processing
     - [ ] Config to decide if user input is shown no matter what, or if we should receive it through Twitch
 - [ ] Commands
+    - [ ] Clear
+    - [ ] Me
+- [ ] Ratelimiting on authentication
+    - [ ] Don't spam login endpoints, keep track of when the last time we logged in during the current session (ex. in `handle_incoming_message`)

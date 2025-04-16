@@ -302,9 +302,9 @@ async fn handle_incoming_message(
 // }
 // }
 
-async fn handle_roomstate<S: BuildHasher>(
-    tx: &Sender<TwitchToTerminalAction>,
+async fn handle_roomstate(
     chat_settings: &TwitchChatSettingsResponse,
+    tx: &Sender<TwitchToTerminalAction>,
 ) {
     let mut room_state = String::new();
 
