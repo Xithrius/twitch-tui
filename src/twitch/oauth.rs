@@ -16,7 +16,7 @@ pub struct TwitchOauth {
     pub expires_in: i32,
 }
 
-pub async fn get_twitch_client_oauth(oauth_token: Option<&str>) -> Result<TwitchOauth> {
+pub async fn get_twitch_client_oauth(oauth_token: Option<&String>) -> Result<TwitchOauth> {
     static TWITCH_CLIENT_OAUTH: OnceLock<TwitchOauth> = OnceLock::new();
 
     if let Some(id) = TWITCH_CLIENT_OAUTH.get() {
@@ -48,7 +48,7 @@ pub async fn get_twitch_client_oauth(oauth_token: Option<&str>) -> Result<Twitch
 
 pub async fn get_twitch_client(
     twitch_oauth: &TwitchOauth,
-    oauth_token: Option<&str>,
+    oauth_token: Option<&String>,
 ) -> Result<Client> {
     let token = oauth_token
         .context("Twitch token is empty")?

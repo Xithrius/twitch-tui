@@ -8,6 +8,7 @@ pub mod oauth;
 
 use std::{fmt::Write as _, hash::BuildHasher};
 
+use color_eyre::{Result, eyre::bail};
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use log::{debug, error, info};
@@ -73,8 +74,7 @@ pub async fn twitch_websocket(
 
     let mut context = TwitchWebsocketContext::default();
     context.set_emotes(emotes_enabled);
-
-    let oauth_token = config.twitch.token.clone();
+    context.set_token(config.twitch.token.clone());
 
     loop {
         tokio::select! {
@@ -91,11 +91,11 @@ pub async fn twitch_websocket(
                             panic!("No channel ID at this stage");
                         };
 
-                        let Some(user_id) = context.user_id() else {
+                        let Some(twitch_oauth) = context.oauth() else {
                             panic!("No user ID at this stage");
                         };
 
-                        let new_message = NewTwitchMessage::new(channel_id.to_string(), user_id.to_string(), message);
+                        let new_message = NewTwitchMessage::new(channel_id.to_string(), twitch_oauth.user_id.to_string(), message);
                         let twitch_message_response = send_twitch_message(twitch_client, new_message).await;
                     },
                     TwitchAction::JoinChannel(_) => {
@@ -120,7 +120,12 @@ pub async fn twitch_websocket(
                             }
                         };
 
-                        handle_incoming_message(&mut context, &tx.clone(), &received_message, oauth_token.as_deref(), &config.twitch).await;
+                        let _ = handle_incoming_message(
+                            &mut context,
+                            &tx.clone(),
+                            &received_message,
+                            &config.twitch
+                        ).await;
                     }
                     Err(err) => {
                         error!("Twitch connection error encountered: {err}, attempting to reconnect.");
@@ -132,59 +137,61 @@ pub async fn twitch_websocket(
     }
 }
 
-async fn handle_welcome_message() {
-    todo!()
+async fn handle_welcome_message(
+    context: &mut TwitchWebsocketContext,
+    received_message: &ReceivedTwitchMessage,
+    twitch_config: &TwitchConfig,
+) -> Result<()> {
+    let oauth_token = context.clone().token();
+
+    let twitch_oauth = get_twitch_client_oauth(oauth_token.as_ref()).await?;
+    context.set_oauth(Some(twitch_oauth.clone()));
+
+    let twitch_client = get_twitch_client(&twitch_oauth, oauth_token.as_ref())
+        .await
+        .expect("failed to authenticate twitch client");
+    context.set_twitch_client(Some(twitch_client.clone()));
+
+    let session_id = received_message.session_id();
+    context.set_session_id(session_id.clone());
+
+    let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
+    context.set_channel_id(Some(channel_id.clone()));
+
+    // TODO: Do something with the subscriptions response data
+    let _initial_subscriptions_response = subscribe_to_events(
+        &twitch_client,
+        &twitch_oauth,
+        session_id,
+        channel_id.to_string(),
+        vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
+    )
+    .await?;
+
+    Ok(())
 }
 
 async fn handle_incoming_message(
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     received_message: &ReceivedTwitchMessage,
-    oauth_token: Option<&str>,
     twitch_config: &TwitchConfig,
-) {
+) -> Result<()> {
     // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
 
     if received_message.message_type().is_some_and(|message_type| {
         message_type == "session_welcome" && context.session_id().is_none()
     }) {
-        let twitch_oauth = get_twitch_client_oauth(oauth_token).await.unwrap();
-
-        let twitch_client = get_twitch_client(&twitch_oauth, oauth_token)
-            .await
-            .expect("failed to authenticate twitch client");
-        context.set_twitch_client(Some(twitch_client.clone()));
-
-        let session_id = received_message.session_id();
-        context.set_session_id(session_id.clone());
-
-        let channel_id = get_channel_id(&twitch_client, &twitch_config.channel)
-            .await
-            .unwrap();
-
-        let Ok(initial_subscriptions_response) = subscribe_to_events(
-            &twitch_client,
-            &twitch_oauth,
-            session_id,
-            channel_id.to_string(),
-            vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
-        )
-        .await
-        else {
-            panic!("Something went wrong when sending message");
-        };
-
-        context.set_channel_id(Some(channel_id));
-        context.set_user_id(Some(twitch_oauth.user_id));
-
-        return;
+        handle_welcome_message(context, received_message, twitch_config).await?;
     }
 
     let Some(event) = received_message.event() else {
-        return;
+        return Ok(());
     };
 
-    tx.send(event.build_user_data()).await.unwrap();
+    tx.send(event.build_user_data()).await?;
+
+    Ok(())
 }
 
 // fn handle_incoming_message(

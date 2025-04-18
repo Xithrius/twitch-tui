@@ -21,10 +21,10 @@ impl TwitchClient<Unauthenticated> {
         twitch_config: &TwitchConfig,
         session_id: String,
     ) -> Result<TwitchClient<Authenticated>> {
-        let token = twitch_config.token.as_deref();
+        let token = twitch_config.token.clone();
 
-        let oauth = get_twitch_client_oauth(token).await?;
-        let client = get_twitch_client(&oauth, token).await?;
+        let oauth = get_twitch_client_oauth(token.as_ref()).await?;
+        let client = get_twitch_client(&oauth, token.as_ref()).await?;
 
         let twitch_client = TwitchClient {
             client,
