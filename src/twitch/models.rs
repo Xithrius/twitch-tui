@@ -84,6 +84,12 @@ pub struct ReceivedTwitchEventBadges {
     info: String,
 }
 
+impl ReceivedTwitchEventBadges {
+    pub fn set_id(&self) -> &str {
+        &self.set_id
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchEventReply {
     parent_message_id: String,
@@ -120,6 +126,22 @@ pub struct ReceivedTwitchEvent {
     source_badges: Option<String>,
 }
 
+impl ReceivedTwitchEventMessageFragmentEmote {
+    pub fn emote_id(&self) -> Option<&String> {
+        self.id.as_ref()
+    }
+}
+
+impl ReceivedTwitchEventMessageFragment {
+    pub fn emote(&self) -> Option<&ReceivedTwitchEventMessageFragmentEmote> {
+        self.emote.as_ref()
+    }
+
+    pub fn emote_name(&self) -> Option<&String> {
+        self.emote.is_some().then(|| &self.text)
+    }
+}
+
 impl ReceivedTwitchEvent {
     pub fn build_user_data(&self) -> TwitchToTerminalAction {
         let name = self.chatter_user_name.clone();
@@ -135,6 +157,34 @@ impl ReceivedTwitchEvent {
             Some(message_id),
             false,
         )
+    }
+
+    pub fn chatter_user_id(&self) -> &str {
+        &self.chatter_user_id
+    }
+
+    pub fn chatter_user_name(&self) -> &str {
+        &self.chatter_user_name
+    }
+
+    pub fn message_id(&self) -> &str {
+        &self.message_id
+    }
+
+    pub fn badges(&self) -> &Vec<ReceivedTwitchEventBadges> {
+        &self.badges
+    }
+
+    pub fn message_text(&self) -> &str {
+        &self.message.text
+    }
+
+    pub fn emote_fragments(&self) -> Vec<&ReceivedTwitchEventMessageFragment> {
+        self.message
+            .fragments
+            .iter()
+            .filter(|fragment| fragment.emote.is_some())
+            .collect()
     }
 }
 

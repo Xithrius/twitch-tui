@@ -470,9 +470,9 @@ pub async fn get_emotes(
     ))
 }
 
-pub async fn get_twitch_emote(name: &str) -> Result<()> {
+pub async fn get_twitch_emote(emote_id: &str) -> Result<()> {
     // Checks if emote is already downloaded.
-    let path = cache_path(name);
+    let path = cache_path(emote_id);
     let path = Path::new(&path);
 
     if tokio::fs::metadata(&path).await.is_ok() {
@@ -480,7 +480,7 @@ pub async fn get_twitch_emote(name: &str) -> Result<()> {
     }
 
     // Download it if it is not in the cache, try the animated version first.
-    let url = format!("https://static-cdn.jtvnw.net/emoticons/v2/{name}/animated/light/1.0");
+    let url = format!("https://static-cdn.jtvnw.net/emoticons/v2/{emote_id}/animated/light/1.0");
     let client = Client::new();
     let res = client.get(&url).send().await?.error_for_status();
 

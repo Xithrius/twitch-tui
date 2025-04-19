@@ -8,6 +8,7 @@ pub mod oauth;
 mod roomstate;
 
 use api::chat_settings::get_chat_settings;
+use badges::retrieve_user_badges;
 use color_eyre::Result;
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
@@ -17,6 +18,7 @@ use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::{
+    emotes::get_twitch_emote,
     handlers::{
         config::{CoreConfig, TwitchConfig},
         data::{DataBuilder, TwitchToTerminalAction},
@@ -31,6 +33,7 @@ use crate::{
         models::ReceivedTwitchMessage,
         oauth::{get_twitch_client, get_twitch_client_oauth},
     },
+    utils::text::{clean_message, parse_message_action},
 };
 
 #[derive(Debug, Clone)]
@@ -140,6 +143,11 @@ pub async fn twitch_websocket(
     }
 }
 
+/// Handling either the terminal joining a new channel, or the application just starting up
+async fn handle_channel_join() {
+    todo!()
+}
+
 async fn handle_welcome_message(
     twitch_config: &TwitchConfig,
     context: &mut TwitchWebsocketContext,
@@ -175,7 +183,7 @@ async fn handle_welcome_message(
 }
 
 async fn handle_user_message(
-    twitch_config: &CoreConfig,
+    config: &CoreConfig,
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     emotes_enabled: bool,
@@ -185,79 +193,53 @@ async fn handle_user_message(
         return Ok(());
     };
 
+    let message_text = event.message_text();
+    let (msg, highlight) = parse_message_action(message_text);
+    let received_emotes = emotes_enabled
+        .then(|| event.emote_fragments())
+        .unwrap_or_default();
+
+    let emotes = futures::stream::iter(received_emotes.into_iter().map(
+        |fragment_emote| async move {
+            // TODO: Remove unwraps
+            let emote = fragment_emote.emote().unwrap();
+            let emote_id = emote.emote_id().unwrap().to_string();
+            let emote_name = fragment_emote.emote_name().unwrap().to_string();
+            get_twitch_emote(&emote_id).await?;
+            Ok((emote_name, (emote_id, false)))
+        },
+    ))
+    .buffer_unordered(10)
+    .collect::<Vec<Result<(String, (String, bool))>>>();
+
+    let mut chatter_user_name = event.chatter_user_name().to_string();
+    let badges = event.badges();
+    if config.frontend.badges {
+        retrieve_user_badges(&mut chatter_user_name, badges);
+    }
+
+    let chatter_user_id = event.chatter_user_id();
+    let cleaned_message = clean_message(message_text);
+    let message_id = event.message_id();
+
+    let message_emotes = emotes.await.into_iter().flatten().collect();
+
+    tx.send(DataBuilder::user(
+        chatter_user_name.to_string(),
+        Some(chatter_user_id.to_string()),
+        cleaned_message,
+        message_emotes,
+        Some(message_id.to_string()),
+        highlight,
+    ))
+    .await
+    .unwrap();
+
     tx.send(event.build_user_data()).await?;
 
     Ok(())
 }
 
-async fn handle_incoming_message(
-    config: &CoreConfig,
-    context: &mut TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
-    emotes_enabled: bool,
-    received_message: &ReceivedTwitchMessage,
-) -> Result<()> {
-    // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
-
-    if received_message.message_type().is_some_and(|message_type| {
-        message_type == "session_welcome" && context.session_id().is_none()
-    }) {
-        handle_welcome_message(&config.twitch, context, received_message).await?;
-    } else {
-        handle_user_message(config, context, tx, emotes_enabled, received_message).await?;
-    }
-
-    Ok(())
-}
-
-// fn handle_incoming_message(
-//     message: Message,
-//     tx: Sender<TwitchToTerminalAction>,
-//     data_builder: DataBuilder<'_>,
-//     badges: bool,
-//     enable_emotes: bool,
-// ) {
-// match message.command {
-//     Command::PRIVMSG(ref _target, ref msg) => {
-//         let (msg, highlight) = parse_message_action(msg);
-
-//         let emotes = enable_emotes
-//             .then(|| tags.get("emotes").map(|&e| retrieve_twitch_emotes(msg, e)))
-//             .unwrap_or_default()
-//             .unwrap_or_default();
-
-//         let emotes =
-//             futures::stream::iter(emotes.into_iter().map(|(name, filename)| async move {
-//                 get_twitch_emote(&filename).await?;
-//                 Ok((name, (filename, false)))
-//             }))
-//             .buffer_unordered(10)
-//             .collect::<Vec<Result<(String, (String, bool))>>>();
-
-//         let mut name = message.source_nickname().unwrap().to_string();
-
-//         retrieve_user_badges(&mut name, &message, badges);
-
-//         let cleaned_message = clean_message(msg);
-
-//         let message_id = tags.get("id").map(|&s| s.to_string());
-//         let user_id = tags.get("user-id").map(|&s| s.to_string());
-
-//         debug!("Message received from twitch: {name} - {cleaned_message:?}");
-
-//         let emotes = emotes.await.into_iter().flatten().collect();
-
-//         tx.send(DataBuilder::user(
-//             name,
-//             user_id,
-//             cleaned_message,
-//             emotes,
-//             message_id,
-//             highlight,
-//         ))
-//         .await
-//         .unwrap();
-//     }
 //     Command::NOTICE(ref _target, ref msg) => {
 //         tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
 //     }
@@ -318,9 +300,22 @@ async fn handle_incoming_message(
 //                         .unwrap();
 //                 }
 //             }
-//             _ => (),
-//         }
-//     }
-//     _ => (),
-// }
-// }
+
+async fn handle_incoming_message(
+    config: &CoreConfig,
+    context: &mut TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    emotes_enabled: bool,
+    received_message: &ReceivedTwitchMessage,
+) -> Result<()> {
+    // Welcome messages only happen once, when a websocket connects to a server
+    if received_message.message_type().is_some_and(|message_type| {
+        message_type == "session_welcome" && context.session_id().is_none()
+    }) {
+        handle_welcome_message(&config.twitch, context, received_message).await?;
+    } else {
+        handle_user_message(config, context, tx, emotes_enabled, received_message).await?;
+    }
+
+    Ok(())
+}
