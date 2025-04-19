@@ -6,9 +6,9 @@ pub mod context;
 mod models;
 pub mod oauth;
 
-use std::{fmt::Write as _, hash::BuildHasher};
+use std::fmt::Write as _;
 
-use color_eyre::{Result, eyre::bail};
+use color_eyre::Result;
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use log::{debug, error, info};
@@ -31,7 +31,6 @@ use crate::{
         models::ReceivedTwitchMessage,
         oauth::{get_twitch_client, get_twitch_client_oauth},
     },
-    utils::emotes::is_emotes_enabled,
 };
 
 #[derive(Debug, Clone)]
@@ -70,7 +69,7 @@ pub async fn twitch_websocket(
 
     let data_builder = DataBuilder::new(&config.frontend.datetime_format);
 
-    let emotes_enabled = is_emotes_enabled(&config.frontend);
+    let emotes_enabled = config.frontend.is_emotes_enabled();
 
     let mut context = TwitchWebsocketContext::default();
     context.set_emotes(emotes_enabled);
@@ -121,10 +120,11 @@ pub async fn twitch_websocket(
                         };
 
                         let _ = handle_incoming_message(
+                            &config,
                             &mut context,
-                            &tx.clone(),
+                            &tx,
+                            emotes_enabled,
                             &received_message,
-                            &config.twitch
                         ).await;
                     }
                     Err(err) => {
@@ -138,9 +138,9 @@ pub async fn twitch_websocket(
 }
 
 async fn handle_welcome_message(
+    twitch_config: &TwitchConfig,
     context: &mut TwitchWebsocketContext,
     received_message: &ReceivedTwitchMessage,
-    twitch_config: &TwitchConfig,
 ) -> Result<()> {
     let oauth_token = context.clone().token();
 
@@ -171,25 +171,38 @@ async fn handle_welcome_message(
     Ok(())
 }
 
-async fn handle_incoming_message(
+async fn handle_user_message(
+    twitch_config: &CoreConfig,
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
+    emotes_enabled: bool,
     received_message: &ReceivedTwitchMessage,
-    twitch_config: &TwitchConfig,
+) -> Result<()> {
+    let Some(event) = received_message.event() else {
+        return Ok(());
+    };
+
+    tx.send(event.build_user_data()).await?;
+
+    Ok(())
+}
+
+async fn handle_incoming_message(
+    config: &CoreConfig,
+    context: &mut TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    emotes_enabled: bool,
+    received_message: &ReceivedTwitchMessage,
 ) -> Result<()> {
     // handle_incoming_message(message, tx.clone(), data_builder, config.frontend.badges, enable_emotes).await;
 
     if received_message.message_type().is_some_and(|message_type| {
         message_type == "session_welcome" && context.session_id().is_none()
     }) {
-        handle_welcome_message(context, received_message, twitch_config).await?;
+        handle_welcome_message(&config.twitch, context, received_message).await?;
+    } else {
+        handle_user_message(config, context, tx, emotes_enabled, received_message).await?;
     }
-
-    let Some(event) = received_message.event() else {
-        return Ok(());
-    };
-
-    tx.send(event.build_user_data()).await?;
 
     Ok(())
 }
