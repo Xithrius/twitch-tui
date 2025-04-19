@@ -192,7 +192,10 @@ async fn handle_channel_join(
         channel_id.to_string(),
         subscription_types,
     )
-    .await?;
+    .await
+    .context(format!(
+        "Failed to subscribe to new channel '{channel_name}'"
+    ))?;
 
     // Set channel chat message event subscription to correct subscription ID
     let chat_event_subscription_id = new_subscriptions
@@ -208,7 +211,8 @@ async fn handle_channel_join(
 
     // Notify frontend that new channel has been joined
     tx.send(DataBuilder::twitch(format!("Joined {channel_name}")))
-        .await?;
+        .await
+        .context("Failed to send twitch join message")?;
 
     // Handle new chat settings with roomstate
     let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await?;
