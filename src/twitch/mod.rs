@@ -126,11 +126,11 @@ pub async fn twitch_websocket(
                         };
 
                         let _ = handle_incoming_message(
-                            &config,
+                            config.clone(),
                             &mut context,
                             &tx,
                             emotes_enabled,
-                            &received_message,
+                            received_message,
                         ).await;
                     }
                     Err(err) => {
@@ -151,7 +151,7 @@ async fn handle_channel_join() {
 async fn handle_welcome_message(
     twitch_config: &TwitchConfig,
     context: &mut TwitchWebsocketContext,
-    received_message: &ReceivedTwitchMessage,
+    received_message: ReceivedTwitchMessage,
 ) -> Result<()> {
     let oauth_token = context.clone().token();
 
@@ -183,11 +183,10 @@ async fn handle_welcome_message(
 }
 
 async fn handle_user_message(
-    config: &CoreConfig,
-    context: &mut TwitchWebsocketContext,
+    config: CoreConfig,
     tx: &Sender<TwitchToTerminalAction>,
     emotes_enabled: bool,
-    received_message: &ReceivedTwitchMessage,
+    received_message: ReceivedTwitchMessage,
 ) -> Result<()> {
     let Some(event) = received_message.event() else {
         return Ok(());
@@ -205,7 +204,9 @@ async fn handle_user_message(
             let emote = fragment_emote.emote().unwrap();
             let emote_id = emote.emote_id().unwrap().to_string();
             let emote_name = fragment_emote.emote_name().unwrap().to_string();
+
             get_twitch_emote(&emote_id).await?;
+
             Ok((emote_name, (emote_id, false)))
         },
     ))
@@ -232,10 +233,7 @@ async fn handle_user_message(
         Some(message_id.to_string()),
         highlight,
     ))
-    .await
-    .unwrap();
-
-    tx.send(event.build_user_data()).await?;
+    .await?;
 
     Ok(())
 }
@@ -302,11 +300,11 @@ async fn handle_user_message(
 //             }
 
 async fn handle_incoming_message(
-    config: &CoreConfig,
+    config: CoreConfig,
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     emotes_enabled: bool,
-    received_message: &ReceivedTwitchMessage,
+    received_message: ReceivedTwitchMessage,
 ) -> Result<()> {
     // Welcome messages only happen once, when a websocket connects to a server
     if received_message.message_type().is_some_and(|message_type| {
@@ -314,7 +312,8 @@ async fn handle_incoming_message(
     }) {
         handle_welcome_message(&config.twitch, context, received_message).await?;
     } else {
-        handle_user_message(config, context, tx, emotes_enabled, received_message).await?;
+        // TODO: Remove clones
+        handle_user_message(config.clone(), tx, emotes_enabled, received_message.clone()).await?;
     }
 
     Ok(())

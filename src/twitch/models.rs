@@ -133,12 +133,12 @@ impl ReceivedTwitchEventMessageFragmentEmote {
 }
 
 impl ReceivedTwitchEventMessageFragment {
-    pub fn emote(&self) -> Option<&ReceivedTwitchEventMessageFragmentEmote> {
-        self.emote.as_ref()
+    pub fn emote(&self) -> Option<ReceivedTwitchEventMessageFragmentEmote> {
+        self.emote.clone()
     }
 
     pub fn emote_name(&self) -> Option<&String> {
-        self.emote.is_some().then(|| &self.text)
+        self.emote.is_some().then_some(&self.text)
     }
 }
 
@@ -179,11 +179,12 @@ impl ReceivedTwitchEvent {
         &self.message.text
     }
 
-    pub fn emote_fragments(&self) -> Vec<&ReceivedTwitchEventMessageFragment> {
+    pub fn emote_fragments(&self) -> Vec<ReceivedTwitchEventMessageFragment> {
         self.message
             .fragments
             .iter()
             .filter(|fragment| fragment.emote.is_some())
+            .cloned()
             .collect()
     }
 }
