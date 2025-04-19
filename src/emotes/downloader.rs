@@ -428,7 +428,7 @@ pub async fn get_emotes(
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
     // Reuse the same client and headers for twitch requests
-    let client_id = &get_twitch_client_oauth(None).await?;
+    let client_id = &get_twitch_client_oauth(config.twitch.token.as_ref()).await?;
     let twitch_client = get_twitch_client(client_id, config.twitch.token.as_ref()).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
