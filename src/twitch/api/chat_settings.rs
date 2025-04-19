@@ -53,9 +53,12 @@ struct TwitchChatSettingsResponseList {
 ///
 /// <https://dev.twitch.tv/docs/api/reference/#get-chat-settings>
 pub async fn get_chat_settings(
-    client: &Client,
-    broadcaster_id: &String,
+    client: Option<&Client>,
+    broadcaster_id: Option<&String>,
 ) -> Result<TwitchChatSettingsResponse> {
+    let client = client.context("Twitch client has not been initialized")?;
+    let broadcaster_id = broadcaster_id.context("No broadcaster ID has been set")?;
+
     let url = format!("{TWITCH_API_BASE_URL}/chat/settings?broadcaster_id={broadcaster_id}");
 
     let response_data = client

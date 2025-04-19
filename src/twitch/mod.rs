@@ -5,13 +5,14 @@ pub mod client;
 pub mod context;
 mod models;
 pub mod oauth;
+mod roomstate;
 
-use std::fmt::Write as _;
-
+use api::chat_settings::get_chat_settings;
 use color_eyre::Result;
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use log::{debug, error, info};
+use roomstate::handle_roomstate;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
@@ -24,7 +25,6 @@ use crate::{
     twitch::{
         api::{
             channels::get_channel_id,
-            chat_settings::TwitchChatSettingsResponse,
             event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_events},
             messages::{NewTwitchMessage, send_twitch_message},
         },
@@ -98,6 +98,9 @@ pub async fn twitch_websocket(
                         let twitch_message_response = send_twitch_message(twitch_client, new_message).await;
                     },
                     TwitchAction::JoinChannel(_) => {
+                        let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await.unwrap();
+                        handle_roomstate(&chat_settings, &tx).await;
+
                         panic!("Joining channels is not implemented at this moment");
                     },
                     TwitchAction::ClearMessages => {
@@ -321,52 +324,3 @@ async fn handle_incoming_message(
 //     _ => (),
 // }
 // }
-
-async fn handle_roomstate(
-    chat_settings: &TwitchChatSettingsResponse,
-    tx: &Sender<TwitchToTerminalAction>,
-) {
-    let mut room_state = String::new();
-
-    if let Some(slow_mode_wait_time) = chat_settings.slow_mode() {
-        let _ = &writeln!(
-            room_state,
-            "The channel has a {slow_mode_wait_time} second slowmode."
-        );
-    }
-
-    if let Some(follower_mode_duration) = chat_settings.follower_mode() {
-        let _ = &writeln!(
-            room_state,
-            "The channel is followers-only. You must follow the channel for at least {follower_mode_duration} second(s) to chat."
-        );
-    }
-
-    if let Some(non_moderator_chat_delay_duration) = chat_settings.non_moderator_chat() {
-        let _ = &writeln!(
-            room_state,
-            "The channel has a non-moderator message delay. It will take {non_moderator_chat_delay_duration} second(s) for your message to show after sending."
-        );
-    }
-
-    if chat_settings.subscriber_mode() {
-        let _ = writeln!(room_state, "The channel is subscribers-only.");
-    }
-
-    if chat_settings.emote_mode() {
-        let _ = writeln!(room_state, "The channel is emote-only.");
-    }
-
-    if chat_settings.unique_chat_mode() {
-        let _ = writeln!(room_state, "The channel accepts only unique messages.");
-    }
-
-    // Trim last newline
-    room_state.pop();
-
-    if room_state.is_empty() {
-        return;
-    }
-
-    tx.send(DataBuilder::twitch(room_state)).await.unwrap();
-}
