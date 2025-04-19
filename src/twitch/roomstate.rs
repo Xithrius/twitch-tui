@@ -1,5 +1,6 @@
 use std::fmt::Write as _;
 
+use color_eyre::{Result, eyre::Context};
 use tokio::sync::mpsc::Sender;
 
 use super::api::chat_settings::TwitchChatSettingsResponse;
@@ -8,7 +9,7 @@ use crate::handlers::data::{DataBuilder, TwitchToTerminalAction};
 pub async fn handle_roomstate(
     chat_settings: &TwitchChatSettingsResponse,
     tx: &Sender<TwitchToTerminalAction>,
-) {
+) -> Result<()> {
     let mut room_state = String::new();
 
     if let Some(slow_mode_wait_time) = chat_settings.slow_mode() {
@@ -48,8 +49,10 @@ pub async fn handle_roomstate(
     room_state.pop();
 
     if room_state.is_empty() {
-        return;
+        return Ok(());
     }
 
-    tx.send(DataBuilder::twitch(room_state)).await.unwrap();
+    tx.send(DataBuilder::twitch(room_state))
+        .await
+        .context("Failed to send room state")
 }

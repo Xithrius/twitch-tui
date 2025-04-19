@@ -606,16 +606,9 @@ impl MessageData {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct DataBuilder<'conf> {
-    #[allow(dead_code)]
-    pub datetime_format: &'conf str,
-}
+pub struct DataBuilder;
 
-impl<'conf> DataBuilder<'conf> {
-    pub const fn new(datetime_format: &'conf str) -> Self {
-        DataBuilder { datetime_format }
-    }
-
+impl DataBuilder {
     pub fn user(
         user: String,
         user_id: Option<String>,

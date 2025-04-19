@@ -13,7 +13,7 @@ use crate::{
         state::State,
         user_input::events::{Config, Events, Key},
     },
-    twitch::{TwitchAction, oauth::get_twitch_client_oauth},
+    twitch::TwitchAction,
 };
 
 pub enum TerminalAction {

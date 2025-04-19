@@ -1,7 +1,5 @@
 use std::iter;
 
-use crate::handlers::config::FrontendConfig;
-
 pub const PRIVATE_USE_UNICODE: char = '\u{10EEEE}';
 pub const ZERO_WIDTH_SPACE: char = '\u{200B}';
 pub const ZERO_WIDTH_SPACE_STR: &str = "\u{200B}";

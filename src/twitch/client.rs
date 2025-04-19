@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use color_eyre::Result;
 use reqwest::Client;
 

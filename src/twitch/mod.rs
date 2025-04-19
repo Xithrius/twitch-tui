@@ -7,9 +7,9 @@ mod models;
 pub mod oauth;
 mod roomstate;
 
-use api::chat_settings::get_chat_settings;
+use api::{chat_settings::get_chat_settings, event_sub::unsubscribe_from_events};
 use badges::retrieve_user_badges;
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use log::{debug, error, info};
@@ -70,8 +70,6 @@ pub async fn twitch_websocket(
         }
     }
 
-    let data_builder = DataBuilder::new(&config.frontend.datetime_format);
-
     let emotes_enabled = config.frontend.is_emotes_enabled();
 
     let mut context = TwitchWebsocketContext::default();
@@ -98,13 +96,13 @@ pub async fn twitch_websocket(
                         };
 
                         let new_message = NewTwitchMessage::new(channel_id.to_string(), twitch_oauth.user_id.to_string(), message);
-                        let twitch_message_response = send_twitch_message(twitch_client, new_message).await;
+                        // TODO: Do something with this response
+                        let _twitch_message_response = send_twitch_message(twitch_client, new_message).await;
                     },
-                    TwitchAction::JoinChannel(_) => {
-                        let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await.unwrap();
-                        handle_roomstate(&chat_settings, &tx).await;
-
-                        panic!("Joining channels is not implemented at this moment");
+                    TwitchAction::JoinChannel(channel_name) => {
+                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel_name).await {
+                            error!("Joining channel failed: {err}");
+                        }
                     },
                     TwitchAction::ClearMessages => {
                         panic!("Clearning messages is not implemented at this moment");
@@ -144,8 +142,59 @@ pub async fn twitch_websocket(
 }
 
 /// Handling either the terminal joining a new channel, or the application just starting up
-async fn handle_channel_join() {
-    todo!()
+async fn handle_channel_join(
+    twitch_config: &mut TwitchConfig,
+    context: &mut TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    channel_name: String,
+) -> Result<()> {
+    let twitch_client = context.twitch_client().context("Twitch client not found")?;
+    let twitch_oauth = context.oauth().context("No OAuth found")?;
+    let channel_id = context
+        .channel_id()
+        .context("No channel ID found when joining channel")?;
+
+    let subscription_types = vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()];
+
+    // Unsubscribe from previous channel
+    unsubscribe_from_events(
+        twitch_client,
+        context.event_subscriptions(),
+        subscription_types.clone(),
+    )
+    .await?;
+
+    // Subscribe to new channel
+    let new_subscriptions = subscribe_to_events(
+        twitch_client,
+        twitch_oauth,
+        context.session_id().cloned(),
+        channel_id.to_string(),
+        subscription_types,
+    )
+    .await?;
+
+    // Set channel chat message event subscription to correct subscription ID
+    let chat_event_subscription_id = new_subscriptions
+        .get(CHANNEL_CHAT_MESSAGE_EVENT_SUB)
+        .context("Could not find chat message subscription ID in new subscriptions map")?;
+    context.add_event_subscription(
+        CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_owned(),
+        chat_event_subscription_id.to_string(),
+    );
+
+    // Set old channel to new channel
+    twitch_config.channel.clone_from(&channel_name);
+
+    // Notify frontend that new channel has been joined
+    tx.send(DataBuilder::twitch(format!("Joined {channel_name}")))
+        .await?;
+
+    // Handle new chat settings with roomstate
+    let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await?;
+    handle_roomstate(&chat_settings, tx).await?;
+
+    Ok(())
 }
 
 async fn handle_welcome_message(
@@ -169,8 +218,7 @@ async fn handle_welcome_message(
     let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
     context.set_channel_id(Some(channel_id.clone()));
 
-    // TODO: Do something with the subscriptions response data
-    let _initial_subscriptions_response = subscribe_to_events(
+    let initial_event_subscriptions = subscribe_to_events(
         &twitch_client,
         &twitch_oauth,
         session_id,
@@ -178,6 +226,8 @@ async fn handle_welcome_message(
         vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
     )
     .await?;
+
+    context.set_event_subscriptions(initial_event_subscriptions);
 
     Ok(())
 }
@@ -241,20 +291,9 @@ async fn handle_user_message(
 //     Command::NOTICE(ref _target, ref msg) => {
 //         tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
 //     }
-//     Command::JOIN(ref channel, _, _) => {
-//         tx.send(data_builder.twitch(format!("Joined {}", *channel)))
-//             .await
-//             .unwrap();
-//     }
+
 //     Command::Raw(ref cmd, ref _items) => {
 //         match cmd.as_ref() {
-//             "ROOMSTATE" => {
-//                 if !room_state_startup {
-//                     handle_roomstate(&tx, &tags).await;
-//                 }
-
-//                 return Some(true);
-//             }
 //             "USERNOTICE" => {
 //                 if let Some(value) = tags.get("system-msg") {
 //                     tx.send(data_builder.twitch((*value).to_string()))

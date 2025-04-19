@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use reqwest::Client;
 
 use super::oauth::TwitchOauth;
@@ -18,6 +20,9 @@ pub struct TwitchWebsocketContext {
 
     /// Are emotes enabled right now?
     emotes_enabled: bool,
+
+    /// Events that are subscribed to in this session
+    event_subscriptions: HashMap<String, String>,
 }
 
 impl TwitchWebsocketContext {
@@ -31,6 +36,10 @@ impl TwitchWebsocketContext {
 
     pub fn token(self) -> Option<String> {
         self.token
+    }
+
+    pub const fn event_subscriptions(&self) -> &HashMap<String, String> {
+        &self.event_subscriptions
     }
 
     pub const fn session_id(&self) -> Option<&String> {
@@ -63,5 +72,18 @@ impl TwitchWebsocketContext {
 
     pub const fn set_emotes(&mut self, state: bool) {
         self.emotes_enabled = state;
+    }
+
+    pub fn set_event_subscriptions(&mut self, event_subscriptions: HashMap<String, String>) {
+        self.event_subscriptions = event_subscriptions;
+    }
+
+    pub fn add_event_subscription(
+        &mut self,
+        event_subscription_name: String,
+        event_subscription_id: String,
+    ) {
+        self.event_subscriptions
+            .insert(event_subscription_name, event_subscription_id);
     }
 }

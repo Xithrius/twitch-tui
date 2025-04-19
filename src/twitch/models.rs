@@ -250,6 +250,10 @@ impl ReceivedTwitchSubscription {
     pub fn set_subscription_type(&mut self, subscription_type: String) {
         self.subscription_type = Some(subscription_type);
     }
+
+    pub fn id(&self) -> &Option<String> {
+        &self.id
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -258,6 +262,12 @@ pub struct TwitchSubscriptionResponse {
     max_total_cost: usize,
     total: usize,
     total_cost: usize,
+}
+
+impl TwitchSubscriptionResponse {
+    pub fn data(&self) -> Vec<ReceivedTwitchSubscription> {
+        self.data.clone()
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

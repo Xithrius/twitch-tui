@@ -1,3 +1,6 @@
+use ::std::hash::BuildHasher;
+use std::collections::HashMap;
+
 use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 
@@ -17,29 +20,31 @@ pub const CHANNEL_CHAT_MESSAGE_EVENT_SUB: &str = "channel.chat.message";
 ///
 /// No need to delete a subscription if/when session ends, since they're disabled automatically
 /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#which-events-is-my-websocket-subscribed-to>
+///
+/// Function returns a hashmap of subscription types to their ID
 pub async fn subscribe_to_events(
     client: &Client,
-    client_id: &TwitchOauth,
+    oauth: &TwitchOauth,
     session_id: Option<String>,
     channel_id: String,
     subscription_types: Vec<String>,
-) -> Result<Vec<TwitchSubscriptionResponse>> {
+) -> Result<HashMap<String, String>> {
     let session_id = session_id.context("Session ID is empty")?;
 
     let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
-
-    let mut responses = Vec::<TwitchSubscriptionResponse>::new();
 
     let mut subscription = ReceivedTwitchSubscription::new(
         // Set to None here so we can modify otherwise in the loop
         None,
         channel_id,
-        client_id.user_id.clone(),
+        oauth.user_id.clone(),
         session_id,
     );
 
+    let mut subscription_map = HashMap::new();
+
     for subscription_type in subscription_types {
-        subscription.set_subscription_type(subscription_type);
+        subscription.set_subscription_type(subscription_type.clone());
 
         let response_data = client
             .post(&url)
@@ -48,17 +53,45 @@ pub async fn subscribe_to_events(
             .await?
             .error_for_status()?
             .json::<TwitchSubscriptionResponse>()
-            .await?;
+            .await?
+            .data();
+        let subscription_id = response_data
+            .first()
+            .context("Could not get channel subscription data")?
+            .id()
+            .as_ref()
+            .context("Could not get ID from Twitch subscription data")?;
 
-        responses.push(response_data);
+        subscription_map.insert(subscription_type, subscription_id.to_string());
     }
 
-    // Example of a bad response:
-    // Object {
-    //     "error": String("Bad Request"),
-    //     "message": String("missing or unparseable subscription condition"),
-    //     "status": Number(400),
-    // }
+    Ok(subscription_map)
+}
 
-    Ok(responses)
+/// Removes a subscription from the current session
+///
+/// <https://dev.twitch.tv/docs/api/reference/#delete-eventsub-subscription>
+pub async fn unsubscribe_from_events<S: BuildHasher>(
+    client: &Client,
+    subscriptions: &HashMap<String, String, S>,
+    remove_subscription_types: Vec<String>,
+) -> Result<()> {
+    let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
+
+    for subscription_type in remove_subscription_types {
+        let Some(subscription_id) = subscriptions.get(&subscription_type) else {
+            continue;
+        };
+
+        let response = client
+            .delete(&url)
+            .query(&["id", subscription_id])
+            .send()
+            .await?
+            .error_for_status()?;
+
+        if response.status().is_success() {}
+    }
+
+    Ok(())
 }
