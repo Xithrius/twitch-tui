@@ -9,13 +9,19 @@ mod roomstate;
 
 use api::{chat_settings::get_chat_settings, event_sub::unsubscribe_from_events};
 use badges::retrieve_user_badges;
-use color_eyre::{Result, eyre::ContextCompat};
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use log::{debug, error, info};
 use roomstate::handle_roomstate;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::{Utf8Bytes, protocol::Message},
+};
 
 use crate::{
     emotes::get_twitch_emote,
@@ -76,6 +82,17 @@ pub async fn twitch_websocket(
     context.set_emotes(emotes_enabled);
     context.set_token(config.twitch.token.clone());
 
+    let ping = stream.next().await;
+    debug!("Ping from websocket server: {ping:?}");
+
+    // Handle the welcome message, it should arrive after the initial ping
+    let Some(Ok(Message::Text(message))) = stream.next().await else {
+        panic!("First message was not a welcome message, something has gone terribly wrong");
+    };
+    handle_welcome_message(&mut config.twitch, &mut context, &tx, message)
+        .await
+        .unwrap();
+
     loop {
         tokio::select! {
             biased;
@@ -100,7 +117,7 @@ pub async fn twitch_websocket(
                         let _twitch_message_response = send_twitch_message(twitch_client, new_message).await;
                     },
                     TwitchAction::JoinChannel(channel_name) => {
-                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel_name).await {
+                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel_name, false).await {
                             error!("Joining channel failed: {err}");
                         }
                     },
@@ -123,9 +140,9 @@ pub async fn twitch_websocket(
                             }
                         };
 
+                        // TODO: Do something with this response
                         let _ = handle_incoming_message(
                             config.clone(),
-                            &mut context,
                             &tx,
                             emotes_enabled,
                             received_message,
@@ -147,6 +164,7 @@ async fn handle_channel_join(
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     channel_name: String,
+    first_channel: bool,
 ) -> Result<()> {
     let twitch_client = context.twitch_client().context("Twitch client not found")?;
     let twitch_oauth = context.oauth().context("No OAuth found")?;
@@ -157,12 +175,14 @@ async fn handle_channel_join(
     let subscription_types = vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()];
 
     // Unsubscribe from previous channel
-    unsubscribe_from_events(
-        twitch_client,
-        context.event_subscriptions(),
-        subscription_types.clone(),
-    )
-    .await?;
+    if !first_channel {
+        unsubscribe_from_events(
+            twitch_client,
+            context.event_subscriptions(),
+            subscription_types.clone(),
+        )
+        .await?;
+    }
 
     // Subscribe to new channel
     let new_subscriptions = subscribe_to_events(
@@ -198,10 +218,14 @@ async fn handle_channel_join(
 }
 
 async fn handle_welcome_message(
-    twitch_config: &TwitchConfig,
+    twitch_config: &mut TwitchConfig,
     context: &mut TwitchWebsocketContext,
-    received_message: ReceivedTwitchMessage,
+    tx: &Sender<TwitchToTerminalAction>,
+    message: Utf8Bytes,
 ) -> Result<()> {
+    let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message)
+        .context("Could not convert welcome message to received message")?;
+
     let oauth_token = context.clone().token();
 
     let twitch_oauth = get_twitch_client_oauth(oauth_token.as_ref()).await?;
@@ -218,21 +242,31 @@ async fn handle_welcome_message(
     let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
     context.set_channel_id(Some(channel_id.clone()));
 
-    let initial_event_subscriptions = subscribe_to_events(
-        &twitch_client,
-        &twitch_oauth,
-        session_id,
-        channel_id.to_string(),
-        vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
+    // TODO: If any events want to be set at the very start and no where else, subscribe to them here
+    // let initial_event_subscriptions = subscribe_to_events(
+    //     &twitch_client,
+    //     &twitch_oauth,
+    //     session_id,
+    //     channel_id.to_string(),
+    //     vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
+    // )
+    // .await?;
+
+    // context.set_event_subscriptions(initial_event_subscriptions);
+
+    handle_channel_join(
+        twitch_config,
+        context,
+        tx,
+        twitch_config.channel.clone(),
+        true,
     )
     .await?;
-
-    context.set_event_subscriptions(initial_event_subscriptions);
 
     Ok(())
 }
 
-async fn handle_user_message(
+async fn handle_incoming_message(
     config: CoreConfig,
     tx: &Sender<TwitchToTerminalAction>,
     emotes_enabled: bool,
@@ -337,23 +371,3 @@ async fn handle_user_message(
 //                         .unwrap();
 //                 }
 //             }
-
-async fn handle_incoming_message(
-    config: CoreConfig,
-    context: &mut TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
-    emotes_enabled: bool,
-    received_message: ReceivedTwitchMessage,
-) -> Result<()> {
-    // Welcome messages only happen once, when a websocket connects to a server
-    if received_message.message_type().is_some_and(|message_type| {
-        message_type == "session_welcome" && context.session_id().is_none()
-    }) {
-        handle_welcome_message(&config.twitch, context, received_message).await?;
-    } else {
-        // TODO: Remove clones
-        handle_user_message(config.clone(), tx, emotes_enabled, received_message.clone()).await?;
-    }
-
-    Ok(())
-}

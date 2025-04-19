@@ -11,7 +11,7 @@ pub struct TwitchChatSettingsResponse {
     slow_mode_wait_time: Option<usize>,
     follower_mode: bool,
     follower_mode_duration: Option<usize>,
-    non_moderator_chat_delay: bool,
+    non_moderator_chat_delay: Option<bool>,
     non_moderator_chat_delay_duration: Option<usize>,
     subscriber_mode: bool,
     emote_mode: bool,
