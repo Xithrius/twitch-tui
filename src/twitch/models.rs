@@ -251,8 +251,8 @@ impl ReceivedTwitchSubscription {
         self.subscription_type = Some(subscription_type);
     }
 
-    pub fn id(&self) -> &Option<String> {
-        &self.id
+    pub const fn id(&self) -> Option<&String> {
+        self.id.as_ref()
     }
 }
 

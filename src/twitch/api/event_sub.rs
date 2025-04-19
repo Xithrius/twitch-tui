@@ -59,7 +59,6 @@ pub async fn subscribe_to_events(
             .first()
             .context("Could not get channel subscription data")?
             .id()
-            .as_ref()
             .context("Could not get ID from Twitch subscription data")?;
 
         subscription_map.insert(subscription_type, subscription_id.to_string());
