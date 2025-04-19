@@ -16,10 +16,7 @@ use tokio::sync::{
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},
     handlers::config::CoreConfig,
-    utils::{
-        emotes::{get_emote_offset, is_emotes_enabled},
-        pathing::cache_path,
-    },
+    utils::{emotes::get_emote_offset, pathing::cache_path},
 };
 
 mod downloader;
@@ -116,7 +113,7 @@ pub fn query_emotes(
 ) -> OSReceiver<(DownloadedEmotes, DownloadedEmotes)> {
     let (tx, mut rx) = tokio::sync::oneshot::channel();
 
-    if is_emotes_enabled(&config.frontend) {
+    if config.frontend.is_emotes_enabled() {
         let config = config.clone();
         tokio::spawn(async move { send_emotes(&config, tx, channel).await });
     } else {

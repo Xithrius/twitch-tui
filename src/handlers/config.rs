@@ -21,10 +21,7 @@ use crate::{
         interactive::interactive_config,
         state::State,
     },
-    utils::{
-        emotes::is_emotes_enabled,
-        pathing::{cache_path, config_path},
-    },
+    utils::pathing::{cache_path, config_path},
 };
 
 pub type SharedCoreConfig = Rc<RefCell<CoreConfig>>;
@@ -481,6 +478,15 @@ fn persist_default_config(path: &Path) {
     drop(file);
 }
 
+impl FrontendConfig {
+    pub const fn is_emotes_enabled(&self) -> bool {
+        self.twitch_emotes
+            || self.betterttv_emotes
+            || self.seventv_emotes
+            || self.frankerfacez_emotes
+    }
+}
+
 impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
         let path_str = cache_path("");
@@ -532,7 +538,7 @@ impl CoreConfig {
                     );
                 }
 
-                if is_emotes_enabled(&config.frontend)
+                if config.frontend.is_emotes_enabled()
                     && !support_graphics_protocol().unwrap_or(false)
                 {
                     eprintln!(

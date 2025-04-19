@@ -23,10 +23,7 @@ use color_eyre::eyre::{Result, WrapErr};
 use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
 
-use crate::{
-    handlers::{app::App, args::Cli, config::CoreConfig},
-    utils::emotes::is_emotes_enabled,
-};
+use crate::handlers::{app::App, args::Cli, config::CoreConfig};
 
 mod commands;
 mod emotes;
@@ -86,7 +83,7 @@ async fn main() -> Result<()> {
 
     info!("Started tokio communication channels.");
 
-    let decoded_rx = if is_emotes_enabled(&config.frontend) {
+    let decoded_rx = if config.frontend.is_emotes_enabled() {
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
         match crossterm::terminal::window_size() {
