@@ -1,7 +1,11 @@
-use ::std::hash::BuildHasher;
 use std::collections::HashMap;
 
-use color_eyre::{Result, eyre::ContextCompat};
+use ::std::hash::BuildHasher;
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
+use log::debug;
 use reqwest::Client;
 
 use super::TWITCH_API_BASE_URL;
@@ -82,14 +86,13 @@ pub async fn unsubscribe_from_events<S: BuildHasher>(
             continue;
         };
 
-        let response = client
+        client
             .delete(&url)
-            .query(&["id", subscription_id])
+            .query(&[("id", subscription_id)])
             .send()
             .await?
-            .error_for_status()?;
-
-        if response.status().is_success() {}
+            .error_for_status()
+            .context("Failed to build event unsubscribe request")?;
     }
 
     Ok(())

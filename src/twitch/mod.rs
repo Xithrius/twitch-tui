@@ -168,10 +168,6 @@ async fn handle_channel_join(
 ) -> Result<()> {
     let twitch_client = context.twitch_client().context("Twitch client not found")?;
     let twitch_oauth = context.oauth().context("No OAuth found")?;
-    let channel_id = context
-        .channel_id()
-        .context("No channel ID found when joining channel")?;
-
     let subscription_types = vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()];
 
     // Unsubscribe from previous channel
@@ -185,6 +181,14 @@ async fn handle_channel_join(
     }
 
     // Subscribe to new channel
+    let channel_id = if first_channel {
+        context
+            .channel_id()
+            .context("Failed to get channel ID from context")?
+    } else {
+        &get_channel_id(twitch_client, &channel_name).await?
+    };
+
     let new_subscriptions = subscribe_to_events(
         twitch_client,
         twitch_oauth,
