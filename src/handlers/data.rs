@@ -609,6 +609,7 @@ impl MessageData {
 pub struct DataBuilder;
 
 impl DataBuilder {
+    // User messages that come from either twitch or the terminal
     pub fn user(
         user: String,
         user_id: Option<String>,
@@ -622,6 +623,7 @@ impl DataBuilder {
         ))
     }
 
+    /// Notification messages from the terminal
     pub fn system(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "System".to_string(),
@@ -634,6 +636,7 @@ impl DataBuilder {
         ))
     }
 
+    /// Notification messages from Twitch
     pub fn twitch(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "Twitch".to_string(),

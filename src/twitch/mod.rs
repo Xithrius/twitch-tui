@@ -7,7 +7,10 @@ mod models;
 pub mod oauth;
 mod roomstate;
 
-use api::{chat_settings::get_chat_settings, event_sub::unsubscribe_from_events};
+use api::{
+    chat_settings::get_chat_settings,
+    event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, subscriptions, unsubscribe_from_events},
+};
 use badges::retrieve_user_badges;
 use color_eyre::{
     Result,
@@ -33,7 +36,7 @@ use crate::{
     twitch::{
         api::{
             channels::get_channel_id,
-            event_sub::{CHANNEL_CHAT_MESSAGE_EVENT_SUB, subscribe_to_events},
+            event_sub::subscribe_to_events,
             messages::{NewTwitchMessage, send_twitch_message},
         },
         models::ReceivedTwitchMessage,
@@ -89,9 +92,9 @@ pub async fn twitch_websocket(
     let Some(Ok(Message::Text(message))) = stream.next().await else {
         panic!("First message was not a welcome message, something has gone terribly wrong");
     };
-    handle_welcome_message(&mut config.twitch, &mut context, &tx, message)
-        .await
-        .unwrap();
+    if let Err(err) = handle_welcome_message(&mut config.twitch, &mut context, &tx, message).await {
+        panic!("Failed to work with welcome message: {err}");
+    }
 
     loop {
         tokio::select! {
@@ -133,12 +136,8 @@ pub async fn twitch_websocket(
                             continue;
                         };
 
-                        let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
-                            Ok(received_message) => received_message,
-                            Err(err) => {
-                                panic!("Could not deserialize received message into JSON: {err} -- {message_text}");
-                            }
-                        };
+                        let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message_text)
+                            .expect("Failed to deserialize received Twitch message");
 
                         // TODO: Do something with this response
                         let _ = handle_incoming_message(
@@ -168,14 +167,14 @@ async fn handle_channel_join(
 ) -> Result<()> {
     let twitch_client = context.twitch_client().context("Twitch client not found")?;
     let twitch_oauth = context.oauth().context("No OAuth found")?;
-    let subscription_types = vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()];
+    let chat_message_subscription = vec![subscriptions::CHANNEL_CHAT_MESSAGE];
 
     // Unsubscribe from previous channel
     if !first_channel {
         unsubscribe_from_events(
             twitch_client,
             context.event_subscriptions(),
-            subscription_types.clone(),
+            chat_message_subscription.clone(),
         )
         .await?;
     }
@@ -194,7 +193,7 @@ async fn handle_channel_join(
         twitch_oauth,
         context.session_id().cloned(),
         channel_id.to_string(),
-        subscription_types,
+        chat_message_subscription,
     )
     .await
     .context(format!(
@@ -203,10 +202,10 @@ async fn handle_channel_join(
 
     // Set channel chat message event subscription to correct subscription ID
     let chat_event_subscription_id = new_subscriptions
-        .get(CHANNEL_CHAT_MESSAGE_EVENT_SUB)
+        .get(subscriptions::CHANNEL_CHAT_MESSAGE)
         .context("Could not find chat message subscription ID in new subscriptions map")?;
     context.add_event_subscription(
-        CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_owned(),
+        subscriptions::CHANNEL_CHAT_MESSAGE.to_owned(),
         chat_event_subscription_id.to_string(),
     );
 
@@ -250,17 +249,17 @@ async fn handle_welcome_message(
     let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
     context.set_channel_id(Some(channel_id.clone()));
 
-    // TODO: If any events want to be set at the very start and no where else, subscribe to them here
-    // let initial_event_subscriptions = subscribe_to_events(
-    //     &twitch_client,
-    //     &twitch_oauth,
-    //     session_id,
-    //     channel_id.to_string(),
-    //     vec![CHANNEL_CHAT_MESSAGE_EVENT_SUB.to_string()],
-    // )
-    // .await?;
+    let initial_event_subscriptions = subscribe_to_events(
+        &twitch_client,
+        &twitch_oauth,
+        session_id,
+        channel_id.to_string(),
+        INITIAL_EVENT_SUBSCRIPTIONS.to_vec(),
+    )
+    .await
+    .context("Failed to subscribe to initial events")?;
 
-    // context.set_event_subscriptions(initial_event_subscriptions);
+    context.set_event_subscriptions(initial_event_subscriptions);
 
     handle_channel_join(
         twitch_config,
@@ -269,7 +268,8 @@ async fn handle_welcome_message(
         twitch_config.channel.clone(),
         true,
     )
-    .await?;
+    .await
+    .context("Failed to join first channel")?;
 
     Ok(())
 }
