@@ -24,13 +24,18 @@
     "chatter_user_name": "viewer32",
     "message_id": "cc106a89-1814-919d-454c-f4f2f970aae7",
     "message": {
-      "text": "Hi chat",
+      "text": "PogChamp",
       "fragments": [
         {
-          "type": "text",
-          "text": "Hi chat",
+          "type": "emote",
+          "text": "PogChamp",
           "cheermote": null,
-          "emote": null,
+          "emote": {
+            "id": "305954156",
+            "emote_set_id": "0",
+            "owner_id": "0",
+            "format": ["static"]
+          },
           "mention": null
         }
       ]

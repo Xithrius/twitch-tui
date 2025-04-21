@@ -16,8 +16,6 @@ static INVALID_CHEER: LazyLock<&str> = LazyLock::new(|| include_str!("data/inval
 // Emotes
 static EMOTE: LazyLock<&str> = LazyLock::new(|| include_str!("data/emote.json"));
 static MANY_EMOTES: LazyLock<&str> = LazyLock::new(|| include_str!("data/many_emotes.json"));
-static MULTIPLE_EMOTES: LazyLock<&str> =
-    LazyLock::new(|| include_str!("data/multiple_emotes.json"));
 
 // Messages
 static FULL_MESSAGE_ONE_WORD: LazyLock<&str> =

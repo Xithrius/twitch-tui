@@ -138,8 +138,8 @@ pub struct ReceivedTwitchEvent {
 }
 
 impl ReceivedTwitchEventMessageFragmentEmote {
-    pub fn emote_id(&self) -> Option<&String> {
-        self.id.as_ref()
+    pub fn emote_id(&self) -> Option<String> {
+        self.id.clone()
     }
 }
 
