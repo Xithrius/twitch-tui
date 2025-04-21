@@ -12,6 +12,7 @@ pub static FULL_MESSAGE: LazyLock<&str> = LazyLock::new(|| include_str!("data/fu
 pub static MANY_EMOTES: LazyLock<&str> = LazyLock::new(|| include_str!("data/many_emotes.json"));
 pub static MULTIPLE_EMOTES: LazyLock<&str> =
     LazyLock::new(|| include_str!("data/multiple_emotes.json"));
+pub static NO_BADGES: LazyLock<&str> = LazyLock::new(|| include_str!("data/no_badges.json"));
 pub static PARTIAL_EMOTE_MESSAGE: LazyLock<&str> =
     LazyLock::new(|| include_str!("data/partial_emote_message.json"));
 pub static PARTIAL_MENTION: LazyLock<&str> =

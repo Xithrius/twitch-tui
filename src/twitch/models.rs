@@ -66,7 +66,7 @@ pub struct ReceivedTwitchEventMessageFragment {
     #[serde(rename = "type")]
     fragment_type: String,
     text: String,
-    cheermote: Option<ReceivedTwitchEventMessageFragmentEmote>,
+    cheermote: Option<ReceivedTwitchEventMessageFragmentCheermote>,
     emote: Option<ReceivedTwitchEventMessageFragmentEmote>,
     mention: Option<ReceivedTwitchEventMessageFragmentMention>,
 }
@@ -87,6 +87,17 @@ pub struct ReceivedTwitchEventBadges {
 impl ReceivedTwitchEventBadges {
     pub fn set_id(&self) -> &str {
         &self.set_id
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ReceivedTwitchEventCheer {
+    bits: u64,
+}
+
+impl ReceivedTwitchEventCheer {
+    pub const fn bits(&self) -> u64 {
+        self.bits
     }
 }
 
@@ -116,7 +127,7 @@ pub struct ReceivedTwitchEvent {
     color: String,
     badges: Vec<ReceivedTwitchEventBadges>,
     message_type: String,
-    cheer: Option<String>,
+    cheer: Option<ReceivedTwitchEventCheer>,
     reply: Option<ReceivedTwitchEventReply>,
     channel_points_custom_reward_id: Option<String>,
     source_broadcaster_user_id: Option<String>,
@@ -177,6 +188,10 @@ impl ReceivedTwitchEvent {
 
     pub fn message_text(&self) -> &str {
         &self.message.text
+    }
+
+    pub fn cheer(&self) -> &Option<ReceivedTwitchEventCheer> {
+        &self.cheer
     }
 
     pub fn emote_fragments(&self) -> Vec<ReceivedTwitchEventMessageFragment> {

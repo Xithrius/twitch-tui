@@ -24,21 +24,20 @@
     "chatter_user_name": "viewer32",
     "message_id": "cc106a89-1814-919d-454c-f4f2f970aae7",
     "message": {
-      "text": "Cheer100",
+      "text": "Hi chat",
       "fragments": [
         {
-          "type": "cheermote",
-          "text": "Cheer100",
-          "cheermote": { "prefix": "cheer", "bits": 100, "tier": 100 },
+          "type": "text",
+          "text": "Hi chat",
+          "cheermote": null,
           "emote": null,
           "mention": null
         }
       ]
     },
     "color": "#00FF7F",
-    "badges": [],
     "message_type": "text",
-    "cheer": { "bits": 100 },
+    "cheer": null,
     "reply": null,
     "channel_points_custom_reward_id": null,
     "source_broadcaster_user_id": null,

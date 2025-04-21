@@ -2,6 +2,7 @@ use std::string::ToString;
 
 use color_eyre::{Result, eyre::ContextCompat};
 
+use super::NO_BADGES;
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
     tests::messages::{
@@ -47,8 +48,35 @@ fn test_deserialize_badges() -> Result<()> {
 }
 
 #[test]
-fn test_deserialize_full_cheer() {
-    assert!(deserialize_message(&FULL_CHEER).is_ok());
+#[should_panic(expected = "Missing badges field")]
+fn test_deserialize_no_badges() {
+    let _ = serde_json::from_str::<ReceivedTwitchMessagePayload>(&NO_BADGES)
+        .expect("Missing badges field");
+}
+
+#[test]
+fn test_deserialize_full_cheer() -> Result<()> {
+    let raw_message: serde_json::Value = serde_json::from_str(&FULL_CHEER)?;
+    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&FULL_CHEER)?;
+
+    let raw_bits = raw_message
+        .pointer("/event/cheer/bits")
+        .context("Could not find cheer bits")?
+        .as_u64()
+        .context("Cheer could not be converted to u64")?;
+
+    let bits = message
+        .event()
+        .clone()
+        .context("Could not find cheer deserialized event")?
+        .cheer()
+        .clone()
+        .context("Could not find cheer in event")?
+        .bits();
+
+    assert_eq!(raw_bits, bits);
+
+    Ok(())
 }
 
 #[test]
