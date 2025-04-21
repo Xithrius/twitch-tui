@@ -10,10 +10,11 @@ static NO_BADGES: LazyLock<&str> = LazyLock::new(|| include_str!("data/no_badges
 static INVALID_BADGES: LazyLock<&str> = LazyLock::new(|| include_str!("data/invalid_badges.json"));
 
 // Cheers
-static FULL_CHEER: LazyLock<&str> = LazyLock::new(|| include_str!("data/full_cheer.json"));
+static CHEER: LazyLock<&str> = LazyLock::new(|| include_str!("data/cheer.json"));
+static INVALID_CHEER: LazyLock<&str> = LazyLock::new(|| include_str!("data/invalid_cheer.json"));
 
 // Emotes
-static FULL_EMOTE: LazyLock<&str> = LazyLock::new(|| include_str!("data/full_emote.json"));
+static EMOTE: LazyLock<&str> = LazyLock::new(|| include_str!("data/emote.json"));
 static MANY_EMOTES: LazyLock<&str> = LazyLock::new(|| include_str!("data/many_emotes.json"));
 static MULTIPLE_EMOTES: LazyLock<&str> =
     LazyLock::new(|| include_str!("data/multiple_emotes.json"));

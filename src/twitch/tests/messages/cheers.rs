@@ -1,11 +1,14 @@
 use color_eyre::{Result, eyre::ContextCompat};
 
-use crate::twitch::{models::ReceivedTwitchMessagePayload, tests::messages::FULL_CHEER};
+use crate::twitch::{
+    models::ReceivedTwitchMessagePayload,
+    tests::messages::{CHEER, INVALID_CHEER},
+};
 
 #[test]
-fn test_deserialize_full_cheer() -> Result<()> {
-    let raw_message: serde_json::Value = serde_json::from_str(&FULL_CHEER)?;
-    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&FULL_CHEER)?;
+fn test_deserialize_cheer() -> Result<()> {
+    let raw_message: serde_json::Value = serde_json::from_str(&CHEER)?;
+    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&CHEER)?;
 
     let raw_bits = raw_message
         .pointer("/event/cheer/bits")
@@ -25,4 +28,11 @@ fn test_deserialize_full_cheer() -> Result<()> {
     assert_eq!(raw_bits, bits);
 
     Ok(())
+}
+
+#[test]
+#[should_panic(expected = "Invalid cheer field")]
+fn test_deserialize_invalid_cheer() {
+    serde_json::from_str::<ReceivedTwitchMessagePayload>(&INVALID_CHEER)
+        .expect("Invalid cheer field");
 }
