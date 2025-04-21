@@ -36,7 +36,7 @@
       ]
     },
     "color": "#00FF7F",
-    "badges": [],
+    "badges": { "asdf": 1 },
     "message_type": "text",
     "cheer": null,
     "reply": null,
