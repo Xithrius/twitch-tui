@@ -196,6 +196,12 @@ pub struct ReceivedTwitchMessagePayload {
     event: Option<ReceivedTwitchEvent>,
 }
 
+impl ReceivedTwitchMessagePayload {
+    pub fn event(&self) -> &Option<ReceivedTwitchEvent> {
+        &self.event
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct ReceivedTwitchSubscriptionTransport {
     method: String,

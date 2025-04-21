@@ -7,6 +7,9 @@ mod models;
 pub mod oauth;
 mod roomstate;
 
+#[cfg(test)]
+mod tests;
+
 use api::{
     chat_settings::get_chat_settings,
     event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, subscriptions, unsubscribe_from_events},

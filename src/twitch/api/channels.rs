@@ -14,6 +14,8 @@ struct ChannelList {
     data: Vec<Channel>,
 }
 
+/// Gets the channel ID of the specified channel name
+///
 /// <https://dev.twitch.tv/docs/api/reference/#get-users>
 pub async fn get_channel_id(client: &Client, channel: &str) -> Result<String> {
     let response_channel_id = client
