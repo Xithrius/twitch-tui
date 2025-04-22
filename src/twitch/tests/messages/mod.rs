@@ -3,6 +3,8 @@ use std::sync::LazyLock;
 mod badges;
 mod cheers;
 mod emotes;
+#[allow(clippy::module_inception)]
+mod messages;
 
 // Badges
 static BADGES: LazyLock<&str> = LazyLock::new(|| include_str!("data/badges.json"));
