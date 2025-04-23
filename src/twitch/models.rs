@@ -114,19 +114,23 @@ pub struct ReceivedTwitchEventReply {
     thread_user_login: String,
 }
 
+/// All attributes that are to come through during a channel chat notification event
+///
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-chat-notification-event>
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchEvent {
     broadcaster_user_id: String,
     broadcaster_user_login: String,
     broadcaster_user_name: String,
-    chatter_user_id: String,
-    chatter_user_login: String,
-    chatter_user_name: String,
-    message_id: String,
+    chatter_user_id: Option<String>,
+    chatter_user_login: Option<String>,
+    chatter_user_name: Option<String>,
+    color: Option<String>,
+    message_id: Option<String>,
+    message_type: Option<String>,
     message: ReceivedTwitchEventMessage,
-    color: String,
+    system_message: Option<String>,
     badges: Vec<ReceivedTwitchEventBadges>,
-    message_type: String,
     cheer: Option<ReceivedTwitchEventCheer>,
     reply: Option<ReceivedTwitchEventReply>,
     channel_points_custom_reward_id: Option<String>,
@@ -154,31 +158,31 @@ impl ReceivedTwitchEventMessageFragment {
 }
 
 impl ReceivedTwitchEvent {
-    pub fn build_user_data(&self) -> TwitchToTerminalAction {
-        let name = self.chatter_user_name.clone();
-        let user_id = self.chatter_user_id.clone();
-        let cleaned_message = clean_message(&self.message.text);
-        let message_id = self.message_id.clone();
+    // pub fn build_user_data(&self) -> TwitchToTerminalAction {
+    //     let name = self.chatter_user_name.clone();
+    //     let user_id = self.chatter_user_id.clone();
+    //     let cleaned_message = clean_message(&self.message.text);
+    //     let message_id = self.message_id.clone();
 
-        DataBuilder::user(
-            name,
-            Some(user_id),
-            cleaned_message,
-            DownloadedEmotes::default(),
-            Some(message_id),
-            false,
-        )
-    }
+    //     DataBuilder::user(
+    //         name,
+    //         Some(user_id),
+    //         cleaned_message,
+    //         DownloadedEmotes::default(),
+    //         Some(message_id),
+    //         false,
+    //     )
+    // }
 
-    pub fn chatter_user_id(&self) -> &str {
+    pub fn chatter_user_id(&self) -> Option<&String> {
         self.chatter_user_id.as_ref()
     }
 
-    pub fn chatter_user_name(&self) -> &str {
+    pub fn chatter_user_name(&self) -> Option<&String> {
         self.chatter_user_name.as_ref()
     }
 
-    pub fn message_id(&self) -> &str {
+    pub fn message_id(&self) -> Option<&String> {
         self.message_id.as_ref()
     }
 

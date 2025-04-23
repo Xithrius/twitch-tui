@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 mod badges;
 mod cheers;
+mod commands;
 mod emotes;
 #[allow(clippy::module_inception)]
 mod notifications;
@@ -18,6 +19,10 @@ static INVALID_CHEER: LazyLock<&str> = LazyLock::new(|| include_str!("data/inval
 // Emotes
 static EMOTE: LazyLock<&str> = LazyLock::new(|| include_str!("data/emote.json"));
 static MANY_EMOTES: LazyLock<&str> = LazyLock::new(|| include_str!("data/many_emotes.json"));
+
+// Commands
+static CLEAR_COMMAND: LazyLock<&str> = LazyLock::new(|| include_str!("data/clear_command.json"));
+static ME_COMMAND: LazyLock<&str> = LazyLock::new(|| include_str!("data/me_command.json"));
 
 // Messages
 static FULL_MESSAGE_ONE_WORD: LazyLock<&str> =

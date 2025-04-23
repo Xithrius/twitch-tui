@@ -308,15 +308,23 @@ async fn handle_incoming_message(
     .buffer_unordered(10)
     .collect::<Vec<Result<(String, (String, bool))>>>();
 
-    let mut chatter_user_name = event.chatter_user_name().to_string();
+    let mut chatter_user_name = event
+        .chatter_user_name()
+        .context("Could not find chatter user name")?
+        .to_string();
     let badges = event.badges();
     if config.frontend.badges {
         retrieve_user_badges(&mut chatter_user_name, badges);
     }
 
-    let chatter_user_id = event.chatter_user_id();
+    let chatter_user_id = event
+        .chatter_user_id()
+        .context("could not find chatter user ID")?;
     let cleaned_message = clean_message(msg);
-    let message_id = event.message_id();
+    let message_id = event
+        .message_id()
+        .context("Could not find message ID")?
+        .to_string();
 
     let message_emotes = emotes.await.into_iter().flatten().collect();
 
@@ -325,7 +333,7 @@ async fn handle_incoming_message(
         Some(chatter_user_id.to_string()),
         cleaned_message,
         message_emotes,
-        Some(message_id.to_string()),
+        Some(message_id),
         highlight,
     ))
     .await?;
