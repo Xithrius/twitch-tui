@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use log::debug;
 use regex::Regex;
+use tracing::debug;
 use tui::{
     Frame,
     layout::Rect,

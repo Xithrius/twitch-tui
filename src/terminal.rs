@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use log::{debug, info, warn};
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
+use tracing::{debug, info, warn};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},

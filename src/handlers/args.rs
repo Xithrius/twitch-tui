@@ -1,5 +1,6 @@
 use clap::{Parser, ValueEnum, builder::PossibleValue};
 
+use super::config::LogLevel;
 use crate::handlers::{
     config::{CoreConfig, Palette, Theme},
     state::State,
@@ -60,7 +61,7 @@ pub struct Cli {
     pub log_file: Option<String>,
     /// If debug logs should be shown
     #[arg(short, long)]
-    pub verbose: bool,
+    pub verbose: Option<bool>,
     /// The delay in milliseconds between terminal updates
     #[arg(short, long)]
     pub delay: Option<u64>,
@@ -93,7 +94,9 @@ pub fn merge_args_into_config(config: &mut CoreConfig, args: Cli) {
         config.terminal.log_file = Some(log_file);
     }
 
-    config.terminal.verbose = config.terminal.verbose || args.verbose;
+    if args.verbose.is_some_and(|verbose| verbose) {
+        config.terminal.log_level = LogLevel::DEBUG;
+    }
 
     if let Some(delay) = args.delay {
         config.terminal.delay = delay;

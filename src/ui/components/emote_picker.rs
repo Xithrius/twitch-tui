@@ -1,7 +1,7 @@
 use std::cmp::max;
 
 use fuzzy_matcher::FuzzyMatcher;
-use log::warn;
+use tracing::warn;
 use tui::{
     Frame,
     layout::Rect,

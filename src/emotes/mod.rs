@@ -7,11 +7,11 @@ use std::{
 };
 
 use color_eyre::{Result, eyre::anyhow};
-use log::{error, info, warn};
 use tokio::sync::{
     mpsc::{Receiver, Sender},
     oneshot::{Receiver as OSReceiver, Sender as OSSender},
 };
+use tracing::{error, info, warn};
 
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},

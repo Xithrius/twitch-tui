@@ -21,13 +21,13 @@ use color_eyre::{
 };
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
-use log::{debug, error, info};
 use roomstate::handle_roomstate;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{
     connect_async,
     tungstenite::{Utf8Bytes, protocol::Message},
 };
+use tracing::{debug, error, info};
 
 use crate::{
     emotes::get_twitch_emote,

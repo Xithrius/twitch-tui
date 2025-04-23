@@ -20,9 +20,9 @@ type EmoteMap = HashMap<String, (String, String, bool)>;
 
 mod twitch {
     use color_eyre::Result;
-    use log::warn;
     use reqwest::Client;
     use serde::Deserialize;
+    use tracing::warn;
 
     use crate::{emotes::downloader::EmoteMap, twitch::api::TWITCH_API_BASE_URL};
 

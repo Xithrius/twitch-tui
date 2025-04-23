@@ -2,8 +2,8 @@ use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
 use chrono::{DateTime, offset::Local};
 use fuzzy_matcher::FuzzyMatcher;
-use log::{error, warn};
 use memchr::{memchr_iter, memmem};
+use tracing::{error, warn};
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},

@@ -16,8 +16,8 @@ delay = 30
 maximum_messages = 500
 # The file to put logs in.
 log_file = ""
-# if verbose (debug) logging should be enabled.
-verbose = false
+# From most verbose to least options here are debug, info, warn, and error.
+log_level = "info"
 # What state the application should start in.
 # Options: dashboard, normal, and help.
 first_state = "dashboard"

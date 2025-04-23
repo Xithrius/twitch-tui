@@ -16,12 +16,13 @@
     clippy::too_many_arguments
 )]
 
-use std::thread;
+use std::{fs::File, thread};
 
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
-use log::{info, warn};
 use tokio::sync::{broadcast, mpsc};
+use tracing::{info, level_filters::LevelFilter, warn};
+use tracing_subscriber::EnvFilter;
 
 use crate::handlers::{app::App, args::Cli, config::CoreConfig};
 
@@ -33,46 +34,33 @@ pub mod twitch;
 mod ui;
 mod utils;
 
-fn initialize_logging(config: &CoreConfig) {
-    let logger = fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                record.level(),
-                message
-            ));
-        })
-        .level(if config.terminal.verbose {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Info
-        });
+fn initialize_logging(config: &CoreConfig) -> Result<()> {
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(config.terminal.log_level.to_string().parse()?)
+        .with_env_var("TWITCH_TUI_LOG")
+        .from_env_lossy();
 
-    if let Some(log_file_path) = config.terminal.log_file.clone() {
-        if !log_file_path.is_empty() {
-            logger
-                .chain(fern::log_file(log_file_path).unwrap())
-                .apply()
-                .unwrap();
-        }
-    } else {
-        logger.apply().unwrap();
-    }
+    let subscriber = tracing_subscriber::fmt()
+        .with_env_filter(env_filter)
+        .with_writer(std::io::stderr)
+        .with_ansi(true)
+        .without_time()
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)?;
+
+    Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let startup_time = chrono::Local::now();
 
-    color_eyre::install().unwrap();
+    color_eyre::install()?;
 
-    let mut config = CoreConfig::new(Cli::parse())
-        .wrap_err("Configuration error.")
-        .unwrap();
+    let mut config = CoreConfig::new(Cli::parse()).wrap_err("Configuration error.")?;
 
-    initialize_logging(&config);
+    initialize_logging(&config).wrap_err("Failed to initialize logger")?;
 
     info!("Logging system initialised");
 
@@ -80,8 +68,6 @@ async fn main() -> Result<()> {
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
 
     let app = App::new(config.clone(), startup_time);
-
-    info!("Started tokio communication channels.");
 
     let decoded_rx = if config.frontend.is_emotes_enabled() {
         // We need to probe the terminal for it's size before starting the tui,

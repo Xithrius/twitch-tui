@@ -12,6 +12,7 @@ use color_eyre::eyre::{Error, Result, bail};
 use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use tokio::{runtime::Handle, task};
+use tracing::level_filters::LevelFilter;
 use tui::widgets::BorderType;
 
 use crate::{
@@ -65,8 +66,8 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
     /// The file path to log to.
     pub log_file: Option<String>,
-    /// if debug logging should be enabled.
-    pub verbose: bool,
+    /// Which log level the tracing library should be set to.
+    pub log_level: LogLevel,
     /// What state the application should start in.
     pub first_state: State,
 }
@@ -160,7 +161,7 @@ impl Default for TerminalConfig {
             delay: 30,
             maximum_messages: 500,
             log_file: None,
-            verbose: false,
+            log_level: LogLevel::INFO,
             first_state: State::default(),
         }
     }
@@ -194,6 +195,27 @@ impl Default for FrontendConfig {
             right_align_usernames: false,
             show_unsupported_screen_size: true,
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+}
+
+impl ToString for LogLevel {
+    fn to_string(&self) -> String {
+        match self {
+            LogLevel::DEBUG => "debug",
+            LogLevel::INFO => "info",
+            LogLevel::WARN => "warn",
+            LogLevel::ERROR => "error",
+        }
+        .to_string()
     }
 }
 
