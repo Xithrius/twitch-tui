@@ -287,10 +287,13 @@ async fn handle_incoming_message(
         return Ok(());
     };
 
-    let message_text = event.message_text();
-    let (msg, highlight) = parse_message_action(message_text);
+    let message_text = event
+        .message_text()
+        .context("Could not find message text")?;
+    let (msg, highlight) = parse_message_action(&message_text);
     let received_emotes = emotes_enabled
         .then(|| event.emote_fragments())
+        .context("Could not get emotes vector from message")?
         .unwrap_or_default();
 
     let emotes = futures::stream::iter(received_emotes.into_iter().map(

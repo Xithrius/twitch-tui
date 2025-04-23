@@ -1,11 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    emotes::DownloadedEmotes,
-    handlers::data::{DataBuilder, TwitchToTerminalAction},
-    utils::text::clean_message,
-};
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchMessageMetadata {
     message_id: String,
@@ -96,6 +90,7 @@ pub struct ReceivedTwitchEventCheer {
 }
 
 impl ReceivedTwitchEventCheer {
+    #[cfg(test)]
     pub const fn bits(&self) -> u64 {
         self.bits
     }
@@ -128,7 +123,7 @@ pub struct ReceivedTwitchEvent {
     color: Option<String>,
     message_id: Option<String>,
     message_type: Option<String>,
-    message: ReceivedTwitchEventMessage,
+    message: Option<ReceivedTwitchEventMessage>,
     system_message: Option<String>,
     badges: Vec<ReceivedTwitchEventBadges>,
     cheer: Option<ReceivedTwitchEventCheer>,
@@ -174,15 +169,15 @@ impl ReceivedTwitchEvent {
     //     )
     // }
 
-    pub fn chatter_user_id(&self) -> Option<&String> {
+    pub const fn chatter_user_id(&self) -> Option<&String> {
         self.chatter_user_id.as_ref()
     }
 
-    pub fn chatter_user_name(&self) -> Option<&String> {
+    pub const fn chatter_user_name(&self) -> Option<&String> {
         self.chatter_user_name.as_ref()
     }
 
-    pub fn message_id(&self) -> Option<&String> {
+    pub const fn message_id(&self) -> Option<&String> {
         self.message_id.as_ref()
     }
 
@@ -190,21 +185,24 @@ impl ReceivedTwitchEvent {
         self.badges.as_ref()
     }
 
-    pub fn message_text(&self) -> &str {
-        self.message.text.as_ref()
+    pub fn message_text(&self) -> Option<String> {
+        self.message.as_ref().map(|message| message.text.clone())
     }
 
+    #[cfg(test)]
     pub const fn cheer(&self) -> Option<&ReceivedTwitchEventCheer> {
         self.cheer.as_ref()
     }
 
-    pub fn emote_fragments(&self) -> Vec<ReceivedTwitchEventMessageFragment> {
-        self.message
-            .fragments
-            .iter()
-            .filter(|fragment| fragment.emote.is_some())
-            .cloned()
-            .collect()
+    pub fn emote_fragments(&self) -> Option<Vec<ReceivedTwitchEventMessageFragment>> {
+        self.message.as_ref().map(|message| {
+            message
+                .fragments
+                .iter()
+                .filter(|fragment| fragment.emote.is_some())
+                .cloned()
+                .collect()
+        })
     }
 }
 
@@ -216,6 +214,7 @@ pub struct ReceivedTwitchMessagePayload {
 }
 
 impl ReceivedTwitchMessagePayload {
+    #[cfg(test)]
     pub const fn event(&self) -> Option<&ReceivedTwitchEvent> {
         self.event.as_ref()
     }
@@ -302,6 +301,7 @@ pub struct ReceivedTwitchMessage {
 }
 
 impl ReceivedTwitchMessage {
+    #[allow(dead_code)]
     #[must_use]
     pub fn message_type(&self) -> Option<String> {
         self.metadata
@@ -312,15 +312,14 @@ impl ReceivedTwitchMessage {
     #[must_use]
     pub fn session_id(&self) -> Option<String> {
         self.payload
+            .as_ref()?
+            .session
             .as_ref()
-            .map(|payload| payload.session.as_ref())
-            .map(|session| session.map(|session| session.id.clone()))?
+            .map(|session| session.id.clone())
     }
 
     #[must_use]
     pub fn event(&self) -> Option<ReceivedTwitchEvent> {
-        self.payload
-            .as_ref()
-            .and_then(|payload| payload.event.clone())
+        self.payload.as_ref()?.event.clone()
     }
 }
