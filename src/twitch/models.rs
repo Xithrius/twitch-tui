@@ -86,7 +86,7 @@ pub struct ReceivedTwitchEventBadges {
 
 impl ReceivedTwitchEventBadges {
     pub fn set_id(&self) -> &str {
-        &self.set_id
+        self.set_id.as_ref()
     }
 }
 
@@ -171,27 +171,27 @@ impl ReceivedTwitchEvent {
     }
 
     pub fn chatter_user_id(&self) -> &str {
-        &self.chatter_user_id
+        self.chatter_user_id.as_ref()
     }
 
     pub fn chatter_user_name(&self) -> &str {
-        &self.chatter_user_name
+        self.chatter_user_name.as_ref()
     }
 
     pub fn message_id(&self) -> &str {
-        &self.message_id
+        self.message_id.as_ref()
     }
 
     pub fn badges(&self) -> &Vec<ReceivedTwitchEventBadges> {
-        &self.badges
+        self.badges.as_ref()
     }
 
     pub fn message_text(&self) -> &str {
-        &self.message.text
+        self.message.text.as_ref()
     }
 
-    pub fn cheer(&self) -> &Option<ReceivedTwitchEventCheer> {
-        &self.cheer
+    pub const fn cheer(&self) -> Option<&ReceivedTwitchEventCheer> {
+        self.cheer.as_ref()
     }
 
     pub fn emote_fragments(&self) -> Vec<ReceivedTwitchEventMessageFragment> {
@@ -212,8 +212,8 @@ pub struct ReceivedTwitchMessagePayload {
 }
 
 impl ReceivedTwitchMessagePayload {
-    pub fn event(&self) -> &Option<ReceivedTwitchEvent> {
-        &self.event
+    pub const fn event(&self) -> Option<&ReceivedTwitchEvent> {
+        self.event.as_ref()
     }
 }
 

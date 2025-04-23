@@ -2,7 +2,7 @@ use color_eyre::{Result, eyre::ContextCompat};
 
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
-    tests::messages::{CHEER, INVALID_CHEER},
+    tests::notifications::{CHEER, INVALID_CHEER},
 };
 
 #[test]
@@ -18,10 +18,8 @@ fn test_deserialize_cheer() -> Result<()> {
 
     let bits = message
         .event()
-        .clone()
         .context("Could not find cheer deserialized event")?
         .cheer()
-        .clone()
         .context("Could not find cheer in event")?
         .bits();
 

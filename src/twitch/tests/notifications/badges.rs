@@ -4,7 +4,7 @@ use color_eyre::{Result, eyre::ContextCompat};
 
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
-    tests::messages::{BADGES, INVALID_BADGES, NO_BADGES},
+    tests::notifications::{BADGES, INVALID_BADGES, NO_BADGES},
 };
 
 #[test]
@@ -26,7 +26,6 @@ fn test_deserialize_badges() -> Result<()> {
 
     let badges: Vec<String> = message
         .event()
-        .clone()
         .context("Could not find badges deserialized event")?
         .badges()
         .iter()
@@ -52,7 +51,6 @@ fn test_deserialize_no_badges() -> Result<()> {
 
     let badges_len = message
         .event()
-        .clone()
         .context("Could not find badges deserialized event")?
         .badges()
         .len();

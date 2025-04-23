@@ -294,7 +294,7 @@ async fn handle_incoming_message(
         .unwrap_or_default();
 
     let emotes = futures::stream::iter(received_emotes.into_iter().map(
-        |fragment_emote| async move {
+        |fragment_emote: models::ReceivedTwitchEventMessageFragment| async move {
             // TODO: Remove unwraps
             let emote = fragment_emote.emote().unwrap();
             let emote_id = emote.emote_id().unwrap().to_string();
@@ -315,7 +315,7 @@ async fn handle_incoming_message(
     }
 
     let chatter_user_id = event.chatter_user_id();
-    let cleaned_message = clean_message(message_text);
+    let cleaned_message = clean_message(msg);
     let message_id = event.message_id();
 
     let message_emotes = emotes.await.into_iter().flatten().collect();

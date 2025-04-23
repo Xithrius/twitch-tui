@@ -1,6 +1,6 @@
 use std::{
     cell::RefCell,
-    env,
+    env, fmt,
     fs::{File, create_dir_all, read_to_string},
     io::Write,
     path::Path,
@@ -12,7 +12,6 @@ use color_eyre::eyre::{Error, Result, bail};
 use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use tokio::{runtime::Handle, task};
-use tracing::level_filters::LevelFilter;
 use tui::widgets::BorderType;
 
 use crate::{
@@ -198,6 +197,7 @@ impl Default for FrontendConfig {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
@@ -207,15 +207,18 @@ pub enum LogLevel {
     ERROR,
 }
 
-impl ToString for LogLevel {
-    fn to_string(&self) -> String {
-        match self {
-            LogLevel::DEBUG => "debug",
-            LogLevel::INFO => "info",
-            LogLevel::WARN => "warn",
-            LogLevel::ERROR => "error",
-        }
-        .to_string()
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::DEBUG => "debug",
+                Self::INFO => "info",
+                Self::WARN => "warn",
+                Self::ERROR => "error",
+            }
+        )
     }
 }
 

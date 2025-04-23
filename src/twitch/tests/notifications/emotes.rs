@@ -4,7 +4,7 @@ use color_eyre::{Result, eyre::ContextCompat};
 
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
-    tests::messages::{EMOTE, MANY_EMOTES},
+    tests::notifications::{EMOTE, MANY_EMOTES},
 };
 
 #[test]
@@ -29,7 +29,6 @@ fn test_deserialize_emote() -> Result<()> {
 
     let emote_ids: Vec<String> = message
         .event()
-        .clone()
         .context("Could not find emotes deserialized event")?
         .emote_fragments()
         .iter()
@@ -63,7 +62,6 @@ fn test_deserialize_many_emotes() -> Result<()> {
 
     let emote_ids: Vec<String> = message
         .event()
-        .clone()
         .context("Could not find emotes deserialized event")?
         .emote_fragments()
         .iter()

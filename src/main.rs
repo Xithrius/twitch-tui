@@ -16,12 +16,12 @@
     clippy::too_many_arguments
 )]
 
-use std::{fs::File, thread};
+use std::thread;
 
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use tokio::sync::{broadcast, mpsc};
-use tracing::{info, level_filters::LevelFilter, warn};
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 use crate::handlers::{app::App, args::Cli, config::CoreConfig};
@@ -30,7 +30,7 @@ mod commands;
 mod emotes;
 mod handlers;
 mod terminal;
-pub mod twitch;
+mod twitch;
 mod ui;
 mod utils;
 
