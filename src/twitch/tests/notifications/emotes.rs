@@ -4,15 +4,17 @@ use color_eyre::{Result, eyre::ContextCompat};
 
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
-    tests::notifications::{EMOTE, MANY_EMOTES},
+    tests::{
+        notifications::{EMOTE, MANY_EMOTES},
+        utils::load_data,
+    },
 };
 
 #[test]
 fn test_deserialize_emote() -> Result<()> {
-    let raw_message: serde_json::Value = serde_json::from_str(&EMOTE)?;
-    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&EMOTE)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&EMOTE)?;
 
-    let raw_emote_ids: Vec<String> = raw_message
+    let raw_emote_ids: Vec<String> = raw
         .pointer("/event/message/fragments")
         .context("Could not find fragments in message")?
         .as_array()
@@ -43,10 +45,9 @@ fn test_deserialize_emote() -> Result<()> {
 
 #[test]
 fn test_deserialize_many_emotes() -> Result<()> {
-    let raw_message: serde_json::Value = serde_json::from_str(&MANY_EMOTES)?;
-    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&MANY_EMOTES)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&MANY_EMOTES)?;
 
-    let raw_emote_ids: Vec<String> = raw_message
+    let raw_emote_ids: Vec<String> = raw
         .pointer("/event/message/fragments")
         .context("Could not find fragments in message")?
         .as_array()

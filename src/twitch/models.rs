@@ -218,6 +218,11 @@ impl ReceivedTwitchMessagePayload {
     pub const fn event(&self) -> Option<&ReceivedTwitchEvent> {
         self.event.as_ref()
     }
+
+    #[cfg(test)]
+    pub const fn subscription(&self) -> Option<&ReceivedTwitchSubscription> {
+        self.subscription.as_ref()
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -269,6 +274,11 @@ impl ReceivedTwitchSubscription {
             transport: ReceivedTwitchSubscriptionTransport::new(session_id),
             ..Default::default()
         }
+    }
+
+    #[cfg(test)]
+    pub const fn subscription_type(&self) -> Option<&String> {
+        self.subscription_type.as_ref()
     }
 
     pub fn set_subscription_type(&mut self, subscription_type: String) {

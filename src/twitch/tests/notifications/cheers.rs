@@ -2,15 +2,17 @@ use color_eyre::{Result, eyre::ContextCompat};
 
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
-    tests::notifications::{CHEER, INVALID_CHEER},
+    tests::{
+        notifications::{CHEER, INVALID_CHEER},
+        utils::load_data,
+    },
 };
 
 #[test]
 fn test_deserialize_cheer() -> Result<()> {
-    let raw_message: serde_json::Value = serde_json::from_str(&CHEER)?;
-    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&CHEER)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&CHEER)?;
 
-    let raw_bits = raw_message
+    let raw_bits = raw
         .pointer("/event/cheer/bits")
         .context("Could not find cheer bits")?
         .as_u64()
@@ -31,6 +33,6 @@ fn test_deserialize_cheer() -> Result<()> {
 #[test]
 #[should_panic(expected = "Invalid cheer field")]
 fn test_deserialize_invalid_cheer() {
-    serde_json::from_str::<ReceivedTwitchMessagePayload>(&INVALID_CHEER)
+    load_data::<ReceivedTwitchMessagePayload>(&INVALID_CHEER)
         .expect("Invalid cheer field");
 }

@@ -4,15 +4,17 @@ use color_eyre::{Result, eyre::ContextCompat};
 
 use crate::twitch::{
     models::ReceivedTwitchMessagePayload,
-    tests::notifications::{BADGES, INVALID_BADGES, NO_BADGES},
+    tests::{
+        notifications::{BADGES, INVALID_BADGES, NO_BADGES},
+        utils::load_data,
+    },
 };
 
 #[test]
 fn test_deserialize_badges() -> Result<()> {
-    let raw_message: serde_json::Value = serde_json::from_str(&BADGES)?;
-    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&BADGES)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&BADGES)?;
 
-    let raw_badges: Vec<String> = raw_message
+    let raw_badges: Vec<String> = raw
         .pointer("/event/badges")
         .context("Could not find badges")?
         .as_array()
@@ -40,10 +42,9 @@ fn test_deserialize_badges() -> Result<()> {
 
 #[test]
 fn test_deserialize_no_badges() -> Result<()> {
-    let raw_message: serde_json::Value = serde_json::from_str(&NO_BADGES)?;
-    let message = serde_json::from_str::<ReceivedTwitchMessagePayload>(&NO_BADGES)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&NO_BADGES)?;
 
-    let raw_badges_len = raw_message
+    let raw_badges_len = raw
         .pointer("/event/badges")
         .context("Could not find badges")?
         .as_array()
@@ -65,6 +66,5 @@ fn test_deserialize_no_badges() -> Result<()> {
 #[test]
 #[should_panic(expected = "Invalid badges field")]
 fn test_deserialize_invalid_badges() {
-    serde_json::from_str::<ReceivedTwitchMessagePayload>(&INVALID_BADGES)
-        .expect("Invalid badges field");
+    load_data::<ReceivedTwitchMessagePayload>(&INVALID_BADGES).expect("Invalid badges field");
 }
