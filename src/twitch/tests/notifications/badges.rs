@@ -28,6 +28,7 @@ fn test_deserialize_badges() -> Result<()> {
         .event()
         .context("Could not find badges deserialized event")?
         .badges()
+        .context("No badges were found")?
         .iter()
         .map(|badge| badge.set_id().to_string())
         .collect();
@@ -53,6 +54,7 @@ fn test_deserialize_no_badges() -> Result<()> {
         .event()
         .context("Could not find badges deserialized event")?
         .badges()
+        .context("No badges were found")?
         .len();
 
     assert_eq!(raw_badges_len, badges_len);

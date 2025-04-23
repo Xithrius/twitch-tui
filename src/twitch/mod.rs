@@ -315,9 +315,9 @@ async fn handle_incoming_message(
         .chatter_user_name()
         .context("Could not find chatter user name")?
         .to_string();
-    let badges = event.badges();
+    let badges = event.badges().unwrap_or_default();
     if config.frontend.badges {
-        retrieve_user_badges(&mut chatter_user_name, badges);
+        retrieve_user_badges(&mut chatter_user_name, &badges);
     }
 
     let chatter_user_id = event

@@ -125,7 +125,7 @@ pub struct ReceivedTwitchEvent {
     message_type: Option<String>,
     message: Option<ReceivedTwitchEventMessage>,
     system_message: Option<String>,
-    badges: Vec<ReceivedTwitchEventBadges>,
+    badges: Option<Vec<ReceivedTwitchEventBadges>>,
     cheer: Option<ReceivedTwitchEventCheer>,
     reply: Option<ReceivedTwitchEventReply>,
     channel_points_custom_reward_id: Option<String>,
@@ -181,8 +181,8 @@ impl ReceivedTwitchEvent {
         self.message_id.as_ref()
     }
 
-    pub fn badges(&self) -> &Vec<ReceivedTwitchEventBadges> {
-        self.badges.as_ref()
+    pub fn badges(&self) -> Option<Vec<ReceivedTwitchEventBadges>> {
+        self.badges.clone()
     }
 
     pub fn message_text(&self) -> Option<String> {
