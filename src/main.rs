@@ -21,37 +21,20 @@ use std::thread;
 
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
+use logging::initialize_logging;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{info, warn};
-use tracing_subscriber::EnvFilter;
 
 use crate::handlers::{app::App, args::Cli, config::CoreConfig};
 
 mod commands;
 mod emotes;
 mod handlers;
+mod logging;
 mod terminal;
 mod twitch;
 mod ui;
 mod utils;
-
-fn initialize_logging(config: &CoreConfig) -> Result<()> {
-    let env_filter = EnvFilter::builder()
-        .with_default_directive(config.terminal.log_level.to_string().parse()?)
-        .with_env_var("TWITCH_TUI_LOG")
-        .from_env_lossy();
-
-    let subscriber = tracing_subscriber::fmt()
-        .with_env_filter(env_filter)
-        .with_writer(std::io::stderr)
-        .with_ansi(true)
-        .without_time()
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)?;
-
-    Ok(())
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {

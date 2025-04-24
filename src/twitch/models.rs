@@ -193,12 +193,16 @@ impl ReceivedTwitchEvent {
         self.message_id.as_ref()
     }
 
-    pub fn badges(&self) -> Option<Vec<ReceivedTwitchEventBadges>> {
-        self.badges.clone()
-    }
-
     pub fn message_text(&self) -> Option<String> {
         self.message.as_ref().map(|message| message.text.clone())
+    }
+
+    pub const fn system_message(&self) -> Option<&String> {
+        self.system_message.as_ref()
+    }
+
+    pub fn badges(&self) -> Option<Vec<ReceivedTwitchEventBadges>> {
+        self.badges.clone()
     }
 
     #[cfg(test)]
@@ -265,19 +269,14 @@ impl ReceivedTwitchSubscriptionTransport {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct ReceivedTwitchSubscription {
-    #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     status: Option<String>,
-    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#subscription-types>
+    #[serde(rename = "type")]
     subscription_type: Option<String>,
     version: String,
     condition: ReceivedTwitchSubscriptionCondition,
     transport: ReceivedTwitchSubscriptionTransport,
-    #[serde(skip_serializing_if = "Option::is_none")]
     created_at: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     cost: Option<usize>,
 }
 
@@ -298,7 +297,6 @@ impl ReceivedTwitchSubscription {
         }
     }
 
-    #[cfg(test)]
     pub const fn subscription_type(&self) -> Option<&String> {
         self.subscription_type.as_ref()
     }
@@ -333,7 +331,10 @@ pub struct ReceivedTwitchMessage {
 }
 
 impl ReceivedTwitchMessage {
-    #[allow(dead_code)]
+    pub fn subscription_type(&self) -> Option<String> {
+        self.payload.as_ref()?.subscription.as_ref()?.subscription_type().cloned()
+    }
+
     #[must_use]
     pub fn message_type(&self) -> Option<String> {
         self.metadata
@@ -348,6 +349,10 @@ impl ReceivedTwitchMessage {
             .session
             .as_ref()
             .map(|session| session.id.clone())
+    }
+
+    pub fn subscription(&self) -> Option<ReceivedTwitchSubscription> {
+        self.payload.as_ref()?.subscription.clone()
     }
 
     #[must_use]

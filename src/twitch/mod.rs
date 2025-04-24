@@ -88,8 +88,9 @@ pub async fn twitch_websocket(
     context.set_emotes(emotes_enabled);
     context.set_token(config.twitch.token.clone());
 
-    let ping = stream.next().await;
-    debug!("Ping from websocket server: {ping:?}");
+    if stream.next().await.is_some() {
+        debug!("Websocket server has pinged you to make sure you're here");
+    }
 
     // Handle the welcome message, it should arrive after the initial ping
     let Some(Ok(Message::Text(message))) = stream.next().await else {
@@ -139,16 +140,18 @@ pub async fn twitch_websocket(
                             continue;
                         };
 
+                        // TODO: No panics allowed
                         let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message_text)
                             .expect("Failed to deserialize received Twitch message");
 
-                        // TODO: Do something with this response
-                        let _ = handle_incoming_message(
+                        if let Err(err) = handle_incoming_message(
                             config.clone(),
                             &tx,
                             emotes_enabled,
                             received_message,
-                        ).await;
+                        ).await {
+                            error!("Error when handling incoming message: {err}");
+                        }
                     }
                     Err(err) => {
                         error!("Twitch connection error encountered: {err}, attempting to reconnect.");
@@ -287,21 +290,41 @@ async fn handle_incoming_message(
         return Ok(());
     };
 
+    // TODO: Make this into a match statement to handle more cases
+    if received_message
+        .subscription_type()
+        .is_some_and(|subscription_type| subscription_type == "channel.chat.notification")
+    {
+        if let Some(twitch_notification_message) = event.system_message() {
+            tx.send(DataBuilder::twitch(twitch_notification_message.to_string()))
+                .await?;
+        }
+
+        return Ok(());
+    }
+
     let message_text = event
         .message_text()
         .context("Could not find message text")?;
     let (msg, highlight) = parse_message_action(&message_text);
     let received_emotes = emotes_enabled
         .then(|| event.emote_fragments())
-        .context("Could not get emotes vector from message")?
+        .unwrap_or_default()
         .unwrap_or_default();
 
     let emotes = futures::stream::iter(received_emotes.into_iter().map(
         |fragment_emote: models::ReceivedTwitchEventMessageFragment| async move {
-            // TODO: Remove unwraps
-            let emote = fragment_emote.emote().unwrap();
-            let emote_id = emote.emote_id().unwrap().to_string();
-            let emote_name = fragment_emote.emote_name().unwrap().to_string();
+            let emote = fragment_emote
+                .emote()
+                .context("Failed to get emote from emote fragment")?;
+            let emote_id = emote
+                .emote_id()
+                .context("Failed to get emote ID from emote fragment")?
+                .to_string();
+            let emote_name = fragment_emote
+                .emote_name()
+                .context("Failed to get emote name from emote fragment")?
+                .to_string();
 
             get_twitch_emote(&emote_id).await?;
 
@@ -344,29 +367,15 @@ async fn handle_incoming_message(
     Ok(())
 }
 
-//     Command::NOTICE(ref _target, ref msg) => {
-//         tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
-//     }
-
 //     Command::Raw(ref cmd, ref _items) => {
 //         match cmd.as_ref() {
-//             "USERNOTICE" => {
-//                 if let Some(value) = tags.get("system-msg") {
-//                     tx.send(data_builder.twitch((*value).to_string()))
-//                         .await
-//                         .unwrap();
-//                 }
-//             }
 //             "CLEARCHAT" => {
 //                 let user_id = tags.get("target-user-id").map(|&s| s.to_string());
-
 //                 tx.send(TwitchToTerminalAction::ClearChat(user_id.clone()))
 //                     .await
 //                     .unwrap();
-
 //                 if user_id.is_some() {
 //                     let ban_duration = tags.get("ban-duration").map(|&s| s.to_string());
-
 //                     if let Some(duration) = ban_duration {
 //                         tx.send(
 //                             data_builder
