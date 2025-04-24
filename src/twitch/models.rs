@@ -109,6 +109,13 @@ pub struct ReceivedTwitchEventReply {
     thread_user_login: String,
 }
 
+impl ReceivedTwitchEventReply {
+    #[cfg(test)]
+    pub const fn parent_message_body(&self) -> &String {
+        &self.parent_message_body
+    }
+}
+
 /// All attributes that are to come through during a channel chat notification event
 ///
 /// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-chat-notification-event>
@@ -213,6 +220,11 @@ impl ReceivedTwitchEvent {
                 .cloned()
                 .collect()
         })
+    }
+
+    #[cfg(test)]
+    pub const fn reply(&self) -> Option<&ReceivedTwitchEventReply> {
+        self.reply.as_ref()
     }
 }
 

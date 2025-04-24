@@ -24,11 +24,22 @@
     "chatter_user_name": "viewer32",
     "message_id": "cc106a89-1814-919d-454c-f4f2f970aae7",
     "message": {
-      "text": "Hi chat",
+      "text": "@viewer31 asdf",
       "fragments": [
         {
+          "type": "mention",
+          "text": "@viewer31",
+          "cheermote": null,
+          "emote": null,
+          "mention": {
+            "user_id": "4145994",
+            "user_login": "viewer31",
+            "user_name": "viewer31"
+          }
+        },
+        {
           "type": "text",
-          "text": "Hi chat",
+          "text": " asdf",
           "cheermote": null,
           "emote": null,
           "mention": null
@@ -39,7 +50,17 @@
     "badges": [],
     "message_type": "text",
     "cheer": null,
-    "reply": null,
+    "reply": {
+      "parent_message_id": "0e624270-a4c3-4017-b0f4-1fec3f5eb135",
+      "parent_message_body": "asdf",
+      "parent_user_id": "4145994",
+      "parent_user_name": "viewer31",
+      "parent_user_login": "viewer31",
+      "thread_message_id": "0e624270-a4c3-4017-b0f4-1fec3f5eb135",
+      "thread_user_id": "4145994",
+      "thread_user_name": "viewer31",
+      "thread_user_login": "viewer31"
+    },
     "channel_points_custom_reward_id": null,
     "source_broadcaster_user_id": null,
     "source_broadcaster_user_login": null,
