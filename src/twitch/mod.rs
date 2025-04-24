@@ -12,7 +12,11 @@ mod tests;
 
 use api::{
     chat_settings::get_chat_settings,
-    event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, subscriptions, unsubscribe_from_events},
+    event_sub::{
+        INITIAL_EVENT_SUBSCRIPTIONS,
+        subscriptions::{CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_MESSAGE, CHANNEL_CHAT_NOTIFICATION},
+        unsubscribe_from_events,
+    },
 };
 use badges::retrieve_user_badges;
 use color_eyre::{
@@ -21,6 +25,7 @@ use color_eyre::{
 };
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
+use models::ReceivedTwitchEvent;
 use roomstate::handle_roomstate;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{
@@ -144,8 +149,8 @@ pub async fn twitch_websocket(
                         if let Err(err) = handle_incoming_message(
                             config.clone(),
                             &tx,
-                            emotes_enabled,
                             received_message,
+                            emotes_enabled,
                         ).await {
                             error!("Error when handling incoming message: {err}");
                         }
@@ -195,7 +200,7 @@ async fn handle_channel_join(
 ) -> Result<()> {
     let twitch_client = context.twitch_client().context("Twitch client not found")?;
     let twitch_oauth = context.oauth().context("No OAuth found")?;
-    let chat_message_subscription = vec![subscriptions::CHANNEL_CHAT_MESSAGE];
+    let chat_message_subscription = vec![CHANNEL_CHAT_MESSAGE];
 
     // Unsubscribe from previous channel
     if !first_channel {
@@ -230,14 +235,14 @@ async fn handle_channel_join(
 
     // Set channel chat message event subscription to correct subscription ID
     let chat_event_subscription_id = new_subscriptions
-        .get(subscriptions::CHANNEL_CHAT_MESSAGE)
+        .get(CHANNEL_CHAT_MESSAGE)
         .context("Could not find chat message subscription ID in new subscriptions map")?;
 
-    // TODO: Probably a better way to handle this
+    // TODO: There's probably a better way to handle this
     let context_channel_id = channel_id.to_string();
 
     context.add_event_subscription(
-        subscriptions::CHANNEL_CHAT_MESSAGE.to_owned(),
+        CHANNEL_CHAT_MESSAGE.to_owned(),
         chat_event_subscription_id.to_string(),
     );
 
@@ -307,27 +312,47 @@ async fn handle_welcome_message(
     Ok(())
 }
 
+async fn handle_chat_notification(
+    tx: &Sender<TwitchToTerminalAction>,
+    event: ReceivedTwitchEvent,
+    subscription_type: &str,
+) -> Result<()> {
+    match subscription_type {
+        CHANNEL_CHAT_NOTIFICATION => {
+            if let Some(twitch_notification_message) = event.system_message() {
+                tx.send(DataBuilder::twitch(twitch_notification_message.to_string()))
+                    .await?;
+            }
+        }
+        CHANNEL_CHAT_CLEAR => {
+            tx.send(TwitchToTerminalAction::ClearChat(None)).await?;
+            tx.send(DataBuilder::twitch(
+                "Chat was cleared for non-Moderators viewing this room".to_string(),
+            ))
+            .await?;
+        }
+        // TODO: Handle clearing the chat for a specific user
+        _ => {}
+    }
+
+    Ok(())
+}
+
 async fn handle_incoming_message(
     config: CoreConfig,
     tx: &Sender<TwitchToTerminalAction>,
-    emotes_enabled: bool,
     received_message: ReceivedTwitchMessage,
+    emotes_enabled: bool,
 ) -> Result<()> {
     let Some(event) = received_message.event() else {
         return Ok(());
     };
 
-    // TODO: Make this into a match statement to handle more cases
-    if received_message
-        .subscription_type()
-        .is_some_and(|subscription_type| subscription_type == "channel.chat.notification")
-    {
-        if let Some(twitch_notification_message) = event.system_message() {
-            tx.send(DataBuilder::twitch(twitch_notification_message.to_string()))
-                .await?;
+    if let Some(received_subscription_type) = received_message.subscription_type() {
+        let subscription_type = received_subscription_type.as_str();
+        if subscription_type != CHANNEL_CHAT_MESSAGE {
+            return handle_chat_notification(tx, event, subscription_type).await;
         }
-
-        return Ok(());
     }
 
     let message_text = event
