@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use regex::Regex;
-use tracing::debug;
+use tracing::{debug, info};
 use tui::{
     Frame,
     layout::Rect,
@@ -360,7 +360,7 @@ impl Component for ChannelSwitcherWidget {
                             .channel
                             .clone_from(&selected_channel);
 
-                        debug!("Joining new channel {selected_channel:?}");
+                        info!("Joining new channel {selected_channel:?}");
 
                         return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                             selected_channel,

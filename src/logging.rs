@@ -19,7 +19,6 @@ pub fn initialize_logging(config: &CoreConfig) -> Result<()> {
         .with_env_filter(env_filter)
         .with_writer(log_path)
         .with_ansi(true)
-        .without_time()
         .finish();
 
     tracing::subscriber::set_global_default(subscriber)?;

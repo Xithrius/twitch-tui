@@ -232,6 +232,10 @@ async fn handle_channel_join(
     let chat_event_subscription_id = new_subscriptions
         .get(subscriptions::CHANNEL_CHAT_MESSAGE)
         .context("Could not find chat message subscription ID in new subscriptions map")?;
+
+    // TODO: Probably a better way to handle this
+    let context_channel_id = channel_id.to_string();
+
     context.add_event_subscription(
         subscriptions::CHANNEL_CHAT_MESSAGE.to_owned(),
         chat_event_subscription_id.to_string(),
@@ -239,6 +243,7 @@ async fn handle_channel_join(
 
     // Set old channel to new channel
     twitch_config.channel.clone_from(&channel_name);
+    context.set_channel_id(Some(context_channel_id));
 
     // Notify frontend that new channel has been joined
     tx.send(DataBuilder::twitch(format!("Joined {channel_name}")))
