@@ -61,7 +61,12 @@ pub async fn twitch_websocket(
     mut rx: Receiver<TwitchAction>,
 ) {
     let url = config.twitch.config_twitch_websocket_url();
-    let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");
+    let (ws_stream, _) = connect_async(url).await.unwrap_or_else(|_| {
+        panic!(
+            "Failed to connect to websocket server at {}",
+            config.twitch.server
+        )
+    });
 
     info!("Twitch websocket handshake successful");
 
@@ -107,21 +112,9 @@ pub async fn twitch_websocket(
             Ok(action) = rx.recv() => {
                 match action {
                     TwitchAction::SendMessage(message) => {
-                        let Some(twitch_client) = context.twitch_client() else {
-                            panic!("No twitch client at this stage");
-                        };
-
-                        let Some(channel_id) = context.channel_id() else {
-                            panic!("No channel ID at this stage");
-                        };
-
-                        let Some(twitch_oauth) = context.oauth() else {
-                            panic!("No user ID at this stage");
-                        };
-
-                        let new_message = NewTwitchMessage::new(channel_id.to_string(), twitch_oauth.user_id.to_string(), message);
-                        // TODO: Do something with this response
-                        let _twitch_message_response = send_twitch_message(twitch_client, new_message).await;
+                        if let Err(err) = handle_send_message(&context, message).await {
+                            error!("Failed to send Twitch message from terminal: {err}");
+                        }
                     },
                     TwitchAction::JoinChannel(channel_name) => {
                         if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel_name, false).await {
@@ -140,9 +133,13 @@ pub async fn twitch_websocket(
                             continue;
                         };
 
-                        // TODO: No panics allowed
-                        let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message_text)
-                            .expect("Failed to deserialize received Twitch message");
+                        let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
+                            Ok(received_message) => received_message,
+                            Err(err) => {
+                                error!("Error when deserializing received message: {err}");
+                                continue;
+                            }
+                        };
 
                         if let Err(err) = handle_incoming_message(
                             config.clone(),
@@ -161,6 +158,31 @@ pub async fn twitch_websocket(
             else => {}
         };
     }
+}
+
+/// Handle the user wanting to send a message from the terminal to the WebSocket server
+async fn handle_send_message(context: &TwitchWebsocketContext, message: String) -> Result<()> {
+    let twitch_client = context
+        .twitch_client()
+        .context("Twitch client could not be found when sending message")?;
+
+    let channel_id = context
+        .channel_id()
+        .context("Channel ID could not be found when sending message")?;
+
+    let twitch_oauth = context
+        .oauth()
+        .context("Twitch OAuth could not be found when sending message")?;
+
+    let new_message = NewTwitchMessage::new(
+        channel_id.to_string(),
+        twitch_oauth.user_id.to_string(),
+        message,
+    );
+
+    send_twitch_message(twitch_client, new_message).await?;
+
+    Ok(())
 }
 
 /// Handling either the terminal joining a new channel, or the application just starting up

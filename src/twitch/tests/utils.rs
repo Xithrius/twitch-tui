@@ -1,6 +1,6 @@
 use serde::de::DeserializeOwned;
 
-pub(crate) fn load_data<T>(raw_data: &str) -> Result<(serde_json::Value, T), serde_json::Error>
+pub fn load_data<T>(raw_data: &str) -> Result<(serde_json::Value, T), serde_json::Error>
 where
     T: DeserializeOwned,
 {
