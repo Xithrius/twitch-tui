@@ -24,13 +24,44 @@
     "chatter_user_name": "viewer32",
     "message_id": "cc106a89-1814-919d-454c-f4f2f970aae7",
     "message": {
-      "text": "Hi chat",
+      "text": "foo PogChamp bar KomodoHype",
       "fragments": [
         {
           "type": "text",
-          "text": "Hi chat",
+          "text": "foo ",
           "cheermote": null,
           "emote": null,
+          "mention": null
+        },
+        {
+          "type": "emote",
+          "text": "PogChamp",
+          "cheermote": null,
+          "emote": {
+            "id": "305954156",
+            "emote_set_id": "0",
+            "owner_id": "0",
+            "format": ["static"]
+          },
+          "mention": null
+        },
+        {
+          "type": "text",
+          "text": " bar ",
+          "cheermote": null,
+          "emote": null,
+          "mention": null
+        },
+        {
+          "type": "emote",
+          "text": "KomodoHype",
+          "cheermote": null,
+          "emote": {
+            "id": "81273",
+            "emote_set_id": "0",
+            "owner_id": "0",
+            "format": ["static"]
+          },
           "mention": null
         }
       ]

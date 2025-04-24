@@ -150,6 +150,11 @@ impl ReceivedTwitchEventMessageFragment {
     pub fn emote_name(&self) -> Option<&String> {
         self.emote.is_some().then_some(&self.text)
     }
+
+    #[cfg(test)]
+    pub fn text(&self) -> String {
+        self.text.clone()
+    }
 }
 
 impl ReceivedTwitchEvent {
@@ -192,6 +197,11 @@ impl ReceivedTwitchEvent {
     #[cfg(test)]
     pub const fn cheer(&self) -> Option<&ReceivedTwitchEventCheer> {
         self.cheer.as_ref()
+    }
+
+    #[cfg(test)]
+    pub fn fragments(&self) -> Option<Vec<ReceivedTwitchEventMessageFragment>> {
+        self.message.as_ref().map(|message| message.fragments.clone())
     }
 
     pub fn emote_fragments(&self) -> Option<Vec<ReceivedTwitchEventMessageFragment>> {

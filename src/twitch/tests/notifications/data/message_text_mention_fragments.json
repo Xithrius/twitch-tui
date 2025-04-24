@@ -24,11 +24,22 @@
     "chatter_user_name": "viewer32",
     "message_id": "cc106a89-1814-919d-454c-f4f2f970aae7",
     "message": {
-      "text": "Hi chat",
+      "text": "@viewer32 asdf",
       "fragments": [
         {
+          "type": "mention",
+          "text": "@viewer32",
+          "cheermote": null,
+          "emote": null,
+          "mention": {
+            "user_id": "4145994",
+            "user_login": "viewer32",
+            "user_name": "viewer32"
+          }
+        },
+        {
           "type": "text",
-          "text": "Hi chat",
+          "text": " asdf",
           "cheermote": null,
           "emote": null,
           "mention": null

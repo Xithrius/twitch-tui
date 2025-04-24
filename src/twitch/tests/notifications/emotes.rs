@@ -33,7 +33,7 @@ fn test_deserialize_emote() -> Result<()> {
         .event()
         .context("Could not find emotes deserialized event")?
         .emote_fragments()
-        .context("Could nto find emotes vector")?
+        .context("Could not find emotes vector")?
         .iter()
         .filter_map(|fragment| fragment.emote().and_then(|emote| emote.emote_id()))
         .collect();
@@ -66,7 +66,7 @@ fn test_deserialize_many_emotes() -> Result<()> {
         .event()
         .context("Could not find emotes deserialized event")?
         .emote_fragments()
-        .context("Could nto find emotes vector")?
+        .context("Could not find emotes vector")?
         .iter()
         .filter_map(|fragment| fragment.emote().and_then(|emote| emote.emote_id()))
         .collect();

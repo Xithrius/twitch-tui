@@ -4,8 +4,8 @@ mod badges;
 mod cheers;
 mod commands;
 mod emotes;
-#[allow(clippy::module_inception)]
-mod notifications;
+mod message_fragments;
+mod reply;
 
 // Badges
 static BADGES: LazyLock<&str> = LazyLock::new(|| include_str!("data/badges.json"));
@@ -24,16 +24,13 @@ static MANY_EMOTES: LazyLock<&str> = LazyLock::new(|| include_str!("data/many_em
 static CLEAR_COMMAND: LazyLock<&str> = LazyLock::new(|| include_str!("data/clear_command.json"));
 static ME_COMMAND: LazyLock<&str> = LazyLock::new(|| include_str!("data/me_command.json"));
 
-// Messages
-static FULL_MESSAGE_ONE_WORD: LazyLock<&str> =
-    LazyLock::new(|| include_str!("data/full_message_one_word.json"));
-static FULL_MESSAGE: LazyLock<&str> = LazyLock::new(|| include_str!("data/full_message.json"));
+// Replies
+static REPLY: LazyLock<&str> = LazyLock::new(|| include_str!("data/reply.json"));
 
-// Partials
-static PARTIAL_EMOTE_MESSAGE: LazyLock<&str> =
-    LazyLock::new(|| include_str!("data/partial_emote_message.json"));
-static PARTIAL_MENTION: LazyLock<&str> =
-    LazyLock::new(|| include_str!("data/partial_mention.json"));
-static PARTIAL_MESSAGE_EMOTE_NO_ID: LazyLock<&str> =
-    LazyLock::new(|| include_str!("data/partial_message_emote_no_id.json"));
-static PARTIAL_REPLY: LazyLock<&str> = LazyLock::new(|| include_str!("data/partial_reply.json"));
+// Multiple message fragments (text with emotes, text with a mention, etc)
+static MESSAGE_TEXT_FRAGMENT: LazyLock<&str> =
+    LazyLock::new(|| include_str!("data/message_text_fragment.json"));
+static MESSAGE_TEXT_EMOTE_FRAGMENTS: LazyLock<&str> =
+    LazyLock::new(|| include_str!("data/message_text_emote_fragments.json"));
+static MESSAGE_TEXT_MENTION_FRAGMENTS: LazyLock<&str> =
+    LazyLock::new(|| include_str!("data/message_text_mention_fragments.json"));
