@@ -14,7 +14,10 @@ use api::{
     chat_settings::get_chat_settings,
     event_sub::{
         INITIAL_EVENT_SUBSCRIPTIONS,
-        subscriptions::{CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_MESSAGE, CHANNEL_CHAT_NOTIFICATION},
+        subscriptions::{
+            CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_CLEAR_USER_MESSAGES, CHANNEL_CHAT_MESSAGE,
+            CHANNEL_CHAT_MESSAGE_DELETE, CHANNEL_CHAT_NOTIFICATION,
+        },
         unsubscribe_from_events,
     },
 };
@@ -341,6 +344,22 @@ async fn handle_chat_notification(
             ))
             .await?;
         }
+        CHANNEL_CHAT_CLEAR_USER_MESSAGES => {
+            if let Some(target_user_id) = event.target_user_id() {
+                tx.send(TwitchToTerminalAction::ClearChat(Some(
+                    target_user_id.to_string(),
+                )))
+                .await?;
+            }
+        }
+        CHANNEL_CHAT_MESSAGE_DELETE => {
+            if let Some(message_id) = event.message_id() {
+                tx.send(TwitchToTerminalAction::DeleteMessage(
+                    message_id.to_string(),
+                ))
+                .await?;
+            }
+        }
         // TODO: Handle clearing the chat for a specific user
         _ => {}
     }
@@ -429,7 +448,6 @@ async fn handle_incoming_message(
     Ok(())
 }
 
-//     Command::Raw(ref cmd, ref _items) => {
 //         match cmd.as_ref() {
 //             "CLEARCHAT" => {
 //                 let user_id = tags.get("target-user-id").map(|&s| s.to_string());
@@ -453,13 +471,6 @@ async fn handle_incoming_message(
 //                     }
 //                 } else {
 //                     tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
-//                         .await
-//                         .unwrap();
-//                 }
-//             }
-//             "CLEARMSG" => {
-//                 if let Some(id) = tags.get("target-msg-id") {
-//                     tx.send(TwitchToTerminalAction::DeleteMessage((*id).to_string()))
 //                         .await
 //                         .unwrap();
 //                 }

@@ -141,6 +141,9 @@ pub struct ReceivedTwitchEvent {
     source_broadcaster_user_name: Option<String>,
     source_message_id: Option<String>,
     source_badges: Option<String>,
+    target_user_id: Option<String>,
+    target_user_name: Option<String>,
+    target_user_login: Option<String>
 }
 
 impl ReceivedTwitchEventMessageFragmentEmote {
@@ -215,6 +218,10 @@ impl ReceivedTwitchEvent {
     #[cfg(test)]
     pub const fn reply(&self) -> Option<&ReceivedTwitchEventReply> {
         self.reply.as_ref()
+    }
+
+    pub const fn target_user_id(&self) -> Option<&String> {
+        self.target_user_id.as_ref()
     }
 }
 
