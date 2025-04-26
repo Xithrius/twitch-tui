@@ -83,7 +83,7 @@ seventv_emotes = false
 # If FrankerFaceZ emotes should be displayed (requires kitty terminal).
 frankerfacez_emotes = false
 # Channel names to always be displayed in the start screen (dashboard).
-# Example: ["Xithrius", "RocketLeague", "AntVenom"]
+# Example: ["placeholder_channel", "another_channel"]
 favorite_channels = []
 # The amount of recently connected to channels shown on the start screen.
 recent_channel_count = 5

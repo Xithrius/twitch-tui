@@ -145,17 +145,10 @@ pub async fn ui_driver(
                     }
                     TerminalAction::Enter(action) => match action {
                         TwitchAction::SendMessage(message) => {
-                            // const ME_COMMAND: &str = "/me ";
-
-                            // let (msg, highlight) = message.strip_prefix(ME_COMMAND).map_or_else(
-                            //     || (message.clone(), false),
-                            //     |msg| (msg.to_string(), true),
-                            // );
-
-                            // let user_id = get_twitch_client_oauth(config.twitch.token.as_deref())
-                            //     .await
-                            //     .map(|x| x.user_id)
-                            //     .ok();
+                            // Two options based off of a to-be implemented config option:
+                            // Terminal user should have their message sent,
+                            // received by Twitch, and then received by the terminal.
+                            // Terminal always receives terminal user message message no matter what.
 
                             // let message_data = MessageData::new_user_message(
                             //     config.twitch.username.to_string(),

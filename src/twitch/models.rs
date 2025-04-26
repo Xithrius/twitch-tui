@@ -165,22 +165,6 @@ impl ReceivedTwitchEventMessageFragment {
 }
 
 impl ReceivedTwitchEvent {
-    // pub fn build_user_data(&self) -> TwitchToTerminalAction {
-    //     let name = self.chatter_user_name.clone();
-    //     let user_id = self.chatter_user_id.clone();
-    //     let cleaned_message = clean_message(&self.message.text);
-    //     let message_id = self.message_id.clone();
-
-    //     DataBuilder::user(
-    //         name,
-    //         Some(user_id),
-    //         cleaned_message,
-    //         DownloadedEmotes::default(),
-    //         Some(message_id),
-    //         false,
-    //     )
-    // }
-
     pub const fn chatter_user_id(&self) -> Option<&String> {
         self.chatter_user_id.as_ref()
     }
@@ -212,7 +196,9 @@ impl ReceivedTwitchEvent {
 
     #[cfg(test)]
     pub fn fragments(&self) -> Option<Vec<ReceivedTwitchEventMessageFragment>> {
-        self.message.as_ref().map(|message| message.fragments.clone())
+        self.message
+            .as_ref()
+            .map(|message| message.fragments.clone())
     }
 
     pub fn emote_fragments(&self) -> Option<Vec<ReceivedTwitchEventMessageFragment>> {
@@ -332,14 +318,12 @@ pub struct ReceivedTwitchMessage {
 
 impl ReceivedTwitchMessage {
     pub fn subscription_type(&self) -> Option<String> {
-        self.payload.as_ref()?.subscription.as_ref()?.subscription_type().cloned()
-    }
-
-    #[must_use]
-    pub fn message_type(&self) -> Option<String> {
-        self.metadata
-            .as_ref()
-            .map(|metadata| metadata.message_type.clone())
+        self.payload
+            .as_ref()?
+            .subscription
+            .as_ref()?
+            .subscription_type()
+            .cloned()
     }
 
     #[must_use]
@@ -349,10 +333,6 @@ impl ReceivedTwitchMessage {
             .session
             .as_ref()
             .map(|session| session.id.clone())
-    }
-
-    pub fn subscription(&self) -> Option<ReceivedTwitchSubscription> {
-        self.payload.as_ref()?.subscription.clone()
     }
 
     #[must_use]
