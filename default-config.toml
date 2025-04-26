@@ -97,3 +97,5 @@ hide_chat_border = false
 right_align_usernames = false
 # Do not display the window size warning.
 show_unsupported_screen_size = true
+# The following widget will only contain channels that are currently live
+only_get_live_followed_channels = false

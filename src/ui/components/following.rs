@@ -6,7 +6,7 @@ use super::utils::SearchWidget;
 use crate::{
     handlers::{config::SharedCoreConfig, user_input::events::Event},
     terminal::TerminalAction,
-    twitch::{TwitchAction, channels::Following},
+    twitch::{TwitchAction, api::following::Following},
     ui::components::Component,
 };
 
@@ -29,7 +29,7 @@ pub struct FollowingWidget {
 
 impl FollowingWidget {
     pub fn new(config: SharedCoreConfig) -> Self {
-        let item_getter = Following::new(config.borrow().twitch.clone());
+        let item_getter = Following::new(config.borrow().clone());
 
         let search_widget = SearchWidget::new(
             config.clone(),

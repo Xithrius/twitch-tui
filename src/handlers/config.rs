@@ -140,6 +140,8 @@ pub struct FrontendConfig {
     pub right_align_usernames: bool,
     /// Do not display the window size warning.
     pub show_unsupported_screen_size: bool,
+    /// Only show followed channels that are currently live.
+    pub only_get_live_followed_channels: bool,
 }
 
 impl Default for TwitchConfig {
@@ -193,6 +195,7 @@ impl Default for FrontendConfig {
             hide_chat_border: false,
             right_align_usernames: false,
             show_unsupported_screen_size: true,
+            only_get_live_followed_channels: false,
         }
     }
 }

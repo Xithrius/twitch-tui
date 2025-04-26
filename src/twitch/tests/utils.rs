@@ -6,5 +6,6 @@ where
 {
     let raw: serde_json::Value = serde_json::from_str(raw_data)?;
     let message: T = serde_json::from_str(raw_data)?;
+
     Ok((raw, message))
 }
