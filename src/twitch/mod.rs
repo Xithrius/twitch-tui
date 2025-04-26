@@ -21,7 +21,7 @@ use api::{
 use badges::retrieve_user_badges;
 use color_eyre::{
     Result,
-    eyre::{Context, ContextCompat},
+    eyre::{Context, ContextCompat, bail},
 };
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
@@ -64,14 +64,18 @@ pub async fn twitch_websocket(
     mut config: CoreConfig,
     tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
-) {
+) -> Result<()> {
     let url = config.twitch.config_twitch_websocket_url();
-    let (ws_stream, _) = connect_async(url).await.unwrap_or_else(|_| {
-        panic!(
-            "Failed to connect to websocket server at {}",
-            config.twitch.server
-        )
-    });
+    let (ws_stream, _) = match connect_async(url).await {
+        Ok(websocket_connection) => websocket_connection,
+        Err(err) => {
+            bail!(
+                "Failed to connect to websocket server at {}: {}",
+                config.twitch.server,
+                err
+            )
+        }
+    };
 
     info!("Twitch websocket handshake successful");
 
@@ -104,10 +108,16 @@ pub async fn twitch_websocket(
 
     // Handle the welcome message, it should arrive after the initial ping
     let Some(Ok(Message::Text(message))) = stream.next().await else {
-        panic!("First message was not a welcome message, something has gone terribly wrong");
+        let error_message = "Welcome message from websocket server was not found, something has gone terribly wrong";
+        tx.send(DataBuilder::system(error_message.to_string()))
+            .await?;
+        bail!(error_message);
     };
     if let Err(err) = handle_welcome_message(&mut config.twitch, &mut context, &tx, message).await {
-        panic!("Failed to work with welcome message: {err}");
+        let error_message = format!("Failed to handle welcome message: {err}");
+        tx.send(DataBuilder::system(error_message.to_string()))
+            .await?;
+        bail!(error_message);
     }
 
     loop {

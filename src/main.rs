@@ -23,7 +23,7 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use logging::initialize_logging;
 use tokio::sync::{broadcast, mpsc};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::handlers::{app::App, args::Cli, config::CoreConfig};
 
@@ -92,7 +92,9 @@ async fn main() -> Result<()> {
     let cloned_config = config.clone();
 
     tokio::task::spawn(async move {
-        twitch::twitch_websocket(config, twitch_tx, twitch_rx).await;
+        if let Err(err) = twitch::twitch_websocket(config, twitch_tx, twitch_rx).await {
+            error!("Error when running Twitch websocket client: {err}");
+        }
     });
 
     terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, decoded_rx).await;
