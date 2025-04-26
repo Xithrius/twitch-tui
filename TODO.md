@@ -1,7 +1,13 @@
 - [ ] Client vs Twitch server user input processing
     - [ ] Config to decide if user input is shown no matter what, or if we should receive it through Twitch
-- [ ] Commands
-    - [ ] Clear
-    - [ ] Me
-- [ ] Ratelimiting on authentication
-    - [ ] Don't spam login endpoints, keep track of when the last time we logged in during the current session (ex. in `handle_incoming_message`)
+- [x] Commands
+    - [x] Clear
+    - [x] Me
+    - [ ] Ban (timeout)
+- [ ] Event listening
+    - [ ] User ban
+        - [channel.ban](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelban)
+        - Requires `channel:moderate` scope
+- [x] Safe authentication
+    - [x] Don't spam login endpoints, keep track of when the last time we logged in during the current session (ex. in `handle_incoming_message`)
+    - [ ] Oauth and login should only happen __once__ during an entire session
