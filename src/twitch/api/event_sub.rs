@@ -5,7 +5,8 @@ use color_eyre::{
     Result,
     eyre::{Context, ContextCompat},
 };
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
+use tracing::{debug, error};
 
 use super::TWITCH_API_BASE_URL;
 use crate::twitch::{
@@ -18,6 +19,7 @@ use crate::twitch::{
 /// Channel chat messages are excluded since it's subscribed to on channel join.
 pub static INITIAL_EVENT_SUBSCRIPTIONS: LazyLock<Vec<Subscription>> = LazyLock::new(|| {
     vec![
+        Subscription::Message,
         Subscription::Notification,
         Subscription::Clear,
         Subscription::ClearUserMessages,
@@ -60,11 +62,13 @@ pub async fn subscribe_to_events(
     for subscription_type in subscription_types {
         subscription.set_subscription_type(subscription_type.clone());
 
-        let response_data = client
-            .post(&url)
-            .json(&subscription)
-            .send()
-            .await?
+        let response = client.post(&url).json(&subscription).send().await?;
+
+        if response.status() == StatusCode::CONFLICT {
+            error!("Conflict on event subscription: already subscribed to {subscription_type}");
+        }
+
+        let response_data = response
             .error_for_status()?
             .json::<TwitchSubscriptionResponse>()
             .await
@@ -77,6 +81,8 @@ pub async fn subscribe_to_events(
             .context("Could not get channel subscription data")?
             .id()
             .context("Could not get ID from Twitch subscription data")?;
+
+        debug!("Subscribed to event {subscription_type}");
 
         subscription_map.insert(subscription_type, subscription_id.to_string());
     }
@@ -106,6 +112,8 @@ pub async fn unsubscribe_from_events<S: BuildHasher>(
             .await?
             .error_for_status()
             .context("Failed to build event unsubscribe request")?;
+
+        debug!("Unsubscribed from event {subscription_type}");
     }
 
     Ok(())

@@ -10,6 +10,8 @@ mod roomstate;
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashMap;
+
 use api::{
     chat_settings::get_chat_settings,
     event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, unsubscribe_from_events},
@@ -207,14 +209,18 @@ async fn handle_channel_join(
 ) -> Result<()> {
     let twitch_client = context.twitch_client().context("Twitch client not found")?;
     let twitch_oauth = context.oauth().context("No OAuth found")?;
-    let chat_message_subscription = vec![Subscription::Message];
+    let current_subscriptions: Vec<Subscription> = context
+        .event_subscriptions()
+        .keys()
+        .map(std::borrow::ToOwned::to_owned)
+        .collect();
 
     // Unsubscribe from previous channel
     if !first_channel {
         unsubscribe_from_events(
             twitch_client,
             context.event_subscriptions(),
-            chat_message_subscription.clone(),
+            current_subscriptions.clone(),
         )
         .await?;
     }
@@ -233,25 +239,16 @@ async fn handle_channel_join(
         twitch_oauth,
         context.session_id().cloned(),
         channel_id.to_string(),
-        chat_message_subscription,
+        current_subscriptions,
     )
     .await
     .context(format!(
         "Failed to subscribe to new channel '{channel_name}'"
     ))?;
 
-    // Set channel chat message event subscription to correct subscription ID
-    let chat_event_subscription_id = new_subscriptions
-        .get(&Subscription::Message)
-        .context("Could not find chat message subscription ID in new subscriptions map")?;
-
-    // TODO: There's probably a better way to handle this
     let context_channel_id = channel_id.to_string();
 
-    context.add_event_subscription(
-        Subscription::Message,
-        chat_event_subscription_id.to_string(),
-    );
+    context.set_event_subscriptions(new_subscriptions);
 
     // Set old channel to new channel
     twitch_config.channel.clone_from(&channel_name);
@@ -294,15 +291,11 @@ async fn handle_welcome_message(
     let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
     context.set_channel_id(Some(channel_id.clone()));
 
-    let initial_event_subscriptions = subscribe_to_events(
-        &twitch_client,
-        &twitch_oauth,
-        session_id,
-        channel_id.to_string(),
-        INITIAL_EVENT_SUBSCRIPTIONS.to_vec(),
-    )
-    .await
-    .context("Failed to subscribe to initial events")?;
+    let initial_event_subscriptions: HashMap<_, _> = INITIAL_EVENT_SUBSCRIPTIONS
+        .iter()
+        .cloned()
+        .map(|item| (item, String::new()))
+        .collect();
 
     context.set_event_subscriptions(initial_event_subscriptions);
 

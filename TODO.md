@@ -4,10 +4,13 @@
     - [x] Clear
     - [x] Me
     - [ ] Ban (timeout)
-- [ ] Event listening
-    - [ ] User ban
+- [x] Event listening
+    - [x] User ban
         - [channel.ban](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelban)
         - Requires `channel:moderate` scope
+    - [ ] Channel points redeemed
 - [x] Safe authentication
     - [x] Don't spam login endpoints, keep track of when the last time we logged in during the current session (ex. in `handle_incoming_message`)
     - [ ] Oauth and login should only happen __once__ during an entire session
+- [ ] Fix message leak on channel switch
+- [ ] Don't use stream title when selecting from currently live followed channels
