@@ -27,10 +27,10 @@ use crate::{
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
 #[allow(dead_code)]
-pub struct App {
+pub struct Context {
     /// All the available components.
     pub components: Components,
-    /// A config for the app and components to share.
+    /// Shared core config loaded from file and CLI arguments.
     pub config: SharedCoreConfig,
     /// History of recorded messages (time, username, message, etc).
     pub messages: SharedMessages,
@@ -58,7 +58,7 @@ macro_rules! shared {
     };
 }
 
-impl App {
+impl Context {
     pub fn new(config: CoreConfig, startup_time: DateTime<Local>) -> Self {
         let shared_config = shared!(config.clone());
 

@@ -25,7 +25,7 @@ use logging::initialize_logging;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info, warn};
 
-use crate::handlers::{app::App, args::Cli, config::CoreConfig};
+use crate::handlers::{context::Context, args::Cli, config::CoreConfig};
 
 mod commands;
 mod emotes;
@@ -51,14 +51,14 @@ async fn main() -> Result<()> {
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
 
-    let app = App::new(config.clone(), startup_time);
+    let context = Context::new(config.clone(), startup_time);
 
     let decoded_rx = if config.frontend.is_emotes_enabled() {
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
         match crossterm::terminal::window_size() {
             Ok(size) => {
-                app.emotes.cell_size.get_or_init(|| {
+                context.emotes.cell_size.get_or_init(|| {
                     (
                         f32::from(size.width / size.columns),
                         f32::from(size.height / size.rows),
@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
         }
     });
 
-    terminal::ui_driver(cloned_config, app, terminal_tx, terminal_rx, decoded_rx).await;
+    terminal::ui_driver(cloned_config, context, terminal_tx, terminal_rx, decoded_rx).await;
 
     std::process::exit(0)
 }

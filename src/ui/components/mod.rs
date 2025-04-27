@@ -29,7 +29,7 @@ use tui::{Frame, layout::Rect};
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        app::SharedMessages,
+        context::SharedMessages,
         config::SharedCoreConfig,
         filters::SharedFilters,
         storage::SharedStorage,

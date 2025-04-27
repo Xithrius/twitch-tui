@@ -12,7 +12,7 @@ use tui::{
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        app::SharedMessages,
+        context::SharedMessages,
         config::SharedCoreConfig,
         data::MessageData,
         filters::SharedFilters,
