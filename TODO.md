@@ -1,5 +1,3 @@
-- [ ] Client vs Twitch server user input processing
-    - [ ] Config to decide if user input is shown no matter what, or if we should receive it through Twitch
 - [x] Commands
     - [x] Clear
     - [x] Me
@@ -11,7 +9,10 @@
     - [ ] Channel points redeemed
 - [x] Safe authentication
     - [x] Don't spam login endpoints, keep track of when the last time we logged in during the current session (ex. in `handle_incoming_message`)
-    - [ ] Oauth and login should only happen __once__ during an entire session
+    - [x] Oauth and login should only happen __once__ during an entire session
 - [x] Fix message leak on channel switch
-- [ ] Don't use stream title when selecting from currently live followed channels
+- [x] Don't use stream title when selecting from currently live followed channels
+- [ ] Correct logging config and initialization
+- [ ] Client vs Twitch server user input processing
+    - [ ] Config to decide if user input is shown no matter what, or if we should receive it through Twitch
 - [ ] Faster channel switching

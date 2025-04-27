@@ -131,7 +131,13 @@ pub async fn twitch_websocket(
                         }
                     },
                     TwitchAction::JoinChannel(channel_name) => {
-                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel_name, false).await {
+                        let channel = if config.frontend.only_get_live_followed_channels {
+                            channel_name.split(':').collect::<Vec<&str>>().first().map_or(channel_name.clone(), ToString::to_string)
+                        } else {
+                            channel_name
+                        };
+
+                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel, false).await {
                             error!("Joining channel failed: {err}");
                         }
                     },
