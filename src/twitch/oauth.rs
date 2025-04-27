@@ -19,8 +19,8 @@ pub struct TwitchOauth {
 pub async fn get_twitch_client_oauth(oauth_token: Option<&String>) -> Result<TwitchOauth> {
     static TWITCH_CLIENT_OAUTH: OnceLock<TwitchOauth> = OnceLock::new();
 
-    if let Some(id) = TWITCH_CLIENT_OAUTH.get() {
-        return Ok(id.clone());
+    if let Some(twitch_oauth) = TWITCH_CLIENT_OAUTH.get() {
+        return Ok(twitch_oauth.clone());
     }
 
     let token = oauth_token
@@ -50,6 +50,12 @@ pub async fn get_twitch_client(
     twitch_oauth: &TwitchOauth,
     oauth_token: Option<&String>,
 ) -> Result<Client> {
+    static TWITCH_CLIENT: OnceLock<Client> = OnceLock::new();
+
+    if let Some(twitch_client) = TWITCH_CLIENT.get() {
+        return Ok(twitch_client.clone());
+    }
+
     let token = oauth_token
         .context("Twitch token is empty")?
         .strip_prefix("oauth:")
@@ -63,5 +69,7 @@ pub async fn get_twitch_client(
     headers.insert("Client-Id", HeaderValue::from_str(&twitch_oauth.client_id)?);
     headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
 
-    Ok(Client::builder().default_headers(headers).build()?)
+    let twitch_client = Client::builder().default_headers(headers).build()?;
+
+    Ok(TWITCH_CLIENT.get_or_init(|| twitch_client)).cloned()
 }
