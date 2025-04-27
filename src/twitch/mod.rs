@@ -13,12 +13,9 @@ mod tests;
 use api::{
     chat_settings::get_chat_settings,
     event_sub::{
-        INITIAL_EVENT_SUBSCRIPTIONS,
         subscriptions::{
-            CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_CLEAR_USER_MESSAGES, CHANNEL_CHAT_MESSAGE,
-            CHANNEL_CHAT_MESSAGE_DELETE, CHANNEL_CHAT_NOTIFICATION,
-        },
-        unsubscribe_from_events,
+            CHANNEL_BAN, CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_CLEAR_USER_MESSAGES, CHANNEL_CHAT_MESSAGE, CHANNEL_CHAT_MESSAGE_DELETE, CHANNEL_CHAT_NOTIFICATION
+        }, unsubscribe_from_events, INITIAL_EVENT_SUBSCRIPTIONS
     },
 };
 use badges::retrieve_user_badges;
@@ -359,6 +356,9 @@ async fn handle_chat_notification(
                 ))
                 .await?;
             }
+        }
+        CHANNEL_BAN => {
+            todo!()
         }
         // TODO: Handle clearing the chat for a specific user
         _ => {}

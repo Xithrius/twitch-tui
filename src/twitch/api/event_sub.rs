@@ -45,6 +45,11 @@ pub mod subscriptions {
     ///
     /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage_delete>
     pub const CHANNEL_CHAT_MESSAGE_DELETE: &str = "channel.chat.message_delete";
+
+    /// A viewer is timed out or banned from the channel.
+    ///
+    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelban>
+    pub const CHANNEL_BAN: &str = "channel.ban";
 }
 
 /// Events that should be subscribed to when the first chat room is entered.

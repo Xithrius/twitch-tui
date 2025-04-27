@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
 mod badges;
+mod bans;
 mod cheers;
 mod commands;
 mod emotes;
@@ -26,6 +27,10 @@ static ME_COMMAND: LazyLock<&str> = LazyLock::new(|| include_str!("data/me_comma
 
 // Replies
 static REPLY: LazyLock<&str> = LazyLock::new(|| include_str!("data/reply.json"));
+
+// Bans (permanent/non-permanent timeouts)
+static USER_BAN: LazyLock<&str> = LazyLock::new(|| include_str!("data/user_ban.json"));
+static USER_TIMEOUT: LazyLock<&str> = LazyLock::new(|| include_str!("data/user_timeout.json"));
 
 // Multiple message fragments (text with emotes, text with a mention, etc)
 static MESSAGE_TEXT_FRAGMENT: LazyLock<&str> =

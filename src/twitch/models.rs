@@ -143,7 +143,20 @@ pub struct ReceivedTwitchEvent {
     source_badges: Option<String>,
     target_user_id: Option<String>,
     target_user_name: Option<String>,
-    target_user_login: Option<String>
+    target_user_login: Option<String>,
+    user_id: Option<String>,
+    user_login: Option<String>,
+    user_name: Option<String>,
+    moderator_user_id: Option<String>,
+    moderator_user_login: Option<String>,
+    moderator_user_name: Option<String>,
+    reason: Option<String>,
+    // TODO: Deserialize with chrono
+    // banned_at: "2020-07-15T18:15:11.17106713Z",
+    // ends_at: "2020-07-15T18:16:11.17106713Z",
+    banned_at: Option<String>,
+    ends_at: Option<String>,
+    is_permanent: Option<bool>,
 }
 
 impl ReceivedTwitchEventMessageFragmentEmote {
