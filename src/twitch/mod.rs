@@ -12,11 +12,7 @@ mod tests;
 
 use api::{
     chat_settings::get_chat_settings,
-    event_sub::{
-        subscriptions::{
-            CHANNEL_BAN, CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_CLEAR_USER_MESSAGES, CHANNEL_CHAT_MESSAGE, CHANNEL_CHAT_MESSAGE_DELETE, CHANNEL_CHAT_NOTIFICATION
-        }, unsubscribe_from_events, INITIAL_EVENT_SUBSCRIPTIONS
-    },
+    event_sub::{unsubscribe_from_events, INITIAL_EVENT_SUBSCRIPTIONS}, subscriptions::Subscription,
 };
 use badges::retrieve_user_badges;
 use color_eyre::{
@@ -210,7 +206,7 @@ async fn handle_channel_join(
 ) -> Result<()> {
     let twitch_client = context.twitch_client().context("Twitch client not found")?;
     let twitch_oauth = context.oauth().context("No OAuth found")?;
-    let chat_message_subscription = vec![CHANNEL_CHAT_MESSAGE];
+    let chat_message_subscription = vec![Subscription::Message];
 
     // Unsubscribe from previous channel
     if !first_channel {
@@ -245,14 +241,14 @@ async fn handle_channel_join(
 
     // Set channel chat message event subscription to correct subscription ID
     let chat_event_subscription_id = new_subscriptions
-        .get(CHANNEL_CHAT_MESSAGE)
+        .get(&Subscription::Message)
         .context("Could not find chat message subscription ID in new subscriptions map")?;
 
     // TODO: There's probably a better way to handle this
     let context_channel_id = channel_id.to_string();
 
     context.add_event_subscription(
-        CHANNEL_CHAT_MESSAGE.to_owned(),
+        Subscription::Message,
         chat_event_subscription_id.to_string(),
     );
 
@@ -325,23 +321,23 @@ async fn handle_welcome_message(
 async fn handle_chat_notification(
     tx: &Sender<TwitchToTerminalAction>,
     event: ReceivedTwitchEvent,
-    subscription_type: &str,
+    subscription_type: Subscription,
 ) -> Result<()> {
     match subscription_type {
-        CHANNEL_CHAT_NOTIFICATION => {
+        Subscription::Notification => {
             if let Some(twitch_notification_message) = event.system_message() {
                 tx.send(DataBuilder::twitch(twitch_notification_message.to_string()))
                     .await?;
             }
         }
-        CHANNEL_CHAT_CLEAR => {
+        Subscription::Clear => {
             tx.send(TwitchToTerminalAction::ClearChat(None)).await?;
             tx.send(DataBuilder::twitch(
                 "Chat was cleared for non-Moderators viewing this room".to_string(),
             ))
             .await?;
         }
-        CHANNEL_CHAT_CLEAR_USER_MESSAGES => {
+        Subscription::ClearUserMessages => {
             if let Some(target_user_id) = event.target_user_id() {
                 tx.send(TwitchToTerminalAction::ClearChat(Some(
                     target_user_id.to_string(),
@@ -349,7 +345,7 @@ async fn handle_chat_notification(
                 .await?;
             }
         }
-        CHANNEL_CHAT_MESSAGE_DELETE => {
+        Subscription::MessageDelete => {
             if let Some(message_id) = event.message_id() {
                 tx.send(TwitchToTerminalAction::DeleteMessage(
                     message_id.to_string(),
@@ -357,7 +353,7 @@ async fn handle_chat_notification(
                 .await?;
             }
         }
-        CHANNEL_BAN => {
+        Subscription::Ban => {
             todo!()
         }
         _ => {}
@@ -376,9 +372,8 @@ async fn handle_incoming_message(
         return Ok(());
     };
 
-    if let Some(received_subscription_type) = received_message.subscription_type() {
-        let subscription_type = received_subscription_type.as_str();
-        if subscription_type != CHANNEL_CHAT_MESSAGE {
+    if let Some(subscription_type) = received_message.subscription_type() {
+        if subscription_type != Subscription::Message {
             return handle_chat_notification(tx, event, subscription_type).await;
         }
     }

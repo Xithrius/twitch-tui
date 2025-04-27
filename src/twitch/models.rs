@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::api::subscriptions::Subscription;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReceivedTwitchMessageMetadata {
     message_id: String,
@@ -276,7 +278,7 @@ pub struct ReceivedTwitchSubscription {
     id: Option<String>,
     status: Option<String>,
     #[serde(rename = "type")]
-    subscription_type: Option<String>,
+    subscription_type: Option<Subscription>,
     version: String,
     condition: ReceivedTwitchSubscriptionCondition,
     transport: ReceivedTwitchSubscriptionTransport,
@@ -287,7 +289,7 @@ pub struct ReceivedTwitchSubscription {
 impl ReceivedTwitchSubscription {
     #[must_use]
     pub fn new(
-        maybe_subscription_type: Option<String>,
+        maybe_subscription_type: Option<Subscription>,
         channel_id: String,
         user_id: String,
         session_id: String,
@@ -301,11 +303,11 @@ impl ReceivedTwitchSubscription {
         }
     }
 
-    pub const fn subscription_type(&self) -> Option<&String> {
+    pub const fn subscription_type(&self) -> Option<&Subscription> {
         self.subscription_type.as_ref()
     }
 
-    pub fn set_subscription_type(&mut self, subscription_type: String) {
+    pub fn set_subscription_type(&mut self, subscription_type: Subscription) {
         self.subscription_type = Some(subscription_type);
     }
 
@@ -335,7 +337,7 @@ pub struct ReceivedTwitchMessage {
 }
 
 impl ReceivedTwitchMessage {
-    pub fn subscription_type(&self) -> Option<String> {
+    pub fn subscription_type(&self) -> Option<Subscription> {
         self.payload
             .as_ref()?
             .subscription

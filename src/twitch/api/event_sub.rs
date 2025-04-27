@@ -6,60 +6,22 @@ use color_eyre::{
     eyre::{Context, ContextCompat},
 };
 use reqwest::Client;
-use subscriptions::{
-    CHANNEL_CHAT_CLEAR, CHANNEL_CHAT_CLEAR_USER_MESSAGES, CHANNEL_CHAT_MESSAGE_DELETE,
-    CHANNEL_CHAT_NOTIFICATION,
-};
 
 use super::TWITCH_API_BASE_URL;
 use crate::twitch::{
+    api::subscriptions::Subscription,
     models::{ReceivedTwitchSubscription, TwitchSubscriptionResponse},
     oauth::TwitchOauth,
 };
 
-/// Currently supported event subscription types
-///
-/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types>/
-pub mod subscriptions {
-    /// Any user sends a message to a channel’s chat room
-    ///
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage>
-    pub const CHANNEL_CHAT_MESSAGE: &str = "channel.chat.message";
-
-    /// An event that appears in chat occurs, such as someone subscribing to the channel or a subscription is gifted
-    ///
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatnotification>
-    pub const CHANNEL_CHAT_NOTIFICATION: &str = "channel.chat.notification";
-
-    /// A moderator or bot clears all messages from the chat room
-    ///
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatclear>
-    pub const CHANNEL_CHAT_CLEAR: &str = "channel.chat.clear";
-
-    /// A moderator or bot clears all messages for a specific user
-    ///
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatclear_user_messages>
-    pub const CHANNEL_CHAT_CLEAR_USER_MESSAGES: &str = "channel.chat.clear_user_messages";
-
-    /// A moderator removes a specific message
-    ///
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage_delete>
-    pub const CHANNEL_CHAT_MESSAGE_DELETE: &str = "channel.chat.message_delete";
-
-    /// A viewer is timed out or banned from the channel.
-    ///
-    /// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelban>
-    pub const CHANNEL_BAN: &str = "channel.ban";
-}
-
 /// Events that should be subscribed to when the first chat room is entered.
 /// Channel chat messages are excluded since it's subscribed to on channel join.
-pub static INITIAL_EVENT_SUBSCRIPTIONS: LazyLock<Vec<&str>> = LazyLock::new(|| {
+pub static INITIAL_EVENT_SUBSCRIPTIONS: LazyLock<Vec<Subscription>> = LazyLock::new(|| {
     vec![
-        CHANNEL_CHAT_NOTIFICATION,
-        CHANNEL_CHAT_CLEAR,
-        CHANNEL_CHAT_CLEAR_USER_MESSAGES,
-        CHANNEL_CHAT_MESSAGE_DELETE,
+        Subscription::Notification,
+        Subscription::Clear,
+        Subscription::ClearUserMessages,
+        Subscription::MessageDelete,
     ]
 });
 
@@ -79,8 +41,8 @@ pub async fn subscribe_to_events(
     oauth: &TwitchOauth,
     session_id: Option<String>,
     channel_id: String,
-    subscription_types: Vec<&str>,
-) -> Result<HashMap<String, String>> {
+    subscription_types: Vec<Subscription>,
+) -> Result<HashMap<Subscription, String>> {
     let session_id = session_id.context("Session ID is empty")?;
 
     let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
@@ -96,7 +58,7 @@ pub async fn subscribe_to_events(
     let mut subscription_map = HashMap::new();
 
     for subscription_type in subscription_types {
-        subscription.set_subscription_type(subscription_type.to_owned());
+        subscription.set_subscription_type(subscription_type.clone());
 
         let response_data = client
             .post(&url)
@@ -116,7 +78,7 @@ pub async fn subscribe_to_events(
             .id()
             .context("Could not get ID from Twitch subscription data")?;
 
-        subscription_map.insert(subscription_type.to_string(), subscription_id.to_string());
+        subscription_map.insert(subscription_type, subscription_id.to_string());
     }
 
     Ok(subscription_map)
@@ -127,13 +89,13 @@ pub async fn subscribe_to_events(
 /// <https://dev.twitch.tv/docs/api/reference/#delete-eventsub-subscription>
 pub async fn unsubscribe_from_events<S: BuildHasher>(
     client: &Client,
-    subscriptions: &HashMap<String, String, S>,
-    remove_subscription_types: Vec<&str>,
+    subscriptions: &HashMap<Subscription, String, S>,
+    remove_subscription_types: Vec<Subscription>,
 ) -> Result<()> {
     let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
 
     for subscription_type in remove_subscription_types {
-        let Some(subscription_id) = subscriptions.get(subscription_type) else {
+        let Some(subscription_id) = subscriptions.get(&subscription_type) else {
             continue;
         };
 
