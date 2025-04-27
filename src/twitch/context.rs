@@ -77,13 +77,4 @@ impl TwitchWebsocketContext {
     pub fn set_event_subscriptions(&mut self, event_subscriptions: HashMap<Subscription, String>) {
         self.event_subscriptions = event_subscriptions;
     }
-
-    pub fn add_event_subscription(
-        &mut self,
-        event_subscription: Subscription,
-        event_subscription_id: String,
-    ) {
-        self.event_subscriptions
-            .insert(event_subscription, event_subscription_id);
-    }
 }

@@ -157,6 +157,7 @@ pub async fn twitch_websocket(
 
                         if let Err(err) = handle_incoming_message(
                             config.clone(),
+                            &context,
                             &tx,
                             received_message,
                             emotes_enabled,
@@ -369,10 +370,21 @@ async fn handle_chat_notification(
 
 async fn handle_incoming_message(
     config: CoreConfig,
+    context: &TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     received_message: ReceivedTwitchMessage,
     emotes_enabled: bool,
 ) -> Result<()> {
+    // Don't allow messges from other channels go through
+    if let Some(condition) = received_message.subscription_condition() {
+        if context
+            .channel_id()
+            .is_some_and(|channel_id| channel_id != condition.broadcaster_user_id())
+        {
+            return Ok(());
+        }
+    }
+
     let Some(event) = received_message.event() else {
         return Ok(());
     };
