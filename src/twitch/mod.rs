@@ -12,7 +12,8 @@ mod tests;
 
 use api::{
     chat_settings::get_chat_settings,
-    event_sub::{unsubscribe_from_events, INITIAL_EVENT_SUBSCRIPTIONS}, subscriptions::Subscription,
+    event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, unsubscribe_from_events},
+    subscriptions::Subscription,
 };
 use badges::retrieve_user_badges;
 use color_eyre::{
@@ -354,7 +355,18 @@ async fn handle_chat_notification(
             }
         }
         Subscription::Ban => {
-            todo!()
+            let affected_user = event
+                .user_name()
+                .map_or("Unknown Twitch user", |user| user.as_str());
+
+            let timeout_message = event.timeout_duration().map_or_else(
+                || format!("User {affected_user} banned"),
+                |timeout_duration| {
+                    format!("User {affected_user} was timed out for {timeout_duration} second(s)")
+                },
+            );
+
+            tx.send(DataBuilder::twitch(timeout_message)).await?;
         }
         _ => {}
     }
@@ -441,31 +453,3 @@ async fn handle_incoming_message(
 
     Ok(())
 }
-
-//         match cmd.as_ref() {
-//             "CLEARCHAT" => {
-//                 let user_id = tags.get("target-user-id").map(|&s| s.to_string());
-//                 tx.send(TwitchToTerminalAction::ClearChat(user_id.clone()))
-//                     .await
-//                     .unwrap();
-//                 if user_id.is_some() {
-//                     let ban_duration = tags.get("ban-duration").map(|&s| s.to_string());
-//                     if let Some(duration) = ban_duration {
-//                         tx.send(
-//                             data_builder
-//                                 .twitch(format!("User was timed out for {duration} seconds")),
-//                         )
-//                         .await
-//                         .unwrap();
-//                     }
-//                     else {
-//                         tx.send(data_builder.twitch("User banned".to_string()))
-//                             .await
-//                             .unwrap();
-//                     }
-//                 } else {
-//                     tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
-//                         .await
-//                         .unwrap();
-//                 }
-//             }

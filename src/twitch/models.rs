@@ -236,6 +236,23 @@ impl ReceivedTwitchEvent {
     pub const fn target_user_id(&self) -> Option<&String> {
         self.target_user_id.as_ref()
     }
+
+    /// Returns some amount of time in seconds if timeout, None if permanent
+    pub fn timeout_duration(&self) -> Option<i64> {
+        if self.is_permanent.is_some_and(|permanent| permanent) {
+            return None;
+        }
+
+        let earlier = self.banned_at?;
+        let later = self.ends_at?;
+        let duration = later - earlier;
+
+        Some(duration.num_seconds())
+    }
+
+    pub const fn user_name(&self) -> Option<&String> {
+        self.user_name.as_ref()
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -307,7 +324,7 @@ impl ReceivedTwitchSubscription {
         self.subscription_type.as_ref()
     }
 
-    pub fn set_subscription_type(&mut self, subscription_type: Subscription) {
+    pub const fn set_subscription_type(&mut self, subscription_type: Subscription) {
         self.subscription_type = Some(subscription_type);
     }
 

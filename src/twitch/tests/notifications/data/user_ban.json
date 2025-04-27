@@ -1,18 +1,19 @@
 {
   "subscription": {
-    "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+    "id": "0b7f3361-672b-4d39-b307-dd5b576c9b27",
+    "status": "enabled",
     "type": "channel.ban",
     "version": "1",
-    "status": "enabled",
-    "cost": 0,
     "condition": {
-      "broadcaster_user_id": "1337"
+      "broadcaster_user_id": "1971641",
+      "user_id": "2914196"
     },
     "transport": {
-      "method": "webhook",
-      "callback": "https://example.com/webhooks/callback"
+      "method": "websocket",
+      "session_id": "AgoQHR3s6Mb4T8GFB1l3DlPfiRIGY2VsbC1h"
     },
-    "created_at": "2019-11-16T10:11:12.634234626Z"
+    "created_at": "2023-11-06T18:11:47.492253549Z",
+    "cost": 0
   },
   "event": {
     "user_id": "1234",
