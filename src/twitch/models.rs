@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -151,11 +152,8 @@ pub struct ReceivedTwitchEvent {
     moderator_user_login: Option<String>,
     moderator_user_name: Option<String>,
     reason: Option<String>,
-    // TODO: Deserialize with chrono
-    // banned_at: "2020-07-15T18:15:11.17106713Z",
-    // ends_at: "2020-07-15T18:16:11.17106713Z",
-    banned_at: Option<String>,
-    ends_at: Option<String>,
+    banned_at: Option<DateTime<Utc>>,
+    ends_at: Option<DateTime<Utc>>,
     is_permanent: Option<bool>,
 }
 

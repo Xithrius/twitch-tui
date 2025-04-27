@@ -360,7 +360,6 @@ async fn handle_chat_notification(
         CHANNEL_BAN => {
             todo!()
         }
-        // TODO: Handle clearing the chat for a specific user
         _ => {}
     }
 

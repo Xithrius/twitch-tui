@@ -28,7 +28,7 @@ unicode-width = "0.2.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 unicode-segmentation = "1.12.0"
-chrono = "0.4.39"
+chrono = { version = "0.4.39", features = ["serde"] }
 futures = "0.3.31"
 toml = "0.8.19"
 textwrap = "0.16.1"
