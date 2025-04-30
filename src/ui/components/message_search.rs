@@ -15,7 +15,6 @@ use crate::{
 };
 
 pub struct MessageSearchWidget {
-    _config: SharedCoreConfig,
     input: InputWidget<()>,
 }
 
@@ -30,17 +29,14 @@ impl MessageSearchWidget {
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input = InputWidget::new(
-            config.clone(),
+            config,
             "Message search",
             Some(((), input_validator)),
             Some(visual_indicator),
             None,
         );
 
-        Self {
-            _config: config,
-            input,
-        }
+        Self { input }
     }
 
     pub const fn is_focused(&self) -> bool {
