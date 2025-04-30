@@ -141,7 +141,6 @@ pub async fn get_user_following(
     Ok(channels)
 }
 
-// TODO: Don't authenticate again
 pub async fn get_following(
     twitch_config: &TwitchConfig,
     live: bool,
