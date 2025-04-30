@@ -35,8 +35,6 @@ struct TwitchNewMessageResponseList {
 }
 
 /// Sends a message to the respective channel.
-/// This was chosen vs websocket stdin due to being able to handle errors
-/// in a cleaner way.
 ///
 /// <https://dev.twitch.tv/docs/api/reference/#send-chat-message>
 pub async fn send_twitch_message(

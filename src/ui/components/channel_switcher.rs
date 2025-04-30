@@ -15,7 +15,6 @@ use tui::{
     },
 };
 
-use super::utils::centered_rect;
 use crate::{
     handlers::{
         config::SharedCoreConfig,
@@ -34,6 +33,8 @@ use crate::{
         text::{TitleStyle, first_similarity, title_line},
     },
 };
+
+use super::utils::popup_area;
 
 pub struct ChannelSwitcherWidget {
     config: SharedCoreConfig,
@@ -143,9 +144,7 @@ impl Display for ChannelSwitcherWidget {
 
 impl Component for ChannelSwitcherWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.area()), |a| a);
-        // Make sure we have space for the input widget, which has a height of 3.
-        r.height -= 3;
+        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
 
         let channels = self.storage.borrow().get("channels");
 
