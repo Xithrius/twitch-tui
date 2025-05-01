@@ -53,14 +53,18 @@ pub struct Events {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Config {
-    #[allow(dead_code)]
-    pub exit_key: Key,
-    pub tick_rate: Duration,
+pub struct EventConfig {
+    tick_rate: Duration,
+}
+
+impl EventConfig {
+    pub const fn new(tick_rate: Duration) -> Self {
+        Self { tick_rate }
+    }
 }
 
 impl Events {
-    pub fn with_config(config: Config) -> Self {
+    pub fn with_config(config: EventConfig) -> Self {
         let (tx, rx) = mpsc::channel(100);
 
         tokio::spawn(async move {

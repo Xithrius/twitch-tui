@@ -1,7 +1,6 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use chrono::{DateTime, Local};
-use rustyline::line_buffer::LineBuffer;
 use tui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -10,23 +9,19 @@ use tui::{
 use crate::{
     emotes::{Emotes, SharedEmotes},
     handlers::{
-        config::{CoreConfig, SharedCoreConfig, Theme},
+        config::{CoreConfig, SharedCoreConfig},
         data::MessageData,
-        filters::{Filters, SharedFilters},
+        filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    ui::{
-        components::{Component, Components},
-        statics::LINE_BUFFER_CAPACITY,
-    },
+    ui::components::{Component, Components},
 };
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
-#[allow(dead_code)]
 pub struct Context {
     /// All the available components.
     pub components: Components,
@@ -36,18 +31,10 @@ pub struct Context {
     pub messages: SharedMessages,
     /// Data loaded in from a JSON file.
     pub storage: SharedStorage,
-    /// Messages to be filtered out.
-    pub filters: SharedFilters,
     /// Which window the terminal is currently focused on.
     state: State,
     /// The previous state, if any.
     previous_state: Option<State>,
-    /// What the user currently has inputted.
-    pub input_buffer: LineBuffer,
-    /// The current suggestion, if any.
-    pub buffer_suggestion: Option<String>,
-    /// The theme selected by the user.
-    pub theme: Theme,
     /// Emotes
     pub emotes: SharedEmotes,
 }
@@ -85,7 +72,7 @@ impl Context {
         let components = Components::new(
             &shared_config,
             storage.clone(),
-            filters.clone(),
+            filters,
             messages.clone(),
             &emotes,
             startup_time,
@@ -96,12 +83,8 @@ impl Context {
             config: shared_config.clone(),
             messages,
             storage,
-            filters,
             state: shared_config_borrow.terminal.first_state.clone(),
             previous_state: None,
-            input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
-            buffer_suggestion: None,
-            theme: shared_config_borrow.frontend.theme.clone(),
             emotes,
         }
     }

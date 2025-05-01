@@ -7,11 +7,11 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
-        context::Context,
         config::CoreConfig,
+        context::Context,
         data::{MessageData, TwitchToTerminalAction},
         state::State,
-        user_input::events::{Config, Events, Key},
+        user_input::events::{EventConfig, Events},
     },
     twitch::TwitchAction,
 };
@@ -42,10 +42,8 @@ pub async fn ui_driver(
         original_hook(panic);
     }));
 
-    let mut events = Events::with_config(Config {
-        exit_key: Key::Null,
-        tick_rate: Duration::from_millis(config.terminal.delay),
-    });
+    let event_config = EventConfig::new(Duration::from_millis(config.terminal.delay));
+    let mut events = Events::with_config(event_config);
 
     let mut erx = query_emotes(&config, config.twitch.channel.clone());
 
@@ -92,7 +90,8 @@ pub async fn ui_driver(
         if let Ok(msg) = rx.try_recv() {
             match msg {
                 TwitchToTerminalAction::Message(m) => {
-                    context.messages
+                    context
+                        .messages
                         .borrow_mut()
                         .push_front(MessageData::from_twitch_message(m, &context.emotes));
 
