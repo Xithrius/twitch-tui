@@ -190,18 +190,8 @@ impl Context {
         self.previous_state.clone()
     }
 
-    #[allow(dead_code)]
-    pub fn get_state(&self) -> State {
-        self.state.clone()
-    }
-
     pub fn set_state(&mut self, other: State) {
         self.previous_state = Some(self.state.clone());
         self.state = other;
-    }
-
-    #[allow(dead_code)]
-    pub fn rotate_theme(&self) {
-        todo!("Rotate through different themes")
     }
 }

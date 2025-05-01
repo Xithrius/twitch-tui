@@ -22,9 +22,8 @@ static INCORRECT_SCOPES_ERROR_MESSAGE: LazyLock<Vec<&'static str>> = LazyLock::n
 });
 
 pub struct FollowingWidget {
-    #[allow(dead_code)]
     config: SharedCoreConfig,
-    pub search_widget: SearchWidget<String, Following>,
+    search_widget: SearchWidget<String, Following>,
 }
 
 impl FollowingWidget {
