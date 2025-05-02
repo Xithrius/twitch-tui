@@ -51,6 +51,7 @@ impl Context {
 
         let shared_config_borrow = shared_config.borrow();
 
+        // TODO: Storage path should be specified in the config, default next to config.toml
         let storage = shared!(Storage::new("storage.json", &shared_config_borrow.storage));
 
         if !storage
@@ -60,6 +61,7 @@ impl Context {
             storage.borrow_mut().add("channels", config.twitch.channel);
         }
 
+        // TODO: Filters path should be specified in the config, default next to config.toml
         let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters));
 
         let messages = shared!(VecDeque::with_capacity(
