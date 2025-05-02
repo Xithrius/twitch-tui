@@ -5,7 +5,6 @@ use color_eyre::{
     Result,
     eyre::{ContextCompat, anyhow},
 };
-use crossterm::{Command, csi, queue};
 use dialoguer::console::{Key, Term};
 use image::{
     AnimationDecoder, DynamicImage, GenericImageView, ImageDecoder, ImageFormat, ImageReader, Rgba,
@@ -13,6 +12,7 @@ use image::{
     codecs::{gif::GifDecoder, webp::WebPDecoder},
     imageops::FilterType,
 };
+use tui::crossterm::{Command, csi, queue};
 
 use crate::utils::pathing::{
     create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,

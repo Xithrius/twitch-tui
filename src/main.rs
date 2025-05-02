@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     let decoded_rx = if config.frontend.is_emotes_enabled() {
         // We need to probe the terminal for it's size before starting the tui,
         // as writing on stdout on a different thread can interfere.
-        match crossterm::terminal::window_size() {
+        match tui::crossterm::terminal::window_size() {
             Ok(size) => {
                 context.emotes.cell_size.get_or_init(|| {
                     (

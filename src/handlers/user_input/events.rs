@@ -1,9 +1,9 @@
 use std::{fmt::Display, time::Duration};
 
-use crossterm::event::{
+use tokio::{sync::mpsc, time::Instant};
+use tui::crossterm::event::{
     self, Event as CEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind,
 };
-use tokio::{sync::mpsc, time::Instant};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Key {
