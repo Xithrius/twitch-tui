@@ -90,34 +90,6 @@ impl RawMessageData {
 type Highlight<'a> = (&'a [usize], Style);
 
 impl MessageData {
-    // Create a message and parse its emotes using both global emotes and the current user emotes.
-    // pub fn new_user_message(
-    //     author: String,
-    //     user_id: Option<String>,
-    //     system: bool,
-    //     payload: String,
-    //     message_id: Option<String>,
-    //     highlight: bool,
-    //     emotes: &SharedEmotes,
-    // ) -> Self {
-    //     let (payload, emotes) = Self::parse_emotes(
-    //         payload,
-    //         emotes,
-    //         &emotes.user_emotes.borrow(),
-    //         &emotes.global_emotes.borrow(),
-    //     );
-    //     Self {
-    //         time_sent: Local::now(),
-    //         author,
-    //         user_id,
-    //         system,
-    //         payload,
-    //         emotes,
-    //         message_id,
-    //         highlight,
-    //     }
-    // }
-
     /// Create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
     pub fn from_twitch_message(msg: RawMessageData, emotes: &SharedEmotes) -> Self {
         let (payload, emotes) = Self::parse_emotes(

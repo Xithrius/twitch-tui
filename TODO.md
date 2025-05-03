@@ -13,6 +13,4 @@
 - [x] Fix message leak on channel switch
 - [x] Don't use stream title when selecting from currently live followed channels
 - [x] Correct logging config and initialization
-- [ ] Client vs Twitch server user input processing
-    - [ ] Config to decide if user input is shown no matter what, or if we should receive it through Twitch
 - [ ] Faster channel switching

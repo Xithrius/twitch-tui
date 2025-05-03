@@ -144,23 +144,6 @@ pub async fn ui_driver(
                     }
                     TerminalAction::Enter(action) => match action {
                         TwitchAction::SendMessage(message) => {
-                            // Two options based off of a to-be implemented config option:
-                            // Terminal user should have their message sent,
-                            // received by Twitch, and then received by the terminal.
-                            // Terminal always receives terminal user message message no matter what.
-
-                            // let message_data = MessageData::new_user_message(
-                            //     config.twitch.username.to_string(),
-                            //     user_id,
-                            //     false,
-                            //     msg,
-                            //     None,
-                            //     highlight,
-                            //     &context.emotes,
-                            // );
-
-                            // context.messages.borrow_mut().push_front(message_data);
-
                             tx.send(TwitchAction::SendMessage(message)).unwrap();
                         }
                         TwitchAction::JoinChannel(channel) => {
