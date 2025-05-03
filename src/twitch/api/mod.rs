@@ -1,5 +1,7 @@
+pub mod timeouts;
 pub mod channels;
 pub mod chat_settings;
+pub mod clear;
 pub mod event_sub;
 pub mod following;
 pub mod messages;
