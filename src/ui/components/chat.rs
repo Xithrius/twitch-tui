@@ -12,8 +12,8 @@ use tui::{
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        context::SharedMessages,
         config::SharedCoreConfig,
+        context::SharedMessages,
         data::MessageData,
         filters::SharedFilters,
         state::State,

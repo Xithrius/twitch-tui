@@ -33,6 +33,5 @@ fn test_deserialize_cheer() -> Result<()> {
 #[test]
 #[should_panic(expected = "Invalid cheer field")]
 fn test_deserialize_invalid_cheer() {
-    load_data::<ReceivedTwitchMessagePayload>(&INVALID_CHEER)
-        .expect("Invalid cheer field");
+    load_data::<ReceivedTwitchMessagePayload>(&INVALID_CHEER).expect("Invalid cheer field");
 }

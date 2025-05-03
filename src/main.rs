@@ -25,7 +25,7 @@ use logging::initialize_logging;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info, warn};
 
-use crate::handlers::{context::Context, args::Cli, config::CoreConfig};
+use crate::handlers::{args::Cli, config::CoreConfig, context::Context};
 
 mod commands;
 mod emotes;
