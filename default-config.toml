@@ -5,8 +5,8 @@ username = ""
 channel = ""
 # The websocket server to connect to.
 server = "wss://eventsub.wss.twitch.tv/ws"
-# https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes+user:read:chat+user:write:chat&auth=auth_stay
-# chat:read, chat:edit, channel:moderate, user:read:follows, user:read:emotes, user:read:chat, user:write:chat
+# https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes+user:read:chat+user:write:chat+moderator:manage:chat_messages&auth=auth_stay
+# chat:read, chat:edit, channel:moderate, user:read:follows, user:read:emotes, user:read:chat, user:write:chat, moderator:manage:chat_messages
 token = ""
 
 [terminal]

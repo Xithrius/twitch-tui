@@ -41,7 +41,7 @@ pub async fn delete_twitch_messages(client: &Client, query: DeleteMessageQuery) 
     }
 
     client
-        .post(url)
+        .delete(url)
         .query(&delete_message_query)
         .send()
         .await?
