@@ -60,8 +60,7 @@ pub static HELP_KEYBINDS: LazyLock<Vec<(&str, KeybindPair)>> = LazyLock::new(|| 
 // https://help.twitch.tv/s/article/chat-commands?language=en_US
 pub static SUPPORTED_COMMANDS: LazyLock<Vec<&str>> = LazyLock::new(|| {
     vec![
-        "ban",
-        "unban",
+        "ban", "unban",
         "clear",
         // "color",
         // "commercial",
