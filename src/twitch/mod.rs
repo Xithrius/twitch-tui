@@ -2,6 +2,7 @@ pub mod api;
 mod badges;
 pub mod channels;
 pub mod client;
+mod commands;
 pub mod context;
 mod models;
 pub mod oauth;
@@ -10,7 +11,7 @@ mod roomstate;
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use api::{
     chat_settings::get_chat_settings,
@@ -22,6 +23,7 @@ use color_eyre::{
     Result,
     eyre::{Context, ContextCompat, bail},
 };
+use commands::TwitchCommand;
 use context::TwitchWebsocketContext;
 use futures::StreamExt;
 use models::ReceivedTwitchEvent;
@@ -54,9 +56,8 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum TwitchAction {
-    SendMessage(String),
+    Message(String),
     JoinChannel(String),
-    ClearMessages,
 }
 
 pub async fn twitch_websocket(
@@ -125,8 +126,13 @@ pub async fn twitch_websocket(
 
             Ok(action) = rx.recv() => {
                 match action {
-                    TwitchAction::SendMessage(message) => {
-                        if let Err(err) = handle_send_message(&context, message).await {
+                    TwitchAction::Message(message) => {
+                        if let Some(command) = message.strip_prefix('/') {
+                            if let Err(err) = handle_command_message(&context, &tx, command).await {
+                                error!("Failed to handle Twitch message command from terminal: {err}");
+                            }
+                        }
+                        else if let Err(err) = handle_send_message(&context, message).await {
                             error!("Failed to send Twitch message from terminal: {err}");
                         }
                     },
@@ -140,9 +146,6 @@ pub async fn twitch_websocket(
                         if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel, false).await {
                             error!("Joining channel failed: {err}");
                         }
-                    },
-                    TwitchAction::ClearMessages => {
-                        panic!("Clearning messages is not implemented at this moment");
                     },
                 }
             }
@@ -179,6 +182,47 @@ pub async fn twitch_websocket(
             else => {}
         };
     }
+}
+
+async fn handle_command_message(
+    context: &TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    user_command: &str,
+) -> Result<()> {
+    let Ok(command) = TwitchCommand::from_str(user_command) else {
+        tx.send(DataBuilder::system(format!(
+            "Command /{user_command} either does not exist, or is not supported"
+        )))
+        .await?;
+
+        return Ok(());
+    };
+
+    let twitch_client = context
+        .twitch_client()
+        .context("Twitch client could not be found when sending command")?;
+
+    let channel_id = context
+        .channel_id()
+        .context("Channel ID could not be found when sending command")?;
+
+    let twitch_oauth = context
+        .oauth()
+        .context("Twitch OAuth could not be found when sending command")?;
+
+    // match command {
+    //     TwitchCommand::Clear => {
+    //         let delete_message_query =
+    //             DeleteMessageQuery::new(channel_id.to_string(), twitch_oauth.user_id.clone(), None);
+    //         delete_twitch_messages(twitch_client, delete_message_query).await?;
+    //     }
+    //     TwitchCommand::Ban => {
+    //     }
+    //     TwitchCommand::Timeout => {
+    //     }
+    // }
+
+    Ok(())
 }
 
 /// Handle the user wanting to send a message from the terminal to the WebSocket server

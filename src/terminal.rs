@@ -20,10 +20,10 @@ pub enum TerminalAction {
     Quit,
     BackOneLayer,
     SwitchState(State),
-    ClearMessages,
     Enter(TwitchAction),
 }
 
+#[allow(clippy::match_wildcard_for_single_variants)]
 pub async fn ui_driver(
     config: CoreConfig,
     mut context: Context,
@@ -137,26 +137,17 @@ pub async fn ui_driver(
 
                         context.set_state(state);
                     }
-                    TerminalAction::ClearMessages => {
-                        context.clear_messages();
-
-                        tx.send(TwitchAction::ClearMessages).unwrap();
-                    }
-                    TerminalAction::Enter(action) => match action {
-                        TwitchAction::SendMessage(message) => {
-                            tx.send(TwitchAction::SendMessage(message)).unwrap();
-                        }
-                        TwitchAction::JoinChannel(channel) => {
+                    TerminalAction::Enter(action) => {
+                        if let TwitchAction::JoinChannel(channel) = action {
                             context.clear_messages();
                             context.emotes.unload();
-
                             tx.send(TwitchAction::JoinChannel(channel.clone())).unwrap();
                             erx = query_emotes(&config, channel);
-
                             context.set_state(State::Normal);
+                        } else {
+                            tx.send(action).unwrap();
                         }
-                        TwitchAction::ClearMessages => {}
-                    },
+                    }
                 }
             }
         }
