@@ -15,8 +15,10 @@ use std::{collections::HashMap, str::FromStr};
 
 use api::{
     chat_settings::get_chat_settings,
+    clear::{DeleteMessageQuery, delete_twitch_messages},
     event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, unsubscribe_from_events},
     subscriptions::Subscription,
+    timeouts::{TimeoutPayload, TimeoutQuery, timeout_twitch_user},
 };
 use badges::retrieve_user_badges;
 use color_eyre::{
@@ -210,17 +212,31 @@ async fn handle_command_message(
         .oauth()
         .context("Twitch OAuth could not be found when sending command")?;
 
-    // match command {
-    //     TwitchCommand::Clear => {
-    //         let delete_message_query =
-    //             DeleteMessageQuery::new(channel_id.to_string(), twitch_oauth.user_id.clone(), None);
-    //         delete_twitch_messages(twitch_client, delete_message_query).await?;
-    //     }
-    //     TwitchCommand::Ban => {
-    //     }
-    //     TwitchCommand::Timeout => {
-    //     }
-    // }
+    let user_id = twitch_oauth.user_id.clone();
+
+    match command {
+        TwitchCommand::Clear => {
+            let delete_message_query =
+                DeleteMessageQuery::new(channel_id.to_string(), user_id, None);
+            delete_twitch_messages(twitch_client, delete_message_query).await?;
+        }
+        TwitchCommand::Ban(username, reason) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let ban_query = TimeoutQuery::new(channel_id.to_string(), user_id);
+            let ban_payload = TimeoutPayload::new(target_user_id, None, reason);
+
+            timeout_twitch_user(twitch_client, ban_query, ban_payload).await?;
+        }
+        TwitchCommand::Timeout(username, duration, reason) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let timeout_query = TimeoutQuery::new(channel_id.to_string(), user_id);
+            let timeout_payload = TimeoutPayload::new(target_user_id, Some(duration), reason);
+
+            timeout_twitch_user(twitch_client, timeout_query, timeout_payload).await?;
+        }
+    }
 
     Ok(())
 }
