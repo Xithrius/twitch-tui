@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use log::debug;
 use regex::Regex;
+use tracing::{debug, info};
 use tui::{
     Frame,
     layout::Rect,
@@ -15,10 +15,9 @@ use tui::{
     },
 };
 
-use super::utils::centered_rect;
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         storage::SharedStorage,
         user_input::events::{Event, Key},
     },
@@ -35,8 +34,10 @@ use crate::{
     },
 };
 
+use super::utils::popup_area;
+
 pub struct ChannelSwitcherWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     focused: bool,
     storage: SharedStorage,
     search_input: InputWidget<SharedStorage>,
@@ -47,7 +48,7 @@ pub struct ChannelSwitcherWidget {
 }
 
 impl ChannelSwitcherWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+    pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
         let input_validator = Box::new(|_, s: String| -> bool {
             Regex::new(&NAME_RESTRICTION_REGEX)
                 .unwrap()
@@ -143,9 +144,7 @@ impl Display for ChannelSwitcherWidget {
 
 impl Component for ChannelSwitcherWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.area()), |a| a);
-        // Make sure we have space for the input widget, which has a height of 3.
-        r.height -= 3;
+        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
 
         let channels = self.storage.borrow().get("channels");
 
@@ -307,7 +306,7 @@ impl Component for ChannelSwitcherWidget {
                                         .channel
                                         .clone_from(&selected_channel);
 
-                                    return Some(TerminalAction::Enter(TwitchAction::Join(
+                                    return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                                         selected_channel,
                                     )));
                                 }
@@ -337,7 +336,7 @@ impl Component for ChannelSwitcherWidget {
                             selected_channel.to_string()
                         );
 
-                        return Some(TerminalAction::Enter(TwitchAction::Join(
+                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                             selected_channel.to_string(),
                         )));
                     } else if self.search_input.is_valid() {
@@ -360,9 +359,11 @@ impl Component for ChannelSwitcherWidget {
                             .channel
                             .clone_from(&selected_channel);
 
-                        debug!("Joining new channel {selected_channel:?}");
+                        info!("Joining new channel {selected_channel:?}");
 
-                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
+                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                            selected_channel,
+                        )));
                     }
                 }
                 _ => {

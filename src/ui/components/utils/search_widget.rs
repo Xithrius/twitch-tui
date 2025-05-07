@@ -14,10 +14,10 @@ use tui::{
     },
 };
 
-use super::{InputWidget, centered_rect};
+use super::{InputWidget, popup_area};
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -42,7 +42,7 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     focused: bool,
 
     item_getter: U,
@@ -62,11 +62,7 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    pub fn new(
-        config: SharedCompleteConfig,
-        item_getter: U,
-        error_message: Vec<&'static str>,
-    ) -> Self {
+    pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
         let error_widget = ErrorWidget::new(error_message);
 
@@ -146,7 +142,7 @@ where
     U: SearchItemGetter<T>,
 {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.area()), |a| a);
+        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
 
         if self.error_widget.is_focused() {
             self.error_widget.draw(f, Some(r));
@@ -294,7 +290,9 @@ where
 
                         self.unselect();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Join(selected_channel)));
+                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                            selected_channel,
+                        )));
                     }
                 }
                 _ => {

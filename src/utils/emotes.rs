@@ -1,17 +1,8 @@
 use std::iter;
 
-use crate::handlers::config::FrontendConfig;
-
 pub const PRIVATE_USE_UNICODE: char = '\u{10EEEE}';
 pub const ZERO_WIDTH_SPACE: char = '\u{200B}';
 pub const ZERO_WIDTH_SPACE_STR: &str = "\u{200B}";
-
-pub const fn emotes_enabled(frontend: &FrontendConfig) -> bool {
-    frontend.twitch_emotes
-        || frontend.betterttv_emotes
-        || frontend.seventv_emotes
-        || frontend.frankerfacez_emotes
-}
 
 pub const fn get_emote_offset(width: u16, cell_width: u16, cols: u16) -> (u16, u16) {
     let w = (width + if cols % 2 == 0 { 0 } else { cell_width }).div_ceil(2);

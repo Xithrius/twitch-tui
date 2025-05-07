@@ -8,7 +8,7 @@ use tui::{
 
 use crate::{
     handlers::{
-        config::{SharedCompleteConfig, ToVec},
+        config::{SharedCoreConfig, ToVec},
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -21,13 +21,13 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct DebugWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     focused: bool,
     startup_time: DateTime<Local>,
 }
 
 impl DebugWidget {
-    pub const fn new(config: SharedCompleteConfig, startup_time: DateTime<Local>) -> Self {
+    pub const fn new(config: SharedCoreConfig, startup_time: DateTime<Local>) -> Self {
         Self {
             config,
             focused: false,

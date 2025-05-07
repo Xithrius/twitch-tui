@@ -2,8 +2,8 @@ use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
 use chrono::{DateTime, offset::Local};
 use fuzzy_matcher::FuzzyMatcher;
-use log::{error, warn};
 use memchr::{memchr_iter, memmem};
+use tracing::{error, warn};
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
@@ -90,36 +90,7 @@ impl RawMessageData {
 type Highlight<'a> = (&'a [usize], Style);
 
 impl MessageData {
-    /// Used to create a message and parse its emotes using both global emotes and the current user emotes.
-    pub fn new_user_message(
-        author: String,
-        user_id: Option<String>,
-        system: bool,
-        payload: String,
-        message_id: Option<String>,
-        highlight: bool,
-        emotes: &SharedEmotes,
-    ) -> Self {
-        let (payload, emotes) = Self::parse_emotes(
-            payload,
-            emotes,
-            &emotes.user_emotes.borrow(),
-            &emotes.global_emotes.borrow(),
-        );
-
-        Self {
-            time_sent: Local::now(),
-            author,
-            user_id,
-            system,
-            payload,
-            emotes,
-            message_id,
-            highlight,
-        }
-    }
-
-    /// Used to create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
+    /// Create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
     pub fn from_twitch_message(msg: RawMessageData, emotes: &SharedEmotes) -> Self {
         let (payload, emotes) = Self::parse_emotes(
             msg.payload,
@@ -606,16 +577,10 @@ impl MessageData {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct DataBuilder<'conf> {
-    #[allow(dead_code)]
-    pub datetime_format: &'conf str,
-}
+pub struct DataBuilder;
 
-impl<'conf> DataBuilder<'conf> {
-    pub const fn new(datetime_format: &'conf str) -> Self {
-        DataBuilder { datetime_format }
-    }
-
+impl DataBuilder {
+    // User messages that come from either twitch or the terminal
     pub fn user(
         user: String,
         user_id: Option<String>,
@@ -629,7 +594,8 @@ impl<'conf> DataBuilder<'conf> {
         ))
     }
 
-    pub fn system(self, payload: String) -> TwitchToTerminalAction {
+    /// Notification messages from the terminal
+    pub fn system(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "System".to_string(),
             None,
@@ -641,7 +607,8 @@ impl<'conf> DataBuilder<'conf> {
         ))
     }
 
-    pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
+    /// Notification messages from Twitch
+    pub fn twitch(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "Twitch".to_string(),
             None,

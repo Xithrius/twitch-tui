@@ -29,8 +29,8 @@ use tui::{Frame, layout::Rect};
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        app::SharedMessages,
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
+        context::SharedMessages,
         filters::SharedFilters,
         storage::SharedStorage,
         user_input::events::{Event, Key},
@@ -47,10 +47,7 @@ static WINDOW_SIZE_TOO_SMALL_ERROR: LazyLock<Vec<&'static str>> = LazyLock::new(
 });
 
 pub trait Component {
-    #[allow(unused_variables)]
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        todo!()
-    }
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
 
     #[allow(clippy::unused_async)]
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
@@ -83,7 +80,7 @@ pub struct Components {
 
 impl Components {
     pub fn new(
-        config: &SharedCompleteConfig,
+        config: &SharedCoreConfig,
         storage: SharedStorage,
         filters: SharedFilters,
         messages: SharedMessages,

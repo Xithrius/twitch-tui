@@ -8,7 +8,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCompleteConfig, state::State},
+    handlers::{config::SharedCoreConfig, state::State},
     utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 
@@ -16,11 +16,11 @@ const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help
 
 #[derive(Debug, Clone)]
 pub struct StateTabsWidget {
-    _config: SharedCompleteConfig,
+    _config: SharedCoreConfig,
 }
 
 impl StateTabsWidget {
-    pub const fn new(config: SharedCompleteConfig) -> Self {
+    pub const fn new(config: SharedCoreConfig) -> Self {
         Self { _config: config }
     }
 

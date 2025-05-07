@@ -1,7 +1,6 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use chrono::{DateTime, Local};
-use rustyline::line_buffer::LineBuffer;
 use tui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -10,45 +9,32 @@ use tui::{
 use crate::{
     emotes::{Emotes, SharedEmotes},
     handlers::{
-        config::{CompleteConfig, SharedCompleteConfig, Theme},
+        config::{CoreConfig, SharedCoreConfig},
         data::MessageData,
-        filters::{Filters, SharedFilters},
+        filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
-    ui::{
-        components::{Component, Components},
-        statics::LINE_BUFFER_CAPACITY,
-    },
-    utils::emotes::emotes_enabled,
+    ui::components::{Component, Components},
 };
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
-#[allow(dead_code)]
-pub struct App {
+pub struct Context {
     /// All the available components.
     pub components: Components,
-    /// A config for the app and components to share.
-    pub config: SharedCompleteConfig,
+    /// Shared core config loaded from file and CLI arguments.
+    pub config: SharedCoreConfig,
     /// History of recorded messages (time, username, message, etc).
     pub messages: SharedMessages,
     /// Data loaded in from a JSON file.
     pub storage: SharedStorage,
-    /// Messages to be filtered out.
-    pub filters: SharedFilters,
     /// Which window the terminal is currently focused on.
     state: State,
     /// The previous state, if any.
     previous_state: Option<State>,
-    /// What the user currently has inputted.
-    pub input_buffer: LineBuffer,
-    /// The current suggestion, if any.
-    pub buffer_suggestion: Option<String>,
-    /// The theme selected by the user.
-    pub theme: Theme,
     /// Emotes
     pub emotes: SharedEmotes,
 }
@@ -59,12 +45,13 @@ macro_rules! shared {
     };
 }
 
-impl App {
-    pub fn new(config: CompleteConfig, startup_time: DateTime<Local>) -> Self {
+impl Context {
+    pub fn new(config: CoreConfig, startup_time: DateTime<Local>) -> Self {
         let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
 
+        // TODO: Storage path should be specified in the config, default next to config.toml
         let storage = shared!(Storage::new("storage.json", &shared_config_borrow.storage));
 
         if !storage
@@ -74,19 +61,20 @@ impl App {
             storage.borrow_mut().add("channels", config.twitch.channel);
         }
 
+        // TODO: Filters path should be specified in the config, default next to config.toml
         let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters));
 
         let messages = shared!(VecDeque::with_capacity(
             shared_config_borrow.terminal.maximum_messages,
         ));
 
-        let emotes_enabled: bool = emotes_enabled(&shared_config.borrow().frontend);
+        let emotes_enabled: bool = shared_config.borrow().frontend.is_emotes_enabled();
         let emotes = Rc::new(Emotes::new(emotes_enabled));
 
         let components = Components::new(
             &shared_config,
             storage.clone(),
-            filters.clone(),
+            filters,
             messages.clone(),
             &emotes,
             startup_time,
@@ -97,12 +85,8 @@ impl App {
             config: shared_config.clone(),
             messages,
             storage,
-            filters,
             state: shared_config_borrow.terminal.first_state.clone(),
             previous_state: None,
-            input_buffer: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
-            buffer_suggestion: None,
-            theme: shared_config_borrow.frontend.theme.clone(),
             emotes,
         }
     }
@@ -208,18 +192,8 @@ impl App {
         self.previous_state.clone()
     }
 
-    #[allow(dead_code)]
-    pub fn get_state(&self) -> State {
-        self.state.clone()
-    }
-
     pub fn set_state(&mut self, other: State) {
         self.previous_state = Some(self.state.clone());
         self.state = other;
-    }
-
-    #[allow(dead_code)]
-    pub fn rotate_theme(&self) {
-        todo!("Rotate through different themes")
     }
 }

@@ -7,19 +7,16 @@ use std::{
 };
 
 use color_eyre::{Result, eyre::anyhow};
-use log::{error, info, warn};
 use tokio::sync::{
     mpsc::{Receiver, Sender},
     oneshot::{Receiver as OSReceiver, Sender as OSSender},
 };
+use tracing::{error, info, warn};
 
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::config::CompleteConfig,
-    utils::{
-        emotes::{emotes_enabled, get_emote_offset},
-        pathing::cache_path,
-    },
+    handlers::config::CoreConfig,
+    utils::{emotes::get_emote_offset, pathing::cache_path},
 };
 
 mod downloader;
@@ -111,12 +108,12 @@ impl From<LoadedEmote> for EmoteData {
 }
 
 pub fn query_emotes(
-    config: &CompleteConfig,
+    config: &CoreConfig,
     channel: String,
 ) -> OSReceiver<(DownloadedEmotes, DownloadedEmotes)> {
     let (tx, mut rx) = tokio::sync::oneshot::channel();
 
-    if emotes_enabled(&config.frontend) {
+    if config.frontend.is_emotes_enabled() {
         let config = config.clone();
         tokio::spawn(async move { send_emotes(&config, tx, channel).await });
     } else {
@@ -127,7 +124,7 @@ pub fn query_emotes(
 }
 
 pub async fn send_emotes(
-    config: &CompleteConfig,
+    config: &CoreConfig,
     tx: OSSender<(DownloadedEmotes, DownloadedEmotes)>,
     channel: String,
 ) {

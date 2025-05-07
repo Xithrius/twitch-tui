@@ -1,6 +1,6 @@
-pub mod app;
 pub mod args;
 pub mod config;
+pub mod context;
 pub mod data;
 pub mod filters;
 mod interactive;

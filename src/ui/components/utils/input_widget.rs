@@ -12,10 +12,10 @@ use tui::{
     widgets::{Block, Borders, Clear, Paragraph, block::Position as BlockPosition},
 };
 
-use super::centered_rect;
+use super::popup_area;
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -33,22 +33,18 @@ pub type InputSuggester<T> = Box<dyn Fn(T, String) -> Option<String>>;
 #[derive(Debug)]
 pub struct InputListener;
 
-#[allow(dead_code, unused_variables)]
 impl ChangeListener for InputListener {
-    fn insert_char(&mut self, idx: usize, c: char) {}
-
-    fn insert_str(&mut self, idx: usize, string: &str) {}
-
-    fn replace(&mut self, idx: usize, old: &str, new: &str) {}
+    fn insert_char(&mut self, _idx: usize, _c: char) {}
+    fn insert_str(&mut self, _idx: usize, _string: &str) {}
+    fn replace(&mut self, _idx: usize, _old: &str, _new: &str) {}
 }
 
-#[allow(dead_code, unused_variables)]
 impl DeleteListener for InputListener {
-    fn delete(&mut self, idx: usize, string: &str, dir: rustyline::line_buffer::Direction) {}
+    fn delete(&mut self, _idx: usize, _string: &str, _dir: rustyline::line_buffer::Direction) {}
 }
 
 pub struct InputWidget<T: Clone> {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     input: LineBuffer,
     title: String,
     focused: bool,
@@ -61,7 +57,7 @@ pub struct InputWidget<T: Clone> {
 
 impl<T: Clone> InputWidget<T> {
     pub fn new(
-        config: SharedCompleteConfig,
+        config: SharedCoreConfig,
         title: &str,
         input_validator: Option<(T, InputValidator<T>)>,
         visual_indicator: Option<VisualValidator>,
@@ -78,11 +74,6 @@ impl<T: Clone> InputWidget<T> {
             input_suggester,
             suggestion: None,
         }
-    }
-
-    #[allow(dead_code)]
-    pub fn update(&mut self, s: &str) {
-        self.input.update(s, 0, &mut self.input_listener);
     }
 
     pub fn clear(&mut self) {
@@ -129,7 +120,7 @@ impl<T: Clone> Display for InputWidget<T> {
 
 impl<T: Clone> Component for InputWidget<T> {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| centered_rect(60, 60, 20, f.area()), |a| a);
+        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
 
         let cursor_pos = get_cursor_position(&self.input);
 

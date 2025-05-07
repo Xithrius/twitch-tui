@@ -4,7 +4,7 @@ use tui::{Frame, layout::Rect};
 
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
@@ -15,12 +15,11 @@ use crate::{
 };
 
 pub struct MessageSearchWidget {
-    _config: SharedCompleteConfig,
     input: InputWidget<()>,
 }
 
 impl MessageSearchWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
+    pub fn new(config: SharedCoreConfig) -> Self {
         let input_validator =
             Box::new(|(), s: String| -> bool { !s.is_empty() && s.len() <= TWITCH_MESSAGE_LIMIT });
 
@@ -30,17 +29,14 @@ impl MessageSearchWidget {
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input = InputWidget::new(
-            config.clone(),
+            config,
             "Message search",
             Some(((), input_validator)),
             Some(visual_indicator),
             None,
         );
 
-        Self {
-            _config: config,
-            input,
-        }
+        Self { input }
     }
 
     pub const fn is_focused(&self) -> bool {

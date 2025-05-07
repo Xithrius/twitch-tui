@@ -3,14 +3,17 @@ use std::{
     io::{Stdout, Write, stdout},
 };
 
-use crossterm::{
-    Command,
-    cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute, queue,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+use tui::{
+    Terminal,
+    backend::CrosstermBackend,
+    crossterm::{
+        Command,
+        cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
+        event::{DisableMouseCapture, EnableMouseCapture},
+        execute, queue,
+        terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    },
 };
-use tui::{Terminal, backend::CrosstermBackend};
 
 use crate::handlers::config::{CursorType, FrontendConfig};
 
