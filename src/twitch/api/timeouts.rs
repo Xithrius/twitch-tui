@@ -21,19 +21,32 @@ impl TimeoutQuery {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct TimeoutPayload {
+pub struct TimeoutInnerPayload {
     user_id: String,
     duration: Option<usize>,
     reason: Option<String>,
 }
 
-impl TimeoutPayload {
+impl TimeoutInnerPayload {
     pub const fn new(user_id: String, duration: Option<usize>, reason: Option<String>) -> Self {
         Self {
             user_id,
             duration,
             reason,
         }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TimeoutPayload {
+    data: Vec<TimeoutInnerPayload>,
+}
+
+impl TimeoutPayload {
+    pub fn new(user_id: String, duration: Option<usize>, reason: Option<String>) -> Self {
+        let inner = TimeoutInnerPayload::new(user_id, duration, reason);
+
+        Self { data: vec![inner] }
     }
 }
 
