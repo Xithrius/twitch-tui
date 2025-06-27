@@ -38,8 +38,7 @@ pub async fn get_twitch_client_oauth(oauth_token: Option<&String>) -> Result<Twi
         .header(AUTHORIZATION, &format!("OAuth {token}"))
         .send()
         .await?
-        .error_for_status()
-        .unwrap();
+        .error_for_status()?;
 
     let twitch_oauth = data.json::<TwitchOauth>().await?;
 

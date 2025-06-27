@@ -62,6 +62,7 @@ pub enum TwitchAction {
     JoinChannel(String),
 }
 
+#[allow(clippy::cognitive_complexity)]
 pub async fn twitch_websocket(
     mut config: CoreConfig,
     tx: Sender<TwitchToTerminalAction>,
@@ -465,10 +466,12 @@ async fn handle_incoming_message(
         .message_text()
         .context("Could not find message text")?;
     let (msg, highlight) = parse_message_action(&message_text);
-    let received_emotes = emotes_enabled
-        .then(|| event.emote_fragments())
-        .unwrap_or_default()
-        .unwrap_or_default();
+    let received_emotes = if emotes_enabled {
+        event.emote_fragments()
+    } else {
+        Option::default()
+    }
+    .unwrap_or_default();
 
     let emotes = futures::stream::iter(received_emotes.into_iter().map(
         |fragment_emote: models::ReceivedTwitchEventMessageFragment| async move {

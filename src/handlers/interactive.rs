@@ -20,29 +20,29 @@ pub(super) fn interactive_config() -> Option<CoreConfig> {
     let username: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Username: ")
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let token: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Token: ")
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let channel: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Channel: ")
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let server: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Websocket server: ")
         .default("wss://eventsub.wss.twitch.tv/ws".to_string())
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let keepalive_timeout_seconds: usize = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Keep alive timeout: ")
         .default(30)
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     Some(CoreConfig {
         twitch: TwitchConfig {
