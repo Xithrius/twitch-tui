@@ -41,6 +41,17 @@
         <script src="../toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -118,7 +129,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -164,8 +175,18 @@
 </ul>
 <p>You can find the default configuration values <a href="https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml">here</a>.</p>
 <h2 id="authentication"><a class="header" href="#authentication">Authentication</a></h2>
-<p>The most convenient way to get a Twitch token is to use twitchtokengenerator.com. <a href="https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes&amp;auth=auth_stay">Here is a quick link with the required scopes already enabled</a>. Once generated copy the "ACCESS TOKEN".</p>
-<p>If using other methods to generate the token, the scopes used by <code>twt</code> are: <code>chat:read</code>, <code>chat:edit</code>, <code>channel:moderate</code>, <code>user:read:follows</code>, and <code>user:read:emotes</code>.</p>
+<p>The most convenient way to get a Twitch token is to use twitchtokengenerator.com. <a href="https://twitchtokengenerator.com/?scope=channel:moderate+chat:edit+chat:read+moderator:manage:chat_messages+user:read:chat+user:read:emotes+user:read:follows+user:write:chat+moderator:manage:banned_users&amp;auth=auth_stay">Here is a quick link with the required scopes already enabled</a>. Once generated copy the "ACCESS TOKEN".</p>
+<p>The above token has the following scopes enabled:</p>
+<pre><code>channel:moderate
+chat:edit
+chat:read
+moderator:manage:chat_messages
+user:read:chat
+user:read:emotes
+user:read:follows
+user:write:chat
+moderator:manage:banned_users
+</code></pre>
 <p>Once you have a token, put <code>oauth:</code> at the start if it's not there already, then place it in one of two places:</p>
 <ol>
 <li>The <code>token</code> variable in the <code>config.toml</code> that was previously generated.</li>
