@@ -215,29 +215,47 @@ async fn handle_command_message(
 
     let user_id = twitch_oauth.user_id.clone();
 
-    match command {
+    let command_message = match command {
         TwitchCommand::Clear => {
             let delete_message_query =
                 DeleteMessageQuery::new(channel_id.to_string(), user_id, None);
             delete_twitch_messages(twitch_client, delete_message_query).await?;
+
+            "Chat was cleared for non-Moderators viewing this room".to_string()
         }
         TwitchCommand::Ban(username, reason) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
 
             let ban_query = TimeoutQuery::new(channel_id.to_string(), user_id);
-            let ban_payload = TimeoutPayload::new(target_user_id, None, reason);
+            let ban_payload = TimeoutPayload::new(target_user_id, None, reason.clone());
 
             timeout_twitch_user(twitch_client, ban_query, ban_payload).await?;
+
+            reason.map_or_else(
+                || format!("User {username} banned."),
+                |reason| format!("User {username} banned. Reason: {reason}"),
+            )
         }
         TwitchCommand::Timeout(username, duration, reason) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
 
             let timeout_query = TimeoutQuery::new(channel_id.to_string(), user_id);
-            let timeout_payload = TimeoutPayload::new(target_user_id, Some(duration), reason);
+            let timeout_payload =
+                TimeoutPayload::new(target_user_id, Some(duration), reason.clone());
 
             timeout_twitch_user(twitch_client, timeout_query, timeout_payload).await?;
+
+            reason.map_or_else(
+                || format!("User {username} timed out for {duration} seconds."),
+                |reason| {
+                    format!("User {username} timed out for {duration} seconds. Reason: {reason}")
+                },
+            )
         }
-    }
+    };
+
+    debug!("Sending command message: {command_message}");
+    tx.send(DataBuilder::twitch(command_message)).await?;
 
     Ok(())
 }

@@ -23,7 +23,9 @@ impl TimeoutQuery {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TimeoutInnerPayload {
     user_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reason: Option<String>,
 }
 
@@ -39,14 +41,14 @@ impl TimeoutInnerPayload {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TimeoutPayload {
-    data: Vec<TimeoutInnerPayload>,
+    data: TimeoutInnerPayload,
 }
 
 impl TimeoutPayload {
-    pub fn new(user_id: String, duration: Option<usize>, reason: Option<String>) -> Self {
+    pub const fn new(user_id: String, duration: Option<usize>, reason: Option<String>) -> Self {
         let inner = TimeoutInnerPayload::new(user_id, duration, reason);
 
-        Self { data: vec![inner] }
+        Self { data: inner }
     }
 }
 
@@ -81,7 +83,7 @@ pub async fn timeout_twitch_user(
 
     let response_data = client
         .post(url)
-        .query(timeout_query)
+        .query(&timeout_query)
         .json(&payload)
         .send()
         .await?

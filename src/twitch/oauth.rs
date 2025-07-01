@@ -6,6 +6,7 @@ use reqwest::{
     header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TwitchOauth {
@@ -41,6 +42,11 @@ pub async fn get_twitch_client_oauth(oauth_token: Option<&String>) -> Result<Twi
         .error_for_status()?;
 
     let twitch_oauth = data.json::<TwitchOauth>().await?;
+
+    info!(
+        "Authentication successful. Enabled scopes: {:?}",
+        twitch_oauth.scopes
+    );
 
     Ok(TWITCH_CLIENT_OAUTH.get_or_init(|| twitch_oauth)).cloned()
 }
