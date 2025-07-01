@@ -440,7 +440,7 @@ impl MessageData {
         };
 
         // All indices to highlight of the username in the message, case insensitive
-        let username_highlight = username_highlight
+        let mut username_highlight = username_highlight
             .map(|name| {
                 self.payload
                     .to_lowercase()
@@ -449,6 +449,14 @@ impl MessageData {
                     .collect::<Vec<usize>>()
             })
             .unwrap_or_default();
+
+        // If the username is highlighted and the index previous to the start of the username is an '@', highlight the '@' as well
+        if let Some(username_start_index) = username_highlight.first() {
+            let n = username_start_index.saturating_sub(1);
+            if self.payload.chars().nth(n).is_some_and(|char| char == '@') {
+                username_highlight.insert(0, n);
+            }
+        }
 
         // All indices to highlight like a search result
         let search_highlight = search_highlight

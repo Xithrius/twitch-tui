@@ -30,11 +30,10 @@ impl ChatInputWidget {
         let input_validator = Box::new(|_, s: String| -> bool {
             {
                 if !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT {
-                    s.strip_prefix('/')
-                        .is_none_or(|command| {
-                            let command = command.split(' ').next().unwrap_or("");
-                            SUPPORTED_COMMANDS.contains(&command)
-                        })
+                    s.strip_prefix('/').is_none_or(|command| {
+                        let command = command.split(' ').next().unwrap_or("");
+                        SUPPORTED_COMMANDS.contains(&command)
+                    })
                 } else {
                     false
                 }
