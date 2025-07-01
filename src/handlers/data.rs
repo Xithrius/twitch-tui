@@ -439,11 +439,12 @@ impl MessageData {
             _ => *DATETIME_LIGHT_STYLE,
         };
 
-        // All indices to highlight like a user
+        // All indices to highlight of the username in the message, case insensitive
         let username_highlight = username_highlight
             .map(|name| {
                 self.payload
-                    .match_indices(name)
+                    .to_lowercase()
+                    .match_indices(&name.to_lowercase())
                     .flat_map(|(index, _)| index..(index + name.len()))
                     .collect::<Vec<usize>>()
             })
@@ -626,9 +627,8 @@ impl DataBuilder {
 mod tests {
     use std::{collections::BTreeMap, rc::Rc};
 
-    use crate::emotes::Emotes;
-
     use super::*;
+    use crate::emotes::Emotes;
 
     #[test]
     fn test_username_hash() {
