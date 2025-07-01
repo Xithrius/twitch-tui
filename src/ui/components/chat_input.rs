@@ -5,7 +5,7 @@ use tui::{Frame, layout::Rect};
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         storage::SharedStorage,
         user_input::events::{Event, Key},
     },
@@ -13,22 +13,32 @@ use crate::{
     twitch::TwitchAction,
     ui::{
         components::{Component, emote_picker::EmotePickerWidget, utils::InputWidget},
-        statics::{COMMANDS, TWITCH_MESSAGE_LIMIT},
+        statics::{SUPPORTED_COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
-    utils::{emotes::emotes_enabled, text::first_similarity},
+    utils::text::first_similarity,
 };
 
 pub struct ChatInputWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     storage: SharedStorage,
     input: InputWidget<SharedStorage>,
     emote_picker: EmotePickerWidget,
 }
 
 impl ChatInputWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage, emotes: SharedEmotes) -> Self {
-        let input_validator =
-            Box::new(|_, s: String| -> bool { !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT });
+    pub fn new(config: SharedCoreConfig, storage: SharedStorage, emotes: SharedEmotes) -> Self {
+        let input_validator = Box::new(|_, s: String| -> bool {
+            {
+                if !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT {
+                    s.strip_prefix('/').is_none_or(|command| {
+                        let command = command.split(' ').next().unwrap_or("");
+                        SUPPORTED_COMMANDS.contains(&command)
+                    })
+                } else {
+                    false
+                }
+            }
+        });
 
         // User should be known of how close they are to the message length limit.
         let visual_indicator =
@@ -40,7 +50,7 @@ impl ChatInputWidget {
                 .and_then(|start_character| match start_character {
                     '/' => {
                         let possible_suggestion = first_similarity(
-                            &COMMANDS
+                            &SUPPORTED_COMMANDS
                                 .iter()
                                 .map(ToString::to_string)
                                 .collect::<Vec<String>>(),
@@ -111,7 +121,7 @@ impl Component for ChatInputWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if self.emote_picker.is_focused() {
-            if let Some(TerminalAction::Enter(TwitchAction::Privmsg(emote))) =
+            if let Some(TerminalAction::Enter(TwitchAction::Message(emote))) =
                 self.emote_picker.event(event).await
             {
                 self.input.insert(&emote);
@@ -124,7 +134,7 @@ impl Component for ChatInputWidget {
                         let current_input = self.input.to_string();
 
                         let action =
-                            TerminalAction::Enter(TwitchAction::Privmsg(current_input.clone()));
+                            TerminalAction::Enter(TwitchAction::Message(current_input.clone()));
 
                         self.input.clear();
 
@@ -134,17 +144,13 @@ impl Component for ChatInputWidget {
                                     .borrow_mut()
                                     .add("mentions", message.to_string());
                             }
-                        } else if let Some(message) = current_input.strip_prefix('/') {
-                            if message == "clear" {
-                                return Some(TerminalAction::ClearMessages);
-                            }
                         }
 
                         return Some(action);
                     }
                 }
                 Key::Alt('e') => {
-                    if emotes_enabled(&self.config.borrow().frontend) {
+                    if self.config.borrow().frontend.is_emotes_enabled() {
                         self.emote_picker.toggle_focus();
                     }
                 }

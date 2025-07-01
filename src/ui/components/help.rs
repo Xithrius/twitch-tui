@@ -5,7 +5,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::config::SharedCompleteConfig,
+    handlers::config::SharedCoreConfig,
     ui::{
         components::Component,
         statics::{HELP_COLUMN_TITLES, HELP_KEYBINDS},
@@ -19,11 +19,11 @@ const TABLE_CONSTRAINTS: [Constraint; 3] =
 
 #[derive(Debug, Clone)]
 pub struct HelpWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
 }
 
 impl HelpWidget {
-    pub const fn new(config: SharedCompleteConfig) -> Self {
+    pub const fn new(config: SharedCoreConfig) -> Self {
         Self { config }
     }
 }

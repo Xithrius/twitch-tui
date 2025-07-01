@@ -1,7 +1,7 @@
 use std::cmp::max;
 
 use fuzzy_matcher::FuzzyMatcher;
-use log::warn;
+use tracing::warn;
 use tui::{
     Frame,
     layout::Rect,
@@ -10,19 +10,17 @@ use tui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
 };
 
+use super::utils::popup_area;
 use crate::{
     emotes::{SharedEmotes, load_picker_emote},
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         user_input::events::{Event, Key},
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
-        components::{
-            Component,
-            utils::{InputWidget, centered_rect},
-        },
+        components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
     },
     utils::{
@@ -35,7 +33,7 @@ use crate::{
 };
 
 pub struct EmotePickerWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     emotes: SharedEmotes,
     input: InputWidget<SharedEmotes>,
     search_theme: Style,
@@ -44,7 +42,7 @@ pub struct EmotePickerWidget {
 }
 
 impl EmotePickerWidget {
-    pub fn new(config: SharedCompleteConfig, emotes: SharedEmotes) -> Self {
+    pub fn new(config: SharedCoreConfig, emotes: SharedEmotes) -> Self {
         let input_validator = Box::new(|emotes: SharedEmotes, s: String| -> bool {
             !s.is_empty()
                 && s.len() < TWITCH_MESSAGE_LIMIT
@@ -118,9 +116,7 @@ impl EmotePickerWidget {
 
 impl Component for EmotePickerWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let mut r = area.map_or_else(|| centered_rect(60, 60, 23, f.area()), |a| a);
-        // Make sure we have space for the input widget, which has a height of 3.
-        r.height -= 3;
+        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
 
         // Only load the emotes that are actually being displayed, as loading every emote is not really possible.
         // Some channels can have multiple thousands emotes and decoding all of them takes a while.
@@ -268,7 +264,7 @@ impl Component for EmotePickerWidget {
                         self.unselect();
                         self.filtered_emotes.clear();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Privmsg(emote)));
+                        return Some(TerminalAction::Enter(TwitchAction::Message(emote)));
                     }
                 }
                 _ => {

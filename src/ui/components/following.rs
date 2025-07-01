@@ -4,9 +4,9 @@ use tui::{Frame, layout::Rect};
 
 use super::utils::SearchWidget;
 use crate::{
-    handlers::{config::SharedCompleteConfig, user_input::events::Event},
+    handlers::{config::SharedCoreConfig, user_input::events::Event},
     terminal::TerminalAction,
-    twitch::{TwitchAction, channels::Following},
+    twitch::{TwitchAction, api::following::Following},
     ui::components::Component,
 };
 
@@ -22,14 +22,13 @@ static INCORRECT_SCOPES_ERROR_MESSAGE: LazyLock<Vec<&'static str>> = LazyLock::n
 });
 
 pub struct FollowingWidget {
-    #[allow(dead_code)]
-    config: SharedCompleteConfig,
-    pub search_widget: SearchWidget<String, Following>,
+    config: SharedCoreConfig,
+    search_widget: SearchWidget<String, Following>,
 }
 
 impl FollowingWidget {
-    pub fn new(config: SharedCompleteConfig) -> Self {
-        let item_getter = Following::new(config.borrow().twitch.clone());
+    pub fn new(config: SharedCoreConfig) -> Self {
+        let item_getter = Following::new(config.borrow().clone());
 
         let search_widget = SearchWidget::new(
             config.clone(),
@@ -60,7 +59,7 @@ impl Component for FollowingWidget {
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         let action = self.search_widget.event(event).await;
 
-        if let Some(TerminalAction::Enter(TwitchAction::Join(channel))) = &action {
+        if let Some(TerminalAction::Enter(TwitchAction::JoinChannel(channel))) = &action {
             self.config.borrow_mut().twitch.channel.clone_from(channel);
         }
 

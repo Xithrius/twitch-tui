@@ -11,9 +11,21 @@ You can find the default configuration values [here](https://github.com/Xithrius
 
 ## Authentication
 
-The most convenient way to get a Twitch token is to use twitchtokengenerator.com. [Here is a quick link with the required scopes already enabled](https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes&auth=auth_stay). Once generated copy the "ACCESS TOKEN".
+The most convenient way to get a Twitch token is to use twitchtokengenerator.com. [Here is a quick link with the required scopes already enabled](https://twitchtokengenerator.com/?scope=channel:moderate+chat:edit+chat:read+moderator:manage:chat_messages+user:read:chat+user:read:emotes+user:read:follows+user:write:chat+moderator:manage:banned_users&auth=auth_stay). Once generated copy the "ACCESS TOKEN".
 
-If using other methods to generate the token, the scopes used by `twt` are: `chat:read`, `chat:edit`, `channel:moderate`, `user:read:follows`, and `user:read:emotes`.
+The above token has the following scopes enabled:
+
+```
+channel:moderate
+chat:edit
+chat:read
+moderator:manage:chat_messages
+user:read:chat
+user:read:emotes
+user:read:follows
+user:write:chat
+moderator:manage:banned_users
+```
 
 Once you have a token, put `oauth:` at the start if it's not there already, then place it in one of two places:
 

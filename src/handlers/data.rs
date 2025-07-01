@@ -2,8 +2,8 @@ use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
 use chrono::{DateTime, offset::Local};
 use fuzzy_matcher::FuzzyMatcher;
-use log::{error, warn};
 use memchr::{memchr_iter, memmem};
+use tracing::{error, warn};
 use tui::{
     style::{Color, Color::Rgb, Modifier, Style},
     text::{Line, Span},
@@ -90,36 +90,7 @@ impl RawMessageData {
 type Highlight<'a> = (&'a [usize], Style);
 
 impl MessageData {
-    /// Used to create a message and parse its emotes using both global emotes and the current user emotes.
-    pub fn new_user_message(
-        author: String,
-        user_id: Option<String>,
-        system: bool,
-        payload: String,
-        message_id: Option<String>,
-        highlight: bool,
-        emotes: &SharedEmotes,
-    ) -> Self {
-        let (payload, emotes) = Self::parse_emotes(
-            payload,
-            emotes,
-            &emotes.user_emotes.borrow(),
-            &emotes.global_emotes.borrow(),
-        );
-
-        Self {
-            time_sent: Local::now(),
-            author,
-            user_id,
-            system,
-            payload,
-            emotes,
-            message_id,
-            highlight,
-        }
-    }
-
-    /// Used to create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
+    /// Create a message and parse its emotes using global emotes, and twitch emotes provided through [`RawMessageData`]
     pub fn from_twitch_message(msg: RawMessageData, emotes: &SharedEmotes) -> Self {
         let (payload, emotes) = Self::parse_emotes(
             msg.payload,
@@ -468,15 +439,24 @@ impl MessageData {
             _ => *DATETIME_LIGHT_STYLE,
         };
 
-        // All indices to highlight like a user
-        let username_highlight = username_highlight
+        // All indices to highlight of the username in the message, case insensitive
+        let mut username_highlight = username_highlight
             .map(|name| {
                 self.payload
-                    .match_indices(name)
+                    .to_lowercase()
+                    .match_indices(&name.to_lowercase())
                     .flat_map(|(index, _)| index..(index + name.len()))
                     .collect::<Vec<usize>>()
             })
             .unwrap_or_default();
+
+        // If the username is highlighted and the index previous to the start of the username is an '@', highlight the '@' as well
+        if let Some(username_start_index) = username_highlight.first() {
+            let n = username_start_index.saturating_sub(1);
+            if self.payload.chars().nth(n).is_some_and(|char| char == '@') {
+                username_highlight.insert(0, n);
+            }
+        }
 
         // All indices to highlight like a search result
         let search_highlight = search_highlight
@@ -606,16 +586,10 @@ impl MessageData {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct DataBuilder<'conf> {
-    #[allow(dead_code)]
-    pub datetime_format: &'conf str,
-}
+pub struct DataBuilder;
 
-impl<'conf> DataBuilder<'conf> {
-    pub const fn new(datetime_format: &'conf str) -> Self {
-        DataBuilder { datetime_format }
-    }
-
+impl DataBuilder {
+    // User messages that come from either twitch or the terminal
     pub fn user(
         user: String,
         user_id: Option<String>,
@@ -629,7 +603,8 @@ impl<'conf> DataBuilder<'conf> {
         ))
     }
 
-    pub fn system(self, payload: String) -> TwitchToTerminalAction {
+    /// Notification messages from the terminal
+    pub fn system(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "System".to_string(),
             None,
@@ -641,7 +616,8 @@ impl<'conf> DataBuilder<'conf> {
         ))
     }
 
-    pub fn twitch(self, payload: String) -> TwitchToTerminalAction {
+    /// Notification messages from Twitch
+    pub fn twitch(payload: String) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
             "Twitch".to_string(),
             None,
@@ -659,9 +635,8 @@ impl<'conf> DataBuilder<'conf> {
 mod tests {
     use std::{collections::BTreeMap, rc::Rc};
 
-    use crate::emotes::Emotes;
-
     use super::*;
+    use crate::emotes::Emotes;
 
     #[test]
     fn test_username_hash() {

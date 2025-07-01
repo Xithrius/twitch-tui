@@ -1,6 +1,6 @@
 use std::{
     cell::RefCell,
-    env,
+    env, fmt,
     fs::{File, create_dir_all, read_to_string},
     io::Write,
     path::Path,
@@ -21,17 +21,14 @@ use crate::{
         interactive::interactive_config,
         state::State,
     },
-    utils::{
-        emotes::emotes_enabled,
-        pathing::{cache_path, config_path},
-    },
+    utils::pathing::{cache_path, config_path},
 };
 
-pub type SharedCompleteConfig = Rc<RefCell<CompleteConfig>>;
+pub type SharedCoreConfig = Rc<RefCell<CoreConfig>>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
-pub struct CompleteConfig {
+pub struct CoreConfig {
     /// Connecting to Twitch.
     pub twitch: TwitchConfig,
     /// Internal functionality.
@@ -51,10 +48,12 @@ pub struct TwitchConfig {
     pub username: String,
     /// The streamer's channel name.
     pub channel: String,
-    /// The IRC channel to connect to.
+    /// The websocket server to connect to.
     pub server: String,
-    /// The authentication token for the IRC.
+    /// The authentication token for the websocket server.
     pub token: Option<String>,
+    /// Keepalive timeout
+    pub keepalive_timeout_seconds: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -66,8 +65,8 @@ pub struct TerminalConfig {
     pub maximum_messages: usize,
     /// The file path to log to.
     pub log_file: Option<String>,
-    /// if debug logging should be enabled.
-    pub verbose: bool,
+    /// Which log level the tracing library should be set to.
+    pub log_level: LogLevel,
     /// What state the application should start in.
     pub first_state: State,
 }
@@ -141,6 +140,8 @@ pub struct FrontendConfig {
     pub right_align_usernames: bool,
     /// Do not display the window size warning.
     pub show_unsupported_screen_size: bool,
+    /// Only show followed channels that are currently live.
+    pub only_get_live_followed_channels: bool,
 }
 
 impl Default for TwitchConfig {
@@ -148,8 +149,9 @@ impl Default for TwitchConfig {
         Self {
             username: String::new(),
             channel: String::new(),
-            server: "irc.chat.twitch.tv".to_string(),
+            server: "wss://eventsub.wss.twitch.tv/ws".to_string(),
             token: None,
+            keepalive_timeout_seconds: 30,
         }
     }
 }
@@ -160,7 +162,7 @@ impl Default for TerminalConfig {
             delay: 30,
             maximum_messages: 500,
             log_file: None,
-            verbose: false,
+            log_level: LogLevel::INFO,
             first_state: State::default(),
         }
     }
@@ -193,7 +195,33 @@ impl Default for FrontendConfig {
             hide_chat_border: false,
             right_align_usernames: false,
             show_unsupported_screen_size: true,
+            only_get_live_followed_channels: false,
         }
+    }
+}
+
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::DEBUG => "debug",
+                Self::INFO => "info",
+                Self::WARN => "warn",
+                Self::ERROR => "error",
+            }
+        )
     }
 }
 
@@ -437,7 +465,17 @@ impl ToVec<(String, String)> for FrontendConfig {
     }
 }
 
-fn persist_config(path: &Path, config: &CompleteConfig) -> Result<()> {
+impl TwitchConfig {
+    #[must_use]
+    pub fn config_twitch_websocket_url(&self) -> String {
+        format!(
+            "{}?keepalive_timeout_seconds={}",
+            self.server, self.keepalive_timeout_seconds
+        )
+    }
+}
+
+fn persist_config(path: &Path, config: &CoreConfig) -> Result<()> {
     let toml_string = toml::to_string(&config)?;
     let mut file = File::create(path)?;
 
@@ -468,7 +506,16 @@ fn persist_default_config(path: &Path) {
     drop(file);
 }
 
-impl CompleteConfig {
+impl FrontendConfig {
+    pub const fn is_emotes_enabled(&self) -> bool {
+        self.twitch_emotes
+            || self.betterttv_emotes
+            || self.seventv_emotes
+            || self.frankerfacez_emotes
+    }
+}
+
+impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
         let path_str = cache_path("");
 
@@ -519,7 +566,8 @@ impl CompleteConfig {
                     );
                 }
 
-                if emotes_enabled(&config.frontend) && !support_graphics_protocol().unwrap_or(false)
+                if config.frontend.is_emotes_enabled()
+                    && !support_graphics_protocol().unwrap_or(false)
                 {
                     eprintln!(
                         "This terminal does not support the graphics protocol.\nUse a terminal such as kitty, or disable emotes."
@@ -528,7 +576,7 @@ impl CompleteConfig {
                 }
             }
 
-            // Channel names for the IRC connection can only be in lowercase.
+            // Channel names for the websocket connection can only be in lowercase.
             config.twitch.channel = config.twitch.channel.to_lowercase();
 
             Ok(config)

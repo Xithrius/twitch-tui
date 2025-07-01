@@ -1,57 +1,96 @@
+pub mod api;
 mod badges;
 pub mod channels;
-mod connection;
+pub mod client;
+mod commands;
+pub mod context;
+mod models;
 pub mod oauth;
+mod roomstate;
 
-use std::{collections::HashMap, hash::BuildHasher};
+#[cfg(test)]
+mod tests;
 
-use color_eyre::Result;
-use futures::StreamExt;
-use irc::{
-    client::prelude::Capability,
-    proto::{Command, Message},
+use std::{collections::HashMap, str::FromStr};
+
+use api::{
+    chat_settings::get_chat_settings,
+    clear::{DeleteMessageQuery, delete_twitch_messages},
+    event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, unsubscribe_from_events},
+    subscriptions::Subscription,
+    timeouts::{TimeoutPayload, TimeoutQuery, timeout_twitch_user},
 };
-use log::{debug, info};
+use badges::retrieve_user_badges;
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat, bail},
+};
+use commands::TwitchCommand;
+use context::TwitchWebsocketContext;
+use futures::StreamExt;
+use models::ReceivedTwitchEvent;
+use roomstate::handle_roomstate;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::{Utf8Bytes, protocol::Message},
+};
+use tracing::{debug, error, info};
 
 use crate::{
-    emotes::{DownloadedEmotes, get_twitch_emote},
+    emotes::get_twitch_emote,
     handlers::{
-        config::CompleteConfig,
+        config::{CoreConfig, TwitchConfig},
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },
     twitch::{
-        badges::retrieve_user_badges,
-        connection::{client_stream_reconnect, wait_client_stream},
+        api::{
+            channels::get_channel_id,
+            event_sub::subscribe_to_events,
+            messages::{NewTwitchMessage, send_twitch_message},
+        },
+        models::ReceivedTwitchMessage,
+        oauth::{get_twitch_client, get_twitch_client_oauth},
     },
-    utils::{
-        emotes::emotes_enabled,
-        text::{clean_message, parse_message_action},
-    },
+    utils::text::{clean_message, parse_message_action},
 };
 
 #[derive(Debug, Clone)]
 pub enum TwitchAction {
-    Privmsg(String),
-    Join(String),
-    ClearMessages,
+    Message(String),
+    JoinChannel(String),
 }
 
-pub async fn twitch_irc(
-    mut config: CompleteConfig,
+#[allow(clippy::cognitive_complexity)]
+pub async fn twitch_websocket(
+    mut config: CoreConfig,
     tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
-) {
-    info!("Spawned Twitch IRC thread.");
+) -> Result<()> {
+    let url = config.twitch.config_twitch_websocket_url();
+    let (ws_stream, _) = match connect_async(url).await {
+        Ok(websocket_connection) => websocket_connection,
+        Err(err) => {
+            bail!(
+                "Failed to connect to websocket server at {}: {}",
+                config.twitch.server,
+                err
+            )
+        }
+    };
+
+    info!("Twitch websocket handshake successful");
+
+    let (_, mut stream) = ws_stream.split();
 
     // If the dashboard is the start state, wait until the user has selected
-    // a channel before connecting to Twitch's IRC.
+    // a channel before connecting to Twitch's websocket server.
     if config.terminal.first_state == State::Dashboard {
         debug!("Waiting for user to select channel from debug screen");
 
         loop {
-            if let Ok(TwitchAction::Join(channel)) = rx.recv().await {
+            if let Ok(TwitchAction::JoinChannel(channel)) = rx.recv().await {
                 config.twitch.channel = channel;
 
                 debug!("User has selected channel from start screen");
@@ -60,93 +99,86 @@ pub async fn twitch_irc(
         }
     }
 
-    let enable_emotes = emotes_enabled(&config.frontend);
+    let emotes_enabled = config.frontend.is_emotes_enabled();
 
-    let data_builder = DataBuilder::new(&config.frontend.datetime_format);
-    let mut room_state_startup = false;
+    let mut context = TwitchWebsocketContext::default();
+    context.set_emotes(emotes_enabled);
+    context.set_token(config.twitch.token.clone());
 
-    let (mut client, mut stream) =
-        wait_client_stream(tx.clone(), data_builder, config.clone()).await;
-
-    let sender = client.sender();
-
-    // Request commands capabilities
-    if client
-        .send_cap_req(&[
-            Capability::Custom("twitch.tv/commands"),
-            Capability::Custom("twitch.tv/tags"),
-        ])
-        .is_err()
-    {
-        tx.send(
-            data_builder.system(
-                "Unable to request commands/tags capability, certain features may be affected."
-                    .to_string(),
-            ),
-        )
-        .await
-        .unwrap();
+    if stream.next().await.is_some() {
+        debug!("Websocket server has pinged you to make sure you're here");
     }
 
-    let mut connected = true;
+    // Handle the welcome message, it should arrive after the initial ping
+    let Some(Ok(Message::Text(message))) = stream.next().await else {
+        let error_message = "Welcome message from websocket server was not found, something has gone terribly wrong";
+        tx.send(DataBuilder::system(error_message.to_string()))
+            .await?;
+        bail!(error_message);
+    };
+    if let Err(err) = handle_welcome_message(&mut config.twitch, &mut context, &tx, message).await {
+        let error_message = format!("Failed to handle welcome message: {err}");
+        tx.send(DataBuilder::system(error_message.to_string()))
+            .await?;
+        bail!(error_message);
+    }
 
     loop {
         tokio::select! {
             biased;
 
             Ok(action) = rx.recv() => {
-                let current_channel = format!("#{}", config.twitch.channel);
-
                 match action {
-                    TwitchAction::Privmsg(message) => {
-                        debug!("Sending message to Twitch: {message}");
-
-                        client
-                            .send_privmsg(current_channel, message)
-                            .unwrap();
-                    }
-                    TwitchAction::Join(channel) => {
-                        debug!("Switching to channel {channel}");
-
-                        let channel_list = format!("#{channel}");
-
-                        // Leave previous channel
-                        if let Err(err) = sender.send_part(current_channel) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
+                    TwitchAction::Message(message) => {
+                        if let Some(command) = message.strip_prefix('/') {
+                            if let Err(err) = handle_command_message(&context, &tx, command).await {
+                                error!("Failed to handle Twitch message command from terminal: {err}");
+                            }
                         }
-
-                        // Join specified channel
-                        if let Err(err) = sender.send_join(&channel_list) {
-                            tx.send(data_builder.twitch(err.to_string())).await.unwrap();
+                        else if let Err(err) = handle_send_message(&context, message).await {
+                            error!("Failed to send Twitch message from terminal: {err}");
                         }
+                    },
+                    TwitchAction::JoinChannel(channel_name) => {
+                        let channel = if config.frontend.only_get_live_followed_channels {
+                            channel_name.split(':').collect::<Vec<&str>>().first().map_or(channel_name.clone(), ToString::to_string)
+                        } else {
+                            channel_name
+                        };
 
-                        // Set old channel to new channel
-                        config.twitch.channel = channel;
-                    }
-                    TwitchAction::ClearMessages => {
-                        client.send(Command::Raw("CLEARCHAT".to_string(), vec![])).unwrap();
-                    }
+                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel, false).await {
+                            error!("Joining channel failed: {err}");
+                        }
+                    },
                 }
             }
             Some(message) = stream.next() => {
                 match message {
                     Ok(message) => {
-                        if !connected {
-                            tx.send(data_builder.system("Reconnect succcessful.".to_string())).await.unwrap();
-                            connected = true;
-                        }
+                        let Message::Text(message_text) = message else {
+                            continue;
+                        };
 
-                        if let Some(b) = handle_message_command(message, tx.clone(), data_builder, config.frontend.badges, room_state_startup, enable_emotes).await {
-                            room_state_startup = b;
+                        let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
+                            Ok(received_message) => received_message,
+                            Err(err) => {
+                                error!("Error when deserializing received message: {err}");
+                                continue;
+                            }
+                        };
+
+                        if let Err(err) = handle_incoming_message(
+                            config.clone(),
+                            &context,
+                            &tx,
+                            received_message,
+                            emotes_enabled,
+                        ).await {
+                            error!("Error when handling incoming message: {err}");
                         }
                     }
                     Err(err) => {
-                        connected = false;
-
-                        debug!("Twitch connection error encountered: {err}, attempting to reconnect.");
-
-                        (client, stream) = client_stream_reconnect(err, tx.clone(), data_builder, &config).await;
-
+                        error!("Twitch connection error encountered: {err}, attempting to reconnect.");
                     }
                 }
             }
@@ -155,220 +187,361 @@ pub async fn twitch_irc(
     }
 }
 
-/// Emotes comming from twitch arrive in the `emote` tag.
-/// They have the format `<emote-id1>:<start>-<end>,.../<emote-id2>:...`
-/// This functions returns a list of emote name and id,
-/// using the first position of each emote to get the emote name from the message.
-/// <https://dev.twitch.tv/docs/irc/tags/> (emotes tag in PRIVMSG tags section)
-fn retrieve_twitch_emotes(message: &str, emotes: &str) -> Vec<(String, String)> {
-    emotes
-        .split('/')
-        .filter_map(|e| {
-            let (id, pos) = e.split_once(':')?;
-
-            let pos = pos.split(',').next()?;
-            let (s, e) = pos.split_once('-')?;
-
-            let (start, end): (usize, usize) = (s.parse().ok()?, e.parse().ok()?);
-
-            Some((
-                message.chars().skip(start).take(end - start + 1).collect(),
-                id.to_string(),
-            ))
-        })
-        .collect()
-}
-
-async fn handle_message_command(
-    message: Message,
-    tx: Sender<TwitchToTerminalAction>,
-    data_builder: DataBuilder<'_>,
-    badges: bool,
-    room_state_startup: bool,
-    enable_emotes: bool,
-) -> Option<bool> {
-    let mut tags: HashMap<&str, &str> = HashMap::new();
-
-    if let Some(ref ref_tags) = message.tags {
-        for tag in ref_tags {
-            if let Some(ref tag_value) = tag.1 {
-                tags.insert(&tag.0, tag_value);
-            }
-        }
-    }
-
-    match message.command {
-        Command::PRIVMSG(ref _target, ref msg) => {
-            // Detects if the message contains an IRC CTCP Action, and return the message content.
-            // WARNING: Emote parsing needs to be done *after* the message has been extracted from the action,
-            // but *before* problematic unicode characters have been removed from it.
-            let (msg, highlight) = parse_message_action(msg);
-
-            // Parse emotes from message tags
-            let emotes = enable_emotes
-                .then(|| tags.get("emotes").map(|&e| retrieve_twitch_emotes(msg, e)))
-                .unwrap_or_default()
-                .unwrap_or_default();
-
-            // Download emotes if they are not downloaded yet.
-            // Small optimisation of starting the download here, and only await this block at the last moment.
-            let emotes =
-                futures::stream::iter(emotes.into_iter().map(|(name, filename)| async move {
-                    get_twitch_emote(&filename).await?;
-                    Ok((name, (filename, false)))
-                }))
-                .buffer_unordered(10)
-                .collect::<Vec<Result<(String, (String, bool))>>>();
-
-            // lowercase username from message
-            let mut name = message.source_nickname().unwrap().to_string();
-
-            retrieve_user_badges(&mut name, &message, badges);
-
-            // Remove invalid unicode characters from the message.
-            let cleaned_message = clean_message(msg);
-
-            let message_id = tags.get("id").map(|&s| s.to_string());
-            let user_id = tags.get("user-id").map(|&s| s.to_string());
-
-            debug!("Message received from twitch: {name} - {cleaned_message:?}");
-
-            let emotes = emotes.await.into_iter().flatten().collect();
-
-            tx.send(DataBuilder::user(
-                name,
-                user_id,
-                cleaned_message,
-                emotes,
-                message_id,
-                highlight,
-            ))
-            .await
-            .unwrap();
-        }
-        Command::NOTICE(ref _target, ref msg) => {
-            tx.send(data_builder.twitch(msg.to_string())).await.unwrap();
-        }
-        Command::JOIN(ref channel, _, _) => {
-            tx.send(data_builder.twitch(format!("Joined {}", *channel)))
-                .await
-                .unwrap();
-        }
-        Command::Raw(ref cmd, ref _items) => {
-            match cmd.as_ref() {
-                // https://dev.twitch.tv/docs/irc/tags/#roomstate-tags
-                "ROOMSTATE" => {
-                    // Only display roomstate on startup, since twitch
-                    // sends a NOTICE whenever roomstate changes.
-                    if !room_state_startup {
-                        handle_roomstate(&tx, &tags).await;
-                    }
-
-                    return Some(true);
-                }
-                // https://dev.twitch.tv/docs/irc/tags/#usernotice-tags
-                "USERNOTICE" => {
-                    if let Some(value) = tags.get("system-msg") {
-                        tx.send(data_builder.twitch((*value).to_string()))
-                            .await
-                            .unwrap();
-                    }
-                }
-                // https://dev.twitch.tv/docs/irc/tags/#clearchat-tags
-                "CLEARCHAT" => {
-                    let user_id = tags.get("target-user-id").map(|&s| s.to_string());
-
-                    tx.send(TwitchToTerminalAction::ClearChat(user_id.clone()))
-                        .await
-                        .unwrap();
-
-                    // User was either timed out or banned
-                    if user_id.is_some() {
-                        let ban_duration = tags.get("ban-duration").map(|&s| s.to_string());
-
-                        // TODO: In both cases of this branch, replace "User" with the username that the punishment was inflicted upon
-
-                        // User was timed out
-                        if let Some(duration) = ban_duration {
-                            tx.send(
-                                data_builder
-                                    .twitch(format!("User was timed out for {duration} seconds")),
-                            )
-                            .await
-                            .unwrap();
-                        }
-                        // User was banned
-                        else {
-                            tx.send(data_builder.twitch("User banned".to_string()))
-                                .await
-                                .unwrap();
-                        }
-                    } else {
-                        tx.send(data_builder.twitch("Chat cleared by a moderator.".to_string()))
-                            .await
-                            .unwrap();
-                    }
-                }
-                // https://dev.twitch.tv/docs/irc/tags/#clearmsg-tags
-                "CLEARMSG" => {
-                    if let Some(id) = tags.get("target-msg-id") {
-                        tx.send(TwitchToTerminalAction::DeleteMessage((*id).to_string()))
-                            .await
-                            .unwrap();
-                    }
-                }
-                _ => (),
-            }
-        }
-        _ => (),
-    }
-
-    None
-}
-
-pub async fn handle_roomstate<S: BuildHasher>(
+async fn handle_command_message(
+    context: &TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
-    tags: &HashMap<&str, &str, S>,
-) {
-    let mut room_state = String::new();
+    user_command: &str,
+) -> Result<()> {
+    let Ok(command) = TwitchCommand::from_str(user_command) else {
+        tx.send(DataBuilder::system(format!(
+            "Command /{user_command} either does not exist, or is not supported"
+        )))
+        .await?;
 
-    for (name, value) in tags {
-        match *name {
-            "emote-only" if *value == "1" => {
-                room_state.push_str("The channel is emote-only.\n");
+        return Ok(());
+    };
+
+    let twitch_client = context
+        .twitch_client()
+        .context("Twitch client could not be found when sending command")?;
+
+    let channel_id = context
+        .channel_id()
+        .context("Channel ID could not be found when sending command")?;
+
+    let twitch_oauth = context
+        .oauth()
+        .context("Twitch OAuth could not be found when sending command")?;
+
+    let user_id = twitch_oauth.user_id.clone();
+
+    let command_message = match command {
+        TwitchCommand::Clear => {
+            let delete_message_query =
+                DeleteMessageQuery::new(channel_id.to_string(), user_id, None);
+            delete_twitch_messages(twitch_client, delete_message_query).await?;
+
+            "Chat was cleared for non-Moderators viewing this room".to_string()
+        }
+        TwitchCommand::Ban(username, reason) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let ban_query = TimeoutQuery::new(channel_id.to_string(), user_id);
+            let ban_payload = TimeoutPayload::new(target_user_id, None, reason.clone());
+
+            timeout_twitch_user(twitch_client, ban_query, ban_payload).await?;
+
+            reason.map_or_else(
+                || format!("User {username} banned."),
+                |reason| format!("User {username} banned. Reason: {reason}"),
+            )
+        }
+        TwitchCommand::Timeout(username, duration, reason) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let timeout_query = TimeoutQuery::new(channel_id.to_string(), user_id);
+            let timeout_payload =
+                TimeoutPayload::new(target_user_id, Some(duration), reason.clone());
+
+            timeout_twitch_user(twitch_client, timeout_query, timeout_payload).await?;
+
+            reason.map_or_else(
+                || format!("User {username} timed out for {duration} seconds."),
+                |reason| {
+                    format!("User {username} timed out for {duration} seconds. Reason: {reason}")
+                },
+            )
+        }
+    };
+
+    debug!("Sending command message: {command_message}");
+    tx.send(DataBuilder::twitch(command_message)).await?;
+
+    Ok(())
+}
+
+/// Handle the user wanting to send a message from the terminal to the WebSocket server
+async fn handle_send_message(context: &TwitchWebsocketContext, message: String) -> Result<()> {
+    let twitch_client = context
+        .twitch_client()
+        .context("Twitch client could not be found when sending message")?;
+
+    let channel_id = context
+        .channel_id()
+        .context("Channel ID could not be found when sending message")?;
+
+    let twitch_oauth = context
+        .oauth()
+        .context("Twitch OAuth could not be found when sending message")?;
+
+    let new_message = NewTwitchMessage::new(
+        channel_id.to_string(),
+        twitch_oauth.user_id.to_string(),
+        message,
+    );
+
+    send_twitch_message(twitch_client, new_message).await?;
+
+    Ok(())
+}
+
+/// Handling either the terminal joining a new channel, or the application just starting up
+async fn handle_channel_join(
+    twitch_config: &mut TwitchConfig,
+    context: &mut TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    channel_name: String,
+    first_channel: bool,
+) -> Result<()> {
+    let twitch_client = context.twitch_client().context("Twitch client not found")?;
+    let twitch_oauth = context.oauth().context("No OAuth found")?;
+    let current_subscriptions: Vec<Subscription> = context
+        .event_subscriptions()
+        .keys()
+        .map(std::borrow::ToOwned::to_owned)
+        .collect();
+
+    // Unsubscribe from previous channel
+    if !first_channel {
+        unsubscribe_from_events(
+            twitch_client,
+            context.event_subscriptions(),
+            current_subscriptions.clone(),
+        )
+        .await?;
+    }
+
+    // Subscribe to new channel
+    let channel_id = if first_channel {
+        context
+            .channel_id()
+            .context("Failed to get channel ID from context")?
+    } else {
+        &get_channel_id(twitch_client, &channel_name).await?
+    };
+
+    let new_subscriptions = subscribe_to_events(
+        twitch_client,
+        twitch_oauth,
+        context.session_id().cloned(),
+        channel_id.to_string(),
+        current_subscriptions,
+    )
+    .await
+    .context(format!(
+        "Failed to subscribe to new channel '{channel_name}'"
+    ))?;
+
+    let context_channel_id = channel_id.to_string();
+
+    context.set_event_subscriptions(new_subscriptions);
+
+    // Set old channel to new channel
+    twitch_config.channel.clone_from(&channel_name);
+    context.set_channel_id(Some(context_channel_id));
+
+    // Notify frontend that new channel has been joined
+    tx.send(DataBuilder::twitch(format!("Joined #{channel_name}")))
+        .await
+        .context("Failed to send twitch join message")?;
+
+    // Handle new chat settings with roomstate
+    let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await?;
+    handle_roomstate(&chat_settings, tx).await?;
+
+    Ok(())
+}
+
+async fn handle_welcome_message(
+    twitch_config: &mut TwitchConfig,
+    context: &mut TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    message: Utf8Bytes,
+) -> Result<()> {
+    let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message)
+        .context("Could not convert welcome message to received message")?;
+
+    let oauth_token = context.clone().token();
+
+    let twitch_oauth = get_twitch_client_oauth(oauth_token.as_ref()).await?;
+    context.set_oauth(Some(twitch_oauth.clone()));
+
+    let twitch_client = get_twitch_client(&twitch_oauth, oauth_token.as_ref())
+        .await
+        .expect("failed to authenticate twitch client");
+    context.set_twitch_client(Some(twitch_client.clone()));
+
+    let session_id = received_message.session_id();
+    context.set_session_id(session_id.clone());
+
+    let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
+    context.set_channel_id(Some(channel_id.clone()));
+
+    let initial_event_subscriptions: HashMap<_, _> = INITIAL_EVENT_SUBSCRIPTIONS
+        .iter()
+        .cloned()
+        .map(|item| (item, String::new()))
+        .collect();
+
+    context.set_event_subscriptions(initial_event_subscriptions);
+
+    handle_channel_join(
+        twitch_config,
+        context,
+        tx,
+        twitch_config.channel.clone(),
+        true,
+    )
+    .await
+    .context("Failed to join first channel")?;
+
+    Ok(())
+}
+
+async fn handle_chat_notification(
+    tx: &Sender<TwitchToTerminalAction>,
+    event: ReceivedTwitchEvent,
+    subscription_type: Subscription,
+) -> Result<()> {
+    match subscription_type {
+        Subscription::Notification => {
+            if let Some(twitch_notification_message) = event.system_message() {
+                tx.send(DataBuilder::twitch(twitch_notification_message.to_string()))
+                    .await?;
             }
-            "followers-only" if *value != "-1" => {
-                room_state.push_str("The channel is followers-only.\n");
+        }
+        Subscription::Clear => {
+            tx.send(TwitchToTerminalAction::ClearChat(None)).await?;
+            tx.send(DataBuilder::twitch(
+                "Chat was cleared for non-Moderators viewing this room".to_string(),
+            ))
+            .await?;
+        }
+        Subscription::ClearUserMessages => {
+            if let Some(target_user_id) = event.target_user_id() {
+                tx.send(TwitchToTerminalAction::ClearChat(Some(
+                    target_user_id.to_string(),
+                )))
+                .await?;
             }
-            "subs-only" if *value == "1" => {
-                room_state.push_str("The channel is subscribers-only.\n");
+        }
+        Subscription::MessageDelete => {
+            if let Some(message_id) = event.message_id() {
+                tx.send(TwitchToTerminalAction::DeleteMessage(
+                    message_id.to_string(),
+                ))
+                .await?;
             }
-            "slow" if *value != "0" => {
-                room_state.push_str("The channel has a ");
-                room_state.push_str(value);
-                room_state.push_str("s slowmode.\n");
-            }
-            _ => (),
+        }
+        Subscription::Ban => {
+            let affected_user = event
+                .user_name()
+                .map_or("Unknown Twitch user", |user| user.as_str());
+
+            let timeout_message = event.timeout_duration().map_or_else(
+                || format!("User {affected_user} banned"),
+                |timeout_duration| {
+                    format!("User {affected_user} was timed out for {timeout_duration} second(s)")
+                },
+            );
+
+            tx.send(DataBuilder::twitch(timeout_message)).await?;
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+async fn handle_incoming_message(
+    config: CoreConfig,
+    context: &TwitchWebsocketContext,
+    tx: &Sender<TwitchToTerminalAction>,
+    received_message: ReceivedTwitchMessage,
+    emotes_enabled: bool,
+) -> Result<()> {
+    // Don't allow messges from other channels go through
+    if let Some(condition) = received_message.subscription_condition() {
+        if context
+            .channel_id()
+            .is_some_and(|channel_id| channel_id != condition.broadcaster_user_id())
+        {
+            return Ok(());
         }
     }
 
-    // Trim last newline
-    room_state.pop();
+    let Some(event) = received_message.event() else {
+        return Ok(());
+    };
 
-    if room_state.is_empty() {
-        return;
+    if let Some(subscription_type) = received_message.subscription_type() {
+        if subscription_type != Subscription::Message {
+            return handle_chat_notification(tx, event, subscription_type).await;
+        }
     }
 
-    let message_id = tags.get("target-msg-id").map(|&s| s.to_string());
+    let message_text = event
+        .message_text()
+        .context("Could not find message text")?;
+    let (msg, highlight) = parse_message_action(&message_text);
+    let received_emotes = if emotes_enabled {
+        event.emote_fragments()
+    } else {
+        Option::default()
+    }
+    .unwrap_or_default();
+
+    let emotes = futures::stream::iter(received_emotes.into_iter().map(
+        |fragment_emote: models::ReceivedTwitchEventMessageFragment| async move {
+            let emote = fragment_emote
+                .emote()
+                .context("Failed to get emote from emote fragment")?;
+            let emote_id = emote
+                .emote_id()
+                .context("Failed to get emote ID from emote fragment")?
+                .to_string();
+            let emote_name = fragment_emote
+                .emote_name()
+                .context("Failed to get emote name from emote fragment")?
+                .to_string();
+
+            get_twitch_emote(&emote_id).await?;
+
+            Ok((emote_name, (emote_id, false)))
+        },
+    ))
+    .buffer_unordered(10)
+    .collect::<Vec<Result<(String, (String, bool))>>>();
+
+    let mut chatter_user_name = event
+        .chatter_user_name()
+        .context("Could not find chatter user name")?
+        .to_string();
+    let badges = event.badges().unwrap_or_default();
+    if config.frontend.badges {
+        retrieve_user_badges(&mut chatter_user_name, &badges);
+    }
+
+    let chatter_user_id = event
+        .chatter_user_id()
+        .context("could not find chatter user ID")?;
+    let cleaned_message = clean_message(msg);
+    let message_id = event
+        .message_id()
+        .context("Could not find message ID")?
+        .to_string();
+
+    let message_emotes = emotes.await.into_iter().flatten().collect();
 
     tx.send(DataBuilder::user(
-        String::from("Info"),
-        None,
-        room_state,
-        DownloadedEmotes::default(),
-        message_id,
-        false,
+        chatter_user_name.to_string(),
+        Some(chatter_user_id.to_string()),
+        cleaned_message,
+        message_emotes,
+        Some(message_id),
+        highlight,
     ))
-    .await
-    .unwrap();
+    .await?;
+
+    Ok(())
 }

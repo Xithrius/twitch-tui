@@ -7,8 +7,11 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     emotes::DownloadedEmotes,
-    handlers::config::{CompleteConfig, FrontendConfig},
-    twitch::oauth::{get_channel_id, get_twitch_client, get_twitch_client_id},
+    handlers::config::{CoreConfig, FrontendConfig},
+    twitch::{
+        api::channels::get_channel_id,
+        oauth::{get_twitch_client, get_twitch_client_oauth},
+    },
     utils::pathing::cache_path,
 };
 
@@ -17,11 +20,11 @@ type EmoteMap = HashMap<String, (String, String, bool)>;
 
 mod twitch {
     use color_eyre::Result;
-    use log::warn;
     use reqwest::Client;
     use serde::Deserialize;
+    use tracing::warn;
 
-    use crate::emotes::downloader::EmoteMap;
+    use crate::{emotes::downloader::EmoteMap, twitch::api::TWITCH_API_BASE_URL};
 
     #[derive(Deserialize, Debug)]
     struct Emote {
@@ -88,7 +91,7 @@ mod twitch {
     pub async fn get_user_emotes(client: &Client, user_id: &str) -> Result<EmoteMap> {
         let mut user_emotes = client
             .get(format!(
-                "https://api.twitch.tv/helix/chat/emotes/user?user_id={user_id}",
+                "{TWITCH_API_BASE_URL}/chat/emotes/user?user_id={user_id}"
             ))
             .send()
             .await?
@@ -99,7 +102,7 @@ mod twitch {
         while let Some(c) = user_emotes.pagination.cursor {
             let emotes =   client
             .get(format!(
-                "https://api.twitch.tv/helix/chat/emotes/user?user_id={user_id}&after={c}",
+                "{TWITCH_API_BASE_URL}/chat/emotes/user?user_id={user_id}&after={c}",
             ))
             .send()
             .await?
@@ -136,7 +139,7 @@ mod betterttv {
         shared_emotes: Vec<Emote>,
     }
 
-    pub async fn get_emotes(channel_id: i32) -> Result<EmoteMap> {
+    pub async fn get_emotes(channel_id: String) -> Result<EmoteMap> {
         let client = Client::new();
 
         let EmoteList {
@@ -208,7 +211,7 @@ mod seventv {
         emote_set: EmoteList,
     }
 
-    pub async fn get_emotes(channel_id: i32) -> Result<EmoteMap> {
+    pub async fn get_emotes(channel_id: String) -> Result<EmoteMap> {
         let client = Client::new();
 
         let channel_emotes = client
@@ -287,7 +290,7 @@ mod frankerfacez {
         room: SetId,
     }
 
-    pub async fn get_emotes(channel_id: i32) -> Result<EmoteMap> {
+    pub async fn get_emotes(channel_id: String) -> Result<EmoteMap> {
         let client = &Client::new();
 
         let mut sets = client
@@ -421,19 +424,19 @@ fn get_enabled_emote_providers(config: &FrontendConfig) -> Vec<EmoteProvider> {
 }
 
 pub async fn get_emotes(
-    config: &CompleteConfig,
+    config: &CoreConfig,
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
     // Reuse the same client and headers for twitch requests
-    let twitch_client = get_twitch_client(config.twitch.token.as_deref()).await?;
-    let user_id = &get_twitch_client_id(None).await?.user_id;
+    let client_id = &get_twitch_client_oauth(config.twitch.token.as_ref()).await?;
+    let twitch_client = get_twitch_client(client_id, config.twitch.token.as_ref()).await?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 
     let enabled_emotes = get_enabled_emote_providers(&config.frontend);
 
     let user_emotes = if enabled_emotes.contains(&EmoteProvider::Twitch) {
-        twitch::get_user_emotes(&twitch_client, user_id)
+        twitch::get_user_emotes(&twitch_client, &client_id.user_id)
             .await
             .unwrap_or_default()
     } else {
@@ -441,22 +444,25 @@ pub async fn get_emotes(
     };
 
     // Concurrently get the list of emotes for each provider
-    let global_emotes =
-        futures::stream::iter(enabled_emotes.into_iter().map(|emote_provider| async move {
+    let global_emotes = futures::stream::iter(enabled_emotes.into_iter().map(|emote_provider| {
+        let channel_id = channel_id.clone();
+
+        async move {
             match emote_provider {
                 EmoteProvider::Twitch => Ok(HashMap::new()),
                 EmoteProvider::BetterTTV => betterttv::get_emotes(channel_id).await,
                 EmoteProvider::SevenTV => seventv::get_emotes(channel_id).await,
                 EmoteProvider::FrankerFaceZ => frankerfacez::get_emotes(channel_id).await,
             }
-        }))
-        .buffer_unordered(4)
-        .collect::<Vec<Result<EmoteMap>>>()
-        .await
-        .into_iter()
-        .flatten()
-        .flatten()
-        .collect::<EmoteMap>();
+        }
+    }))
+    .buffer_unordered(4)
+    .collect::<Vec<Result<EmoteMap>>>()
+    .await
+    .into_iter()
+    .flatten()
+    .flatten()
+    .collect::<EmoteMap>();
 
     Ok((
         download_emotes(user_emotes).await,
@@ -464,9 +470,9 @@ pub async fn get_emotes(
     ))
 }
 
-pub async fn get_twitch_emote(name: &str) -> Result<()> {
+pub async fn get_twitch_emote(emote_id: &str) -> Result<()> {
     // Checks if emote is already downloaded.
-    let path = cache_path(name);
+    let path = cache_path(emote_id);
     let path = Path::new(&path);
 
     if tokio::fs::metadata(&path).await.is_ok() {
@@ -474,7 +480,7 @@ pub async fn get_twitch_emote(name: &str) -> Result<()> {
     }
 
     // Download it if it is not in the cache, try the animated version first.
-    let url = format!("https://static-cdn.jtvnw.net/emoticons/v2/{name}/animated/light/1.0");
+    let url = format!("https://static-cdn.jtvnw.net/emoticons/v2/{emote_id}/animated/light/1.0");
     let client = Client::new();
     let res = client.get(&url).send().await?.error_for_status();
 

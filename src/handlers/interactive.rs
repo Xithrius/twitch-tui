@@ -1,8 +1,8 @@
 use dialoguer::{Confirm, Input, console::Style, theme::ColorfulTheme};
 
-use crate::handlers::config::{CompleteConfig, TwitchConfig};
+use crate::handlers::config::{CoreConfig, TwitchConfig};
 
-pub(super) fn interactive_config() -> Option<CompleteConfig> {
+pub(super) fn interactive_config() -> Option<CoreConfig> {
     let theme = ColorfulTheme {
         values_style: Style::new().yellow().dim(),
         ..ColorfulTheme::default()
@@ -20,30 +20,37 @@ pub(super) fn interactive_config() -> Option<CompleteConfig> {
     let username: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Username: ")
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let token: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Token: ")
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let channel: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Channel: ")
         .interact_text()
-        .unwrap();
+        .ok()?;
 
     let server: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("IRC server: ")
-        .default("irc.chat.twitch.tv".to_string())
+        .with_prompt("Websocket server: ")
+        .default("wss://eventsub.wss.twitch.tv/ws".to_string())
         .interact_text()
-        .unwrap();
+        .ok()?;
 
-    Some(CompleteConfig {
+    let keepalive_timeout_seconds: usize = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Keep alive timeout: ")
+        .default(30)
+        .interact_text()
+        .ok()?;
+
+    Some(CoreConfig {
         twitch: TwitchConfig {
             username,
             channel,
             server,
             token: Some(token),
+            keepalive_timeout_seconds,
         },
         ..Default::default()
     })

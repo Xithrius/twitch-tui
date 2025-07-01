@@ -3,13 +3,13 @@ use std::sync::OnceLock;
 use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::{
     Client,
-    header::{AUTHORIZATION, HeaderMap, HeaderValue},
+    header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use tracing::info;
 
-#[derive(Deserialize)]
-#[allow(dead_code)]
-pub struct ClientId {
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TwitchOauth {
     pub client_id: String,
     pub login: String,
     pub scopes: Vec<String>,
@@ -17,14 +17,17 @@ pub struct ClientId {
     pub expires_in: i32,
 }
 
-pub async fn get_twitch_client_id(token: Option<&str>) -> Result<&ClientId> {
-    static TWITCH_CLIENT_ID: OnceLock<ClientId> = OnceLock::new();
+pub async fn get_twitch_client_oauth(oauth_token: Option<&String>) -> Result<TwitchOauth> {
+    static TWITCH_CLIENT_OAUTH: OnceLock<TwitchOauth> = OnceLock::new();
 
-    if let Some(id) = TWITCH_CLIENT_ID.get() {
-        return Ok(id);
+    if let Some(twitch_oauth) = TWITCH_CLIENT_OAUTH.get() {
+        return Ok(twitch_oauth.clone());
     }
 
-    let token = token.context("Twitch token is empty")?;
+    let token = oauth_token
+        .context("Twitch token is empty")?
+        .strip_prefix("oauth:")
+        .context("token does not start with `oauth:`")?;
 
     // Strips the `oauth:` prefix if it exists
     let token = token.strip_prefix("oauth:").unwrap_or(token);
@@ -36,53 +39,42 @@ pub async fn get_twitch_client_id(token: Option<&str>) -> Result<&ClientId> {
         .header(AUTHORIZATION, &format!("OAuth {token}"))
         .send()
         .await?
-        .error_for_status()
-        .unwrap();
+        .error_for_status()?;
 
-    let client_id = data.json::<ClientId>().await?;
+    let twitch_oauth = data.json::<TwitchOauth>().await?;
 
-    Ok(TWITCH_CLIENT_ID.get_or_init(|| client_id))
+    info!(
+        "Authentication successful. Enabled scopes: {:?}",
+        twitch_oauth.scopes
+    );
+
+    Ok(TWITCH_CLIENT_OAUTH.get_or_init(|| twitch_oauth)).cloned()
 }
 
-pub async fn get_twitch_client(oauth_token: Option<&str>) -> Result<Client> {
+pub async fn get_twitch_client(
+    twitch_oauth: &TwitchOauth,
+    oauth_token: Option<&String>,
+) -> Result<Client> {
+    static TWITCH_CLIENT: OnceLock<Client> = OnceLock::new();
+
+    if let Some(twitch_client) = TWITCH_CLIENT.get() {
+        return Ok(twitch_client.clone());
+    }
+
     let token = oauth_token
         .context("Twitch token is empty")?
         .strip_prefix("oauth:")
         .context("token does not start with `oauth:`")?;
-
-    let client_id = &get_twitch_client_id(Some(token)).await?.client_id;
 
     let mut headers = HeaderMap::new();
     headers.insert(
         AUTHORIZATION,
         HeaderValue::from_str(&format!("Bearer {token}"))?,
     );
-    headers.insert("Client-Id", HeaderValue::from_str(client_id)?);
+    headers.insert("Client-Id", HeaderValue::from_str(&twitch_oauth.client_id)?);
+    headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
 
-    Ok(Client::builder().default_headers(headers).build()?)
-}
+    let twitch_client = Client::builder().default_headers(headers).build()?;
 
-#[derive(Deserialize)]
-struct Channel {
-    id: String,
-}
-
-#[derive(Deserialize)]
-pub struct ChannelList {
-    data: Vec<Channel>,
-}
-
-pub async fn get_channel_id(client: &Client, channel: &str) -> Result<i32> {
-    Ok(client
-        .get(format!("https://api.twitch.tv/helix/users?login={channel}",))
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<ChannelList>()
-        .await?
-        .data
-        .first()
-        .context("Could not get channel id.")?
-        .id
-        .parse()?)
+    Ok(TWITCH_CLIENT.get_or_init(|| twitch_client)).cloned()
 }

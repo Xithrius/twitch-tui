@@ -3,13 +3,10 @@
 username = ""
 # The streamer's username.
 channel = ""
-# The IRC server to connect to.
-server = "irc.chat.twitch.tv"
-# The authentication token for the IRC.
-# Can be received here for default scopes: https://twitchapps.com/tmi/
-#   ["channel:moderate", "channel_editor", "chat:edit", "chat:read", "whispers:edit", "whispers:read"]
-# And here for custom scopes: https://twitchtokengenerator.com/
-#   "user:read:follows" to see who you are following
+# The websocket server to connect to.
+server = "wss://eventsub.wss.twitch.tv/ws"
+# https://twitchtokengenerator.com/?scope=channel:moderate+chat:edit+chat:read+moderator:manage:chat_messages+user:read:chat+user:read:emotes+user:read:follows+user:write:chat+moderator:manage:banned_users&auth=auth_stay
+# chat:read, chat:edit, channel:moderate, user:read:follows, user:read:emotes, user:read:chat, user:write:chat, moderator:manage:chat_messages, moderator:manage:banned_users
 token = ""
 
 [terminal]
@@ -19,8 +16,8 @@ delay = 30
 maximum_messages = 500
 # The file to put logs in.
 log_file = ""
-# if verbose (debug) logging should be enabled.
-verbose = false
+# From most verbose to least options here are debug, info, warn, and error.
+log_level = "info"
 # What state the application should start in.
 # Options: dashboard, normal, and help.
 first_state = "dashboard"
@@ -86,7 +83,7 @@ seventv_emotes = false
 # If FrankerFaceZ emotes should be displayed (requires kitty terminal).
 frankerfacez_emotes = false
 # Channel names to always be displayed in the start screen (dashboard).
-# Example: ["Xithrius", "RocketLeague", "AntVenom"]
+# Example: ["placeholder_channel", "another_channel"]
 favorite_channels = []
 # The amount of recently connected to channels shown on the start screen.
 recent_channel_count = 5
@@ -100,3 +97,5 @@ hide_chat_border = false
 right_align_usernames = false
 # Do not display the window size warning.
 show_unsupported_screen_size = true
+# The following widget will only contain channels that are currently live
+only_get_live_followed_channels = false

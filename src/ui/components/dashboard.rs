@@ -11,7 +11,7 @@ use tui::{
 use super::following::FollowingWidget;
 use crate::{
     handlers::{
-        config::SharedCompleteConfig,
+        config::SharedCoreConfig,
         state::State,
         storage::SharedStorage,
         user_input::events::{Event, Key},
@@ -31,14 +31,14 @@ const DASHBOARD_TITLE: [&str; 5] = [
 ];
 
 pub struct DashboardWidget {
-    config: SharedCompleteConfig,
+    config: SharedCoreConfig,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
     following: FollowingWidget,
 }
 
 impl DashboardWidget {
-    pub fn new(config: SharedCompleteConfig, storage: SharedStorage) -> Self {
+    pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let following = FollowingWidget::new(config.clone());
 
@@ -225,7 +225,7 @@ impl Component for DashboardWidget {
                 Key::Char('s') => self.channel_input.toggle_focus(),
                 Key::Char('f') => self.following.toggle_focus().await,
                 Key::Enter => {
-                    let action = TerminalAction::Enter(TwitchAction::Join(
+                    let action = TerminalAction::Enter(TwitchAction::JoinChannel(
                         self.config.borrow().twitch.channel.clone(),
                     ));
 
@@ -241,8 +241,9 @@ impl Component for DashboardWidget {
                         channels.extend(selected_channels);
 
                         if let Some(channel) = channels.get(selection as usize) {
-                            let action =
-                                TerminalAction::Enter(TwitchAction::Join(channel.to_string()));
+                            let action = TerminalAction::Enter(TwitchAction::JoinChannel(
+                                channel.to_string(),
+                            ));
 
                             self.config.borrow_mut().twitch.channel = channel.to_string();
                             self.storage
