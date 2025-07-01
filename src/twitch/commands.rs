@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use color_eyre::eyre::{Error, bail};
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum TwitchCommand {
@@ -15,6 +16,8 @@ pub enum TwitchCommand {
 
 impl TwitchCommand {
     fn handle_ban_command(args: &[&str]) -> Result<Self, Error> {
+        debug!("Ban command received as {:?}", args);
+
         match args.iter().as_slice() {
             [username] => Ok(Self::Ban((*username).to_string(), None)),
             [username, ban_reason @ ..] => {
@@ -27,6 +30,8 @@ impl TwitchCommand {
     }
 
     fn handle_timeout_command(args: &[&str]) -> Result<Self, Error> {
+        debug!("Timeout command received as {:?}", args);
+
         match args.iter().as_slice() {
             [username, timeout_duration] => {
                 let duration = timeout_duration.parse::<usize>()?;

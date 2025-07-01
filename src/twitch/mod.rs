@@ -323,7 +323,7 @@ async fn handle_channel_join(
     context.set_channel_id(Some(context_channel_id));
 
     // Notify frontend that new channel has been joined
-    tx.send(DataBuilder::twitch(format!("Joined {channel_name}")))
+    tx.send(DataBuilder::twitch(format!("Joined #{channel_name}")))
         .await
         .context("Failed to send twitch join message")?;
 
