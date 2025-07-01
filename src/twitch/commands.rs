@@ -69,3 +69,60 @@ impl FromStr for TwitchCommand {
         Ok(cmd)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_twitch_command_clear_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("clear").unwrap(),
+            TwitchCommand::Clear
+        );
+    }
+
+    #[test]
+    fn test_twitch_command_clear_invalid() {
+        assert!(TwitchCommand::from_str("clear asdf").is_err());
+    }
+
+    #[test]
+    fn test_twitch_command_ban_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("ban username").unwrap(),
+            TwitchCommand::Ban("username".to_string(), None)
+        );
+        assert_eq!(
+            TwitchCommand::from_str("ban username reason").unwrap(),
+            TwitchCommand::Ban("username".to_string(), Some("reason".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_twitch_command_ban_invalid() {
+        assert!(TwitchCommand::from_str("ban").is_err());
+        assert!(TwitchCommand::from_str("banasdf").is_err());
+    }
+
+    #[test]
+    fn test_twitch_command_timeout_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("timeout username 10 a reason").unwrap(),
+            TwitchCommand::Timeout("username".to_string(), 10, Some("a reason".to_string()))
+        );
+        assert_eq!(
+            TwitchCommand::from_str("timeout username 10").unwrap(),
+            TwitchCommand::Timeout("username".to_string(), 10, None)
+        );
+    }
+
+    #[test]
+    fn test_twitch_command_timeout_invalid() {
+        assert!(TwitchCommand::from_str("timeout").is_err());
+        assert!(TwitchCommand::from_str("timeoutasdf").is_err());
+        assert!(TwitchCommand::from_str("timeout asdf").is_err());
+        assert!(TwitchCommand::from_str("timeout asdf asdf").is_err());
+        assert!(TwitchCommand::from_str("timeout 10 asdf").is_err());
+    }
+}
