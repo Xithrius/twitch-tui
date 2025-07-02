@@ -141,6 +141,7 @@ pub async fn twitch_websocket(
                     TwitchAction::Message(message) => {
                         if let Some(command) = message.strip_prefix('/') {
                             if let Err(err) = handle_command_message(&context, &tx, command).await {
+                                tx.send(DataBuilder::twitch(format!("Failed to handle Twitch message command from terminal: {err}"))).await?;
                                 error!("Failed to handle Twitch message command from terminal: {err}");
                             }
                         }
@@ -292,7 +293,11 @@ async fn handle_command_message(
 
             duration.map_or_else(
                 || "Enabled followers-only mode for this room".to_string(),
-                |duration| format!("Enabled {duration} minutes followers-only mode was turned on with duration"),
+                |duration| {
+                    format!(
+                        "Enabled {duration} minutes followers-only mode was turned on with duration"
+                    )
+                },
             )
         }
         TwitchCommand::FollowersOff => {
