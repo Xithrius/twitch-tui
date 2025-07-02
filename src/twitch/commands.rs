@@ -119,11 +119,12 @@ impl TwitchCommand {
 
                 Ok(Self::Slow(duration))
             }
+            //TODO uh does it make sense to structure it here
+            [] => Ok(Self::Slow(30)),
             _ => bail!("Invalid slow command arguments"),
         }
     }
     fn handle_title_command(args: &[&str]) -> Self {
-        //TODO why am i destructuring and then restructuring
         let title = args.join(" ");
         Self::Title(title)
     }
