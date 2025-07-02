@@ -282,7 +282,7 @@ async fn handle_command_message(
         TwitchCommand::Unraid => {
             unraid_twitch_user(twitch_client, channel_id.to_string()).await?;
 
-            format!("Raid cancelled")
+            "Raid cancelled".to_string()
         }
         TwitchCommand::Followers(duration) => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
