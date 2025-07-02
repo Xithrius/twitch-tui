@@ -277,7 +277,7 @@ async fn handle_command_message(
 
             raid_twitch_user(twitch_client, raid_query).await?;
 
-            format!("Raid to user {username} started")
+            format!("Raid to {username} created")
         }
         TwitchCommand::Unraid => {
             unraid_twitch_user(twitch_client, channel_id.to_string()).await?;
@@ -290,10 +290,9 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            //TODO
             duration.map_or_else(
-                || "Followers only mode was turned on".to_string(),
-                |duration| format!("Followers only mode was turned on with duration {duration}"),
+                || "Enabled followers-only mode for this room".to_string(),
+                |duration| format!("Enabled {duration} minutes followers-only mode was turned on with duration"),
             )
         }
         TwitchCommand::FollowersOff => {
@@ -302,7 +301,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            "Followers only mode was turned off".to_string()
+            "Disabled followers-only mode for this room".to_string()
         }
         TwitchCommand::Slow(duration) => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
@@ -311,7 +310,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            format!("Slow mode was turned on with duration {duration}")
+            format!("Enabled {duration}-second slow mode for this room")
         }
         TwitchCommand::SlowOff => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
@@ -319,7 +318,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            "Slow mode was turned off".to_string()
+            "Disabled slow mode for this room".to_string()
         }
         TwitchCommand::Subscribers => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
@@ -327,7 +326,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            "Subscribers only mode was turned on".to_string()
+            "Enabled subscribers-only mode for this room".to_string()
         }
         TwitchCommand::SubscribersOff => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
@@ -335,7 +334,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            "Subscribers only mode was turned off".to_string()
+            "Disabled subscribers-only mode for this room".to_string()
         }
         TwitchCommand::EmoteOnly => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
@@ -343,7 +342,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            "Emote only mode was turned on".to_string()
+            "Enabled emote-only mode for this room".to_string()
         }
         TwitchCommand::EmoteOnlyOff => {
             let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
@@ -351,7 +350,7 @@ async fn handle_command_message(
 
             update_chat_settings(twitch_client, update_query, update_payload).await?;
 
-            "Emote only mode was turned off".to_string()
+            "Disabled emote-only mode for this room".to_string()
         }
         TwitchCommand::Vip(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
@@ -360,7 +359,7 @@ async fn handle_command_message(
 
             vip_twitch_user(twitch_client, vip_query).await?;
 
-            format!("User {username} was given vip")
+            format!("Added {username} as a VIP of the channel")
         }
         TwitchCommand::Unvip(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
@@ -369,7 +368,7 @@ async fn handle_command_message(
 
             unvip_twitch_user(twitch_client, unvip_query).await?;
 
-            format!("User {username} had vip removed")
+            format!("Removed {username} as a VIP of the channel")
         }
         TwitchCommand::Mod(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
@@ -378,7 +377,7 @@ async fn handle_command_message(
 
             mod_twitch_user(twitch_client, mod_query).await?;
 
-            format!("User {username} was given mod")
+            format!("Granted moderator privledges to {username}")
         }
         TwitchCommand::Unmod(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
@@ -387,7 +386,7 @@ async fn handle_command_message(
 
             unmod_twitch_user(twitch_client, unmod_query).await?;
 
-            format!("User {username} had mod removed")
+            format!("Removed {username} as a moderator of this channel")
         }
 
         TwitchCommand::Title(title) => {
