@@ -61,7 +61,6 @@ impl TwitchCommand {
             _ => bail!("Invalid ban command arguments"),
         }
     }
-
     fn handle_timeout_command(args: &[&str]) -> Result<Self, Error> {
         debug!("Timeout command received as {:?}", args);
         match args.iter().as_slice() {
@@ -81,22 +80,6 @@ impl TwitchCommand {
                 ))
             }
             _ => bail!("Invalid timeout command arguments"),
-        }
-    }
-
-    fn handle_unban_command(args: &[&str]) -> Result<Self, Error> {
-        debug!("Unban command received as {:?}", args);
-        match args.iter().as_slice() {
-            [username] => Ok(Self::Unban((*username).to_string())),
-            _ => bail!("Invalid unban command arguments"),
-        }
-    }
-
-    fn handle_raid_command(args: &[&str]) -> Result<Self, Error> {
-        debug!("Raid command received as {:?}", args);
-        match args.iter().as_slice() {
-            [username] => Ok(Self::Raid((*username).to_string())),
-            _ => bail!("Invalid raid command arguments"),
         }
     }
     fn handle_followers_command(args: &[&str]) -> Result<Self, Error> {
@@ -132,34 +115,6 @@ impl TwitchCommand {
         let game_name = args.join(" ");
         Self::Category(game_name)
     }
-    fn handle_mod_command(args: &[&str]) -> Result<Self, Error> {
-        debug!("Mod command received as {:?}", args);
-        match args.iter().as_slice() {
-            [username] => Ok(Self::Mod((*username).to_string())),
-            _ => bail!("Invalid mod command arguments"),
-        }
-    }
-    fn handle_unmod_command(args: &[&str]) -> Result<Self, Error> {
-        debug!("Unmod command received as {:?}", args);
-        match args.iter().as_slice() {
-            [username] => Ok(Self::Unmod((*username).to_string())),
-            _ => bail!("Invalid unmod command arguments"),
-        }
-    }
-    fn handle_vip_command(args: &[&str]) -> Result<Self, Error> {
-        debug!("Vip command received as {:?}", args);
-        match args.iter().as_slice() {
-            [username] => Ok(Self::Vip((*username).to_string())),
-            _ => bail!("Invalid vip command arguments"),
-        }
-    }
-    fn handle_unvip_command(args: &[&str]) -> Result<Self, Error> {
-        debug!("Unvip command received as {:?}", args);
-        match args.iter().as_slice() {
-            [username] => Ok(Self::Unvip((*username).to_string())),
-            _ => bail!("Invalid unvip command arguments"),
-        }
-    }
 }
 
 impl FromStr for TwitchCommand {
@@ -168,12 +123,14 @@ impl FromStr for TwitchCommand {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = s.trim().to_lowercase();
 
+        //TODO if the commands with one arg dont have that arg matched does it needed a different
+        //error?
         let cmd = match parts.split_whitespace().collect::<Vec<&str>>().as_slice() {
             ["clear"] => Self::Clear,
             ["ban", args @ ..] => Self::handle_ban_command(args)?,
-            ["unban", args @ ..] => Self::handle_unban_command(args)?,
+            ["unban", username] => Self::Unban((*username).to_string()),
             ["timeout", args @ ..] => Self::handle_timeout_command(args)?,
-            ["raid", args @ ..] => Self::handle_raid_command(args)?,
+            ["raid", username] => Self::Raid((*username).to_string()),
             ["unraid"] => Self::Unraid,
             ["followers", args @ ..] => Self::handle_followers_command(args)?,
             ["followersoff"] => Self::FollowersOff,
@@ -183,10 +140,10 @@ impl FromStr for TwitchCommand {
             ["subscribersoff"] => Self::SubscribersOff,
             ["emoteonly"] => Self::EmoteOnly,
             ["emoteonlyoff"] => Self::EmoteOnlyOff,
-            ["mod", args @ ..] => Self::handle_mod_command(args)?,
-            ["unmod", args @ ..] => Self::handle_unmod_command(args)?,
-            ["vip", args @ ..] => Self::handle_vip_command(args)?,
-            ["unvip", args @ ..] => Self::handle_unvip_command(args)?,
+            ["mod", username] => Self::Mod((*username).to_string()),
+            ["unmod", username] => Self::Unmod((*username).to_string()),
+            ["vip", username] => Self::Vip((*username).to_string()),
+            ["unvip", username] => Self::Unvip((*username).to_string()),
             ["title", args @ ..] => Self::handle_title_command(args),
             ["category", args @ ..] => Self::handle_category_command(args),
             _ => bail!("Twitch command {} is not supported", s),
@@ -404,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_twitch_command_emoteonlyoff_invalid() {
-        assert!(TwitchCommand::from_str("emoetonlyoff unexpected").is_err());
+        assert!(TwitchCommand::from_str("emoteonlyoff unexpected").is_err());
     }
 
     #[test]

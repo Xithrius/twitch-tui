@@ -141,8 +141,8 @@ pub async fn twitch_websocket(
                     TwitchAction::Message(message) => {
                         if let Some(command) = message.strip_prefix('/') {
                             if let Err(err) = handle_command_message(&context, &tx, command).await {
-                                tx.send(DataBuilder::twitch(format!("Failed to handle Twitch message command from terminal: {err}"))).await?;
                                 error!("Failed to handle Twitch message command from terminal: {err}");
+                                tx.send(DataBuilder::twitch(format!("Failed to handle Twitch message command from terminal: {err}"))).await?;
                             }
                         }
                         else if let Err(err) = handle_send_message(&context, message).await {
