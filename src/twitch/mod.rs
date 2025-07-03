@@ -197,6 +197,7 @@ pub async fn twitch_websocket(
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 async fn handle_command_message(
     context: &TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
