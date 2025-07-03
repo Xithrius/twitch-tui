@@ -14,11 +14,20 @@ mod tests;
 use std::{collections::HashMap, str::FromStr};
 
 use api::{
-    chat_settings::get_chat_settings,
+    channel_information::{
+        UpdateChannelInformationPayload, get_game_id, update_channel_information,
+    },
+    chat_settings::{
+        UpdateTwitchChatSettingsPayload, UpdateTwitchChatSettingsQuery, get_chat_settings,
+        update_chat_settings,
+    },
     clear::{DeleteMessageQuery, delete_twitch_messages},
     event_sub::{INITIAL_EVENT_SUBSCRIPTIONS, unsubscribe_from_events},
+    mods::{ModQuery, mod_twitch_user, unmod_twitch_user},
+    raids::{RaidQuery, raid_twitch_user, unraid_twitch_user},
     subscriptions::Subscription,
-    timeouts::{TimeoutPayload, TimeoutQuery, timeout_twitch_user},
+    timeouts::{TimeoutPayload, TimeoutQuery, UnbanQuery, timeout_twitch_user, unban_twitch_user},
+    vips::{VipQuery, unvip_twitch_user, vip_twitch_user},
 };
 use badges::retrieve_user_badges;
 use color_eyre::{
@@ -133,6 +142,7 @@ pub async fn twitch_websocket(
                         if let Some(command) = message.strip_prefix('/') {
                             if let Err(err) = handle_command_message(&context, &tx, command).await {
                                 error!("Failed to handle Twitch message command from terminal: {err}");
+                                tx.send(DataBuilder::twitch(format!("Failed to handle Twitch message command from terminal: {err}"))).await?;
                             }
                         }
                         else if let Err(err) = handle_send_message(&context, message).await {
@@ -187,6 +197,7 @@ pub async fn twitch_websocket(
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 async fn handle_command_message(
     context: &TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
@@ -251,6 +262,156 @@ async fn handle_command_message(
                     format!("User {username} timed out for {duration} seconds. Reason: {reason}")
                 },
             )
+        }
+        TwitchCommand::Unban(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let unban_query = UnbanQuery::new(channel_id.to_string(), user_id, target_user_id);
+
+            unban_twitch_user(twitch_client, unban_query).await?;
+
+            format!("User {username} unbanned")
+        }
+        TwitchCommand::Raid(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let raid_query = RaidQuery::new(channel_id.to_string(), target_user_id);
+
+            raid_twitch_user(twitch_client, raid_query).await?;
+
+            format!("Raid to {username} created")
+        }
+        TwitchCommand::Unraid => {
+            unraid_twitch_user(twitch_client, channel_id.to_string()).await?;
+
+            "Raid cancelled".to_string()
+        }
+        TwitchCommand::Followers(duration) => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_follower_mode(true, duration);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            duration.map_or_else(
+                || "Enabled followers-only mode for this room".to_string(),
+                |duration| {
+                    format!(
+                        "Enabled {duration} minutes followers-only mode was turned on with duration"
+                    )
+                },
+            )
+        }
+        TwitchCommand::FollowersOff => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_follower_mode(false, None);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Disabled followers-only mode for this room".to_string()
+        }
+        TwitchCommand::Slow(duration) => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload =
+                UpdateTwitchChatSettingsPayload::new_slow_mode(true, Some(duration));
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            format!("Enabled {duration}-second slow mode for this room")
+        }
+        TwitchCommand::SlowOff => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_slow_mode(false, None);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Disabled slow mode for this room".to_string()
+        }
+        TwitchCommand::Subscribers => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_subscriber_mode(true);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Enabled subscribers-only mode for this room".to_string()
+        }
+        TwitchCommand::SubscribersOff => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_subscriber_mode(false);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Disabled subscribers-only mode for this room".to_string()
+        }
+        TwitchCommand::EmoteOnly => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_emote_only_mode(true);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Enabled emote-only mode for this room".to_string()
+        }
+        TwitchCommand::EmoteOnlyOff => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_emote_only_mode(false);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Disabled emote-only mode for this room".to_string()
+        }
+        TwitchCommand::Vip(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let vip_query = VipQuery::new(channel_id.to_string(), target_user_id);
+
+            vip_twitch_user(twitch_client, vip_query).await?;
+
+            format!("Added {username} as a VIP of the channel")
+        }
+        TwitchCommand::Unvip(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let unvip_query = VipQuery::new(channel_id.to_string(), target_user_id);
+
+            unvip_twitch_user(twitch_client, unvip_query).await?;
+
+            format!("Removed {username} as a VIP of the channel")
+        }
+        TwitchCommand::Mod(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let mod_query = ModQuery::new(channel_id.to_string(), target_user_id);
+
+            mod_twitch_user(twitch_client, mod_query).await?;
+
+            format!("Granted moderator privledges to {username}")
+        }
+        TwitchCommand::Unmod(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let unmod_query = ModQuery::new(channel_id.to_string(), target_user_id);
+
+            unmod_twitch_user(twitch_client, unmod_query).await?;
+
+            format!("Removed {username} as a moderator of this channel")
+        }
+
+        TwitchCommand::Title(title) => {
+            let update_payload = UpdateChannelInformationPayload::new_title(&title);
+
+            update_channel_information(twitch_client, channel_id.to_string(), update_payload)
+                .await?;
+
+            format!("The title of the stream was changed to {title}")
+        }
+        TwitchCommand::Category(game_name) => {
+            let game_id = get_game_id(twitch_client, &game_name).await?;
+
+            let update_payload = UpdateChannelInformationPayload::new_category(&game_id);
+
+            update_channel_information(twitch_client, channel_id.to_string(), update_payload)
+                .await?;
+
+            format!("The category of the stream was changed to {game_name}")
         }
     };
 
