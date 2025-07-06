@@ -78,6 +78,7 @@ pub static SUPPORTED_COMMANDS: LazyLock<Vec<&str>> = LazyLock::new(|| {
         "unmod",
         "vip",
         "unvip",
+        "shoutout",
         // "color",
         // "commercial",
         // "delete",

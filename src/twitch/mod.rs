@@ -57,7 +57,7 @@ use crate::{
         api::{
             channels::get_channel_id,
             event_sub::subscribe_to_events,
-            messages::{NewTwitchMessage, send_twitch_message},
+            messages::{send_twitch_message, NewTwitchMessage}, shoutouts::{shoutout_twitch_user, ShoutoutQuery},
         },
         models::ReceivedTwitchMessage,
         oauth::{get_twitch_client, get_twitch_client_oauth},
@@ -389,6 +389,16 @@ async fn handle_command_message(
             unmod_twitch_user(twitch_client, unmod_query).await?;
 
             format!("Removed {username} as a moderator of this channel")
+        }
+        TwitchCommand::Shoutout(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let shoutout_query = ShoutoutQuery::new(channel_id.to_string(), target_user_id, user_id);
+
+            shoutout_twitch_user(twitch_client, shoutout_query).await?;
+
+            //TODO
+            format!("Gave a shoutout to {username}")
         }
 
         TwitchCommand::Title(title) => {

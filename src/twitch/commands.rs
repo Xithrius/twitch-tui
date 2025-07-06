@@ -42,6 +42,8 @@ pub enum TwitchCommand {
     Mod(String),
     /// Unmod username
     Unmod(String),
+    /// Shoutout username
+    Shoutout(String),
     /// Set the title of the stream
     Title(String),
     /// Set the category of a stream
@@ -143,6 +145,7 @@ impl FromStr for TwitchCommand {
             ["unmod", username] => Self::Unmod((*username).to_string()),
             ["vip", username] => Self::Vip((*username).to_string()),
             ["unvip", username] => Self::Unvip((*username).to_string()),
+            ["shoutout", username] => Self::Shoutout((*username).to_string()),
             ["title", args @ ..] => Self::handle_title_command(args),
             ["category", args @ ..] => Self::handle_category_command(args),
             _ => bail!("Twitch command {} is not supported", s),
@@ -417,6 +420,20 @@ mod tests {
     fn test_twitch_command_unmod_invalid() {
         assert!(TwitchCommand::from_str("unmod").is_err());
         assert!(TwitchCommand::from_str("unmod username unexpected").is_err());
+    }
+
+    #[test]
+    fn test_twitch_command_shoutout_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("shoutout username").unwrap(),
+            TwitchCommand::Shoutout("username".to_string())
+        )
+    }
+
+    #[test]
+    fn test_twitch_command_shoutout_invalid() {
+        assert!(TwitchCommand::from_str("shoutout").is_err());
+        assert!(TwitchCommand::from_str("shoutout username unexpected").is_err());
     }
 
     #[test]

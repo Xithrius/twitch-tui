@@ -5,8 +5,8 @@ username = ""
 channel = ""
 # The websocket server to connect to.
 server = "wss://eventsub.wss.twitch.tv/ws"
-# https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes+user:read:chat+user:write:chat+moderator:manage:chat_messages+moderator:manage:banned_users+moderator:manage:chat_settings+channel:manage:broadcast+channel:manage:moderators+channel:manage:vips+channel:manage:raids&auth=auth_stay
-# chat:read, chat:edit, channel:moderate, user:read:follows, user:read:emotes, user:read:chat, user:write:chat, moderator:manage:chat_messages, moderator:manage:banned_users, moderator:manage:chat_settings, channel:manage:broadcast, channel:manage:moderators, channel:manage:vips, channel:manage:raids
+# https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes+user:read:chat+user:write:chat+moderator:manage:chat_messages+moderator:manage:banned_users+moderator:manage:chat_settings+moderator:manage:shoutouts+channel:manage:broadcast+channel:manage:moderators+channel:manage:vips+channel:manage:raids&auth=auth_stay
+# chat:read, chat:edit, channel:moderate, user:read:follows, user:read:emotes, user:read:chat, user:write:chat, moderator:manage:chat_messages, moderator:manage:banned_users, moderator:manage:chat_settings, moderator:manage:shoutouts, channel:manage:broadcast, channel:manage:moderators, channel:manage:vips, channel:manage:raids
 token = ""
 
 [terminal]
