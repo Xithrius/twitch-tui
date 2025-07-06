@@ -140,16 +140,9 @@ impl<T: Clone> Component for InputWidget<T> {
         };
 
         self.suggestion = self
-            .config
-            .borrow()
-            .storage
-            .channels
-            .then(|| {
-                self.input_suggester
-                    .as_ref()
-                    .and_then(|(items, suggester)| suggester(items.clone(), self.input.to_string()))
-            })
-            .flatten();
+            .input_suggester
+            .as_ref()
+            .and_then(|(items, suggester)| suggester(items.clone(), self.input.to_string()));
 
         let block = Block::default()
             .borders(Borders::ALL)
@@ -265,14 +258,9 @@ impl<T: Clone> Component for InputWidget<T> {
                     self.input.backspace(1, &mut self.input_listener);
                 }
                 Key::Tab => {
-                    if self.config.borrow().storage.channels {
-                        if let Some(suggestion) = &self.suggestion {
-                            self.input.update(
-                                suggestion,
-                                suggestion.len(),
-                                &mut self.input_listener,
-                            );
-                        }
+                    if let Some(suggestion) = &self.suggestion {
+                        self.input
+                            .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
                 Key::Ctrl('p') => panic!("Manual panic triggered by user."),
