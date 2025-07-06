@@ -105,9 +105,7 @@ impl TwitchCommand {
     fn handle_slow_command(args: &[&str]) -> Result<Self, Error> {
         debug!("Slow command received as {:?}", args);
         let duration = match args.iter().as_slice() {
-            [slow_duration] => {
-                slow_duration.parse::<usize>()?
-            },
+            [slow_duration] => slow_duration.parse::<usize>()?,
             [] => 30,
             _ => bail!("Invalid slow command arguments"),
         };
@@ -116,9 +114,7 @@ impl TwitchCommand {
     fn handle_commercial_command(args: &[&str]) -> Result<Self, Error> {
         debug!("Commercial command received as {:?}", args);
         let duration = match args.iter().as_slice() {
-            [commercial_duration] => {
-                commercial_duration.parse::<usize>()?
-            }
+            [commercial_duration] => commercial_duration.parse::<usize>()?,
             [] => 30,
             _ => bail!("Invalid commercial command arguments"),
         };
