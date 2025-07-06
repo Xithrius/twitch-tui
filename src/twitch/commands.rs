@@ -102,7 +102,7 @@ impl TwitchCommand {
 
                 Ok(Self::Slow(duration))
             }
-            //TODO uh does it make sense to structure it here
+            // TODO does it make sense to structure it here
             [] => Ok(Self::Slow(30)),
             _ => bail!("Invalid slow command arguments"),
         }
@@ -123,8 +123,7 @@ impl FromStr for TwitchCommand {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = s.trim().to_lowercase();
 
-        //TODO if the commands with one arg dont have that arg matched does it needed a different
-        //error?
+        // TODO if the commands with one arg dont have that arg matched does it needed a different error?
         let cmd = match parts.split_whitespace().collect::<Vec<&str>>().as_slice() {
             ["clear"] => Self::Clear,
             ["ban", args @ ..] => Self::handle_ban_command(args)?,
@@ -228,7 +227,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("raid username").unwrap(),
             TwitchCommand::Raid("username".to_string())
-        )
+        );
     }
 
     #[test]
@@ -242,7 +241,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("unraid").unwrap(),
             TwitchCommand::Unraid
-        )
+        );
     }
 
     #[test]
@@ -273,7 +272,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("followersoff").unwrap(),
             TwitchCommand::FollowersOff
-        )
+        );
     }
 
     #[test]
@@ -304,7 +303,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("slowoff").unwrap(),
             TwitchCommand::SlowOff
-        )
+        );
     }
 
     #[test]
@@ -317,7 +316,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("subscribers").unwrap(),
             TwitchCommand::Subscribers
-        )
+        );
     }
 
     #[test]
@@ -330,7 +329,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("subscribersoff").unwrap(),
             TwitchCommand::SubscribersOff
-        )
+        );
     }
 
     #[test]
@@ -343,7 +342,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("emoteonly").unwrap(),
             TwitchCommand::EmoteOnly
-        )
+        );
     }
 
     #[test]
@@ -356,7 +355,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("emoteonlyoff").unwrap(),
             TwitchCommand::EmoteOnlyOff
-        )
+        );
     }
 
     #[test]
@@ -369,7 +368,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("vip username").unwrap(),
             TwitchCommand::Vip("username".to_string())
-        )
+        );
     }
 
     #[test]
@@ -383,7 +382,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("unvip username").unwrap(),
             TwitchCommand::Unvip("username".to_string())
-        )
+        );
     }
 
     #[test]
@@ -397,7 +396,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("mod username").unwrap(),
             TwitchCommand::Mod("username".to_string())
-        )
+        );
     }
 
     #[test]
@@ -411,7 +410,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("unmod username").unwrap(),
             TwitchCommand::Unmod("username".to_string())
-        )
+        );
     }
 
     #[test]
