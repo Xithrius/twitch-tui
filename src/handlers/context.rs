@@ -1,4 +1,9 @@
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    process::{Child, Command, Stdio},
+    rc::Rc,
+};
 
 use chrono::{DateTime, Local};
 use tui::{
@@ -20,6 +25,8 @@ use crate::{
     ui::components::{Component, Components},
 };
 
+use tracing::{error};
+
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
 pub struct Context {
@@ -37,6 +44,8 @@ pub struct Context {
     previous_state: Option<State>,
     /// Emotes
     pub emotes: SharedEmotes,
+    ///Running stream
+    pub running_stream: Option<Child>,
 }
 
 macro_rules! shared {
@@ -88,6 +97,7 @@ impl Context {
             state: shared_config_borrow.terminal.first_state.clone(),
             previous_state: None,
             emotes,
+            running_stream: None,
         }
     }
 
@@ -153,7 +163,44 @@ impl Context {
         None
     }
 
-    pub fn cleanup(&self) {
+    //TODO error handling
+    pub fn open_stream(&mut self, channel: &str) {
+        self.close_current_stream();
+        let config = self.config.borrow();
+        if let Some(view_command) = config.frontend.view_command.as_ref() {
+            self.running_stream = Command::new(view_command)
+                .arg(format!("https://twitch.tv/{channel}"))
+                .args(
+                    config
+                        .frontend
+                        .view_command_args
+                        .as_ref()
+                        .map_or_else(|| &[] as &[String], |view_args| view_args.as_slice()),
+                )
+                .stdout(Stdio::null())
+                .spawn()
+                .map_or_else(
+                    |err| {
+                        error!("error spawning view process: {err}");
+                        None
+                    },
+                    |process| Some(process),
+                );
+        }
+    }
+
+    pub fn close_current_stream(&mut self) {
+        if let Some(process) = self.running_stream.as_mut() {
+            _ = process
+                .kill()
+                .inspect_err(|err| error!("failed to kill view process: {err}"));
+        }
+        self.running_stream = None;
+    }
+
+    //TODO keep in mind this mut in case i have to make it a refcell
+    pub fn cleanup(&mut self) {
+        self.close_current_stream();
         self.storage.borrow().dump_data();
         self.emotes.unload();
     }

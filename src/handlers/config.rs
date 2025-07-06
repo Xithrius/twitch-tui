@@ -94,6 +94,12 @@ pub struct FiltersConfig {
 pub struct FrontendConfig {
     /// If the time and date is to be shown.
     pub show_datetimes: bool,
+    /// The command that should be used to view the stream
+    pub view_command: Option<String>,
+    // The args that should be passed to view_command
+    pub view_command_args: Option<Vec<String>>,
+    // Whether view_command should automatically be started when opening a stream
+    pub autostart_view_command: bool,
     /// The format of string that will show up in the terminal.
     pub datetime_format: String,
     /// If the username should be shown.
@@ -172,6 +178,9 @@ impl Default for FrontendConfig {
     fn default() -> Self {
         Self {
             show_datetimes: true,
+            view_command: None,
+            view_command_args: None,
+            autostart_view_command: false,
             datetime_format: "%a %b %e %T %Y".to_string(),
             username_shown: true,
             palette: Palette::default(),
@@ -400,6 +409,7 @@ impl ToVec<(String, String)> for FiltersConfig {
     }
 }
 
+//TODO
 impl ToVec<(String, String)> for FrontendConfig {
     fn to_vec(&self) -> Vec<(String, String)> {
         vec![
