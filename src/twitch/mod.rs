@@ -356,6 +356,22 @@ async fn handle_command_message(
 
             "Disabled emote-only mode for this room".to_string()
         }
+        TwitchCommand::UniqueChat => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_unique_chat_mode(true);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Enabled unique-chat mode for this room".to_string()
+        }
+        TwitchCommand::UniqueChatOff => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_unique_chat_mode(false);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Disabled unique-chat mode for this room".to_string()
+        }
         TwitchCommand::Vip(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
 
@@ -400,7 +416,6 @@ async fn handle_command_message(
 
             shoutout_twitch_user(twitch_client, shoutout_query).await?;
 
-            //TODO
             format!("Gave a shoutout to {username}")
         }
         TwitchCommand::Commercial(duration) => {
