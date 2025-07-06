@@ -25,7 +25,7 @@ use crate::{
     ui::components::{Component, Components},
 };
 
-use tracing::{error};
+use tracing::error;
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
@@ -184,7 +184,7 @@ impl Context {
                         error!("error spawning view process: {err}");
                         None
                     },
-                    |process| Some(process),
+                    Some,
                 );
         }
     }
