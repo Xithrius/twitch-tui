@@ -98,7 +98,7 @@ impl TwitchCommand {
             _ => bail!("Invalid followers command arguments"),
         }
     }
-    fn handle_slow_commnad(args: &[&str]) -> Result<Self, Error> {
+    fn handle_slow_command(args: &[&str]) -> Result<Self, Error> {
         debug!("Slow command received as {:?}", args);
         match args.iter().as_slice() {
             [slow_duration] => {
@@ -111,7 +111,7 @@ impl TwitchCommand {
             _ => bail!("Invalid slow command arguments"),
         }
     }
-    fn handle_commercial_commnad(args: &[&str]) -> Result<Self, Error> {
+    fn handle_commercial_command(args: &[&str]) -> Result<Self, Error> {
         debug!("Commercial command received as {:?}", args);
         match args.iter().as_slice() {
             [commercial_duration] => {
@@ -150,7 +150,7 @@ impl FromStr for TwitchCommand {
             ["unraid"] => Self::Unraid,
             ["followers", args @ ..] => Self::handle_followers_command(args)?,
             ["followersoff"] => Self::FollowersOff,
-            ["slow", args @ ..] => Self::handle_slow_commnad(args)?,
+            ["slow", args @ ..] => Self::handle_slow_command(args)?,
             ["slowoff"] => Self::SlowOff,
             ["subscribers"] => Self::Subscribers,
             ["subscribersoff"] => Self::SubscribersOff,
@@ -161,7 +161,7 @@ impl FromStr for TwitchCommand {
             ["vip", username] => Self::Vip((*username).to_string()),
             ["unvip", username] => Self::Unvip((*username).to_string()),
             ["shoutout", username] => Self::Shoutout((*username).to_string()),
-            ["commercial", args @ ..] => Self::handle_commercial_commnad(args)?,
+            ["commercial", args @ ..] => Self::handle_commercial_command(args)?,
             ["title", args @ ..] => Self::handle_title_command(args),
             ["category", args @ ..] => Self::handle_category_command(args),
             _ => bail!("Twitch command {} is not supported", s),

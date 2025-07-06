@@ -636,7 +636,7 @@ async fn handle_incoming_message(
     received_message: ReceivedTwitchMessage,
     emotes_enabled: bool,
 ) -> Result<()> {
-    // Don't allow messges from other channels go through
+    // Don't allow messages from other channels go through
     if let Some(condition) = received_message.subscription_condition() {
         if context
             .channel_id()
