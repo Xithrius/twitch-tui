@@ -294,11 +294,7 @@ async fn handle_command_message(
 
             duration.map_or_else(
                 || "Enabled followers-only mode for this room".to_string(),
-                |duration| {
-                    format!(
-                        "Enabled {duration} minutes followers-only mode was turned on with duration"
-                    )
-                },
+                |duration| format!("Enabled {duration} minutes followers-only mode for this room"),
             )
         }
         TwitchCommand::FollowersOff => {
