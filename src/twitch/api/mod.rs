@@ -2,6 +2,7 @@ pub mod channel_information;
 pub mod channels;
 pub mod chat_settings;
 pub mod clear;
+pub mod commercial;
 pub mod event_sub;
 pub mod following;
 pub mod messages;

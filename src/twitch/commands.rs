@@ -44,6 +44,8 @@ pub enum TwitchCommand {
     Unmod(String),
     /// Shoutout username
     Shoutout(String),
+    ///Start a commercial
+    Commercial(usize),
     /// Set the title of the stream
     Title(String),
     /// Set the category of a stream
@@ -109,6 +111,19 @@ impl TwitchCommand {
             _ => bail!("Invalid slow command arguments"),
         }
     }
+    fn handle_commercial_commnad(args: &[&str]) -> Result<Self, Error> {
+        debug!("Commercial command received as {:?}", args);
+        match args.iter().as_slice() {
+            [commercial_duration] => {
+                let duration = commercial_duration.parse::<usize>()?;
+
+                Ok(Self::Commercial(duration))
+            }
+            //TODO uh does it make sense to structure it here
+            [] => Ok(Self::Commercial(30)),
+            _ => bail!("Invalid commercial command arguments"),
+        }
+    }
     fn handle_title_command(args: &[&str]) -> Self {
         let title = args.join(" ");
         Self::Title(title)
@@ -146,6 +161,7 @@ impl FromStr for TwitchCommand {
             ["vip", username] => Self::Vip((*username).to_string()),
             ["unvip", username] => Self::Unvip((*username).to_string()),
             ["shoutout", username] => Self::Shoutout((*username).to_string()),
+            ["commercial", args @ ..] => Self::handle_commercial_commnad(args)?,
             ["title", args @ ..] => Self::handle_title_command(args),
             ["category", args @ ..] => Self::handle_category_command(args),
             _ => bail!("Twitch command {} is not supported", s),

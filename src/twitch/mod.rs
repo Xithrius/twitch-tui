@@ -56,8 +56,10 @@ use crate::{
     twitch::{
         api::{
             channels::get_channel_id,
+            commercial::{CommercialPayload, start_commercial},
             event_sub::subscribe_to_events,
-            messages::{send_twitch_message, NewTwitchMessage}, shoutouts::{shoutout_twitch_user, ShoutoutQuery},
+            messages::{NewTwitchMessage, send_twitch_message},
+            shoutouts::{ShoutoutQuery, shoutout_twitch_user},
         },
         models::ReceivedTwitchMessage,
         oauth::{get_twitch_client, get_twitch_client_oauth},
@@ -393,12 +395,19 @@ async fn handle_command_message(
         TwitchCommand::Shoutout(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
 
-            let shoutout_query = ShoutoutQuery::new(channel_id.to_string(), target_user_id, user_id);
+            let shoutout_query =
+                ShoutoutQuery::new(channel_id.to_string(), target_user_id, user_id);
 
             shoutout_twitch_user(twitch_client, shoutout_query).await?;
 
             //TODO
             format!("Gave a shoutout to {username}")
+        }
+        TwitchCommand::Commercial(duration) => {
+            let commercial_payload = CommercialPayload::new(channel_id.to_string(), duration);
+            start_commercial(twitch_client, commercial_payload).await?;
+
+            format!("Started a commercial for {duration} seconds")
         }
 
         TwitchCommand::Title(title) => {
