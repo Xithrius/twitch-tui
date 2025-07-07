@@ -168,6 +168,9 @@ impl Context {
         self.close_current_stream();
         let config = self.config.borrow();
         if let Some(view_command) = config.frontend.view_command.as_ref() {
+            if view_command.is_empty() {
+                return;
+            }
             self.running_stream = Command::new(view_command)
                 .arg(format!("https://twitch.tv/{channel}"))
                 .args(
@@ -178,6 +181,7 @@ impl Context {
                         .map_or_else(|| &[] as &[String], |view_args| view_args.as_slice()),
                 )
                 .stdout(Stdio::null())
+                .stderr(Stdio::null())
                 .spawn()
                 .map_or_else(
                     |err| {

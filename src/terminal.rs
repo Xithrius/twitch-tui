@@ -147,15 +147,11 @@ pub async fn ui_driver(
                                 //TODO dedupe
                                 let channel_name =
                                     if config.frontend.only_get_live_followed_channels {
-                                        channel
-                                            .split(':')
-                                            .collect::<Vec<&str>>()
-                                            .first()
-                                            .map_or(channel.clone(), ToString::to_string)
+                                        channel.split(':').next().unwrap_or(&channel)
                                     } else {
-                                        channel.clone()
+                                        &channel
                                     };
-                                context.open_stream(&channel_name);
+                                context.open_stream(channel_name);
                             }
                             erx = query_emotes(&config, channel);
                             context.set_state(State::Normal);
