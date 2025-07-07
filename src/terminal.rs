@@ -22,6 +22,7 @@ pub enum TerminalAction {
     BackOneLayer,
     SwitchState(State),
     Enter(TwitchAction),
+    OpenStream(String),
 }
 
 #[allow(clippy::match_wildcard_for_single_variants)]
@@ -163,6 +164,9 @@ pub async fn ui_driver(
                         } else {
                             tx.send(action).unwrap();
                         }
+                    }
+                    TerminalAction::OpenStream(channel) => {
+                        context.open_stream(&channel);
                     }
                 }
             }

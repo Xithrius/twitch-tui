@@ -149,8 +149,8 @@ scroll_up = ["ScrollUp", "Up", "k"]
 scroll_to_end = ["G"]
 # Scroll chat to bottom
 scroll_to_start = ["g"]
-# Open current stream in browser
-open_in_browser = ["o"]
+# Open current stream in view_command, or browser if not set
+open_in_player = ["o"]
 # Open the recent channel search widget
 recent_channels_search = ["s"]
 # Open the followed channel search widget

@@ -105,8 +105,8 @@ impl HelpWidget {
                 "Scroll chat to bottom",
             ),
             (
-                get_keybind_text(&keybinds.normal.open_in_browser),
-                "Open current stream in browser",
+                get_keybind_text(&keybinds.normal.open_in_player),
+                "Open current stream in player",
             ),
             (
                 get_keybind_text(&keybinds.normal.recent_channels_search),
