@@ -147,9 +147,12 @@ pub async fn ui_driver(
                                 //TODO dedupe
                                 let channel_name =
                                     if config.frontend.only_get_live_followed_channels {
-                                        channel.split(':').next().unwrap_or(&channel)
+                                        channel.split(':').next().map_or_else(
+                                            || channel.as_str(),
+                                            |name| name.trim_end(),
+                                        )
                                     } else {
-                                        &channel
+                                        channel.as_str()
                                     };
                                 context.open_stream(channel_name);
                             }
