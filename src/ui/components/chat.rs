@@ -73,10 +73,28 @@ impl ChatWidget {
         }
     }
 
-    pub fn open_in_browser(&self) {
-        webbrowser::open(format!(
-            "https://player.twitch.tv/?channel={}&enableExtensions=true&parent=twitch.tv&quality=chunked",
-            self.config.borrow().twitch.channel).as_str()).unwrap();
+    pub fn open_stream(&self) -> Option<TerminalAction> {
+        let config = self.config.borrow();
+        //TODO dedupe #3
+        let channel_name = if config.frontend.only_get_live_followed_channels {
+            config
+                .twitch
+                .channel
+                .split(':')
+                .next()
+                .map_or_else(|| config.twitch.channel.as_str(), |name| name.trim_end())
+        } else {
+            config.twitch.channel.as_str()
+        };
+
+        if config.frontend.autostart_view_command {
+            Some(TerminalAction::OpenStream(channel_name.to_string()))
+        } else {
+            webbrowser::open(format!(
+            "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
+            ).as_str()).unwrap();
+            None
+        }
     }
 
     pub fn get_messages<'a>(
@@ -315,7 +333,7 @@ impl Component for ChatWidget {
                     Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
                     Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                     Key::Char('q') => return Some(TerminalAction::Quit),
-                    Key::Char('o') => self.open_in_browser(),
+                    Key::Char('o') => return self.open_stream(),
                     Key::Char('G') => {
                         self.scroll_offset.jump_to(0);
                     }
