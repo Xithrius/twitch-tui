@@ -24,7 +24,10 @@ pub enum TerminalAction {
     OpenStream(String),
 }
 
-#[allow(clippy::match_wildcard_for_single_variants)]
+#[allow(
+    clippy::match_wildcard_for_single_variants,
+    clippy::cognitive_complexity
+)]
 pub async fn ui_driver(
     config: CoreConfig,
     mut context: Context,
@@ -145,7 +148,7 @@ pub async fn ui_driver(
                             tx.send(TwitchAction::JoinChannel(channel.clone())).unwrap();
 
                             if config.frontend.autostart_view_command {
-                                //TODO dedupe
+                                //TODO dedupe (or should this be part of open_stream?)
                                 let channel_name =
                                     if config.frontend.only_get_live_followed_channels {
                                         channel.split(':').next().map_or_else(
