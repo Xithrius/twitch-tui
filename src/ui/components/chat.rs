@@ -87,7 +87,12 @@ impl ChatWidget {
             config.twitch.channel.as_str()
         };
 
-        if config.frontend.autostart_view_command {
+        let has_non_empty_view_command = if let Some(view_command) = &config.frontend.view_command {
+            !view_command.is_empty()
+        } else {
+            false
+        };
+        if has_non_empty_view_command {
             Some(TerminalAction::OpenStream(channel_name.to_string()))
         } else {
             webbrowser::open(format!(
