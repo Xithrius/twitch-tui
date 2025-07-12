@@ -1,7 +1,4 @@
-use std::{
-    slice::Iter,
-    time::{Duration, Instant},
-};
+use std::slice::Iter;
 
 use tui::{
     Frame,
@@ -33,38 +30,12 @@ const DASHBOARD_TITLE: [&str; 5] = [
     "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   ",
 ];
 
-struct SwitcherCount {
-    timeout: Instant,
-    count: u32,
-}
-
-impl SwitcherCount {
-    fn new(digit: u32) -> Self {
-        return Self {
-            count: digit,
-            timeout: Instant::now(),
-        };
-    }
-
-    fn update_digit(&mut self, digit: u32) {
-        let current_time = Instant::now();
-        if current_time > self.timeout {
-            return;
-        }
-        self.count *= 10;
-        self.count += digit;
-        self.timeout = current_time
-            .checked_add(Duration::from_millis(500))
-            .expect("Time too large?");
-    }
-}
-
 pub struct DashboardWidget {
     config: SharedCoreConfig,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
     following: FollowingWidget,
-    switcher_count: Option<SwitcherCount>,
+    switcher_count: Option<u32>,
 }
 
 impl DashboardWidget {
@@ -273,10 +244,10 @@ impl Component for DashboardWidget {
                         channels.extend(selected_channels);
 
                         let count = if let Some(switcher_count) = self.switcher_count.as_mut() {
-                            switcher_count.update_digit(digit);
-                            switcher_count.count
+                            *switcher_count = *switcher_count * 10 + digit;
+                            *switcher_count
                         } else {
-                            self.switcher_count = Some(SwitcherCount::new(digit));
+                            self.switcher_count = Some(digit);
                             digit
                         } as usize;
 
@@ -285,15 +256,15 @@ impl Component for DashboardWidget {
                             self.storage
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
-                            if count * 10 >= channels.len() {
+                            if count * 10 <= channels.len() {
                                 return None;
-                            } else {
-                                let action = TerminalAction::Enter(TwitchAction::JoinChannel(
-                                    channel.to_string(),
-                                ));
-
-                                return Some(action);
                             }
+                            self.switcher_count = None;
+                            let action = TerminalAction::Enter(TwitchAction::JoinChannel(
+                                channel.to_string(),
+                            ));
+
+                            return Some(action);
                         }
                     }
                 }
