@@ -1,4 +1,7 @@
-use std::slice::Iter;
+use std::{
+    slice::Iter,
+    time::{Duration, Instant},
+};
 
 use tui::{
     Frame,
@@ -30,23 +33,52 @@ const DASHBOARD_TITLE: [&str; 5] = [
     "\\__/ |__/|__/_/\\__/\\___/_/ /_/      \\__/\\__,_/_/   ",
 ];
 
+struct SwitcherCount {
+    timeout: Instant,
+    count: u32,
+}
+
+impl SwitcherCount {
+    fn new(digit: u32) -> Self {
+        return Self {
+            count: digit,
+            timeout: Instant::now(),
+        };
+    }
+
+    fn update_digit(&mut self, digit: u32) {
+        let current_time = Instant::now();
+        if current_time > self.timeout {
+            return;
+        }
+        self.count *= 10;
+        self.count += digit;
+        self.timeout = current_time
+            .checked_add(Duration::from_millis(500))
+            .expect("Time too large?");
+    }
+}
+
 pub struct DashboardWidget {
     config: SharedCoreConfig,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
     following: FollowingWidget,
+    switcher_count: Option<SwitcherCount>,
 }
 
 impl DashboardWidget {
     pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let following = FollowingWidget::new(config.clone());
+        let switcher_count = None;
 
         Self {
             config,
             storage,
             channel_input,
             following,
+            switcher_count,
         }
     }
 
@@ -233,24 +265,35 @@ impl Component for DashboardWidget {
                 }
                 Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
                 Key::Char(c) => {
-                    if let Some(selection) = c.to_digit(10) {
+                    if let Some(digit) = c.to_digit(10) {
                         let mut channels = self.config.borrow().frontend.favorite_channels.clone();
                         let mut selected_channels = self.storage.borrow().get("channels");
                         selected_channels.reverse();
 
                         channels.extend(selected_channels);
 
-                        if let Some(channel) = channels.get(selection as usize) {
-                            let action = TerminalAction::Enter(TwitchAction::JoinChannel(
-                                channel.to_string(),
-                            ));
+                        let count = if let Some(switcher_count) = self.switcher_count.as_mut() {
+                            switcher_count.update_digit(digit);
+                            switcher_count.count
+                        } else {
+                            self.switcher_count = Some(SwitcherCount::new(digit));
+                            digit
+                        } as usize;
 
+                        if let Some(channel) = channels.get(count) {
                             self.config.borrow_mut().twitch.channel = channel.to_string();
                             self.storage
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
+                            if count * 10 >= channels.len() {
+                                return None;
+                            } else {
+                                let action = TerminalAction::Enter(TwitchAction::JoinChannel(
+                                    channel.to_string(),
+                                ));
 
-                            return Some(action);
+                                return Some(action);
+                            }
                         }
                     }
                 }
