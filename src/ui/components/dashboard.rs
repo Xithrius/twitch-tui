@@ -35,7 +35,7 @@ pub struct DashboardWidget {
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
     following: FollowingWidget,
-    switcher_count: Option<u32>,
+    favorites_selection: Option<u32>,
 }
 
 impl DashboardWidget {
@@ -49,7 +49,7 @@ impl DashboardWidget {
             storage,
             channel_input,
             following,
-            switcher_count,
+            favorites_selection: switcher_count,
         }
     }
 
@@ -243,23 +243,24 @@ impl Component for DashboardWidget {
 
                         channels.extend(selected_channels);
 
-                        let count = if let Some(switcher_count) = self.switcher_count.as_mut() {
-                            *switcher_count = *switcher_count * 10 + digit;
-                            *switcher_count
-                        } else {
-                            self.switcher_count = Some(digit);
-                            digit
-                        } as usize;
+                        let selection =
+                            if let Some(favorites_selection) = self.favorites_selection.as_mut() {
+                                *favorites_selection = *favorites_selection * 10 + digit;
+                                *favorites_selection
+                            } else {
+                                self.favorites_selection = Some(digit);
+                                digit
+                            } as usize;
 
-                        if let Some(channel) = channels.get(count) {
+                        if let Some(channel) = channels.get(selection) {
                             self.config.borrow_mut().twitch.channel = channel.to_string();
                             self.storage
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
-                            if count * 10 <= channels.len() {
+                            if selection * 10 <= channels.len() {
                                 return None;
                             }
-                            self.switcher_count = None;
+                            self.favorites_selection = None;
                             let action = TerminalAction::Enter(TwitchAction::JoinChannel(
                                 channel.to_string(),
                             ));
