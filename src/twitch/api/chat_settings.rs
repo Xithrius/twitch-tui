@@ -129,6 +129,13 @@ impl UpdateTwitchChatSettingsPayload {
             ..Self::default()
         }
     }
+
+    pub fn new_unique_chat_mode(on: bool) -> Self {
+        Self {
+            unique_chat_mode: Some(on),
+            ..Self::default()
+        }
+    }
 }
 
 /// Updates the broadcaster's chat settings

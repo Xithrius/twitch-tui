@@ -108,7 +108,7 @@ pub async fn get_channel_information(
         .await?
         .data
         .first()
-        .context("Could not get Twitch timeout response")?
+        .context("Could not get channel information")?
         .clone();
 
     Ok(response_data)

@@ -52,7 +52,7 @@ pub async fn raid_twitch_user(client: &Client, query: RaidQuery) -> Result<Twitc
         .await?
         .data
         .first()
-        .context("Could not get Twitch timeout response")?
+        .context("Could not get Twitch raid response")?
         .clone();
 
     Ok(response_data)

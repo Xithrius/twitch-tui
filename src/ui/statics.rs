@@ -78,8 +78,11 @@ pub static SUPPORTED_COMMANDS: LazyLock<Vec<&str>> = LazyLock::new(|| {
         "unmod",
         "vip",
         "unvip",
+        "shoutout",
+        "commercial",
+        "uniquechat",
+        "uniquechatoff",
         // "color",
-        // "commercial",
         // "delete",
         // "disconnect",
         // "help",
@@ -93,7 +96,8 @@ pub static SUPPORTED_COMMANDS: LazyLock<Vec<&str>> = LazyLock::new(|| {
         // "untimeout",
         // "vips",
         // "w",
-        // the following below are not normally chat commands so ill put them seperately for now
+
+        // The following commands are not normally chat commands so they're separated for now
         "title",
         "category",
     ]

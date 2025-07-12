@@ -34,6 +34,10 @@ pub enum TwitchCommand {
     EmoteOnly,
     /// Turn emote only mode off
     EmoteOnlyOff,
+    /// Turn unique chat mode on
+    UniqueChat,
+    /// Turn unique chat mode off
+    UniqueChatOff,
     /// Vip username
     Vip(String),
     /// Unvip username
@@ -42,6 +46,10 @@ pub enum TwitchCommand {
     Mod(String),
     /// Unmod username
     Unmod(String),
+    /// Shoutout username
+    Shoutout(String),
+    /// Start a commercial
+    Commercial(usize),
     /// Set the title of the stream
     Title(String),
     /// Set the category of a stream
@@ -94,18 +102,23 @@ impl TwitchCommand {
             _ => bail!("Invalid followers command arguments"),
         }
     }
-    fn handle_slow_commnad(args: &[&str]) -> Result<Self, Error> {
+    fn handle_slow_command(args: &[&str]) -> Result<Self, Error> {
         debug!("Slow command received as {:?}", args);
-        match args.iter().as_slice() {
-            [slow_duration] => {
-                let duration = slow_duration.parse::<usize>()?;
-
-                Ok(Self::Slow(duration))
-            }
-            // TODO does it make sense to structure it here
-            [] => Ok(Self::Slow(30)),
+        let duration = match args.iter().as_slice() {
+            [slow_duration] => slow_duration.parse::<usize>()?,
+            [] => 30,
             _ => bail!("Invalid slow command arguments"),
-        }
+        };
+        Ok(Self::Slow(duration))
+    }
+    fn handle_commercial_command(args: &[&str]) -> Result<Self, Error> {
+        debug!("Commercial command received as {:?}", args);
+        let duration = match args.iter().as_slice() {
+            [commercial_duration] => commercial_duration.parse::<usize>()?,
+            [] => 30,
+            _ => bail!("Invalid commercial command arguments"),
+        };
+        Ok(Self::Commercial(duration))
     }
     fn handle_title_command(args: &[&str]) -> Self {
         let title = args.join(" ");
@@ -123,7 +136,6 @@ impl FromStr for TwitchCommand {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = s.trim().to_lowercase();
 
-        // TODO if the commands with one arg dont have that arg matched does it needed a different error?
         let cmd = match parts.split_whitespace().collect::<Vec<&str>>().as_slice() {
             ["clear"] => Self::Clear,
             ["ban", args @ ..] => Self::handle_ban_command(args)?,
@@ -133,16 +145,20 @@ impl FromStr for TwitchCommand {
             ["unraid"] => Self::Unraid,
             ["followers", args @ ..] => Self::handle_followers_command(args)?,
             ["followersoff"] => Self::FollowersOff,
-            ["slow", args @ ..] => Self::handle_slow_commnad(args)?,
+            ["slow", args @ ..] => Self::handle_slow_command(args)?,
             ["slowoff"] => Self::SlowOff,
             ["subscribers"] => Self::Subscribers,
             ["subscribersoff"] => Self::SubscribersOff,
             ["emoteonly"] => Self::EmoteOnly,
             ["emoteonlyoff"] => Self::EmoteOnlyOff,
+            ["uniquechat"] => Self::UniqueChat,
+            ["uniquechatoff"] => Self::UniqueChatOff,
             ["mod", username] => Self::Mod((*username).to_string()),
             ["unmod", username] => Self::Unmod((*username).to_string()),
             ["vip", username] => Self::Vip((*username).to_string()),
             ["unvip", username] => Self::Unvip((*username).to_string()),
+            ["shoutout", username] => Self::Shoutout((*username).to_string()),
+            ["commercial", args @ ..] => Self::handle_commercial_command(args)?,
             ["title", args @ ..] => Self::handle_title_command(args),
             ["category", args @ ..] => Self::handle_category_command(args),
             _ => bail!("Twitch command {} is not supported", s),
@@ -364,6 +380,32 @@ mod tests {
     }
 
     #[test]
+    fn test_twitch_command_uniquechat_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("uniquechat").unwrap(),
+            TwitchCommand::UniqueChat
+        )
+    }
+
+    #[test]
+    fn test_twitch_command_uniquechat_invalid() {
+        assert!(TwitchCommand::from_str("uniquechat unexpected").is_err());
+    }
+
+    #[test]
+    fn test_twitch_command_uniquechatoff_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("uniquechatoff").unwrap(),
+            TwitchCommand::UniqueChatOff
+        )
+    }
+
+    #[test]
+    fn test_twitch_command_uniquechatoff_invalid() {
+        assert!(TwitchCommand::from_str("uniquechatoff unexpected").is_err());
+    }
+
+    #[test]
     fn test_twitch_command_vip_valid() {
         assert_eq!(
             TwitchCommand::from_str("vip username").unwrap(),
@@ -417,6 +459,38 @@ mod tests {
     fn test_twitch_command_unmod_invalid() {
         assert!(TwitchCommand::from_str("unmod").is_err());
         assert!(TwitchCommand::from_str("unmod username unexpected").is_err());
+    }
+
+    #[test]
+    fn test_twitch_command_shoutout_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("shoutout username").unwrap(),
+            TwitchCommand::Shoutout("username".to_string())
+        )
+    }
+
+    #[test]
+    fn test_twitch_command_shoutout_invalid() {
+        assert!(TwitchCommand::from_str("shoutout").is_err());
+        assert!(TwitchCommand::from_str("shoutout username unexpected").is_err());
+    }
+
+    #[test]
+    fn test_twitch_command_commercial_valid() {
+        assert_eq!(
+            TwitchCommand::from_str("commercial").unwrap(),
+            TwitchCommand::Commercial(30)
+        );
+        assert_eq!(
+            TwitchCommand::from_str("commercial 10").unwrap(),
+            TwitchCommand::Commercial(10)
+        );
+    }
+
+    #[test]
+    fn test_twitch_command_commercial_invalid() {
+        assert!(TwitchCommand::from_str("commercial 30 unexpected").is_err());
+        assert!(TwitchCommand::from_str("commercial string").is_err());
     }
 
     #[test]

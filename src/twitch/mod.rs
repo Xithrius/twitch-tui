@@ -56,8 +56,10 @@ use crate::{
     twitch::{
         api::{
             channels::get_channel_id,
+            commercial::{CommercialPayload, start_commercial},
             event_sub::subscribe_to_events,
             messages::{NewTwitchMessage, send_twitch_message},
+            shoutouts::{ShoutoutQuery, shoutout_twitch_user},
         },
         models::ReceivedTwitchMessage,
         oauth::{get_twitch_client, get_twitch_client_oauth},
@@ -354,6 +356,22 @@ async fn handle_command_message(
 
             "Disabled emote-only mode for this room".to_string()
         }
+        TwitchCommand::UniqueChat => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_unique_chat_mode(true);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Enabled unique-chat mode for this room".to_string()
+        }
+        TwitchCommand::UniqueChatOff => {
+            let update_query = UpdateTwitchChatSettingsQuery::new(channel_id.to_string(), user_id);
+            let update_payload = UpdateTwitchChatSettingsPayload::new_unique_chat_mode(false);
+
+            update_chat_settings(twitch_client, update_query, update_payload).await?;
+
+            "Disabled unique-chat mode for this room".to_string()
+        }
         TwitchCommand::Vip(username) => {
             let target_user_id = get_channel_id(twitch_client, &username).await?;
 
@@ -389,6 +407,22 @@ async fn handle_command_message(
             unmod_twitch_user(twitch_client, unmod_query).await?;
 
             format!("Removed {username} as a moderator of this channel")
+        }
+        TwitchCommand::Shoutout(username) => {
+            let target_user_id = get_channel_id(twitch_client, &username).await?;
+
+            let shoutout_query =
+                ShoutoutQuery::new(channel_id.to_string(), target_user_id, user_id);
+
+            shoutout_twitch_user(twitch_client, shoutout_query).await?;
+
+            format!("Gave a shoutout to {username}")
+        }
+        TwitchCommand::Commercial(duration) => {
+            let commercial_payload = CommercialPayload::new(channel_id.to_string(), duration);
+            start_commercial(twitch_client, commercial_payload).await?;
+
+            format!("Started a commercial for {duration} seconds")
         }
 
         TwitchCommand::Title(title) => {
@@ -617,7 +651,7 @@ async fn handle_incoming_message(
     received_message: ReceivedTwitchMessage,
     emotes_enabled: bool,
 ) -> Result<()> {
-    // Don't allow messges from other channels go through
+    // Don't allow messages from other channels go through
     if let Some(condition) = received_message.subscription_condition() {
         if context
             .channel_id()
