@@ -87,18 +87,13 @@ impl ChatWidget {
             config.twitch.channel.as_str()
         };
 
-        let has_non_empty_view_command = config
-            .frontend
-            .view_command
-            .as_ref()
-            .is_some_and(|view_command| !view_command.is_empty());
-        if has_non_empty_view_command {
-            Some(TerminalAction::OpenStream(channel_name.to_string()))
-        } else {
+        if config.frontend.view_command.is_empty() {
             webbrowser::open(format!(
             "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
             ).as_str()).unwrap();
             None
+        } else {
+            Some(TerminalAction::OpenStream(channel_name.to_string()))
         }
     }
 

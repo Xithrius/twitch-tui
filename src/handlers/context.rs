@@ -166,20 +166,12 @@ impl Context {
     //TODO error handling
     pub fn open_stream(&mut self, channel: &str) {
         self.close_current_stream();
-        let config = self.config.borrow();
-        if let Some(view_command) = config.frontend.view_command.as_ref() {
-            if view_command.is_empty() {
-                return;
-            }
-            self.running_stream = Command::new(view_command)
+        let view_command = &self.config.borrow().frontend.view_command;
+
+        if !view_command.is_empty() {
+            self.running_stream = Command::new(view_command[0].clone())
+                .args(&view_command[1..])
                 .arg(format!("https://twitch.tv/{channel}"))
-                .args(
-                    config
-                        .frontend
-                        .view_command_args
-                        .as_ref()
-                        .map_or_else(|| &[] as &[String], |view_args| view_args.as_slice()),
-                )
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .spawn()

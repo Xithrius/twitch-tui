@@ -92,10 +92,8 @@ pub struct FiltersConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct FrontendConfig {
-    /// The command that should be used to view the stream
-    pub view_command: Option<String>,
-    /// The args that should be passed to `view_command`
-    pub view_command_args: Option<Vec<String>>,
+    /// The command and arguments that should be used to view the stream
+    pub view_command: Vec<String>,
     /// Whether `view_command` should automatically be started when opening a stream
     pub autostart_view_command: bool,
     /// If the time and date is to be shown.
@@ -177,8 +175,7 @@ impl Default for TerminalConfig {
 impl Default for FrontendConfig {
     fn default() -> Self {
         Self {
-            view_command: None,
-            view_command_args: None,
+            view_command: vec![],
             autostart_view_command: false,
             show_datetimes: true,
             datetime_format: "%a %b %e %T %Y".to_string(),
@@ -413,15 +410,9 @@ impl ToVec<(String, String)> for FiltersConfig {
 impl ToVec<(String, String)> for FrontendConfig {
     fn to_vec(&self) -> Vec<(String, String)> {
         vec![
-            (
-                "View command".to_string(),
-                self.view_command
-                    .clone()
-                    .unwrap_or_else(|| "None".to_string()),
-            ),
             /*(
-                "View command args".to_string(),
-                self.view_command_args.map_or("None".to_string(), |a| a.),
+                "View command".to_string(),
+                self.view_command.to_string()
             ),*/
             (
                 "Autostart view command".to_string(),

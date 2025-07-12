@@ -43,10 +43,8 @@ enabled = false
 reversed = false
 
 [frontend]
-# The command that should be used to view the stream (eg. mpv, streamlink)
-view_command = ""
-# Additional args to pass to view_command
-view_command_args = []
+# The command and its args that should be used to view the stream (eg. mpv, streamlink)
+view_command = []
 # Whether to automatically start view_command when changing to a new stream
 autostart_view_command = false
 # If the time and date is to be shown in the chat window.
