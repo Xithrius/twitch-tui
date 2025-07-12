@@ -153,7 +153,7 @@ pub async fn twitch_websocket(
                     },
                     TwitchAction::JoinChannel(channel_name) => {
                         let channel = if config.frontend.only_get_live_followed_channels {
-                            channel_name.split(':').collect::<Vec<&str>>().first().map_or(channel_name.clone(), ToString::to_string)
+                            channel_name.split(':').next().map_or(channel_name.clone(), ToString::to_string)
                         } else {
                             channel_name
                         };
