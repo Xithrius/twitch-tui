@@ -280,6 +280,7 @@ impl Component for DashboardWidget {
 
                             return Some(action);
                         }
+                        self.channel_selection = None;
                     }
                 }
                 _ => {}
