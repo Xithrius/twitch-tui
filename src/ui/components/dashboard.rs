@@ -35,7 +35,7 @@ pub struct DashboardWidget {
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
     following: FollowingWidget,
-    favorites_selection: Option<u32>,
+    channel_selection: Option<u32>,
 }
 
 impl DashboardWidget {
@@ -49,7 +49,7 @@ impl DashboardWidget {
             storage,
             channel_input,
             following,
-            favorites_selection: switcher_count,
+            channel_selection: switcher_count,
         }
     }
 
@@ -58,11 +58,24 @@ impl DashboardWidget {
         items: &'a [String],
         index_offset: usize,
     ) -> List<'a> {
+        let selection = self
+            .channel_selection
+            .map_or(String::new(), |selection| selection.to_string());
         List::new(items.iter().enumerate().map(|(i, s)| {
+            let index_offset_str = (i + index_offset).to_string();
+            let selection_offset = if index_offset_str.starts_with(&selection) {
+                selection.len()
+            } else {
+                0
+            };
             ListItem::new(Line::from(vec![
                 Span::raw("["),
                 Span::styled(
-                    (i + index_offset).to_string(),
+                    index_offset_str[0..selection_offset].to_string(),
+                    Style::default().fg(Color::Red),
+                ),
+                Span::styled(
+                    index_offset_str[selection_offset..].to_string(),
                     Style::default().fg(Color::LightMagenta),
                 ),
                 Span::raw("] "),
@@ -244,11 +257,11 @@ impl Component for DashboardWidget {
                         channels.extend(selected_channels);
 
                         let selection =
-                            if let Some(favorites_selection) = self.favorites_selection.as_mut() {
+                            if let Some(favorites_selection) = self.channel_selection.as_mut() {
                                 *favorites_selection = *favorites_selection * 10 + digit;
                                 *favorites_selection
                             } else {
-                                self.favorites_selection = Some(digit);
+                                self.channel_selection = Some(digit);
                                 digit
                             } as usize;
 
@@ -260,7 +273,7 @@ impl Component for DashboardWidget {
                             if selection != 0 && selection * 10 <= channels.len() {
                                 return None;
                             }
-                            self.favorites_selection = None;
+                            self.channel_selection = None;
                             let action = TerminalAction::Enter(TwitchAction::JoinChannel(
                                 channel.to_string(),
                             ));
