@@ -572,6 +572,7 @@ impl ToVec<(String, String)> for StorageConfig {
         vec![
             ("Channels enabled".to_string(), self.channels.to_string()),
             ("Mentions enabled".to_string(), self.mentions.to_string()),
+            ("Chatters enabled".to_string(), self.chatters.to_string()),
         ]
     }
 }
