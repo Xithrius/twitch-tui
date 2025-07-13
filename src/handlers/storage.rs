@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{handlers::config::StorageConfig, utils::pathing::config_path};
 
-static ITEM_KEYS: LazyLock<Vec<&str>> = LazyLock::new(|| vec!["channels", "mentions"]);
+static ITEM_KEYS: LazyLock<Vec<&str>> = LazyLock::new(|| vec!["channels", "mentions", "chatters"]);
 
 pub type SharedStorage = Rc<RefCell<Storage>>;
 type StorageMap = HashMap<String, StorageItem>;
@@ -40,6 +40,7 @@ impl Storage {
                 let enabled = match *item_key {
                     "channels" => config.channels,
                     "mentions" => config.mentions,
+                    "chatters" => config.chatters,
                     _ => panic!("Invalid storage key {item_key}."),
                 };
 
