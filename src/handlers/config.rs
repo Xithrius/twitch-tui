@@ -82,6 +82,8 @@ pub struct StorageConfig {
     pub channels: bool,
     /// If previous username mentions should be tracked.
     pub mentions: bool,
+    /// If chatters previously in a room should be tracked
+    pub chatters: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
