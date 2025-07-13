@@ -257,7 +257,7 @@ impl Component for DashboardWidget {
                             self.storage
                                 .borrow_mut()
                                 .add("channels", channel.to_string());
-                            if selection * 10 <= channels.len() {
+                            if selection != 0 && selection * 10 <= channels.len() {
                                 return None;
                             }
                             self.favorites_selection = None;
