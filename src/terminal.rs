@@ -96,13 +96,11 @@ pub async fn ui_driver(
             match msg {
                 TwitchToTerminalAction::Message(m) => {
                     let message_data = MessageData::from_twitch_message(m, &context.emotes);
-                    if config.storage.chatters {
-                        //TODO filter through "known chatters" (Twitch, System) (also author includes the badges so figure that out
-                        context
-                            .storage
-                            .borrow_mut()
-                            .add("chatters", message_data.author.clone());
-                    }
+                    //TODO filter through "known chatters" (Twitch, System) (also author includes the badges so figure that out
+                    context
+                        .storage
+                        .borrow_mut()
+                        .add("chatters", message_data.author.clone());
                     context.messages.borrow_mut().push_front(message_data);
 
                     // If scrolling is enabled, pad for more messages.
