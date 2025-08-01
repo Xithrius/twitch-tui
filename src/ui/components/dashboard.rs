@@ -3,7 +3,7 @@ use std::slice::Iter;
 use tui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
 };
@@ -72,7 +72,7 @@ impl DashboardWidget {
                 Span::raw("["),
                 Span::styled(
                     index_offset_str[0..selection_offset].to_string(),
-                    Style::default().fg(Color::Red),
+                    Style::default().fg(Color::Red).bold(),
                 ),
                 Span::styled(
                     index_offset_str[selection_offset..].to_string(),

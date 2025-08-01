@@ -384,7 +384,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("uniquechat").unwrap(),
             TwitchCommand::UniqueChat
-        )
+        );
     }
 
     #[test]
@@ -397,7 +397,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("uniquechatoff").unwrap(),
             TwitchCommand::UniqueChatOff
-        )
+        );
     }
 
     #[test]
@@ -466,7 +466,7 @@ mod tests {
         assert_eq!(
             TwitchCommand::from_str("shoutout username").unwrap(),
             TwitchCommand::Shoutout("username".to_string())
-        )
+        );
     }
 
     #[test]
