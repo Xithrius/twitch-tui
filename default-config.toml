@@ -30,6 +30,10 @@ channels = false
 # If enabled, the chat input box will search previously mentioned users, given that
 # the first character in the input box is `@`.
 mentions = false
+# If previous users in chat should be tracked
+# If enabled, the chat input box will search chatters previously seen, given that
+# the first character in the input box is '@'
+chatters = false
 
 [filters]
 # If filters should be enabled.
