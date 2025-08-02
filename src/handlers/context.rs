@@ -174,9 +174,9 @@ impl Context {
         self.close_current_stream();
         let view_command = &self.config.borrow().frontend.view_command;
 
-        if !view_command.is_empty() {
-            self.running_stream = Command::new(view_command[0].clone())
-                .args(&view_command[1..])
+        if let Some((command, args)) = view_command.split_first() {
+            self.running_stream = Command::new(command.clone())
+                .args(args)
                 .arg(format!("https://twitch.tv/{channel}"))
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
