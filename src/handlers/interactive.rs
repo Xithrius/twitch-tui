@@ -25,7 +25,14 @@ pub(super) fn interactive_config() -> Option<CoreConfig> {
     let token: String = Password::with_theme(&theme)
         .with_prompt("Token (paste/type password and press enter): ")
         .interact()
-        .ok()?;
+        .ok()
+        .map(|t| {
+            if t.starts_with("oauth:") {
+                t
+            } else {
+                format!("oauth:{t}")
+            }
+        })?;
 
     let channel: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Channel: ")
