@@ -8,6 +8,7 @@ use color_eyre::eyre::{Error, Result, bail};
 use serde::Serialize;
 use serde_with::DeserializeFromStr;
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
 pub enum NormalMode {
     Insert,

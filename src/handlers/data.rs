@@ -416,7 +416,7 @@ impl MessageData {
         width: usize,
         search_highlight: Option<&str>,
         username_highlight: Option<&str>,
-    ) -> Vec<Line> {
+    ) -> Vec<Line<'_>> {
         // Theme styles
         let fg = self.hash_username(&frontend_config.palette);
 
