@@ -1,4 +1,4 @@
-use dialoguer::{Confirm, Input, console::Style, theme::ColorfulTheme};
+use dialoguer::{Confirm, Input, Password, console::Style, theme::ColorfulTheme};
 
 use crate::handlers::config::{CoreConfig, TwitchConfig};
 
@@ -22,9 +22,9 @@ pub(super) fn interactive_config() -> Option<CoreConfig> {
         .interact_text()
         .ok()?;
 
-    let token: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("Token: ")
-        .interact_text()
+    let token: String = Password::with_theme(&theme)
+        .with_prompt("Token (paste/type password and press enter): ")
+        .interact()
         .ok()?;
 
     let channel: String = Input::with_theme(&ColorfulTheme::default())

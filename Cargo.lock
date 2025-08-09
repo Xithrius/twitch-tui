@@ -625,6 +625,7 @@ dependencies = [
  "console",
  "shell-words",
  "thiserror 1.0.69",
+ "zeroize",
 ]
 
 [[package]]
