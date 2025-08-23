@@ -235,19 +235,28 @@ impl Component for DashboardWidget {
                 return self.following.event(event).await;
             }
 
+            let keybinds = self.config.borrow().keybinds.dashboard.clone();
             match key {
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::Char('q') => return Some(TerminalAction::Quit),
-                Key::Char('s') => self.channel_input.toggle_focus(),
-                Key::Char('f') => self.following.toggle_focus().await,
-                Key::Enter => {
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.");
+                }
+                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.recent_channels_search.contains(key) => {
+                    self.channel_input.toggle_focus();
+                }
+                key if keybinds.followed_channels_search.contains(key) => {
+                    self.following.toggle_focus().await;
+                }
+                key if keybinds.join.contains(key) => {
                     let action = TerminalAction::Enter(TwitchAction::JoinChannel(
                         self.config.borrow().twitch.channel.clone(),
                     ));
 
                     return Some(action);
                 }
-                Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
+                key if keybinds.help.contains(key) => {
+                    return Some(TerminalAction::SwitchState(State::Help));
+                }
                 Key::Char(c) => {
                     if let Some(digit) = c.to_digit(10) {
                         let mut channels = self.config.borrow().frontend.favorite_channels.clone();

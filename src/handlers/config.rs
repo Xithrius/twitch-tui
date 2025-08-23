@@ -148,42 +148,48 @@ pub struct FrontendConfig {
     pub only_get_live_followed_channels: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct KeybindsConfig {
+    pub toggle_debug_focus: Vec<Key>,
     pub dashboard: DashboardKeybindsConfig,
     pub normal: NormalKeybindsConfig,
     pub insert: InsertKeybindsConfig,
+    pub selection: SelectionKeybindsConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct DashboardKeybindsConfig {
-    join: Vec<Key>,
-    help: Vec<Key>,
-    quit: Vec<Key>,
-    recent_channels_search: Vec<Key>,
-    followed_channels_search: Vec<Key>,
-    crash_application: Vec<Key>,
+    pub join: Vec<Key>,
+    pub help: Vec<Key>,
+    pub quit: Vec<Key>,
+    pub recent_channels_search: Vec<Key>,
+    pub followed_channels_search: Vec<Key>,
+    pub crash_application: Vec<Key>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct NormalKeybindsConfig {
-    enter_insert: Vec<Key>,
-    enter_insert_with_mention: Vec<Key>,
-    enter_insert_with_command: Vec<Key>,
-    search_messages: Vec<Key>,
-    toggle_message_filter: Vec<Key>,
-    reverse_message_filter: Vec<Key>,
-    back_to_previous_window: Vec<Key>,
-    scroll_down: Vec<Key>,
-    scroll_up: Vec<Key>,
-    help: Vec<Key>,
-    quit: Vec<Key>,
-    recent_channels_search: Vec<Key>,
-    followed_channels_search: Vec<Key>,
-    crash_application: Vec<Key>,
+    pub enter_insert: Vec<Key>,
+    pub enter_insert_with_mention: Vec<Key>,
+    pub enter_insert_with_command: Vec<Key>,
+    pub enter_dashboard: Vec<Key>,
+    pub search_messages: Vec<Key>,
+    pub toggle_message_filter: Vec<Key>,
+    pub reverse_message_filter: Vec<Key>,
+    pub back_to_previous_window: Vec<Key>,
+    pub scroll_down: Vec<Key>,
+    pub scroll_up: Vec<Key>,
+    pub scroll_to_end: Vec<Key>,
+    pub scroll_to_start: Vec<Key>,
+    pub open_in_browser: Vec<Key>,
+    pub help: Vec<Key>,
+    pub quit: Vec<Key>,
+    pub recent_channels_search: Vec<Key>,
+    pub followed_channels_search: Vec<Key>,
+    pub crash_application: Vec<Key>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -207,6 +213,19 @@ pub struct InsertKeybindsConfig {
     pub start_of_previous_word: Vec<Key>,
     pub swap_previous_word_with_current: Vec<Key>,
     pub toggle_emote_picker: Vec<Key>,
+    pub quit: Vec<Key>,
+    pub crash_application: Vec<Key>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
+pub struct SelectionKeybindsConfig {
+    pub scroll_down: Vec<Key>,
+    pub scroll_up: Vec<Key>,
+    pub delete_entry: Vec<Key>,
+    pub select: Vec<Key>,
+    pub back_to_previous_window: Vec<Key>,
+    pub crash_application: Vec<Key>,
 }
 
 impl Default for TwitchConfig {
@@ -265,6 +284,18 @@ impl Default for FrontendConfig {
     }
 }
 
+impl Default for KeybindsConfig {
+    fn default() -> Self {
+        Self {
+            toggle_debug_focus: vec![Key::Ctrl('d')],
+            dashboard: DashboardKeybindsConfig::default(),
+            normal: NormalKeybindsConfig::default(),
+            insert: InsertKeybindsConfig::default(),
+            selection: SelectionKeybindsConfig::default(),
+        }
+    }
+}
+
 impl Default for DashboardKeybindsConfig {
     fn default() -> Self {
         Self {
@@ -283,12 +314,16 @@ impl Default for NormalKeybindsConfig {
             enter_insert: vec![Key::Char('i'), Key::Char('c')],
             enter_insert_with_mention: vec![Key::Char('@')],
             enter_insert_with_command: vec![Key::Char('/')],
+            enter_dashboard: vec![Key::Char('S')],
             search_messages: vec![Key::Ctrl('f')],
             toggle_message_filter: vec![Key::Ctrl('t')],
             reverse_message_filter: vec![Key::Ctrl('r')],
             back_to_previous_window: vec![Key::Esc],
             scroll_up: vec![Key::ScrollUp, Key::Up, Key::Char('k')],
             scroll_down: vec![Key::ScrollDown, Key::Down, Key::Char('j')],
+            scroll_to_end: vec![Key::Char('G')],
+            scroll_to_start: vec![Key::Char('g')],
+            open_in_browser: vec![Key::Char('o')],
             help: vec![Key::Char('?'), Key::Char('h')],
             quit: vec![Key::Char('q')],
             recent_channels_search: vec![Key::Char('s')],
@@ -319,6 +354,21 @@ impl Default for InsertKeybindsConfig {
             start_of_previous_word: vec![Key::Alt('b')],
             swap_previous_word_with_current: vec![Key::Alt('t')],
             toggle_emote_picker: vec![Key::Ctrl('e')],
+            quit: vec![Key::Ctrl('q')],
+            crash_application: vec![Key::Ctrl('p')],
+        }
+    }
+}
+
+impl Default for SelectionKeybindsConfig {
+    fn default() -> Self {
+        Self {
+            scroll_up: vec![Key::ScrollUp, Key::Up],
+            scroll_down: vec![Key::ScrollDown, Key::Down],
+            select: vec![Key::Enter],
+            delete_entry: vec![Key::Ctrl('d')],
+            back_to_previous_window: vec![Key::Esc],
+            crash_application: vec![Key::Enter],
         }
     }
 }

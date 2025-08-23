@@ -50,6 +50,7 @@ pub trait Component {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
 
     #[allow(clippy::unused_async)]
+    //TODO make this somehow work with keybinds
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             match key {
