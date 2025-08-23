@@ -120,7 +120,7 @@ impl<T: Clone> Display for InputWidget<T> {
 
 impl<T: Clone> Component for InputWidget<T> {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
+        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a.clamp(f.area()));
 
         let cursor_pos = get_cursor_position(&self.input);
 
