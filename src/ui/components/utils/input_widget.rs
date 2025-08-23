@@ -211,8 +211,10 @@ impl<T: Clone> Component for InputWidget<T> {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            //TODO idk if this needs to be cloned or not
+            let keybinds = self.config.borrow().keybinds.insert.clone();
             match key {
-                Key::Ctrl('f') | Key::Right => {
+                key if keybinds.move_cursor_right.contains(key) => {
                     if self.input.next_pos(1).is_none() {
                         self.accept_suggestion();
                         self.input.move_end();
@@ -220,16 +222,16 @@ impl<T: Clone> Component for InputWidget<T> {
                         self.input.move_forward(1);
                     }
                 }
-                Key::Ctrl('b') | Key::Left => {
+                key if keybinds.move_cursor_left.contains(key) => {
                     self.input.move_backward(1);
                 }
-                Key::Ctrl('a') | Key::Home => {
+                key if keybinds.move_cursor_start.contains(key) => {
                     self.input.move_home();
                 }
-                Key::Ctrl('e') | Key::End => {
+                key if keybinds.move_cursor_end.contains(key) => {
                     self.input.move_end();
                 }
-                Key::Alt('f') => {
+                key if keybinds.end_of_next_word.contains(key) => {
                     self.input.move_to_next_word(At::AfterEnd, Word::Emacs, 1);
                 }
                 Key::Alt('b') => {
@@ -251,7 +253,7 @@ impl<T: Clone> Component for InputWidget<T> {
                     self.input
                         .delete_prev_word(Word::Emacs, 1, &mut self.input_listener);
                 }
-                Key::Ctrl('d') | Key::Delete => {
+                key if keybinds.remove_item_to_right.contains(key) => {
                     self.input.delete(1, &mut self.input_listener);
                 }
                 Key::Backspace => {
