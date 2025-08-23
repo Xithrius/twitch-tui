@@ -250,8 +250,10 @@ impl Component for ChannelSwitcherWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            //TODO ig this needs its own widget keybinds
+            let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
@@ -259,10 +261,12 @@ impl Component for ChannelSwitcherWidget {
                         self.search_input.clear();
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Ctrl('d') => {
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
+                key if keybinds.scroll_down.contains(key) => self.next(),
+                key if keybinds.scroll_up.contains(key) => self.previous(),
+                key if keybinds.delete_entry.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
                         // TODO: Make this just two if lets
                         if let Some(filtered) = self.filtered_channels.clone() {

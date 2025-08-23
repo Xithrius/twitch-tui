@@ -234,22 +234,22 @@ impl<T: Clone> Component for InputWidget<T> {
                 key if keybinds.end_of_next_word.contains(key) => {
                     self.input.move_to_next_word(At::AfterEnd, Word::Emacs, 1);
                 }
-                Key::Alt('b') => {
+                key if keybinds.start_of_previous_word.contains(key) => {
                     self.input.move_to_prev_word(Word::Emacs, 1);
                 }
-                Key::Ctrl('t') => {
+                key if keybinds.swap_previous_item_with_current.contains(key) => {
                     self.input.transpose_chars(&mut self.input_listener);
                 }
-                Key::Alt('t') => {
+                key if keybinds.swap_previous_word_with_current.contains(key) => {
                     self.input.transpose_words(1, &mut self.input_listener);
                 }
-                Key::Ctrl('u') => {
+                key if keybinds.remove_before_cursor.contains(key) => {
                     self.input.discard_line(&mut self.input_listener);
                 }
-                Key::Ctrl('k') => {
+                key if keybinds.remove_after_cursor.contains(key) => {
                     self.input.kill_line(&mut self.input_listener);
                 }
-                Key::Ctrl('w') => {
+                key if keybinds.remove_previous_word.contains(key) => {
                     self.input
                         .delete_prev_word(Word::Emacs, 1, &mut self.input_listener);
                 }
@@ -259,14 +259,16 @@ impl<T: Clone> Component for InputWidget<T> {
                 Key::Backspace => {
                     self.input.backspace(1, &mut self.input_listener);
                 }
-                Key::Tab => {
+                key if keybinds.fill_suggestion.contains(key) => {
                     if let Some(suggestion) = &self.suggestion {
                         self.input
                             .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::Ctrl('q') => return Some(TerminalAction::Quit),
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
+                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1, &mut self.input_listener);
                 }
