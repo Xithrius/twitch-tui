@@ -1,11 +1,13 @@
 use std::{fmt::Display, time::Duration};
 
+use serde::{Deserialize, Serialize};
+
 use tokio::{sync::mpsc, time::Instant};
 use tui::crossterm::event::{
     self, Event as CEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind,
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Key {
     // Keyboard controls
     Backspace,
