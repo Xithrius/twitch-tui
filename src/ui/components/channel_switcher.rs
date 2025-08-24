@@ -16,11 +16,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
-    },
+    handlers::{config::SharedCoreConfig, storage::SharedStorage, user_input::events::Event},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
@@ -248,9 +244,9 @@ impl Component for ChannelSwitcherWidget {
         self.search_input.draw(f, Some(input_rect));
     }
 
+    #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            //TODO ig this needs its own widget keybinds
             let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
                 key if keybinds.back_to_previous_window.contains(key) => {
@@ -283,7 +279,7 @@ impl Component for ChannelSwitcherWidget {
                         }
                     }
                 }
-                Key::Enter => {
+                key if keybinds.select.contains(key) => {
                     // TODO: Reduce code duplication
                     if let Some(i) = self.list_state.selected() {
                         self.toggle_focus();
