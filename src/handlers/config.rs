@@ -225,6 +225,7 @@ pub struct SelectionKeybindsConfig {
     pub delete_item: Vec<Key>,
     pub select: Vec<Key>,
     pub back_to_previous_window: Vec<Key>,
+    pub quit: Vec<Key>,
     pub crash_application: Vec<Key>,
 }
 
@@ -300,10 +301,10 @@ impl Default for DashboardKeybindsConfig {
     fn default() -> Self {
         Self {
             join: vec![Key::Enter],
-            help: vec![Key::Char('?'), Key::Char('h')],
-            quit: vec![Key::Char('q')],
             recent_channels_search: vec![Key::Char('s')],
             followed_channels_search: vec![Key::Char('f')],
+            help: vec![Key::Char('?'), Key::Char('h')],
+            quit: vec![Key::Char('q')],
             crash_application: vec![Key::Ctrl('p')],
         }
     }
@@ -324,10 +325,10 @@ impl Default for NormalKeybindsConfig {
             scroll_to_end: vec![Key::Char('G')],
             scroll_to_start: vec![Key::Char('g')],
             open_in_browser: vec![Key::Char('o')],
-            help: vec![Key::Char('?'), Key::Char('h')],
-            quit: vec![Key::Char('q')],
             recent_channels_search: vec![Key::Char('s')],
             followed_channels_search: vec![Key::Char('f')],
+            help: vec![Key::Char('?'), Key::Char('h')],
+            quit: vec![Key::Char('q')],
             crash_application: vec![Key::Ctrl('p')],
         }
     }
@@ -368,6 +369,7 @@ impl Default for SelectionKeybindsConfig {
             select: vec![Key::Enter],
             delete_item: vec![Key::Ctrl('d')],
             back_to_previous_window: vec![Key::Esc],
+            quit: vec![Key::Char('q')],
             crash_application: vec![Key::Ctrl('p')],
         }
     }

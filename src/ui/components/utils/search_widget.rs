@@ -64,7 +64,7 @@ where
 {
     pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-        let error_widget = ErrorWidget::new(error_message);
+        let error_widget = ErrorWidget::new(config.clone(), error_message);
 
         Self {
             config,
