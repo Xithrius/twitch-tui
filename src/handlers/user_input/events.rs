@@ -39,8 +39,8 @@ impl FromStr for Key {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         fn get_single_char(s: &str) -> Result<char, Error> {
-            if s.chars().count() == 1 {
-                return Ok(s.chars().next().expect("Must be a char here"));
+            if s.trim().chars().count() == 1 {
+                return Ok(s.trim().chars().next().expect("Must be a char here"));
             }
             bail!("Key char '{}' cannot be deserialized", s);
         }
@@ -59,9 +59,10 @@ impl FromStr for Key {
             "backspace" => Ok(Self::Backspace),
             "scrolldown" => Ok(Self::ScrollDown),
             "scrollup" => Ok(Self::ScrollUp),
+            "plus" => Ok(Self::Char('+')),
             _ => {
                 if let Some((modifier, key)) = s.split_once('+') {
-                    match modifier.trim() {
+                    match modifier.to_lowercase().trim() {
                         "alt" => Ok(Self::Alt(get_single_char(key)?)),
                         "ctrl" => Ok(Self::Ctrl(get_single_char(key)?)),
                         _ => bail!("Key '{}' cannot be deserialized", s),
@@ -77,6 +78,7 @@ impl FromStr for Key {
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Char('+') => write!(f, "+"),
             Self::Char(c) => write!(f, "{c}"),
             Self::Ctrl(c) => write!(f, "Ctrl+{c}"),
             Self::Alt(c) => write!(f, "Alt+{c}"),
@@ -95,6 +97,52 @@ impl Display for Key {
             Self::ScrollDown => write!(f, "ScrollDown"),
             Self::ScrollUp => write!(f, "ScrollUp"),
             Self::Null => unimplemented!(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_key_parsing() {
+        assert_eq!(Key::Char('a'), Key::from_str("a").unwrap());
+        assert_eq!(Key::Char('A'), Key::from_str("A").unwrap());
+        assert_eq!(Key::Char('!'), Key::from_str("!").unwrap());
+    }
+    #[test]
+    fn special_key_parsing() {
+        assert_eq!(Key::Backspace, Key::from_str("backspace").unwrap());
+        assert_eq!(Key::Backspace, Key::from_str("Backspace").unwrap());
+        //TODO fill this in
+    }
+
+    #[test]
+    fn parsing_modifiers() {
+        assert_eq!(Key::Ctrl('a'), Key::from_str("ctrl + a").unwrap());
+        assert_eq!(Key::Ctrl('a'), Key::from_str("ctrl+a").unwrap());
+        assert_eq!(Key::Alt('B'), Key::from_str("Alt + B").unwrap());
+        assert_eq!(Key::Alt('B'), Key::from_str("Alt+B").unwrap());
+    }
+
+    #[test]
+    fn parse_seperator_key() {
+        assert_eq!(Key::Char('+'), Key::from_str("plus").unwrap());
+        assert_eq!(Key::Char('+'), Key::from_str("Plus").unwrap());
+    }
+
+    #[test]
+    fn symmetry() {
+        for i in '0'..='z' {
+            let key = Key::Char(i);
+            assert_eq!(key, Key::from_str(&key.to_string()).unwrap());
+
+            let key = Key::Ctrl(i);
+            assert_eq!(key, Key::from_str(&key.to_string()).unwrap());
+
+            let key = Key::Alt(i);
+            assert_eq!(key, Key::from_str(&key.to_string()).unwrap());
         }
     }
 }
