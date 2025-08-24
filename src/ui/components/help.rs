@@ -5,7 +5,13 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCoreConfig, user_input::events::{Event, Key}}, terminal::TerminalAction, ui::{components::Component, statics::HELP_COLUMN_TITLES}, utils::styles::{BOLD_STYLE, COLUMN_TITLE_STYLE}
+    handlers::{
+        config::SharedCoreConfig,
+        user_input::events::{Event, Key},
+    },
+    terminal::TerminalAction,
+    ui::{components::Component, statics::HELP_COLUMN_TITLES},
+    utils::styles::{BOLD_STYLE, COLUMN_TITLE_STYLE},
 };
 
 // Once a solution is found to calculate constraints, this will be removed.
@@ -276,8 +282,12 @@ impl Component for HelpWidget {
             let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
-                key if keybinds.back_to_previous_window.contains(key) => return Some(TerminalAction::BackOneLayer),
-                key if keybinds.crash_application.contains(key) => panic!("Manual panic triggered by user."),
+                key if keybinds.back_to_previous_window.contains(key) => {
+                    return Some(TerminalAction::BackOneLayer);
+                }
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
                 _ => {}
             }
         }
