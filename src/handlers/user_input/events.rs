@@ -115,7 +115,8 @@ mod tests {
     fn special_key_parsing() {
         assert_eq!(Key::Backspace, Key::from_str("backspace").unwrap());
         assert_eq!(Key::Backspace, Key::from_str("Backspace").unwrap());
-        //TODO fill this in
+        assert_eq!(Key::Esc, Key::from_str("Esc").unwrap());
+        assert_eq!(Key::Esc, Key::from_str("esc").unwrap());
     }
 
     #[test]
@@ -133,16 +134,29 @@ mod tests {
     }
 
     #[test]
-    fn symmetry() {
+    fn key_parsing_display_symmetry() {
+        let mut vec: Vec<Key> = Vec::new();
         for i in '0'..='z' {
-            let key = Key::Char(i);
-            assert_eq!(key, Key::from_str(&key.to_string()).unwrap());
-
-            let key = Key::Ctrl(i);
-            assert_eq!(key, Key::from_str(&key.to_string()).unwrap());
-
-            let key = Key::Alt(i);
-            assert_eq!(key, Key::from_str(&key.to_string()).unwrap());
+            vec.extend_from_slice(&[Key::Char(i), Key::Ctrl(i), Key::Alt(i)]);
+        }
+        vec.extend_from_slice(&[
+            Key::Backspace,
+            Key::Esc,
+            Key::Up,
+            Key::Down,
+            Key::Left,
+            Key::Right,
+            Key::Home,
+            Key::End,
+            Key::Delete,
+            Key::Insert,
+            Key::Tab,
+            Key::Enter,
+            Key::ScrollDown,
+            Key::ScrollUp,
+        ]);
+        for key in &vec {
+            assert_eq!(*key, Key::from_str(&key.to_string()).unwrap())
         }
     }
 }
