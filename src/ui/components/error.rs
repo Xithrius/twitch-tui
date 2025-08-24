@@ -7,19 +7,23 @@ use tui::{
 };
 
 use crate::{
+    handlers::{config::SharedCoreConfig, user_input::events::Event},
+    terminal::TerminalAction,
     ui::components::Component,
     utils::styles::{NO_COLOR, TEXT_DARK_STYLE},
 };
 
 #[derive(Debug, Clone)]
 pub struct ErrorWidget {
+    config: SharedCoreConfig,
     message: Vec<&'static str>,
     focused: bool,
 }
 
 impl ErrorWidget {
-    pub const fn new(message: Vec<&'static str>) -> Self {
+    pub const fn new(config: SharedCoreConfig, message: Vec<&'static str>) -> Self {
         Self {
+            config,
             message,
             focused: false,
         }
@@ -59,5 +63,22 @@ impl Component for ErrorWidget {
 
         f.render_widget(Clear, r);
         f.render_widget(paragraph, r);
+    }
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        if let Event::Input(key) = event {
+            let keybinds = self.config.borrow().keybinds.selection.clone();
+            match key {
+                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.back_to_previous_window.contains(key) => {
+                    return Some(TerminalAction::BackOneLayer);
+                }
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
+                _ => {}
+            }
+        }
+
+        None
     }
 }

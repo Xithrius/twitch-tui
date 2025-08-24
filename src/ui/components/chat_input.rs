@@ -4,11 +4,7 @@ use tui::{Frame, layout::Rect};
 
 use crate::{
     emotes::SharedEmotes,
-    handlers::{
-        config::SharedCoreConfig,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
-    },
+    handlers::{config::SharedCoreConfig, storage::SharedStorage, user_input::events::Event},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
@@ -128,8 +124,9 @@ impl Component for ChatInputWidget {
                 self.input.insert(" ");
             }
         } else if let Event::Input(key) = event {
+            let keybinds = self.config.borrow().keybinds.insert.clone();
             match key {
-                Key::Enter => {
+                key if keybinds.confirm_text_input.contains(key) => {
                     if self.input.is_valid() {
                         let current_input = self.input.to_string();
 
@@ -149,12 +146,12 @@ impl Component for ChatInputWidget {
                         return Some(action);
                     }
                 }
-                Key::Alt('e') => {
+                key if keybinds.toggle_emote_picker.contains(key) => {
                     if self.config.borrow().frontend.is_emotes_enabled() {
                         self.emote_picker.toggle_focus();
                     }
                 }
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     self.input.toggle_focus();
                 }
                 _ => {

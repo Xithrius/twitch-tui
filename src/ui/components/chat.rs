@@ -18,10 +18,7 @@ use crate::{
         filters::SharedFilters,
         state::State,
         storage::SharedStorage,
-        user_input::{
-            events::{Event, Key},
-            scrolling::Scrolling,
-        },
+        user_input::{events::Event, scrolling::Scrolling},
     },
     terminal::TerminalAction,
     ui::components::{
@@ -289,6 +286,7 @@ impl Component for ChatWidget {
         }
     }
 
+    #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             let limit =
@@ -303,42 +301,63 @@ impl Component for ChatWidget {
             } else if self.following.is_focused() {
                 self.following.event(event).await
             } else {
+                let keybinds = self.config.borrow().keybinds.normal.clone();
                 match key {
-                    Key::Char('i' | 'c') => self.chat_input.toggle_focus(),
-                    Key::Char('@') => self.chat_input.toggle_focus_with("@"),
-                    Key::Char('/') => self.chat_input.toggle_focus_with("/"),
-                    Key::Char('s') => self.channel_input.toggle_focus(),
-                    Key::Ctrl('f') => self.search_input.toggle_focus(),
-                    Key::Char('f') => self.following.toggle_focus().await,
-                    Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
-                    Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
-                    Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
-                    Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
-                    Key::Char('q') => return Some(TerminalAction::Quit),
-                    Key::Char('o') => self.open_in_browser(),
-                    Key::Char('G') => {
+                    key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
+                    key if keybinds.enter_insert_with_mention.contains(key) => {
+                        self.chat_input.toggle_focus_with("@");
+                    }
+                    key if keybinds.enter_insert_with_command.contains(key) => {
+                        self.chat_input.toggle_focus_with("/");
+                    }
+                    key if keybinds.recent_channels_search.contains(key) => {
+                        self.channel_input.toggle_focus();
+                    }
+                    key if keybinds.search_messages.contains(key) => {
+                        self.search_input.toggle_focus();
+                    }
+                    key if keybinds.followed_channels_search.contains(key) => {
+                        self.following.toggle_focus().await;
+                    }
+                    key if keybinds.toggle_message_filter.contains(key) => {
+                        self.filters.borrow_mut().toggle();
+                    }
+                    key if keybinds.reverse_message_filter.contains(key) => {
+                        self.filters.borrow_mut().reverse();
+                    }
+                    key if keybinds.enter_dashboard.contains(key) => {
+                        return Some(TerminalAction::SwitchState(State::Dashboard));
+                    }
+                    key if keybinds.help.contains(key) => {
+                        return Some(TerminalAction::SwitchState(State::Help));
+                    }
+                    key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                    key if keybinds.open_in_browser.contains(key) => self.open_in_browser(),
+                    key if keybinds.scroll_to_end.contains(key) => {
                         self.scroll_offset.jump_to(0);
                     }
-                    Key::Char('g') => {
+                    key if keybinds.scroll_to_start.contains(key) => {
                         // TODO: Make this not jump to nothingness
                         self.scroll_offset.jump_to(self.messages.borrow().len());
                     }
-                    Key::Esc => {
+                    key if keybinds.back_to_previous_window.contains(key) => {
                         if self.scroll_offset.get_offset() == 0 {
                             return Some(TerminalAction::BackOneLayer);
                         }
 
                         self.scroll_offset.jump_to(0);
                     }
-                    Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                    Key::ScrollUp => {
+                    key if keybinds.crash_application.contains(key) => {
+                        panic!("Manual panic triggered by user.")
+                    }
+                    key if keybinds.scroll_up.contains(key) => {
                         if limit {
                             self.scroll_offset.up();
                         } else if self.scroll_offset.is_inverted() {
                             self.scroll_offset.down();
                         }
                     }
-                    Key::ScrollDown => {
+                    key if keybinds.scroll_down.contains(key) => {
                         if self.scroll_offset.is_inverted() {
                             if limit {
                                 self.scroll_offset.up();

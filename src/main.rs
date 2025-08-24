@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
     let cloned_config = config.clone();
 
     tokio::task::spawn(async move {
-        if let Err(err) = twitch::twitch_websocket(config, twitch_tx, twitch_rx).await {
+        if let Err(err) = Box::pin(twitch::twitch_websocket(config, twitch_tx, twitch_rx)).await {
             error!("Error when running Twitch websocket client: {err}");
         }
     });

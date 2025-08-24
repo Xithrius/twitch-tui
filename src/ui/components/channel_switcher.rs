@@ -16,11 +16,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
-    },
+    handlers::{config::SharedCoreConfig, storage::SharedStorage, user_input::events::Event},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
@@ -248,10 +244,12 @@ impl Component for ChannelSwitcherWidget {
         self.search_input.draw(f, Some(input_rect));
     }
 
+    #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
@@ -259,10 +257,12 @@ impl Component for ChannelSwitcherWidget {
                         self.search_input.clear();
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Ctrl('d') => {
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
+                key if keybinds.delete_item.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
                         // TODO: Make this just two if lets
                         if let Some(filtered) = self.filtered_channels.clone() {
@@ -279,7 +279,7 @@ impl Component for ChannelSwitcherWidget {
                         }
                     }
                 }
-                Key::Enter => {
+                key if keybinds.select.contains(key) => {
                     // TODO: Reduce code duplication
                     if let Some(i) = self.list_state.selected() {
                         self.toggle_focus();

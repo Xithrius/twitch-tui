@@ -9,7 +9,7 @@ use tui::{
 use crate::{
     handlers::{
         config::{SharedCoreConfig, ToVec},
-        user_input::events::{Event, Key},
+        user_input::events::Event,
     },
     terminal::TerminalAction,
     ui::components::Component,
@@ -116,14 +116,17 @@ impl Component for DebugWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            let keybinds = self.config.borrow().keybinds.normal.clone();
             match key {
-                Key::Char('q') => return Some(TerminalAction::Quit),
-                Key::Esc => {
+                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.back_to_previous_window.contains(key) => {
                     self.toggle_focus();
 
                     return Some(TerminalAction::BackOneLayer);
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
                 _ => {}
             }
         }

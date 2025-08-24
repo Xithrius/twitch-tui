@@ -14,7 +14,7 @@ use crate::{
         filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
-        user_input::events::{Event, Key},
+        user_input::events::Event,
     },
     terminal::TerminalAction,
     ui::components::{Component, Components},
@@ -137,7 +137,13 @@ impl Context {
 
             match key {
                 // Global keybinds
-                Key::Ctrl('d') => {
+                key if self
+                    .config
+                    .borrow()
+                    .keybinds
+                    .toggle_debug_focus
+                    .contains(key) =>
+                {
                     self.components.debug.toggle_focus();
                 }
                 _ => {
