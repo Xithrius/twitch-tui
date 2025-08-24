@@ -1,13 +1,15 @@
-use std::{fmt::Display, time::Duration};
+use std::{fmt::Display, str::FromStr, time::Duration};
 
-use serde::{Deserialize, Serialize};
+use color_eyre::eyre::{Error, bail};
+
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use tokio::{sync::mpsc, time::Instant};
 use tui::crossterm::event::{
     self, Event as CEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind,
 };
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, SerializeDisplay, DeserializeFromStr, PartialEq, Eq)]
 pub enum Key {
     // Keyboard controls
     Backspace,
@@ -32,16 +34,68 @@ pub enum Key {
     ScrollDown,
 }
 
+impl FromStr for Key {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        fn get_single_char(s: &str) -> Result<char, Error> {
+            if s.chars().count() == 1 {
+                s.chars().next().expect("Must be a char here");
+            }
+            bail!("Key '{}' cannot be deserialized", s);
+        }
+        match s.to_lowercase().as_str() {
+            "esc" => Ok(Key::Esc),
+            "enter" => Ok(Key::Enter),
+            "tab" => Ok(Key::Tab),
+            "insert" => Ok(Key::Insert),
+            "down" => Ok(Key::Down),
+            "up" => Ok(Key::Up),
+            "left" => Ok(Key::Left),
+            "right" => Ok(Key::Right),
+            "home" => Ok(Key::Home),
+            "end" => Ok(Key::End),
+            "delete" => Ok(Key::Delete),
+            "backspace" => Ok(Key::Backspace),
+            "scrolldown" => Ok(Key::ScrollDown),
+            "scrollup" => Ok(Key::ScrollUp),
+            _ => {
+                if let Some((modifier, key)) = s.split_once('+') {
+                    return match modifier.trim() {
+                        "alt" => Ok(Key::Alt(get_single_char(key)?)),
+                        "ctrl" => Ok(Key::Ctrl(get_single_char(key)?)),
+                        _ => bail!("Key '{}' cannot be deserialized", s),
+                    };
+                } else {
+                    return Ok(Key::Char(get_single_char(s)?));
+                }
+            }
+        }
+    }
+}
+
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Char(c) | Self::Ctrl(c) | Self::Alt(c) => c,
-                _ => unimplemented!(),
-            }
-        )
+        match self {
+            Self::Char(c) => write!(f, "{}", c),
+            Self::Ctrl(c) => write!(f, "Ctrl+{}", c),
+            Self::Alt(c) => write!(f, "Alt+{}", c),
+            Self::Esc => write!(f, "Esc"),
+            Self::Enter => write!(f, "Enter"),
+            Self::Tab => write!(f, "Tab"),
+            Self::Insert => write!(f, "Insert"),
+            Self::Down => write!(f, "Down"),
+            Self::Up => write!(f, "Up"),
+            Self::Left => write!(f, "Left"),
+            Self::Right => write!(f, "Right"),
+            Self::Home => write!(f, "Home"),
+            Self::End => write!(f, "End"),
+            Self::Delete => write!(f, "Delete"),
+            Self::Backspace => write!(f, "Backspace"),
+            Self::Null => write!(f, "null"),
+            Self::ScrollDown => write!(f, "ScrollDown"),
+            Self::ScrollUp => write!(f, "ScrollUp"),
+        }
     }
 }
 
