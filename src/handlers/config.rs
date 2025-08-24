@@ -368,7 +368,7 @@ impl Default for SelectionKeybindsConfig {
             select: vec![Key::Enter],
             delete_entry: vec![Key::Ctrl('d')],
             back_to_previous_window: vec![Key::Esc],
-            crash_application: vec![Key::Enter],
+            crash_application: vec![Key::Ctrl('p')],
         }
     }
 }
