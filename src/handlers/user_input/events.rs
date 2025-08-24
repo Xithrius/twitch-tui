@@ -45,29 +45,29 @@ impl FromStr for Key {
             bail!("Key '{}' cannot be deserialized", s);
         }
         match s.to_lowercase().as_str() {
-            "esc" => Ok(Key::Esc),
-            "enter" => Ok(Key::Enter),
-            "tab" => Ok(Key::Tab),
-            "insert" => Ok(Key::Insert),
-            "down" => Ok(Key::Down),
-            "up" => Ok(Key::Up),
-            "left" => Ok(Key::Left),
-            "right" => Ok(Key::Right),
-            "home" => Ok(Key::Home),
-            "end" => Ok(Key::End),
-            "delete" => Ok(Key::Delete),
-            "backspace" => Ok(Key::Backspace),
-            "scrolldown" => Ok(Key::ScrollDown),
-            "scrollup" => Ok(Key::ScrollUp),
+            "esc" => Ok(Self::Esc),
+            "enter" => Ok(Self::Enter),
+            "tab" => Ok(Self::Tab),
+            "insert" => Ok(Self::Insert),
+            "down" => Ok(Self::Down),
+            "up" => Ok(Self::Up),
+            "left" => Ok(Self::Left),
+            "right" => Ok(Self::Right),
+            "home" => Ok(Self::Home),
+            "end" => Ok(Self::End),
+            "delete" => Ok(Self::Delete),
+            "backspace" => Ok(Self::Backspace),
+            "scrolldown" => Ok(Self::ScrollDown),
+            "scrollup" => Ok(Self::ScrollUp),
             _ => {
                 if let Some((modifier, key)) = s.split_once('+') {
-                    return match modifier.trim() {
-                        "alt" => Ok(Key::Alt(get_single_char(key)?)),
-                        "ctrl" => Ok(Key::Ctrl(get_single_char(key)?)),
+                    match modifier.trim() {
+                        "alt" => Ok(Self::Alt(get_single_char(key)?)),
+                        "ctrl" => Ok(Self::Ctrl(get_single_char(key)?)),
                         _ => bail!("Key '{}' cannot be deserialized", s),
-                    };
+                    }
                 } else {
-                    return Ok(Key::Char(get_single_char(s)?));
+                    Ok(Self::Char(get_single_char(s)?))
                 }
             }
         }
@@ -77,9 +77,9 @@ impl FromStr for Key {
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Char(c) => write!(f, "{}", c),
-            Self::Ctrl(c) => write!(f, "Ctrl+{}", c),
-            Self::Alt(c) => write!(f, "Alt+{}", c),
+            Self::Char(c) => write!(f, "{c}"),
+            Self::Ctrl(c) => write!(f, "Ctrl+{c}"),
+            Self::Alt(c) => write!(f, "Alt+{c}"),
             Self::Esc => write!(f, "Esc"),
             Self::Enter => write!(f, "Enter"),
             Self::Tab => write!(f, "Tab"),
