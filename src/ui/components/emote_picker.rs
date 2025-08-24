@@ -253,8 +253,8 @@ impl Component for EmotePickerWidget {
                 key if keybinds.crash_application.contains(key) => {
                     panic!("Manual panic triggered by user.")
                 }
-                key if keybinds.scroll_down.contains(key) => self.next(),
-                key if keybinds.scroll_up.contains(key) => self.previous(),
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.select.contains(key) => {
                     if let Some(idx) = self.list_state.selected() {
                         let emote = self.filtered_emotes[idx].clone();

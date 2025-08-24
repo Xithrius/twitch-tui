@@ -162,10 +162,10 @@ pub struct KeybindsConfig {
 #[serde(default)]
 pub struct DashboardKeybindsConfig {
     pub join: Vec<Key>,
-    pub help: Vec<Key>,
-    pub quit: Vec<Key>,
     pub recent_channels_search: Vec<Key>,
     pub followed_channels_search: Vec<Key>,
+    pub help: Vec<Key>,
+    pub quit: Vec<Key>,
     pub crash_application: Vec<Key>,
 }
 
@@ -185,10 +185,10 @@ pub struct NormalKeybindsConfig {
     pub scroll_to_end: Vec<Key>,
     pub scroll_to_start: Vec<Key>,
     pub open_in_browser: Vec<Key>,
-    pub help: Vec<Key>,
-    pub quit: Vec<Key>,
     pub recent_channels_search: Vec<Key>,
     pub followed_channels_search: Vec<Key>,
+    pub help: Vec<Key>,
+    pub quit: Vec<Key>,
     pub crash_application: Vec<Key>,
 }
 
@@ -220,9 +220,9 @@ pub struct InsertKeybindsConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct SelectionKeybindsConfig {
-    pub scroll_down: Vec<Key>,
-    pub scroll_up: Vec<Key>,
-    pub delete_entry: Vec<Key>,
+    pub next_item: Vec<Key>,
+    pub prev_item: Vec<Key>,
+    pub delete_item: Vec<Key>,
     pub select: Vec<Key>,
     pub back_to_previous_window: Vec<Key>,
     pub crash_application: Vec<Key>,
@@ -363,10 +363,10 @@ impl Default for InsertKeybindsConfig {
 impl Default for SelectionKeybindsConfig {
     fn default() -> Self {
         Self {
-            scroll_up: vec![Key::ScrollUp, Key::Up],
-            scroll_down: vec![Key::ScrollDown, Key::Down],
+            prev_item: vec![Key::ScrollUp, Key::Up],
+            next_item: vec![Key::ScrollDown, Key::Down],
             select: vec![Key::Enter],
-            delete_entry: vec![Key::Ctrl('d')],
+            delete_item: vec![Key::Ctrl('d')],
             back_to_previous_window: vec![Key::Esc],
             crash_application: vec![Key::Ctrl('p')],
         }
