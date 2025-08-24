@@ -40,9 +40,9 @@ impl FromStr for Key {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         fn get_single_char(s: &str) -> Result<char, Error> {
             if s.chars().count() == 1 {
-                s.chars().next().expect("Must be a char here");
+                return Ok(s.chars().next().expect("Must be a char here"));
             }
-            bail!("Key '{}' cannot be deserialized", s);
+            bail!("Key char '{}' cannot be deserialized", s);
         }
         match s.to_lowercase().as_str() {
             "esc" => Ok(Self::Esc),
@@ -92,9 +92,9 @@ impl Display for Key {
             Self::End => write!(f, "End"),
             Self::Delete => write!(f, "Delete"),
             Self::Backspace => write!(f, "Backspace"),
-            Self::Null => write!(f, "null"),
             Self::ScrollDown => write!(f, "ScrollDown"),
             Self::ScrollUp => write!(f, "ScrollUp"),
+            Self::Null => unimplemented!(),
         }
     }
 }
