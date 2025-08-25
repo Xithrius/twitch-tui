@@ -292,8 +292,14 @@ where
 
                         self.unselect();
 
+                        let selected_channel_trimmed =
+                            selected_channel.split(':').next().map_or_else(
+                                || selected_channel.clone(),
+                                |name| name.trim_end().to_string(),
+                            );
+
                         return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
-                            selected_channel,
+                            selected_channel_trimmed,
                         )));
                     }
                 }

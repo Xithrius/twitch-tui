@@ -73,17 +73,7 @@ impl ChatWidget {
     pub fn open_in_player(&self) -> Option<TerminalAction> {
         let config = self.config.borrow();
         //TODO dedupe #3
-        let channel_name = if config.frontend.only_get_live_followed_channels {
-            config
-                .twitch
-                .channel
-                .split(':')
-                .next()
-                .map_or_else(|| config.twitch.channel.as_str(), |name| name.trim_end())
-        } else {
-            config.twitch.channel.as_str()
-        };
-
+        let channel_name = config.twitch.channel.as_str();
         if config.frontend.view_command.is_empty() {
             webbrowser::open(format!(
             "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",

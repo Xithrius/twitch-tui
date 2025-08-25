@@ -150,17 +150,7 @@ pub async fn ui_driver(
                             tx.send(TwitchAction::JoinChannel(channel.clone())).unwrap();
 
                             if config.frontend.autostart_view_command {
-                                //TODO dedupe (or should this be part of open_stream?)
-                                let channel_name =
-                                    if config.frontend.only_get_live_followed_channels {
-                                        channel.split(':').next().map_or_else(
-                                            || channel.as_str(),
-                                            |name| name.trim_end(),
-                                        )
-                                    } else {
-                                        channel.as_str()
-                                    };
-                                context.open_stream(channel_name);
+                                context.open_stream(&channel);
                             }
                             erx = query_emotes(&config, channel);
                             context.set_state(State::Normal);
