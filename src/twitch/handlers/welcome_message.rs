@@ -118,6 +118,7 @@ pub async fn handle_welcome_message(
     context.set_session_id(session_id.clone());
 
     let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
+
     context.set_channel_id(Some(channel_id.clone()));
 
     let initial_event_subscriptions: HashMap<_, _> = INITIAL_EVENT_SUBSCRIPTIONS
