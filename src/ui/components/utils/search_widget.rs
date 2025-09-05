@@ -64,7 +64,7 @@ where
 {
     pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
         let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-        let error_widget = ErrorWidget::new(error_message);
+        let error_widget = ErrorWidget::new(config.clone(), error_message);
 
         Self {
             config,
@@ -264,17 +264,18 @@ where
         }
 
         if let Event::Input(key) = event {
+            let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
                         self.toggle_focus().await;
                     }
                 }
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Enter => {
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
+                key if keybinds.select.contains(key) => {
                     if let Some(i) = self.list_state.selected() {
                         let selected_channel = if let Some(v) = self.filtered_items.clone() {
                             if v.is_empty() {
