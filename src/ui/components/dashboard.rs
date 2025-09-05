@@ -14,7 +14,7 @@ use crate::{
         config::SharedCoreConfig,
         state::State,
         storage::SharedStorage,
-        user_input::events::{Event, Key},
+        user_input::events::{Event, Key, get_keybind_text},
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
@@ -113,7 +113,7 @@ impl DashboardWidget {
         let current_channel_selection = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled(
-                "ENTER".to_string(),
+                get_keybind_text(&self.config.borrow().keybinds.dashboard.join),
                 Style::default().fg(Color::LightMagenta),
             ),
             Span::raw("] "),
@@ -155,7 +155,10 @@ impl DashboardWidget {
     fn render_quit_selection_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let quit_option = Paragraph::new(Line::from(vec![
             Span::raw("["),
-            Span::styled("q", Style::default().fg(Color::LightMagenta)),
+            Span::styled(
+                get_keybind_text(&self.config.borrow().keybinds.dashboard.quit),
+                Style::default().fg(Color::LightMagenta),
+            ),
             Span::raw("] "),
             Span::raw("Quit"),
         ]));

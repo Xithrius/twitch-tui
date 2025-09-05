@@ -7,7 +7,7 @@ use tui::{
 use crate::{
     handlers::{
         config::SharedCoreConfig,
-        user_input::events::{Event, Key},
+        user_input::events::{Event, get_keybind_text},
     },
     terminal::TerminalAction,
     ui::{components::Component, statics::HELP_COLUMN_TITLES},
@@ -28,207 +28,209 @@ impl HelpWidget {
         Self { config }
     }
     fn get_help_keybinds(&self) -> Vec<(&'static str, Vec<(String, &'static str)>)> {
-        fn get_key_text(keybind: &[Key]) -> String {
-            keybind
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<String>>()
-                .join(" or ")
-        }
         let keybinds = self.config.borrow().keybinds.clone();
         let dashboard_keybinds = vec![
             (
-                get_key_text(&keybinds.dashboard.join),
+                get_keybind_text(&keybinds.dashboard.join),
                 "Join the selected channel",
             ),
             (
-                get_key_text(&keybinds.dashboard.recent_channels_search),
+                get_keybind_text(&keybinds.dashboard.recent_channels_search),
                 "Open the recent channel search popup",
             ),
             (
-                get_key_text(&keybinds.dashboard.followed_channels_search),
+                get_keybind_text(&keybinds.dashboard.followed_channels_search),
                 "Open the followed channel search popup",
             ),
             (
-                get_key_text(&keybinds.dashboard.help),
+                get_keybind_text(&keybinds.dashboard.help),
                 "Have the keybinds popup window appear",
             ),
             (
-                get_key_text(&keybinds.dashboard.quit),
+                get_keybind_text(&keybinds.dashboard.quit),
                 "Quit the application",
             ),
             (
-                get_key_text(&keybinds.dashboard.crash_application),
+                get_keybind_text(&keybinds.dashboard.crash_application),
                 "Manually crash the application",
             ),
         ];
         let normal_keybinds = vec![
             (
-                get_key_text(&keybinds.normal.enter_insert),
+                get_keybind_text(&keybinds.normal.enter_insert),
                 "Enter message (chat) mode for sending messages",
             ),
             (
-                get_key_text(&keybinds.normal.enter_insert_with_mention),
+                get_keybind_text(&keybinds.normal.enter_insert_with_mention),
                 "Messaging mode with mention symbol",
             ),
             (
-                get_key_text(&keybinds.normal.enter_insert_with_command),
+                get_keybind_text(&keybinds.normal.enter_insert_with_command),
                 "Messaging mode with command symbol",
             ),
             (
-                get_key_text(&keybinds.normal.enter_dashboard),
+                get_keybind_text(&keybinds.normal.enter_dashboard),
                 "Go to the dashboard screen (start screen)",
             ),
             (
-                get_key_text(&keybinds.normal.search_messages),
+                get_keybind_text(&keybinds.normal.search_messages),
                 "Search messages",
             ),
             (
-                get_key_text(&keybinds.normal.toggle_message_filter),
+                get_keybind_text(&keybinds.normal.toggle_message_filter),
                 "Toggle the message filter",
             ),
             (
-                get_key_text(&keybinds.normal.reverse_message_filter),
+                get_keybind_text(&keybinds.normal.reverse_message_filter),
                 "Reverse the message filter",
             ),
             (
-                get_key_text(&keybinds.normal.back_to_previous_window),
+                get_keybind_text(&keybinds.normal.back_to_previous_window),
                 "Go back to the previous window",
             ),
             (
-                get_key_text(&keybinds.normal.scroll_down),
+                get_keybind_text(&keybinds.normal.scroll_down),
                 "Scroll chat down",
             ),
-            (get_key_text(&keybinds.normal.scroll_up), "Scroll chat up"),
             (
-                get_key_text(&keybinds.normal.scroll_to_start),
+                get_keybind_text(&keybinds.normal.scroll_up),
+                "Scroll chat up",
+            ),
+            (
+                get_keybind_text(&keybinds.normal.scroll_to_start),
                 "Scroll chat to top",
             ),
             (
-                get_key_text(&keybinds.normal.scroll_to_end),
+                get_keybind_text(&keybinds.normal.scroll_to_end),
                 "Scroll chat to bottom",
             ),
             (
-                get_key_text(&keybinds.normal.open_in_browser),
+                get_keybind_text(&keybinds.normal.open_in_browser),
                 "Open current stream in browser",
             ),
             (
-                get_key_text(&keybinds.normal.recent_channels_search),
+                get_keybind_text(&keybinds.normal.recent_channels_search),
                 "Open the recent channel search widget",
             ),
             (
-                get_key_text(&keybinds.normal.followed_channels_search),
+                get_keybind_text(&keybinds.normal.followed_channels_search),
                 "Open the followed channel search widget",
             ),
-            (get_key_text(&keybinds.normal.help), "* You are here!"),
-            (get_key_text(&keybinds.normal.quit), "Quit the application"),
+            (get_keybind_text(&keybinds.normal.help), "* You are here!"),
             (
-                get_key_text(&keybinds.normal.crash_application),
+                get_keybind_text(&keybinds.normal.quit),
+                "Quit the application",
+            ),
+            (
+                get_keybind_text(&keybinds.normal.crash_application),
                 "Manually crash the application",
             ),
         ];
         let insert_keybinds = vec![
             (
-                get_key_text(&keybinds.insert.fill_suggestion),
+                get_keybind_text(&keybinds.insert.fill_suggestion),
                 "Fill in suggestion, if available",
             ),
             (
-                get_key_text(&keybinds.insert.confirm_text_input),
+                get_keybind_text(&keybinds.insert.confirm_text_input),
                 "Confirm the input text to go through",
             ),
             (
-                get_key_text(&keybinds.insert.back_to_previous_window),
+                get_keybind_text(&keybinds.insert.back_to_previous_window),
                 "Go back to the previous window",
             ),
             (
-                get_key_text(&keybinds.insert.move_cursor_right),
+                get_keybind_text(&keybinds.insert.move_cursor_right),
                 "Move cursor to the right",
             ),
             (
-                get_key_text(&keybinds.insert.move_cursor_left),
+                get_keybind_text(&keybinds.insert.move_cursor_left),
                 "Move cursor to the left",
             ),
             (
-                get_key_text(&keybinds.insert.move_cursor_start),
+                get_keybind_text(&keybinds.insert.move_cursor_start),
                 "Move cursor to the start",
             ),
             (
-                get_key_text(&keybinds.insert.move_cursor_end),
+                get_keybind_text(&keybinds.insert.move_cursor_end),
                 "Move cursor to the end",
             ),
             (
-                get_key_text(&keybinds.insert.swap_previous_item_with_current),
+                get_keybind_text(&keybinds.insert.swap_previous_item_with_current),
                 "Swap previous item with current item",
             ),
             (
-                get_key_text(&keybinds.insert.remove_after_cursor),
+                get_keybind_text(&keybinds.insert.remove_after_cursor),
                 "Remove everything after the cursor",
             ),
             (
-                get_key_text(&keybinds.insert.remove_before_cursor),
+                get_keybind_text(&keybinds.insert.remove_before_cursor),
                 "Remove everything before the cursor",
             ),
             (
-                get_key_text(&keybinds.insert.remove_previous_word),
+                get_keybind_text(&keybinds.insert.remove_previous_word),
                 "Remove the previous word",
             ),
             (
-                get_key_text(&keybinds.insert.remove_item_to_right),
+                get_keybind_text(&keybinds.insert.remove_item_to_right),
                 "Remove item to the right",
             ),
             (
-                get_key_text(&keybinds.insert.toggle_message_filter),
+                get_keybind_text(&keybinds.insert.toggle_message_filter),
                 "Toggle the filter",
             ),
             (
-                get_key_text(&keybinds.insert.reverse_message_filter),
+                get_keybind_text(&keybinds.insert.reverse_message_filter),
                 "Reverse the filter",
             ),
             (
-                get_key_text(&keybinds.insert.end_of_next_word),
+                get_keybind_text(&keybinds.insert.end_of_next_word),
                 "Move to the end of the next word",
             ),
             (
-                get_key_text(&keybinds.insert.start_of_previous_word),
+                get_keybind_text(&keybinds.insert.start_of_previous_word),
                 "Move to the start of the previous word",
             ),
             (
-                get_key_text(&keybinds.insert.swap_previous_word_with_current),
+                get_keybind_text(&keybinds.insert.swap_previous_word_with_current),
                 "Swap previous word with current word",
             ),
             (
-                get_key_text(&keybinds.insert.toggle_emote_picker),
+                get_keybind_text(&keybinds.insert.toggle_emote_picker),
                 "Toggle emote picker",
             ),
-            (get_key_text(&keybinds.insert.quit), "Quit the application"),
             (
-                get_key_text(&keybinds.insert.crash_application),
+                get_keybind_text(&keybinds.insert.quit),
+                "Quit the application",
+            ),
+            (
+                get_keybind_text(&keybinds.insert.crash_application),
                 "Manually crash the application",
             ),
         ];
         let selection_keybinds = vec![
             (
-                get_key_text(&keybinds.selection.next_item),
+                get_keybind_text(&keybinds.selection.next_item),
                 "Move selection to next item",
             ),
             (
-                get_key_text(&keybinds.selection.prev_item),
+                get_keybind_text(&keybinds.selection.prev_item),
                 "Move selection to previous item",
             ),
             (
-                get_key_text(&keybinds.selection.delete_item),
+                get_keybind_text(&keybinds.selection.delete_item),
                 "Delete the currently selected item",
             ),
             (
-                get_key_text(&keybinds.selection.select),
+                get_keybind_text(&keybinds.selection.select),
                 "Confirm the currently selected item",
             ),
             (
-                get_key_text(&keybinds.selection.back_to_previous_window),
+                get_keybind_text(&keybinds.selection.back_to_previous_window),
                 "Go back to the previous window",
             ),
             (
-                get_key_text(&keybinds.selection.crash_application),
+                get_keybind_text(&keybinds.selection.crash_application),
                 "Manually crash the application",
             ),
         ];
