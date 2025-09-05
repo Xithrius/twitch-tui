@@ -11,20 +11,27 @@ You can find the default configuration values [here](https://github.com/Xithrius
 
 ## Authentication
 
-The most convenient way to get a Twitch token is to use twitchtokengenerator.com. [Here is a quick link with the required scopes already enabled](https://twitchtokengenerator.com/?scope=channel:moderate+chat:edit+chat:read+moderator:manage:chat_messages+user:read:chat+user:read:emotes+user:read:follows+user:write:chat+moderator:manage:banned_users&auth=auth_stay). Once generated copy the "ACCESS TOKEN".
+The most convenient way to get a Twitch token is to use twitchtokengenerator.com. [Here is a quick link with the required scopes already enabled](https://twitchtokengenerator.com/?scope=chat:read+chat:edit+channel:moderate+user:read:follows+user:read:emotes+user:read:chat+user:write:chat+moderator:manage:chat_messages+moderator:manage:banned_users+moderator:manage:chat_settings+moderator:manage:shoutouts+channel:manage:broadcast+channel:manage:moderators+channel:manage:vips+channel:manage:raids+channel:edit:commercial&auth=auth_stay). Once generated copy the "ACCESS TOKEN".
 
 The above token has the following scopes enabled:
 
 ```
-channel:moderate
-chat:edit
 chat:read
-moderator:manage:chat_messages
-user:read:chat
-user:read:emotes
+chat:edit
 user:read:follows
+user:read:emotes
+user:read:chat
 user:write:chat
+moderator:manage:chat_messages
 moderator:manage:banned_users
+moderator:manage:chat_settings
+moderator:manage:shoutouts
+channel:moderate
+channel:manage:broadcast
+channel:manage:moderators
+channel:manage:vips
+channel:manage:raids
+channel:edit:commercial
 ```
 
 Once you have a token, put `oauth:` at the start if it's not there already, then place it in one of two places:
