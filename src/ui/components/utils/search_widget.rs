@@ -207,6 +207,7 @@ where
             } else {
                 Style::default()
                     .bg(Color::LightGreen)
+                    .fg(Color::DarkGray)
                     .add_modifier(Modifier::BOLD)
             });
 
