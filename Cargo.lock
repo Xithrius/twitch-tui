@@ -3068,7 +3068,7 @@ dependencies = [
 
 [[package]]
 name = "twitch-tui"
-version = "3.0.0-alpha.2"
+version = "3.0.0-alpha.3"
 dependencies = [
  "base64",
  "chrono",
