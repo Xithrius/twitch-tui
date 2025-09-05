@@ -101,6 +101,14 @@ impl Display for Key {
     }
 }
 
+pub fn get_keybind_text(keybind: &[Key]) -> String {
+    keybind
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<String>>()
+        .join(" or ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
