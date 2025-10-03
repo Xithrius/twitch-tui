@@ -586,10 +586,7 @@ impl ToVec<(String, String)> for FiltersConfig {
 impl ToVec<(String, String)> for FrontendConfig {
     fn to_vec(&self) -> Vec<(String, String)> {
         vec![
-            (
-                "View command".to_string(),
-                self.view_command.join(" "),
-            ),
+            ("View command".to_string(), self.view_command.join(" ")),
             (
                 "Autostart view command".to_string(),
                 self.autostart_view_command.to_string(),
