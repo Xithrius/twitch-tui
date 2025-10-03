@@ -354,7 +354,7 @@ impl Default for InsertKeybindsConfig {
             end_of_next_word: vec![Key::Alt('f')],
             start_of_previous_word: vec![Key::Alt('b')],
             swap_previous_word_with_current: vec![Key::Alt('t')],
-            toggle_emote_picker: vec![Key::Ctrl('e')],
+            toggle_emote_picker: vec![Key::Alt('e')],
             quit: vec![Key::Ctrl('q')],
             crash_application: vec![Key::Ctrl('p')],
         }
