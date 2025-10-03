@@ -375,7 +375,9 @@ impl ToVec<(String, String)> for TerminalConfig {
             ),
             (
                 "Log file".to_string(),
-                self.log_file.clone().map_or("None".to_string(), |f| f),
+                self.log_file
+                    .clone()
+                    .map_or_else(|| "None".to_string(), |f| f),
             ),
             ("First state".to_string(), self.first_state.to_string()),
         ]
