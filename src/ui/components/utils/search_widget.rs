@@ -24,8 +24,8 @@ use crate::{
     twitch::TwitchAction,
     ui::components::{Component, ErrorWidget},
     utils::{
-        search::fuzzy_pattern_match,
         sanitization::clean_channel_name,
+        search::fuzzy_pattern_match,
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
         text::{TitleStyle, title_line},
     },
