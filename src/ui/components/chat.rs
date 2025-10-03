@@ -72,7 +72,6 @@ impl ChatWidget {
 
     pub fn open_in_player(&self) -> Option<TerminalAction> {
         let config = self.config.borrow();
-        //TODO dedupe #3
         let channel_name = config.twitch.channel.as_str();
         if config.frontend.view_command.is_empty() {
             webbrowser::open(format!(

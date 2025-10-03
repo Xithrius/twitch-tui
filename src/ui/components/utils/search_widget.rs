@@ -25,6 +25,7 @@ use crate::{
     ui::components::{Component, ErrorWidget},
     utils::{
         search::fuzzy_pattern_match,
+        sanitization::clean_channel_name,
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
         text::{TitleStyle, title_line},
     },
@@ -292,11 +293,7 @@ where
 
                         self.unselect();
 
-                        let selected_channel_trimmed =
-                            selected_channel.split(':').next().map_or_else(
-                                || selected_channel.clone(),
-                                |name| name.trim_end().to_string(),
-                            );
+                        let selected_channel_trimmed = clean_channel_name(&selected_channel);
 
                         return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                             selected_channel_trimmed,
