@@ -29,11 +29,8 @@ use tui::{Frame, layout::Rect};
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        config::SharedCoreConfig,
-        context::SharedMessages,
-        filters::SharedFilters,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
+        config::SharedCoreConfig, context::SharedMessages, filters::SharedFilters,
+        storage::SharedStorage, user_input::events::Event,
     },
     terminal::TerminalAction,
 };
@@ -50,18 +47,7 @@ pub trait Component {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
 
     #[allow(clippy::unused_async)]
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        if let Event::Input(key) = event {
-            match key {
-                Key::Char('q') => return Some(TerminalAction::Quit),
-                Key::Esc => return Some(TerminalAction::BackOneLayer),
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                _ => {}
-            }
-        }
-
-        None
-    }
+    async fn event(&mut self, event: &Event) -> Option<TerminalAction>;
 }
 
 pub struct Components {
@@ -87,7 +73,8 @@ impl Components {
         emotes: &SharedEmotes,
         startup_time: DateTime<Local>,
     ) -> Self {
-        let window_size_error = ErrorWidget::new(WINDOW_SIZE_TOO_SMALL_ERROR.to_vec());
+        let window_size_error =
+            ErrorWidget::new(config.clone(), WINDOW_SIZE_TOO_SMALL_ERROR.to_vec());
 
         Self {
             tabs: StateTabsWidget::new(config.clone()),

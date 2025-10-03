@@ -211,8 +211,10 @@ impl<T: Clone> Component for InputWidget<T> {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            //TODO idk if this needs to be cloned or not
+            let keybinds = self.config.borrow().keybinds.insert.clone();
             match key {
-                Key::Ctrl('f') | Key::Right => {
+                key if keybinds.move_cursor_right.contains(key) => {
                     if self.input.next_pos(1).is_none() {
                         self.accept_suggestion();
                         self.input.move_end();
@@ -220,51 +222,53 @@ impl<T: Clone> Component for InputWidget<T> {
                         self.input.move_forward(1);
                     }
                 }
-                Key::Ctrl('b') | Key::Left => {
+                key if keybinds.move_cursor_left.contains(key) => {
                     self.input.move_backward(1);
                 }
-                Key::Ctrl('a') | Key::Home => {
+                key if keybinds.move_cursor_start.contains(key) => {
                     self.input.move_home();
                 }
-                Key::Ctrl('e') | Key::End => {
+                key if keybinds.move_cursor_end.contains(key) => {
                     self.input.move_end();
                 }
-                Key::Alt('f') => {
+                key if keybinds.end_of_next_word.contains(key) => {
                     self.input.move_to_next_word(At::AfterEnd, Word::Emacs, 1);
                 }
-                Key::Alt('b') => {
+                key if keybinds.start_of_previous_word.contains(key) => {
                     self.input.move_to_prev_word(Word::Emacs, 1);
                 }
-                Key::Ctrl('t') => {
+                key if keybinds.swap_previous_item_with_current.contains(key) => {
                     self.input.transpose_chars(&mut self.input_listener);
                 }
-                Key::Alt('t') => {
+                key if keybinds.swap_previous_word_with_current.contains(key) => {
                     self.input.transpose_words(1, &mut self.input_listener);
                 }
-                Key::Ctrl('u') => {
+                key if keybinds.remove_before_cursor.contains(key) => {
                     self.input.discard_line(&mut self.input_listener);
                 }
-                Key::Ctrl('k') => {
+                key if keybinds.remove_after_cursor.contains(key) => {
                     self.input.kill_line(&mut self.input_listener);
                 }
-                Key::Ctrl('w') => {
+                key if keybinds.remove_previous_word.contains(key) => {
                     self.input
                         .delete_prev_word(Word::Emacs, 1, &mut self.input_listener);
                 }
-                Key::Ctrl('d') | Key::Delete => {
+                key if keybinds.remove_item_to_right.contains(key) => {
                     self.input.delete(1, &mut self.input_listener);
                 }
                 Key::Backspace => {
                     self.input.backspace(1, &mut self.input_listener);
                 }
-                Key::Tab => {
+                key if keybinds.fill_suggestion.contains(key) => {
                     if let Some(suggestion) = &self.suggestion {
                         self.input
                             .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::Ctrl('q') => return Some(TerminalAction::Quit),
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
+                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1, &mut self.input_listener);
                 }

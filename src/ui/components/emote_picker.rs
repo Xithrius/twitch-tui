@@ -13,10 +13,7 @@ use tui::{
 use super::utils::popup_area;
 use crate::{
     emotes::{SharedEmotes, load_picker_emote},
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
+    handlers::{config::SharedCoreConfig, user_input::events::Event},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
@@ -250,12 +247,15 @@ impl Component for EmotePickerWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
+            let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
-                Key::Esc => self.toggle_focus(),
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Enter => {
+                key if keybinds.back_to_previous_window.contains(key) => self.toggle_focus(),
+                key if keybinds.crash_application.contains(key) => {
+                    panic!("Manual panic triggered by user.")
+                }
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
+                key if keybinds.select.contains(key) => {
                     if let Some(idx) = self.list_state.selected() {
                         let emote = self.filtered_emotes[idx].clone();
 
