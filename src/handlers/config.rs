@@ -583,7 +583,6 @@ impl ToVec<(String, String)> for FiltersConfig {
     }
 }
 
-//TODO
 impl ToVec<(String, String)> for FrontendConfig {
     fn to_vec(&self) -> Vec<(String, String)> {
         vec![
