@@ -169,7 +169,6 @@ impl Context {
         None
     }
 
-    //TODO error handling
     pub fn open_stream(&mut self, channel: &str) {
         self.close_current_stream();
         let view_command = &self.config.borrow().frontend.view_command;
@@ -200,7 +199,6 @@ impl Context {
         self.running_stream = None;
     }
 
-    //TODO keep in mind this mut in case i have to make it a refcell
     pub fn cleanup(&mut self) {
         self.close_current_stream();
         self.storage.borrow().dump_data();
