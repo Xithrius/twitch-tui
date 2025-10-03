@@ -5,7 +5,7 @@ use tracing::{debug, info, warn};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::{display_emote, query_emotes, ApplyCommand, DecodedEmote},
+    emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
         config::CoreConfig,
         context::Context,
@@ -13,7 +13,8 @@ use crate::{
         state::State,
         user_input::events::{EventConfig, Events},
     },
-    twitch::TwitchAction, utils::sanitization::clean_channel_name,
+    twitch::TwitchAction,
+    utils::sanitization::clean_channel_name,
 };
 
 pub enum TerminalAction {
