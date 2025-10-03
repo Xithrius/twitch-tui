@@ -8,6 +8,7 @@ use crate::{
     terminal::TerminalAction,
     twitch::{TwitchAction, api::following::Following},
     ui::components::Component,
+    utils::sanitization::clean_channel_name,
 };
 
 static INCORRECT_SCOPES_ERROR_MESSAGE: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
@@ -60,7 +61,11 @@ impl Component for FollowingWidget {
         let action = self.search_widget.event(event).await;
 
         if let Some(TerminalAction::Enter(TwitchAction::JoinChannel(channel))) = &action {
-            self.config.borrow_mut().twitch.channel.clone_from(channel);
+            self.config
+                .borrow_mut()
+                .twitch
+                .channel
+                .clone_from(&clean_channel_name(channel));
         }
 
         action

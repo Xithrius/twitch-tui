@@ -5,7 +5,7 @@ use tracing::{debug, info, warn};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
-    emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
+    emotes::{display_emote, query_emotes, ApplyCommand, DecodedEmote},
     handlers::{
         config::CoreConfig,
         context::Context,
@@ -13,7 +13,7 @@ use crate::{
         state::State,
         user_input::events::{EventConfig, Events},
     },
-    twitch::TwitchAction,
+    twitch::TwitchAction, utils::sanitization::clean_channel_name,
 };
 
 pub enum TerminalAction {
@@ -139,6 +139,7 @@ pub async fn ui_driver(
                     }
                     TerminalAction::Enter(action) => {
                         if let TwitchAction::JoinChannel(channel) = action {
+                            let channel = clean_channel_name(&channel);
                             context.clear_messages();
                             context.emotes.unload();
                             tx.send(TwitchAction::JoinChannel(channel.clone())).unwrap();
