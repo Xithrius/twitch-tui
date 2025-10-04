@@ -1,4 +1,4 @@
-use std::{env, fmt, io::Write, path::PathBuf};
+use std::{env, fmt, io::Write, path::PathBuf, sync::LazyLock};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use color_eyre::{
@@ -21,8 +21,11 @@ use crate::utils::pathing::{
 /// Macro to add the graphics protocol escape sequence around a command.
 /// See <https://sw.kovidgoyal.net/kitty/graphics-protocol/> for documentation of the terminal graphics protocol
 macro_rules! gp {
-    ($c:expr) => {
-        concat!("\x1B_G", $c, "\x1b\\")
+    ($tmux:expr, $c:expr $(,$key:ident = $val:expr)*) => {
+        match $tmux {
+            false => format!(concat!("\x1B_G", $c, "\x1b\\"), $($key = $val),*),
+            true => format!(concat!("\x1bPtmux;\x1b", "\x1B_G", $c, "\x1b\x1b\\", "\x1b\\"), $($key = $val),*),
+        }
     };
 }
 
@@ -95,26 +98,26 @@ impl Command for DecodedEmote {
             height,
         } = frames.next().unwrap();
 
-        write!(
-            f,
-            gp!("a=t,t=t,f=32,s={width},v={height},i={id},q=2;{path}"),
+        f.write_str(&gp!(
+            *IS_TMUX,
+            "a=t,t=t,f=32,s={width},v={height},i={id},q=2;{path}",
             id = self.id,
             width = width,
             height = height,
             path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
-        )?;
+        ))?;
 
         if self.images.len() == 1 {
             return Ok(());
         }
 
         // r=1: First frame
-        write!(
-            f,
-            gp!("a=a,i={id},r=1,z={delay},q=2;"),
+        f.write_str(&gp!(
+            *IS_TMUX,
+            "a=a,i={id},r=1,z={delay},q=2;",
             id = self.id,
-            delay = delay,
-        )?;
+            delay = delay
+        ))?;
 
         for DecodedImage {
             path,
@@ -123,19 +126,19 @@ impl Command for DecodedEmote {
             height,
         } in frames
         {
-            write!(
-                f,
-                gp!("a=f,t=t,f=32,s={width},v={height},i={id},z={delay},q=2;{path}"),
+            f.write_str(&gp!(
+                *IS_TMUX,
+                "a=f,t=t,f=32,s={width},v={height},i={id},z={delay},q=2;{path}",
                 id = self.id,
                 width = width,
                 height = height,
                 delay = delay,
                 path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
-            )?;
+            ))?;
         }
 
         // s=3: Start animation, v=1: Loop infinitely
-        write!(f, gp!("a=a,i={id},s=3,v=1,q=2;"), id = self.id)
+        f.write_str(&gp!(*IS_TMUX, "a=a,i={id},s=3,v=1,q=2;", id = self.id))
     }
 
     #[cfg(windows)]
@@ -286,7 +289,7 @@ pub struct Clear(pub u32);
 
 impl Command for Clear {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        write!(f, gp!("a=d,d=I,i={id},q=2;"), id = self.0)
+        f.write_str(&gp!(*IS_TMUX, "a=d,d=I,i={id},q=2;", id = self.0))
     }
 
     #[cfg(windows)]
@@ -310,13 +313,13 @@ impl Display {
 impl Command for Display {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
         // r=1: Set height to 1 row
-        write!(
-            f,
-            gp!("a=p,U=1,i={id},p={pid},r=1,c={cols},q=2;"),
+        f.write_str(&gp!(
+            *IS_TMUX,
+            "a=p,U=1,i={id},p={pid},r=1,c={cols},q=2;",
             id = self.id,
             pid = self.pid,
             cols = self.cols
-        )
+        ))
     }
 
     #[cfg(windows)]
@@ -357,9 +360,9 @@ impl Chain {
 
 impl Command for Chain {
     fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        write!(
-            f,
-            gp!("a=p,i={id},p={pid},P={parent_id},Q={parent_pid},z={z},H={co},X={pxo},q=2;"),
+        f.write_str(&gp!(
+            *IS_TMUX,
+            "a=p,i={id},p={pid},P={parent_id},Q={parent_pid},z={z},H={co},X={pxo},q=2;",
             id = self.id,
             pid = self.pid,
             parent_id = self.parent_id,
@@ -367,7 +370,7 @@ impl Command for Chain {
             z = self.z,
             co = self.col_offset,
             pxo = self.pixel_offset
-        )
+        ))
     }
 
     #[cfg(windows)]
@@ -420,21 +423,23 @@ fn query_terminal(command: &[u8]) -> Result<String> {
 
 const SUPPORTED_TERMINALS: [&str; 2] = ["xterm-kitty", "xterm-ghostty"];
 
+static IS_TMUX: LazyLock<bool> = LazyLock::new(|| env::var("TMUX").is_ok());
+
 /// First check if the terminal is `kitty`, this is the only terminal that supports the graphics protocol using unicode placeholders as of 2023-07-13.
 /// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
 /// If we receive the terminal attributes without receiving the response for the graphics protocol, it does not support it.
 pub fn support_graphics_protocol() -> Result<bool> {
-    Ok(
-        env::var("TERM").is_ok_and(|term| SUPPORTED_TERMINALS.contains(&term.as_str()))
+    Ok(*IS_TMUX
+        || (env::var("TERM").is_ok_and(|term| SUPPORTED_TERMINALS.contains(&term.as_str()))
             && query_terminal(
-                format!(
-                    concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
-                    STANDARD.encode("AAAA"),
-                )
+                (gp!(
+                    false,
+                    "i=31,s=1,v=1,a=q,t=d,f=24;{payload}",
+                    payload = STANDARD.encode("AAAA")
+                ) + csi!("c"))
                 .as_bytes(),
             )?
-            .contains("OK"),
-    )
+            .contains("OK")))
 }
 
 #[cfg(test)]
@@ -462,8 +467,9 @@ mod tests {
 
         assert_eq!(
             s,
-            format!(
-                gp!("a=t,t=t,f=32,s=30,v=42,i=1,q=2;{path}"),
+            gp!(
+                false,
+                "a=t,t=t,f=32,s=30,v=42,i=1,q=2;{path}",
                 path = STANDARD.encode(path)
             )
         );
@@ -506,19 +512,22 @@ mod tests {
 
         assert_eq!(
             s,
-            format!(
-                gp!("a=t,t=t,f=32,s=30,v=42,i=1,q=2;{path}"),
+            gp!(
+                false,
+                "a=t,t=t,f=32,s=30,v=42,i=1,q=2;{path}",
                 path = STANDARD.encode(paths[0])
-            ) + gp!("a=a,i=1,r=1,z=0,q=2;")
-                + &format!(
-                    gp!("a=f,t=t,f=32,s=12,v=74,i=1,z=89,q=2;{path}"),
+            ) + &gp!(false, "a=a,i=1,r=1,z=0,q=2;")
+                + &gp!(
+                    false,
+                    "a=f,t=t,f=32,s=12,v=74,i=1,z=89,q=2;{path}",
                     path = STANDARD.encode(paths[1])
                 )
-                + &format!(
-                    gp!("a=f,t=t,f=32,s=54,v=45,i=1,z=4,q=2;{path}"),
+                + &gp!(
+                    false,
+                    "a=f,t=t,f=32,s=54,v=45,i=1,z=4,q=2;{path}",
                     path = STANDARD.encode(paths[2])
                 )
-                + gp!("a=a,i=1,s=3,v=1,q=2;")
+                + &gp!(false, "a=a,i=1,s=3,v=1,q=2;")
         );
     }
 
@@ -528,7 +537,7 @@ mod tests {
 
         Clear(1).write_ansi(&mut s).unwrap();
 
-        assert_eq!(s, gp!("a=d,d=I,i=1,q=2;"));
+        assert_eq!(s, gp!(false, "a=d,d=I,i=1,q=2;"));
     }
 
     #[test]
@@ -537,7 +546,7 @@ mod tests {
 
         Display::new(1, 2, 3).write_ansi(&mut s).unwrap();
 
-        assert_eq!(s, gp!("a=p,U=1,i=1,p=2,r=1,c=3,q=2;"));
+        assert_eq!(s, gp!(false, "a=p,U=1,i=1,p=2,r=1,c=3,q=2;"));
     }
 
     #[test]
@@ -547,6 +556,6 @@ mod tests {
             .write_ansi(&mut s)
             .unwrap();
 
-        assert_eq!(s, gp!("a=p,i=1,p=2,P=3,Q=4,z=1,H=1,X=4,q=2;"));
+        assert_eq!(s, gp!(false, "a=p,i=1,p=2,P=3,Q=4,z=1,H=1,X=4,q=2;"));
     }
 }
