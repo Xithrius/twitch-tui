@@ -490,7 +490,7 @@ impl MessageData {
             None
         };
 
-        let author = self.badges.as_ref().map_or(self.author.clone(), |badges| {
+        let author = self.badges.as_ref().map_or_else(|| self.author.clone(), |badges| {
             badges.to_string() + &self.author
         });
 
