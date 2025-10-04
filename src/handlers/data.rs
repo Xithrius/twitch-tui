@@ -594,6 +594,8 @@ impl MessageData {
 #[derive(Debug, Copy, Clone)]
 pub struct DataBuilder;
 
+pub static KNOWN_CHATTERS: &[&str] = &["System", "Twitch"];
+
 impl DataBuilder {
     // User messages that come from either twitch or the terminal
     pub fn user(

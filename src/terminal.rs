@@ -9,7 +9,7 @@ use crate::{
     handlers::{
         config::CoreConfig,
         context::Context,
-        data::{MessageData, TwitchToTerminalAction},
+        data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
         state::State,
         user_input::events::{EventConfig, Events},
     },
@@ -96,11 +96,12 @@ pub async fn ui_driver(
             match msg {
                 TwitchToTerminalAction::Message(m) => {
                     let message_data = MessageData::from_twitch_message(m, &context.emotes);
-                    //TODO filter through "known chatters" (Twitch, System) (also author includes the badges so figure that out
-                    context
-                        .storage
-                        .borrow_mut()
-                        .add("chatters", message_data.author.clone());
+                    if !KNOWN_CHATTERS.contains(&message_data.author.as_str()) {
+                        context
+                            .storage
+                            .borrow_mut()
+                            .add("chatters", message_data.author.clone());
+                    }
                     context.messages.borrow_mut().push_front(message_data);
 
                     // If scrolling is enabled, pad for more messages.

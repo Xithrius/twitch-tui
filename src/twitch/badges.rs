@@ -24,7 +24,7 @@ pub fn retrieve_user_badges(badges: &Vec<ReceivedTwitchEventBadges>) -> String {
             badges_str.push(*badge_char);
         }
     }
-    return badges_str;
+    badges_str
 }
 
 // TODO: Tests
