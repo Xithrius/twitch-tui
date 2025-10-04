@@ -96,6 +96,10 @@ pub struct FiltersConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct FrontendConfig {
+    /// The command and arguments that should be used to view the stream
+    pub view_command: Vec<String>,
+    /// Whether `view_command` should automatically be started when opening a stream
+    pub autostart_view_command: bool,
     /// If the time and date is to be shown.
     pub show_datetimes: bool,
     /// The format of string that will show up in the terminal.
@@ -184,7 +188,7 @@ pub struct NormalKeybindsConfig {
     pub scroll_up: Vec<Key>,
     pub scroll_to_end: Vec<Key>,
     pub scroll_to_start: Vec<Key>,
-    pub open_in_browser: Vec<Key>,
+    pub open_in_player: Vec<Key>,
     pub recent_channels_search: Vec<Key>,
     pub followed_channels_search: Vec<Key>,
     pub help: Vec<Key>,
@@ -256,6 +260,8 @@ impl Default for TerminalConfig {
 impl Default for FrontendConfig {
     fn default() -> Self {
         Self {
+            view_command: vec![],
+            autostart_view_command: false,
             show_datetimes: true,
             datetime_format: "%a %b %e %T %Y".to_string(),
             username_shown: true,
@@ -324,7 +330,7 @@ impl Default for NormalKeybindsConfig {
             scroll_down: vec![Key::ScrollDown, Key::Down, Key::Char('j')],
             scroll_to_end: vec![Key::Char('G')],
             scroll_to_start: vec![Key::Char('g')],
-            open_in_browser: vec![Key::Char('o')],
+            open_in_player: vec![Key::Char('o')],
             recent_channels_search: vec![Key::Char('s')],
             followed_channels_search: vec![Key::Char('f')],
             help: vec![Key::Char('?'), Key::Char('h')],
@@ -580,6 +586,11 @@ impl ToVec<(String, String)> for FiltersConfig {
 impl ToVec<(String, String)> for FrontendConfig {
     fn to_vec(&self) -> Vec<(String, String)> {
         vec![
+            ("View command".to_string(), self.view_command.join(" ")),
+            (
+                "Autostart view command".to_string(),
+                self.autostart_view_command.to_string(),
+            ),
             (
                 "Show datetimes".to_string(),
                 self.show_datetimes.to_string(),

@@ -70,10 +70,17 @@ impl ChatWidget {
         }
     }
 
-    pub fn open_in_browser(&self) {
-        webbrowser::open(format!(
-            "https://player.twitch.tv/?channel={}&enableExtensions=true&parent=twitch.tv&quality=chunked",
-            self.config.borrow().twitch.channel).as_str()).unwrap();
+    pub fn open_in_player(&self) -> Option<TerminalAction> {
+        let config = self.config.borrow();
+        let channel_name = config.twitch.channel.as_str();
+        if config.frontend.view_command.is_empty() {
+            webbrowser::open(format!(
+            "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
+            ).as_str()).unwrap();
+            None
+        } else {
+            Some(TerminalAction::OpenStream(channel_name.to_string()))
+        }
     }
 
     pub fn get_messages<'a>(
@@ -332,7 +339,7 @@ impl Component for ChatWidget {
                         return Some(TerminalAction::SwitchState(State::Help));
                     }
                     key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
-                    key if keybinds.open_in_browser.contains(key) => self.open_in_browser(),
+                    key if keybinds.open_in_player.contains(key) => return self.open_in_player(),
                     key if keybinds.scroll_to_end.contains(key) => {
                         self.scroll_offset.jump_to(0);
                     }

@@ -22,9 +22,13 @@ pub enum TerminalAction {
     BackOneLayer,
     SwitchState(State),
     Enter(TwitchAction),
+    OpenStream(String),
 }
 
-#[allow(clippy::match_wildcard_for_single_variants)]
+#[allow(
+    clippy::match_wildcard_for_single_variants,
+    clippy::cognitive_complexity
+)]
 pub async fn ui_driver(
     config: CoreConfig,
     mut context: Context,
@@ -144,11 +148,18 @@ pub async fn ui_driver(
                             context.clear_messages();
                             context.emotes.unload();
                             tx.send(TwitchAction::JoinChannel(channel.clone())).unwrap();
+
+                            if config.frontend.autostart_view_command {
+                                context.open_stream(&channel);
+                            }
                             erx = query_emotes(&config, channel);
                             context.set_state(State::Normal);
                         } else {
                             tx.send(action).unwrap();
                         }
+                    }
+                    TerminalAction::OpenStream(channel) => {
+                        context.open_stream(&channel);
                     }
                 }
             }
