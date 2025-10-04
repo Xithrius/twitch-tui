@@ -50,6 +50,7 @@ pub struct MessageData {
     pub emotes: Vec<(Color, Color)>,
     pub message_id: Option<String>,
     pub highlight: bool,
+    pub badges: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -62,6 +63,7 @@ pub struct RawMessageData {
     pub emotes: DownloadedEmotes,
     pub message_id: Option<String>,
     pub highlight: bool,
+    pub badges: Option<String>,
 }
 
 impl RawMessageData {
@@ -73,6 +75,7 @@ impl RawMessageData {
         emotes: DownloadedEmotes,
         message_id: Option<String>,
         highlight: bool,
+        badges: Option<String>,
     ) -> Self {
         Self {
             time_sent: Local::now(),
@@ -83,6 +86,7 @@ impl RawMessageData {
             emotes,
             message_id,
             highlight,
+            badges,
         }
     }
 }
@@ -108,6 +112,7 @@ impl MessageData {
             emotes,
             message_id: msg.message_id,
             highlight: msg.highlight,
+            badges: msg.badges,
         }
     }
 
@@ -485,12 +490,16 @@ impl MessageData {
             None
         };
 
+        let author = self.badges.as_ref().map_or(self.author.clone(), |badges| {
+            badges.to_string() + &self.author
+        });
+
         // Add 1 for the space after the timestamp
         let time_sent_len = time_sent.as_ref().map_or(0, |t| t.len() + 1);
 
         let prefix_len = if frontend_config.username_shown {
             // Add 2 for the ": "
-            time_sent_len + self.author.len() + 2
+            time_sent_len + author.len() + 2
         } else {
             time_sent_len
         };
@@ -512,7 +521,7 @@ impl MessageData {
 
         let username_alignment = if frontend_config.username_shown {
             if frontend_config.right_align_usernames {
-                NAME_MAX_CHARACTERS.saturating_sub(self.author.width()) + 1
+                NAME_MAX_CHARACTERS.saturating_sub(author.width()) + 1
             } else {
                 1
             }
@@ -530,10 +539,7 @@ impl MessageData {
         }
 
         if frontend_config.username_shown {
-            first_row.extend(vec![
-                Span::styled(&self.author, author_theme),
-                Span::raw(": "),
-            ]);
+            first_row.extend(vec![Span::styled(author, author_theme), Span::raw(": ")]);
         }
 
         let mut next_index = 0;
@@ -597,9 +603,10 @@ impl DataBuilder {
         emotes: DownloadedEmotes,
         message_id: Option<String>,
         highlight: bool,
+        badges: Option<String>,
     ) -> TwitchToTerminalAction {
         TwitchToTerminalAction::Message(RawMessageData::new(
-            user, user_id, false, payload, emotes, message_id, highlight,
+            user, user_id, false, payload, emotes, message_id, highlight, badges,
         ))
     }
 
@@ -613,6 +620,7 @@ impl DataBuilder {
             DownloadedEmotes::default(),
             None,
             false,
+            None,
         ))
     }
 
@@ -626,6 +634,7 @@ impl DataBuilder {
             DownloadedEmotes::default(),
             None,
             false,
+            None,
         ))
     }
 }
@@ -650,6 +659,7 @@ mod tests {
                 emotes: vec![],
                 message_id: None,
                 highlight: false,
+                badges: None,
             }
             .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
@@ -928,6 +938,7 @@ mod tests {
             BTreeMap::new(),
             None,
             false,
+            None,
         );
 
         let emotes = Rc::new(Emotes::new(false));
