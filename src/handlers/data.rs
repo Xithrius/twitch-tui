@@ -490,9 +490,10 @@ impl MessageData {
             None
         };
 
-        let author = self.badges.as_ref().map_or_else(|| self.author.clone(), |badges| {
-            badges.to_string() + &self.author
-        });
+        let author = self.badges.as_ref().map_or_else(
+            || self.author.clone(),
+            |badges| badges.to_string() + &self.author,
+        );
 
         // Add 1 for the space after the timestamp
         let time_sent_len = time_sent.as_ref().map_or(0, |t| t.len() + 1);
