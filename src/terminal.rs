@@ -96,7 +96,9 @@ pub async fn ui_driver(
             match msg {
                 TwitchToTerminalAction::Message(m) => {
                     let message_data = MessageData::from_twitch_message(m, &context.emotes);
-                    if !KNOWN_CHATTERS.contains(&message_data.author.as_str()) {
+                    if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
+                        && config.twitch.username != message_data.author
+                    {
                         context
                             .storage
                             .borrow_mut()
