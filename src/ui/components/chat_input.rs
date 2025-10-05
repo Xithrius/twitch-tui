@@ -59,7 +59,9 @@ impl ChatInputWidget {
                     }
                     '@' => {
                         let possible_suggestion =
-                            first_similarity(&storage.borrow().get("mentions"), &s[1..]);
+                            first_similarity(&storage.borrow().get("mentions"), &s[1..]).or_else(
+                                || first_similarity(&storage.borrow().get("chatters"), &s[1..]),
+                            );
 
                         let default_suggestion = possible_suggestion.clone();
 

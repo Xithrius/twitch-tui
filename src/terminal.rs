@@ -9,7 +9,7 @@ use crate::{
     handlers::{
         config::CoreConfig,
         context::Context,
-        data::{MessageData, TwitchToTerminalAction},
+        data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
         state::State,
         user_input::events::{EventConfig, Events},
     },
@@ -95,10 +95,16 @@ pub async fn ui_driver(
         if let Ok(msg) = rx.try_recv() {
             match msg {
                 TwitchToTerminalAction::Message(m) => {
-                    context
-                        .messages
-                        .borrow_mut()
-                        .push_front(MessageData::from_twitch_message(m, &context.emotes));
+                    let message_data = MessageData::from_twitch_message(m, &context.emotes);
+                    if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
+                        && config.twitch.username != message_data.author
+                    {
+                        context
+                            .storage
+                            .borrow_mut()
+                            .add("chatters", message_data.author.clone());
+                    }
+                    context.messages.borrow_mut().push_front(message_data);
 
                     // If scrolling is enabled, pad for more messages.
                     if context.components.chat.scroll_offset.get_offset() > 0 {
