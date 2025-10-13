@@ -132,14 +132,16 @@ pub async fn handle_incoming_message(
     .buffer_unordered(10)
     .collect::<Vec<Result<(String, (String, bool))>>>();
 
-    let mut chatter_user_name = event
+    let chatter_user_name = event
         .chatter_user_name()
         .context("Could not find chatter user name")?
         .to_string();
     let badges = event.badges().unwrap_or_default();
-    if config.frontend.badges {
-        retrieve_user_badges(&mut chatter_user_name, &badges);
-    }
+    let badges = if config.frontend.badges {
+        Some(retrieve_user_badges(&badges))
+    } else {
+        None
+    };
 
     let chatter_user_id = event
         .chatter_user_id()
@@ -153,12 +155,13 @@ pub async fn handle_incoming_message(
     let message_emotes = emotes.await.into_iter().flatten().collect();
 
     tx.send(DataBuilder::user(
-        chatter_user_name.to_string(),
+        chatter_user_name,
         Some(chatter_user_id.to_string()),
         cleaned_message,
         message_emotes,
         Some(message_id),
         highlight,
+        badges,
     ))
     .await?;
 
