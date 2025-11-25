@@ -84,7 +84,7 @@ pub async fn subscribe_to_events(
 
         debug!("Subscribed to event {subscription_type}");
 
-        subscription_map.insert(subscription_type, subscription_id.to_string());
+        subscription_map.insert(subscription_type, subscription_id.clone());
     }
 
     Ok(subscription_map)

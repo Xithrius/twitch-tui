@@ -22,7 +22,7 @@ fn test_deserialize_reply() -> Result<()> {
         .reply()
         .context("Could not get reply out of event")?
         .parent_message_body()
-        .to_string();
+        .clone();
 
     assert_eq!(raw_parent_message_body, parent_message_body);
 

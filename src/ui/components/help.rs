@@ -258,7 +258,7 @@ impl Component for HelpWidget {
                         Cell::from("")
                     }
                     .style(*BOLD_STYLE),
-                    Cell::from((*key).to_string()),
+                    Cell::from((*key).clone()),
                     Cell::from((*desc).to_string()),
                 ]));
             }

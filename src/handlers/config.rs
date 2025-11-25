@@ -408,17 +408,13 @@ impl fmt::Display for LogLevel {
 
 #[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Palette {
+    #[default]
     Pastel,
     Vibrant,
     Warm,
     Cool,
-}
-
-impl Default for Palette {
-    fn default() -> Self {
-        Self::Pastel
-    }
 }
 
 impl FromStr for Palette {
@@ -437,18 +433,14 @@ impl FromStr for Palette {
 
 #[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Theme {
+    #[default]
     Dark,
     Light,
 
     #[allow(dead_code)]
     Custom,
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Self::Dark
-    }
 }
 
 impl FromStr for Theme {
@@ -465,17 +457,13 @@ impl FromStr for Theme {
 
 #[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum CursorType {
+    #[default]
     User,
     Line,
     Block,
     UnderScore,
-}
-
-impl Default for CursorType {
-    fn default() -> Self {
-        Self::User
-    }
 }
 
 impl FromStr for CursorType {
@@ -494,17 +482,13 @@ impl FromStr for CursorType {
 
 #[derive(Serialize, DeserializeFromStr, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Border {
+    #[default]
     Plain,
     Rounded,
     Double,
     Thick,
-}
-
-impl Default for Border {
-    fn default() -> Self {
-        Self::Plain
-    }
 }
 
 impl FromStr for Border {
@@ -539,9 +523,9 @@ pub trait ToVec<T> {
 impl ToVec<(String, String)> for TwitchConfig {
     fn to_vec(&self) -> Vec<(String, String)> {
         vec![
-            ("Username".to_string(), self.username.to_string()),
-            ("Channel".to_string(), self.channel.to_string()),
-            ("Server".to_string(), self.server.to_string()),
+            ("Username".to_string(), self.username.clone()),
+            ("Channel".to_string(), self.channel.clone()),
+            ("Server".to_string(), self.server.clone()),
         ]
     }
 }
@@ -595,10 +579,7 @@ impl ToVec<(String, String)> for FrontendConfig {
                 "Show datetimes".to_string(),
                 self.show_datetimes.to_string(),
             ),
-            (
-                "Datetime format".to_string(),
-                self.datetime_format.to_string(),
-            ),
+            ("Datetime format".to_string(), self.datetime_format.clone()),
             (
                 "Username shown".to_string(),
                 self.username_shown.to_string(),
