@@ -25,7 +25,7 @@ async fn handle_chat_notification(
     match subscription_type {
         Subscription::Notification => {
             if let Some(twitch_notification_message) = event.system_message() {
-                tx.send(DataBuilder::twitch(twitch_notification_message.to_string()))
+                tx.send(DataBuilder::twitch(twitch_notification_message.clone()))
                     .await?;
             }
         }
@@ -39,17 +39,15 @@ async fn handle_chat_notification(
         Subscription::ClearUserMessages => {
             if let Some(target_user_id) = event.target_user_id() {
                 tx.send(TwitchToTerminalAction::ClearChat(Some(
-                    target_user_id.to_string(),
+                    target_user_id.clone(),
                 )))
                 .await?;
             }
         }
         Subscription::MessageDelete => {
             if let Some(message_id) = event.message_id() {
-                tx.send(TwitchToTerminalAction::DeleteMessage(
-                    message_id.to_string(),
-                ))
-                .await?;
+                tx.send(TwitchToTerminalAction::DeleteMessage(message_id.clone()))
+                    .await?;
             }
         }
         Subscription::Ban => {
@@ -118,11 +116,11 @@ pub async fn handle_incoming_message(
             let emote_id = emote
                 .emote_id()
                 .context("Failed to get emote ID from emote fragment")?
-                .to_string();
+                .clone();
             let emote_name = fragment_emote
                 .emote_name()
                 .context("Failed to get emote name from emote fragment")?
-                .to_string();
+                .clone();
 
             get_twitch_emote(&emote_id).await?;
 
@@ -135,7 +133,7 @@ pub async fn handle_incoming_message(
     let mut chatter_user_name = event
         .chatter_user_name()
         .context("Could not find chatter user name")?
-        .to_string();
+        .clone();
     let badges = event.badges().unwrap_or_default();
     if config.frontend.badges {
         retrieve_user_badges(&mut chatter_user_name, &badges);
@@ -148,13 +146,13 @@ pub async fn handle_incoming_message(
     let message_id = event
         .message_id()
         .context("Could not find message ID")?
-        .to_string();
+        .clone();
 
     let message_emotes = emotes.await.into_iter().flatten().collect();
 
     tx.send(DataBuilder::user(
-        chatter_user_name.to_string(),
-        Some(chatter_user_id.to_string()),
+        chatter_user_name.clone(),
+        Some(chatter_user_id.clone()),
         cleaned_message,
         message_emotes,
         Some(message_id),

@@ -245,7 +245,7 @@ impl HelpWidget {
 
 impl Component for HelpWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
+        let r = area.unwrap_or_else(|| f.area());
 
         let mut rows = vec![];
 
@@ -258,7 +258,7 @@ impl Component for HelpWidget {
                         Cell::from("")
                     }
                     .style(*BOLD_STYLE),
-                    Cell::from((*key).to_string()),
+                    Cell::from((*key).clone()),
                     Cell::from((*desc).to_string()),
                 ]));
             }
