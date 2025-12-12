@@ -170,7 +170,7 @@ impl ChatWidget {
 
 impl Component for ChatWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
+        let r = area.unwrap_or_else(|| f.area());
 
         let config = self.config.borrow();
 

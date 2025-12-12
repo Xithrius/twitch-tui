@@ -113,7 +113,7 @@ impl EmotePickerWidget {
 
 impl Component for EmotePickerWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
+        let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         // Only load the emotes that are actually being displayed, as loading every emote is not really possible.
         // Some channels can have multiple thousands emotes and decoding all of them takes a while.

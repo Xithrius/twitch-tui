@@ -164,7 +164,7 @@ mod tests {
             Key::ScrollUp,
         ]);
         for key in &vec {
-            assert_eq!(*key, Key::from_str(&key.to_string()).unwrap())
+            assert_eq!(*key, Key::from_str(&key.to_string()).unwrap());
         }
     }
 }

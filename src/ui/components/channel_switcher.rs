@@ -15,6 +15,7 @@ use tui::{
     },
 };
 
+use super::utils::popup_area;
 use crate::{
     handlers::{config::SharedCoreConfig, storage::SharedStorage, user_input::events::Event},
     terminal::TerminalAction,
@@ -29,8 +30,6 @@ use crate::{
         text::{TitleStyle, first_similarity, title_line},
     },
 };
-
-use super::utils::popup_area;
 
 pub struct ChannelSwitcherWidget {
     config: SharedCoreConfig,
@@ -140,7 +139,7 @@ impl Display for ChannelSwitcherWidget {
 
 impl Component for ChannelSwitcherWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
+        let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         let channels = self.storage.borrow().get("channels");
 
@@ -333,11 +332,11 @@ impl Component for ChannelSwitcherWidget {
 
                         debug!(
                             "Joining previously joined channel {:?}",
-                            selected_channel.to_string()
+                            selected_channel.clone()
                         );
 
                         return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
-                            selected_channel.to_string(),
+                            selected_channel.clone(),
                         )));
                     } else if self.search_input.is_valid() {
                         self.toggle_focus();

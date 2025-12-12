@@ -58,7 +58,7 @@ impl DebugWidget {
 
 impl Component for DebugWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
+        let r = area.unwrap_or_else(|| f.area());
 
         let configs = self.get_config_values();
 
@@ -69,14 +69,14 @@ impl Component for DebugWidget {
                 let mut inner_rows = if i > 0 {
                     vec![
                         Row::new::<Vec<String>>(vec![]),
-                        Row::new(vec![t.to_string()]).style(*BOLD_STYLE),
+                        Row::new(vec![t.clone()]).style(*BOLD_STYLE),
                     ]
                 } else {
-                    vec![Row::new(vec![t.to_string()]).style(*BOLD_STYLE)]
+                    vec![Row::new(vec![t.clone()]).style(*BOLD_STYLE)]
                 };
 
                 for (k, v) in values {
-                    inner_rows.push(Row::new(vec![k.to_string(), v.to_string()]));
+                    inner_rows.push(Row::new(vec![k.clone(), v.clone()]));
                 }
 
                 inner_rows

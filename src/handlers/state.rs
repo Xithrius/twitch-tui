@@ -40,17 +40,12 @@ impl FromStr for NormalMode {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr, Default)]
 pub enum State {
+    #[default]
     Dashboard,
     Normal,
     Help,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self::Dashboard
-    }
 }
 
 impl Display for State {

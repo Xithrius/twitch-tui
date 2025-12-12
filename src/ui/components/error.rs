@@ -40,7 +40,7 @@ impl ErrorWidget {
 
 impl Component for ErrorWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
+        let r = area.unwrap_or_else(|| f.area());
 
         let paragraph = Paragraph::new(
             self.message

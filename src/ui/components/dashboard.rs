@@ -169,7 +169,7 @@ impl DashboardWidget {
 
 impl Component for DashboardWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
+        let r = area.unwrap_or_else(|| f.area());
 
         let favorite_channels_len = {
             let l = self.config.borrow().frontend.favorite_channels.len() as u16;
@@ -278,17 +278,14 @@ impl Component for DashboardWidget {
                             } as usize;
 
                         if let Some(channel) = channels.get(selection) {
-                            self.config.borrow_mut().twitch.channel = channel.to_string();
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", channel.to_string());
+                            self.config.borrow_mut().twitch.channel.clone_from(channel);
+                            self.storage.borrow_mut().add("channels", channel.clone());
                             if selection != 0 && selection * 10 <= channels.len() {
                                 return None;
                             }
                             self.channel_selection = None;
-                            let action = TerminalAction::Enter(TwitchAction::JoinChannel(
-                                channel.to_string(),
-                            ));
+                            let action =
+                                TerminalAction::Enter(TwitchAction::JoinChannel(channel.clone()));
 
                             return Some(action);
                         }

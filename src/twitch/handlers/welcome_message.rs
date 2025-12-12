@@ -67,7 +67,7 @@ pub async fn handle_channel_join(
         twitch_client,
         twitch_oauth,
         context.session_id().cloned(),
-        channel_id.to_string(),
+        channel_id.clone(),
         current_subscriptions,
     )
     .await
@@ -75,7 +75,7 @@ pub async fn handle_channel_join(
         "Failed to subscribe to new channel '{channel_name}'"
     ))?;
 
-    let context_channel_id = channel_id.to_string();
+    let context_channel_id = channel_id.clone();
 
     context.set_event_subscriptions(new_subscriptions);
 

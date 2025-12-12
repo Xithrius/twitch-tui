@@ -73,8 +73,7 @@ pub async fn twitch_websocket(
     };
     if let Err(err) = handle_welcome_message(&mut config.twitch, &mut context, &tx, message).await {
         let error_message = format!("Failed to handle welcome message: {err}");
-        tx.send(DataBuilder::system(error_message.to_string()))
-            .await?;
+        tx.send(DataBuilder::system(error_message.clone())).await?;
         bail!(error_message);
     }
 
