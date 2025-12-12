@@ -16,7 +16,7 @@ static BADGES: LazyLock<HashMap<&str, char>> = LazyLock::new(|| {
     ])
 });
 
-pub fn retrieve_user_badges(name: &mut String, badges: &Vec<ReceivedTwitchEventBadges>) {
+pub fn retrieve_user_badges(badges: &Vec<ReceivedTwitchEventBadges>) -> String {
     let mut badges_str = String::new();
 
     for badge in badges {
@@ -24,8 +24,7 @@ pub fn retrieve_user_badges(name: &mut String, badges: &Vec<ReceivedTwitchEventB
             badges_str.push(*badge_char);
         }
     }
-
-    *name = badges_str + name;
+    badges_str
 }
 
 // TODO: Tests

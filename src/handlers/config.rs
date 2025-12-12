@@ -82,6 +82,8 @@ pub struct StorageConfig {
     pub channels: bool,
     /// If previous username mentions should be tracked.
     pub mentions: bool,
+    /// If chatters previously in a room should be tracked
+    pub chatters: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -552,6 +554,7 @@ impl ToVec<(String, String)> for StorageConfig {
         vec![
             ("Channels enabled".to_string(), self.channels.to_string()),
             ("Mentions enabled".to_string(), self.mentions.to_string()),
+            ("Chatters enabled".to_string(), self.chatters.to_string()),
         ]
     }
 }
