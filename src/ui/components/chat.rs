@@ -6,7 +6,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, block::Position},
+    widgets::{Block, Borders, List, ListItem, TitlePosition},
 };
 
 use crate::{
@@ -269,7 +269,7 @@ impl Component for ChatWidget {
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
                 .border_type(self.config.borrow().frontend.border_type.clone().into())
                 .title(title_line(&title, Style::default()))
-                .title_position(Position::Bottom)
+                .title_position(TitlePosition::Bottom)
                 .title_alignment(Alignment::Right);
 
             let rect = Rect::new(

@@ -10,7 +10,7 @@ use tui::{
     text::{Line, Span},
     widgets::{
         Block, Borders, Clear, List, ListItem, ListState, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, block::Position,
+        ScrollbarState, TitlePosition,
     },
 };
 
@@ -116,7 +116,7 @@ where
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
-    fn unselect(&mut self) {
+    const fn unselect(&mut self) {
         self.list_state.select(None);
     }
 
@@ -244,7 +244,7 @@ where
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
             .border_type(self.config.borrow().frontend.border_type.clone().into())
             .title(title_line(&title, Style::default()))
-            .title_position(Position::Bottom)
+            .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Right);
 
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);

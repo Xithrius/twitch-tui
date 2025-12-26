@@ -3,7 +3,7 @@ use tui::{
     Frame,
     layout::{Constraint, Rect},
     prelude::Alignment,
-    widgets::{Block, Borders, Clear, Row, Table, block::Position},
+    widgets::{Block, Borders, Clear, Row, Table, TitlePosition},
 };
 
 use crate::{
@@ -106,7 +106,7 @@ impl Component for DebugWidget {
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
             .border_type(self.config.borrow().frontend.border_type.clone().into())
             .title(title_line(&title, *TITLE_STYLE))
-            .title_position(Position::Bottom)
+            .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Left);
 
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);

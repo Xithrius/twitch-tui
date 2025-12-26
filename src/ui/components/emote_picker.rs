@@ -99,7 +99,7 @@ impl EmotePickerWidget {
         self.list_state.select(Some(i));
     }
 
-    fn unselect(&mut self) {
+    const fn unselect(&mut self) {
         self.list_state.select(None);
     }
     pub const fn is_focused(&self) -> bool {

@@ -9,7 +9,7 @@ use tui::{
     layout::{Position as LayoutPosition, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, Paragraph, block::Position as BlockPosition},
+    widgets::{Block, Borders, Clear, Paragraph, TitlePosition},
 };
 
 use super::popup_area;
@@ -198,7 +198,7 @@ impl<T: Clone> Component for InputWidget<T> {
                             .add_modifier(Modifier::BOLD)
                     },
                 ))
-                .title_position(BlockPosition::Bottom)
+                .title_position(TitlePosition::Bottom)
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
                 .border_type(self.config.borrow().frontend.border_type.clone().into());
 
@@ -211,7 +211,6 @@ impl<T: Clone> Component for InputWidget<T> {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            //TODO idk if this needs to be cloned or not
             let keybinds = self.config.borrow().keybinds.insert.clone();
             match key {
                 key if keybinds.move_cursor_right.contains(key) => {

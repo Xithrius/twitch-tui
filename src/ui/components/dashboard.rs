@@ -3,7 +3,7 @@ use std::slice::Iter;
 use tui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
 };
