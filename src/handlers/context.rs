@@ -6,6 +6,7 @@ use std::{
 };
 
 use chrono::{DateTime, Local};
+use tracing::error;
 use tui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -24,8 +25,6 @@ use crate::{
     terminal::TerminalAction,
     ui::components::{Component, Components},
 };
-
-use tracing::error;
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 

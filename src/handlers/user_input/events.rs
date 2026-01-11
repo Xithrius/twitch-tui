@@ -1,9 +1,7 @@
 use std::{fmt::Display, str::FromStr, time::Duration};
 
 use color_eyre::eyre::{Error, bail};
-
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-
 use tokio::{sync::mpsc, time::Instant};
 use tui::crossterm::event::{
     self, Event as CEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEventKind,
