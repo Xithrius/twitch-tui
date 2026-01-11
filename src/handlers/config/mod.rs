@@ -3,7 +3,7 @@ pub mod filters;
 pub mod frontend;
 pub mod keybinds;
 pub mod logs;
-pub mod persistance;
+pub mod persistence;
 pub mod storage;
 pub mod terminal;
 pub mod twitch;
@@ -14,7 +14,7 @@ pub use crate::handlers::config::{
     frontend::{CursorType, FrontendConfig, Palette, Theme},
     keybinds::KeybindsConfig,
     logs::LogLevel,
-    persistance::{persist_config, persist_default_config},
+    persistence::{persist_config, persist_default_config},
     storage::StorageConfig,
     terminal::TerminalConfig,
     twitch::TwitchConfig,
