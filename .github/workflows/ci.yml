@@ -1,13 +1,19 @@
 name: CI
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: false
+
+# Set the permissions of the github token to the minimum and only enable what is needed
+# See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions
+permissions: {}
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
 
 jobs:
   build-test:
@@ -38,58 +44,22 @@ jobs:
     name: Build & Test (${{ matrix.target }} - ${{ matrix.toolchain }})
     runs-on: ${{ matrix.os }}
 
-    env:
-      RA_TARGET: ${{ matrix.target }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Cache Cargo registry
-        uses: actions/cache@v4
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # 2.8.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-
-      - name: Cache Cargo build artifacts
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-target-${{ matrix.toolchain }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-target-${{ matrix.toolchain }}-${{ matrix.target }}-
-
-      - name: Cache Rustup toolchain
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.rustup
-            ~/.cargo/bin
-          key: ${{ runner.os }}-rustup-${{ matrix.toolchain }}
-          restore-keys: |
-            ${{ runner.os }}-rustup-
+          workspaces: ${{ github.workspace }}
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561 # latest commit
         with:
           toolchain: ${{ matrix.toolchain }}
-          target: ${{ matrix.target }}
-          profile: minimal
-          override: true
 
-      - name: Install Rust library source
-        if: matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          target: ${{ matrix.target }}
-          profile: minimal
-          override: true
-          components: rust-src
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
 
       - name: Build
         run: cargo build --verbose --target ${{ matrix.target }}
@@ -108,22 +78,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Cache Rustup toolchain
-        uses: actions/cache@v4
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # 2.8.2
         with:
-          path: |
-            ~/.rustup
-            ~/.cargo/bin
-          key: ubuntu-latest-rustup-stable
-          restore-keys: |
-            ubuntu-latest-rustup-
+          workspaces: ${{ github.workspace }}
 
-      - name: Install Rust
-        run: |
-          rustup update stable
-          rustup default stable
-          rustup component add rustfmt
-          rustup component add clippy
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561 # latest commit
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
 
       - name: Check formatting
         run: cargo fmt --all -- --check
