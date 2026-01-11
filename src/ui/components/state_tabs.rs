@@ -24,6 +24,7 @@ impl StateTabsWidget {
         Self { _config: config }
     }
 
+    #[allow(clippy::unused_self)]
     pub fn draw(&self, f: &mut Frame, area: Option<Rect>, state: &State) {
         let tab_titles = TABS_TO_RENDER
             .iter()

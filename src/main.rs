@@ -13,11 +13,8 @@
     clippy::missing_panics_doc,
     clippy::must_use_candidate,
     clippy::struct_field_names,
-    clippy::too_many_arguments,
-    clippy::unused_self
+    clippy::too_many_arguments
 )]
-
-use std::thread;
 
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
@@ -25,7 +22,10 @@ use logging::initialize_logging;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info, warn};
 
-use crate::handlers::{args::Cli, config::CoreConfig, context::Context};
+use crate::{
+    emotes::initialize_emote_decoder,
+    handlers::{args::Cli, config::CoreConfig, context::Context},
+};
 
 mod commands;
 mod emotes;
@@ -53,41 +53,7 @@ async fn main() -> Result<()> {
 
     let context = Context::new(config.clone(), startup_time);
 
-    let decoded_rx = if config.frontend.is_emotes_enabled() {
-        // We need to probe the terminal for it's size before starting the tui,
-        // as writing on stdout on a different thread can interfere.
-        match tui::crossterm::terminal::window_size() {
-            Ok(size) => {
-                context.emotes.cell_size.get_or_init(|| {
-                    (
-                        f32::from(size.width / size.columns),
-                        f32::from(size.height / size.rows),
-                    )
-                });
-
-                let (decoder_tx, decoder_rx) = mpsc::channel(100);
-                emotes::DECODE_EMOTE_SENDER.get_or_init(|| decoder_tx);
-
-                let (decoded_tx, decoded_rx) = mpsc::channel(100);
-
-                // As decoding an image is a blocking task, spawn a separate thread to handle it.
-                // We cannot use tokio tasks here as it will create noticeable freezes.
-                thread::spawn(move || emotes::decoder(decoder_rx, &decoded_tx));
-
-                Some(decoded_rx)
-            }
-            Err(e) => {
-                config.frontend.twitch_emotes = false;
-                config.frontend.betterttv_emotes = false;
-                config.frontend.seventv_emotes = false;
-                config.frontend.frankerfacez_emotes = false;
-                warn!("Unable to query terminal for it's dimensions, disabling emotes. {e}");
-                None
-            }
-        }
-    } else {
-        None
-    };
+    let decoded_rx = initialize_emote_decoder(&mut config, &context);
 
     let cloned_config = config.clone();
 

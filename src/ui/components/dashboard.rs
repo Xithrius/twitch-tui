@@ -86,6 +86,7 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
+    #[allow(clippy::unused_self)]
     fn render_dashboard_title_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let w = Paragraph::new(
             DASHBOARD_TITLE

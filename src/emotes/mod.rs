@@ -4,10 +4,12 @@ use std::{
     hash::{Hash, Hasher},
     rc::Rc,
     sync::OnceLock,
+    thread,
 };
 
 use color_eyre::{Result, eyre::anyhow};
 use tokio::sync::{
+    mpsc,
     mpsc::{Receiver, Sender},
     oneshot::{Receiver as OSReceiver, Sender as OSSender},
 };
@@ -15,7 +17,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::config::CoreConfig,
+    handlers::{config::CoreConfig, context::Context},
     utils::{emotes::get_emote_offset, pathing::cache_path},
 };
 
@@ -278,4 +280,47 @@ pub fn overlay_emote(
         pixel_offset,
     )
     .apply()
+}
+
+/// Initialize the emote decoder if emotes are enabled.
+/// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
+pub fn initialize_emote_decoder(
+    config: &mut CoreConfig,
+    context: &Context,
+) -> Option<mpsc::Receiver<Result<DecodedEmote, String>>> {
+    if !config.frontend.is_emotes_enabled() {
+        return None;
+    }
+
+    // We need to probe the terminal for it's size before starting the tui,
+    // as writing on stdout on a different thread can interfere.
+    match tui::crossterm::terminal::window_size() {
+        Ok(size) => {
+            context.emotes.cell_size.get_or_init(|| {
+                (
+                    f32::from(size.width / size.columns),
+                    f32::from(size.height / size.rows),
+                )
+            });
+
+            let (decoder_tx, decoder_rx) = mpsc::channel(100);
+            DECODE_EMOTE_SENDER.get_or_init(|| decoder_tx);
+
+            let (decoded_tx, decoded_rx) = mpsc::channel(100);
+
+            // As decoding an image is a blocking task, spawn a separate thread to handle it.
+            // We cannot use tokio tasks here as it will create noticeable freezes.
+            thread::spawn(move || decoder(decoder_rx, &decoded_tx));
+
+            Some(decoded_rx)
+        }
+        Err(e) => {
+            config.frontend.twitch_emotes = false;
+            config.frontend.betterttv_emotes = false;
+            config.frontend.seventv_emotes = false;
+            config.frontend.frankerfacez_emotes = false;
+            warn!("Unable to query terminal for it's dimensions, disabling emotes. {e}");
+            None
+        }
+    }
 }
