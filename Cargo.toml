@@ -45,6 +45,7 @@ tempfile = "3.19.1"
 serde_with = "3.12.0"
 webbrowser = "1.0.4"
 memchr = "2.7.4"
+bon = "3.8.2"
 
 [target.'cfg(not(windows))'.dependencies]
 tui = { package = "ratatui", version = "0.30.0", default-features = false, features = [

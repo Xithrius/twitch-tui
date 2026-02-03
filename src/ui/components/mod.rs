@@ -14,6 +14,7 @@ pub mod utils;
 
 use std::sync::LazyLock;
 
+use bon::bon;
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
 pub use chat_input::ChatInputWidget;
@@ -64,7 +65,9 @@ pub struct Components {
     pub window_size_error: ErrorWidget,
 }
 
+#[bon]
 impl Components {
+    #[builder]
     pub fn new(
         config: &SharedCoreConfig,
         storage: SharedStorage,

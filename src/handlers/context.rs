@@ -79,14 +79,14 @@ impl Context {
         let emotes_enabled: bool = shared_config.borrow().frontend.is_emotes_enabled();
         let emotes = Rc::new(Emotes::new(emotes_enabled));
 
-        let components = Components::new(
-            &shared_config,
-            storage.clone(),
-            filters,
-            messages.clone(),
-            &emotes,
-            startup_time,
-        );
+        let components = Components::builder()
+            .config(&shared_config)
+            .storage(storage.clone())
+            .filters(filters)
+            .messages(messages.clone())
+            .emotes(&emotes)
+            .startup_time(startup_time)
+            .build();
 
         Self {
             components,

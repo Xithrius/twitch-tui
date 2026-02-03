@@ -151,7 +151,7 @@ impl Component for EmotePickerWidget {
                 .collect::<Vec<_>>();
 
             // Sort them by match score
-            matched_emotes.sort_by(|a, b| b.2.0.cmp(&a.2.0));
+            matched_emotes.sort_by_key(|b| std::cmp::Reverse(b.2.0));
 
             for (name, (filename, zero_width), (_, matched_indices)) in matched_emotes {
                 if items.len() >= max_len {

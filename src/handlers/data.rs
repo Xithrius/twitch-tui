@@ -1,5 +1,6 @@
 use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
+use bon::bon;
 use chrono::{DateTime, offset::Local};
 use fuzzy_matcher::FuzzyMatcher;
 use memchr::{memchr_iter, memmem};
@@ -66,7 +67,9 @@ pub struct RawMessageData {
     pub badges: Option<String>,
 }
 
+#[bon]
 impl RawMessageData {
+    #[builder]
     pub fn new(
         author: String,
         user_id: Option<String>,
@@ -608,37 +611,44 @@ impl DataBuilder {
         highlight: bool,
         badges: Option<String>,
     ) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(RawMessageData::new(
-            user, user_id, false, payload, emotes, message_id, highlight, badges,
-        ))
+        let message = RawMessageData::builder()
+            .author(user)
+            .maybe_user_id(user_id)
+            .system(false)
+            .payload(payload)
+            .emotes(emotes)
+            .maybe_message_id(message_id)
+            .highlight(highlight)
+            .maybe_badges(badges)
+            .build();
+
+        TwitchToTerminalAction::Message(message)
     }
 
     /// Notification messages from the terminal
     pub fn system(payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(RawMessageData::new(
-            "System".to_string(),
-            None,
-            true,
-            payload,
-            DownloadedEmotes::default(),
-            None,
-            false,
-            None,
-        ))
+        let message = RawMessageData::builder()
+            .author("System".to_string())
+            .system(true)
+            .payload(payload)
+            .emotes(DownloadedEmotes::default())
+            .highlight(false)
+            .build();
+
+        TwitchToTerminalAction::Message(message)
     }
 
     /// Notification messages from Twitch
     pub fn twitch(payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(RawMessageData::new(
-            "Twitch".to_string(),
-            None,
-            true,
-            payload,
-            DownloadedEmotes::default(),
-            None,
-            false,
-            None,
-        ))
+        let message = RawMessageData::builder()
+            .author("Twitch".to_string())
+            .system(true)
+            .payload(payload)
+            .emotes(DownloadedEmotes::default())
+            .highlight(false)
+            .build();
+
+        TwitchToTerminalAction::Message(message)
     }
 }
 
@@ -933,16 +943,16 @@ mod tests {
 
     #[test]
     fn build_vec_with_wraps_and_highlights() {
-        let raw_message = RawMessageData::new(
-            "foo".to_string(),
-            None,
-            false,
-            "foo bar baz".to_string(),
-            BTreeMap::new(),
-            None,
-            false,
-            None,
-        );
+        let raw_message = RawMessageData::builder()
+            .author("foo".to_string())
+            .maybe_user_id(None)
+            .system(false)
+            .payload("foo bar baz".to_string())
+            .emotes(BTreeMap::new())
+            .maybe_message_id(None)
+            .highlight(false)
+            .maybe_badges(None)
+            .build();
 
         let emotes = Rc::new(Emotes::new(false));
         let data = MessageData::from_twitch_message(raw_message, &emotes);
