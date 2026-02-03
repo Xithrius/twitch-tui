@@ -250,9 +250,6 @@ impl Component for EmotePickerWidget {
             let keybinds = self.config.borrow().keybinds.selection.clone();
             match key {
                 key if keybinds.back_to_previous_window.contains(key) => self.toggle_focus(),
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.")
-                }
                 key if keybinds.next_item.contains(key) => self.next(),
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.select.contains(key) => {

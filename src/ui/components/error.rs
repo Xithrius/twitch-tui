@@ -72,9 +72,6 @@ impl Component for ErrorWidget {
                 key if keybinds.back_to_previous_window.contains(key) => {
                     return Some(TerminalAction::BackOneLayer);
                 }
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.")
-                }
                 _ => {}
             }
         }

@@ -264,9 +264,6 @@ impl<T: Clone> Component for InputWidget<T> {
                             .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.")
-                }
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1, &mut self.input_listener);

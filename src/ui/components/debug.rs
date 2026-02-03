@@ -123,9 +123,6 @@ impl Component for DebugWidget {
 
                     return Some(TerminalAction::BackOneLayer);
                 }
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.")
-                }
                 _ => {}
             }
         }

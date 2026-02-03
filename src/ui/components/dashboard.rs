@@ -241,9 +241,6 @@ impl Component for DashboardWidget {
 
             let keybinds = self.config.borrow().keybinds.dashboard.clone();
             match key {
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.");
-                }
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 key if keybinds.recent_channels_search.contains(key) => {
                     self.channel_input.toggle_focus();

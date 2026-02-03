@@ -50,10 +50,6 @@ impl HelpWidget {
                 get_keybind_text(&keybinds.dashboard.quit),
                 "Quit the application",
             ),
-            (
-                get_keybind_text(&keybinds.dashboard.crash_application),
-                "Manually crash the application",
-            ),
         ];
         let normal_keybinds = vec![
             (
@@ -120,10 +116,6 @@ impl HelpWidget {
             (
                 get_keybind_text(&keybinds.normal.quit),
                 "Quit the application",
-            ),
-            (
-                get_keybind_text(&keybinds.normal.crash_application),
-                "Manually crash the application",
             ),
         ];
         let insert_keybinds = vec![
@@ -203,10 +195,6 @@ impl HelpWidget {
                 get_keybind_text(&keybinds.insert.quit),
                 "Quit the application",
             ),
-            (
-                get_keybind_text(&keybinds.insert.crash_application),
-                "Manually crash the application",
-            ),
         ];
         let selection_keybinds = vec![
             (
@@ -228,10 +216,6 @@ impl HelpWidget {
             (
                 get_keybind_text(&keybinds.selection.back_to_previous_window),
                 "Go back to the previous window",
-            ),
-            (
-                get_keybind_text(&keybinds.selection.crash_application),
-                "Manually crash the application",
             ),
         ];
         vec![
@@ -286,9 +270,6 @@ impl Component for HelpWidget {
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 key if keybinds.back_to_previous_window.contains(key) => {
                     return Some(TerminalAction::BackOneLayer);
-                }
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.")
                 }
                 _ => {}
             }

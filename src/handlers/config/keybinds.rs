@@ -22,7 +22,6 @@ pub struct DashboardKeybindsConfig {
     pub followed_channels_search: Vec<Key>,
     pub help: Vec<Key>,
     pub quit: Vec<Key>,
-    pub crash_application: Vec<Key>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -45,7 +44,6 @@ pub struct NormalKeybindsConfig {
     pub followed_channels_search: Vec<Key>,
     pub help: Vec<Key>,
     pub quit: Vec<Key>,
-    pub crash_application: Vec<Key>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -70,7 +68,6 @@ pub struct InsertKeybindsConfig {
     pub swap_previous_word_with_current: Vec<Key>,
     pub toggle_emote_picker: Vec<Key>,
     pub quit: Vec<Key>,
-    pub crash_application: Vec<Key>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -82,7 +79,6 @@ pub struct SelectionKeybindsConfig {
     pub select: Vec<Key>,
     pub back_to_previous_window: Vec<Key>,
     pub quit: Vec<Key>,
-    pub crash_application: Vec<Key>,
 }
 
 impl Default for KeybindsConfig {
@@ -105,7 +101,6 @@ impl Default for DashboardKeybindsConfig {
             followed_channels_search: vec![Key::Char('f')],
             help: vec![Key::Char('?'), Key::Char('h')],
             quit: vec![Key::Char('q')],
-            crash_application: vec![Key::Ctrl('p')],
         }
     }
 }
@@ -129,7 +124,6 @@ impl Default for NormalKeybindsConfig {
             followed_channels_search: vec![Key::Char('f')],
             help: vec![Key::Char('?'), Key::Char('h')],
             quit: vec![Key::Char('q')],
-            crash_application: vec![Key::Ctrl('p')],
         }
     }
 }
@@ -156,7 +150,6 @@ impl Default for InsertKeybindsConfig {
             swap_previous_word_with_current: vec![Key::Alt('t')],
             toggle_emote_picker: vec![Key::Alt('e')],
             quit: vec![Key::Ctrl('q')],
-            crash_application: vec![Key::Ctrl('p')],
         }
     }
 }
@@ -170,7 +163,6 @@ impl Default for SelectionKeybindsConfig {
             delete_item: vec![Key::Ctrl('d')],
             back_to_previous_window: vec![Key::Esc],
             quit: vec![Key::Char('q')],
-            crash_application: vec![Key::Ctrl('p')],
         }
     }
 }

@@ -43,9 +43,6 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> Ctrl + r
 <td> Reverse the message filter.
 <tr>
-<td> Ctrl + p
-<td> Manually crash the application.
-<tr>
 <td> Esc
 <td> Go back to the previous window.
 </table>

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
@@ -39,10 +39,7 @@ pub async fn ui_driver(
     info!("Started UI driver.");
 
     let original_hook = std::panic::take_hook();
-
     std::panic::set_hook(Box::new(move |panic| {
-        debug!("Panic hook hit.");
-
         reset_terminal();
         original_hook(panic);
     }));

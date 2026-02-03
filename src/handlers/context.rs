@@ -42,7 +42,7 @@ pub struct Context {
     previous_state: Option<State>,
     /// Emotes
     pub emotes: SharedEmotes,
-    ///Running stream
+    /// Running stream
     pub running_stream: Option<Child>,
 }
 

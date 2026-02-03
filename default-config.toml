@@ -123,8 +123,6 @@ followed_channels_search = ["f"]
 help = ["?", "h"]
 # Quit the application
 quit = ["q"]
-# Manually crash the application
-crash_application = ["Ctrl+p"]
 
 [keybinds.normal]
 # Enter message (chat) mode for sending messages
@@ -161,8 +159,6 @@ followed_channels_search = ["f"]
 help = ["?", "h"]
 # Quit the application
 quit = ["q"]
-# Manually crash the application
-crash_application = ["Ctrl+p"]
 
 [keybinds.insert]
 # Fill in suggestion, if available
@@ -203,8 +199,6 @@ swap_previous_word_with_current = ["Alt+t"]
 toggle_emote_picker = ["Alt+e"]
 # Quit the application
 quit = ["Ctrl+q"]
-# Manually crash the application
-crash_application = ["Ctrl+p"]
 
 [keybinds.selection]
 # Move selection to next item
@@ -217,5 +211,3 @@ delete_item = ["Ctrl+d"]
 select = ["Enter"]
 # Go back to the previous window
 back_to_previous_window = ["Esc"]
-# Manually crash the application
-crash_application = ["Ctrl+p"]

@@ -256,9 +256,6 @@ impl Component for ChannelSwitcherWidget {
                         self.search_input.clear();
                     }
                 }
-                key if keybinds.crash_application.contains(key) => {
-                    panic!("Manual panic triggered by user.")
-                }
                 key if keybinds.next_item.contains(key) => self.next(),
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.delete_item.contains(key) => {

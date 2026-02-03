@@ -354,9 +354,6 @@ impl Component for ChatWidget {
 
                         self.scroll_offset.jump_to(0);
                     }
-                    key if keybinds.crash_application.contains(key) => {
-                        panic!("Manual panic triggered by user.")
-                    }
                     key if keybinds.scroll_up.contains(key) => {
                         if limit {
                             self.scroll_offset.up();
