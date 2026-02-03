@@ -2,8 +2,6 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::config::ToVec;
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
 pub struct FiltersConfig {
@@ -13,11 +11,11 @@ pub struct FiltersConfig {
     pub reversed: bool,
 }
 
-impl ToVec<(String, String)> for FiltersConfig {
-    fn to_vec(&self) -> Vec<(String, String)> {
+impl From<FiltersConfig> for Vec<(String, String)> {
+    fn from(config: FiltersConfig) -> Self {
         vec![
-            ("Enabled".to_string(), self.enabled.to_string()),
-            ("Reversed".to_string(), self.reversed.to_string()),
+            ("Enabled".to_string(), config.enabled.to_string()),
+            ("Reversed".to_string(), config.reversed.to_string()),
         ]
     }
 }

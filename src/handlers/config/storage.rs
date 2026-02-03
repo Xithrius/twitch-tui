@@ -2,8 +2,6 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::config::ToVec;
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
 pub struct StorageConfig {
@@ -15,12 +13,12 @@ pub struct StorageConfig {
     pub chatters: bool,
 }
 
-impl ToVec<(String, String)> for StorageConfig {
-    fn to_vec(&self) -> Vec<(String, String)> {
+impl From<StorageConfig> for Vec<(String, String)> {
+    fn from(config: StorageConfig) -> Self {
         vec![
-            ("Channels enabled".to_string(), self.channels.to_string()),
-            ("Mentions enabled".to_string(), self.mentions.to_string()),
-            ("Chatters enabled".to_string(), self.chatters.to_string()),
+            ("Channels enabled".to_string(), config.channels.to_string()),
+            ("Mentions enabled".to_string(), config.mentions.to_string()),
+            ("Chatters enabled".to_string(), config.chatters.to_string()),
         ]
     }
 }

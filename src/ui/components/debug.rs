@@ -7,10 +7,7 @@ use tui::{
 };
 
 use crate::{
-    handlers::{
-        config::{SharedCoreConfig, ToVec},
-        user_input::events::Event,
-    },
+    handlers::{config::SharedCoreConfig, user_input::events::Event},
     terminal::TerminalAction,
     ui::components::Component,
     utils::{
@@ -44,14 +41,14 @@ impl DebugWidget {
     }
 
     fn get_config_values(&self) -> Vec<(String, Vec<(String, String)>)> {
-        let c = self.config.borrow();
+        let c = self.config.borrow().clone();
 
         vec![
-            ("Twitch Config".to_string(), c.twitch.to_vec()),
-            ("Terminal Config".to_string(), c.terminal.to_vec()),
-            ("Storage Config".to_string(), c.storage.to_vec()),
-            ("Filter Config".to_string(), c.filters.to_vec()),
-            ("Frontend Config".to_string(), c.frontend.to_vec()),
+            ("Twitch Config".to_string(), c.twitch.into()),
+            ("Terminal Config".to_string(), c.terminal.into()),
+            ("Storage Config".to_string(), c.storage.into()),
+            ("Filter Config".to_string(), c.filters.into()),
+            ("Frontend Config".to_string(), c.frontend.into()),
         ]
     }
 }

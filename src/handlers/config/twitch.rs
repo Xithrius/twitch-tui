@@ -2,8 +2,6 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::config::ToVec;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct TwitchConfig {
@@ -41,12 +39,12 @@ impl Default for TwitchConfig {
     }
 }
 
-impl ToVec<(String, String)> for TwitchConfig {
-    fn to_vec(&self) -> Vec<(String, String)> {
+impl From<TwitchConfig> for Vec<(String, String)> {
+    fn from(config: TwitchConfig) -> Self {
         vec![
-            ("Username".to_string(), self.username.clone()),
-            ("Channel".to_string(), self.channel.clone()),
-            ("Server".to_string(), self.server.clone()),
+            ("Username".to_string(), config.username.clone()),
+            ("Channel".to_string(), config.channel.clone()),
+            ("Server".to_string(), config.server),
         ]
     }
 }

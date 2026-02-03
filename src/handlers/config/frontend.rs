@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use tui::widgets::BorderType;
 
-use crate::handlers::config::ToVec;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct FrontendConfig {
@@ -109,68 +107,74 @@ impl Default for FrontendConfig {
     }
 }
 
-impl ToVec<(String, String)> for FrontendConfig {
-    fn to_vec(&self) -> Vec<(String, String)> {
+impl From<FrontendConfig> for Vec<(String, String)> {
+    fn from(config: FrontendConfig) -> Self {
         vec![
-            ("View command".to_string(), self.view_command.join(" ")),
+            ("View command".to_string(), config.view_command.join(" ")),
             (
                 "Autostart view command".to_string(),
-                self.autostart_view_command.to_string(),
+                config.autostart_view_command.to_string(),
             ),
             (
                 "Show datetimes".to_string(),
-                self.show_datetimes.to_string(),
+                config.show_datetimes.to_string(),
             ),
-            ("Datetime format".to_string(), self.datetime_format.clone()),
+            (
+                "Datetime format".to_string(),
+                config.datetime_format.clone(),
+            ),
             (
                 "Username shown".to_string(),
-                self.username_shown.to_string(),
+                config.username_shown.to_string(),
             ),
-            // ("".to_string(), self.palette.to_string()),
-            ("Title shown".to_string(), self.title_shown.to_string()),
-            ("Margin".to_string(), self.margin.to_string()),
-            ("Badges".to_string(), self.badges.to_string()),
-            // ("".to_string(), self.theme.to_string()),
+            // ("".to_string(), val.palette.to_string()),
+            ("Title shown".to_string(), config.title_shown.to_string()),
+            ("Margin".to_string(), config.margin.to_string()),
+            ("Badges".to_string(), config.badges.to_string()),
+            // ("".to_string(), val.theme.to_string()),
             (
                 "Username highlight".to_string(),
-                self.username_highlight.to_string(),
+                config.username_highlight.to_string(),
             ),
-            ("State tabs".to_string(), self.state_tabs.to_string()),
-            // ("".to_string(), self.cursor_shape.to_string()),
+            ("State tabs".to_string(), config.state_tabs.to_string()),
+            // ("".to_string(), val.cursor_shape.to_string()),
             (
                 "Blinking cursor".to_string(),
-                self.blinking_cursor.to_string(),
+                config.blinking_cursor.to_string(),
             ),
             (
                 "Inverted scrolling".to_string(),
-                self.inverted_scrolling.to_string(),
+                config.inverted_scrolling.to_string(),
             ),
             (
                 "Scroll offset shown".to_string(),
-                self.show_scroll_offset.to_string(),
+                config.show_scroll_offset.to_string(),
             ),
-            ("Twitch emotes".to_string(), self.twitch_emotes.to_string()),
+            (
+                "Twitch emotes".to_string(),
+                config.twitch_emotes.to_string(),
+            ),
             (
                 "BetterTTV emotes".to_string(),
-                self.betterttv_emotes.to_string(),
+                config.betterttv_emotes.to_string(),
             ),
             (
                 "SevenTV emotes".to_string(),
-                self.seventv_emotes.to_string(),
+                config.seventv_emotes.to_string(),
             ),
             (
                 "FrankerFacez emotes".to_string(),
-                self.frankerfacez_emotes.to_string(),
+                config.frankerfacez_emotes.to_string(),
             ),
-            // ("".to_string(), self.favorite_channels.to_string()),
+            // ("".to_string(), val.favorite_channels.to_string()),
             (
                 "Recent channel count".to_string(),
-                self.recent_channel_count.to_string(),
+                config.recent_channel_count.to_string(),
             ),
-            // ("".to_string(), self.border_type.to_string()),
+            // ("".to_string(), val.border_type.to_string()),
             (
                 "Right aligned usernames".to_string(),
-                self.right_align_usernames.to_string(),
+                config.right_align_usernames.to_string(),
             ),
         ]
     }

@@ -2,10 +2,7 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::{
-    config::{LogLevel, ToVec},
-    state::State,
-};
+use crate::handlers::{config::LogLevel, state::State};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
@@ -34,19 +31,22 @@ impl Default for TerminalConfig {
     }
 }
 
-impl ToVec<(String, String)> for TerminalConfig {
-    fn to_vec(&self) -> Vec<(String, String)> {
+impl From<TerminalConfig> for Vec<(String, String)> {
+    fn from(config: TerminalConfig) -> Self {
         vec![
-            ("Current channel".to_string(), self.delay.to_string()),
+            ("Current channel".to_string(), config.delay.to_string()),
             (
                 "Max messages".to_string(),
-                self.maximum_messages.to_string(),
+                config.maximum_messages.to_string(),
             ),
             (
                 "Log file".to_string(),
-                self.log_file.clone().unwrap_or_else(|| "None".to_string()),
+                config
+                    .log_file
+                    .clone()
+                    .unwrap_or_else(|| "None".to_string()),
             ),
-            ("First state".to_string(), self.first_state.to_string()),
+            ("First state".to_string(), config.first_state.to_string()),
         ]
     }
 }

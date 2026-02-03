@@ -19,7 +19,3 @@ pub use crate::handlers::config::{
     terminal::TerminalConfig,
     twitch::TwitchConfig,
 };
-
-pub trait ToVec<T> {
-    fn to_vec(&self) -> Vec<T>;
-}
