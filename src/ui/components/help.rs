@@ -262,7 +262,8 @@ impl Component for HelpWidget {
 
         f.render_widget(help_table, r);
     }
-    //TODO should be default impl if not for the config requirement
+
+    // TODO: should be default impl if not for the config requirement
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
             let keybinds = self.config.borrow().keybinds.selection.clone();

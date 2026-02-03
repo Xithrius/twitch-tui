@@ -28,13 +28,12 @@ impl MessageSearchWidget {
         let visual_indicator =
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
-        let input = InputWidget::new(
-            config,
-            "Message search",
-            Some(((), input_validator)),
-            Some(visual_indicator),
-            None,
-        );
+        let input = InputWidget::builder()
+            .config(config)
+            .title("Message search")
+            .input_validator(((), input_validator))
+            .visual_indicator(visual_indicator)
+            .build();
 
         Self { input }
     }

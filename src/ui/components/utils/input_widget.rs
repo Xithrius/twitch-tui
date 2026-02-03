@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use bon::bon;
 use rustyline::{
     At, Word,
     line_buffer::{ChangeListener, DeleteListener, LineBuffer},
@@ -55,7 +56,9 @@ pub struct InputWidget<T: Clone> {
     suggestion: Option<String>,
 }
 
+#[bon]
 impl<T: Clone> InputWidget<T> {
+    #[builder]
     pub fn new(
         config: SharedCoreConfig,
         title: &str,

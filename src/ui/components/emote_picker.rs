@@ -58,13 +58,12 @@ impl EmotePickerWidget {
             )
         });
 
-        let input = InputWidget::new(
-            config.clone(),
-            "Emote",
-            Some((emotes.clone(), input_validator)),
-            None,
-            Some((emotes.clone(), input_suggester)),
-        );
+        let input = InputWidget::builder()
+            .config(config.clone())
+            .title("Emote")
+            .input_validator((emotes.clone(), input_validator))
+            .input_suggester((emotes.clone(), input_suggester))
+            .build();
 
         Self {
             config,

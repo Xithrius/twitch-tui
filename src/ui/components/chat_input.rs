@@ -71,13 +71,13 @@ impl ChatInputWidget {
                 })
         });
 
-        let input = InputWidget::new(
-            config.clone(),
-            "Chat",
-            Some((storage.clone(), input_validator)),
-            Some(visual_indicator),
-            Some((storage.clone(), input_suggester)),
-        );
+        let input = InputWidget::builder()
+            .config(config.clone())
+            .title("Chat")
+            .input_validator((storage.clone(), input_validator))
+            .visual_indicator(visual_indicator)
+            .input_suggester((storage.clone(), input_suggester))
+            .build();
 
         let emote_picker = EmotePickerWidget::new(config.clone(), emotes);
 

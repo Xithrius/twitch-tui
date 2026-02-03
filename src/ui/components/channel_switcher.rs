@@ -66,13 +66,13 @@ impl ChannelSwitcherWidget {
             )
         });
 
-        let search_input = InputWidget::new(
-            config.clone(),
-            "Channel switcher",
-            Some((storage.clone(), input_validator)),
-            Some(visual_indicator),
-            Some((storage.clone(), input_suggester)),
-        );
+        let search_input = InputWidget::builder()
+            .config(config.clone())
+            .title("Channel switcher")
+            .input_validator((storage.clone(), input_validator))
+            .visual_indicator(visual_indicator)
+            .input_suggester((storage.clone(), input_suggester))
+            .build();
 
         Self {
             config,

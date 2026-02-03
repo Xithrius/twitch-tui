@@ -64,7 +64,10 @@ where
     U: SearchItemGetter<T>,
 {
     pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
-        let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
+        let search_input = InputWidget::builder()
+            .config(config.clone())
+            .title("Search")
+            .build();
         let error_widget = ErrorWidget::new(config.clone(), error_message);
 
         Self {
