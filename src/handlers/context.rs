@@ -59,7 +59,7 @@ impl Context {
         let shared_config_borrow = shared_config.borrow();
 
         // TODO: Storage path should be specified in the config, default next to config.toml
-        let storage = shared!(Storage::new("storage.json", &shared_config_borrow.storage));
+        let storage = shared!(Storage::new(&shared_config_borrow.storage));
 
         if !storage
             .borrow()
@@ -69,7 +69,7 @@ impl Context {
         }
 
         // TODO: Filters path should be specified in the config, default next to config.toml
-        let filters = shared!(Filters::new("filters.txt", &shared_config_borrow.filters));
+        let filters = shared!(Filters::new(&shared_config_borrow.filters));
 
         let messages = shared!(VecDeque::with_capacity(
             shared_config_borrow.terminal.maximum_messages,

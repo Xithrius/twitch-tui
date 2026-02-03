@@ -1,9 +1,66 @@
-use std::{fs::File, io::Write, path::Path};
+use std::{
+    env,
+    fs::File,
+    io::Write,
+    mem::drop,
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 
-use color_eyre::eyre::Result;
+use color_eyre::Result;
+use directories::ProjectDirs;
 use tokio::{runtime::Handle, task};
 
 use crate::handlers::config::CoreConfig;
+
+static PACKAGE_NAME: LazyLock<String> = LazyLock::new(|| env!("CARGO_PKG_NAME").to_lowercase());
+static BINARY_NAME: LazyLock<String> = LazyLock::new(|| env!("CARGO_BIN_NAME").to_lowercase());
+static CONFIG_DIR: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+    env::var(format!("{}_CONFIG", BINARY_NAME.clone()))
+        .ok()
+        .map(PathBuf::from)
+});
+static CACHE_DIR: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+    env::var(format!("{}_CACHE", BINARY_NAME.clone()))
+        .ok()
+        .map(PathBuf::from)
+});
+static DATA_DIR: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
+    env::var(format!("{}_DATA", BINARY_NAME.clone()))
+        .ok()
+        .map(PathBuf::from)
+});
+
+fn project_directory() -> Option<ProjectDirs> {
+    ProjectDirs::from("com", &PACKAGE_NAME, &BINARY_NAME)
+}
+
+pub fn get_config_dir() -> PathBuf {
+    CONFIG_DIR.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".config"),
+            |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
+        )
+    })
+}
+
+pub fn get_cache_dir() -> PathBuf {
+    CACHE_DIR.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".cache"),
+            |proj_dirs| proj_dirs.cache_dir().to_path_buf(),
+        )
+    })
+}
+
+pub fn get_data_dir() -> PathBuf {
+    DATA_DIR.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".data"),
+            |proj_dirs| proj_dirs.data_local_dir().to_path_buf(),
+        )
+    })
+}
 
 pub fn persist_config(path: &Path, config: &CoreConfig) -> Result<()> {
     let toml_string = toml::to_string(&config)?;

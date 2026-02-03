@@ -1,18 +1,19 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
-    fs::{File, read_to_string},
+    fs::{File, create_dir_all, read_to_string},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
     sync::LazyLock,
 };
 
 use serde::{Deserialize, Serialize};
 
-use crate::{handlers::config::StorageConfig, utils::pathing::config_path};
+use crate::handlers::config::{StorageConfig, persistence::get_data_dir};
 
 static ITEM_KEYS: LazyLock<Vec<&str>> = LazyLock::new(|| vec!["channels", "mentions", "chatters"]);
+const DEFAULT_STORAGE_FILE_NAME: &str = "storage.json";
 
 pub type SharedStorage = Rc<RefCell<Storage>>;
 type StorageMap = HashMap<String, StorageItem>;
@@ -20,7 +21,7 @@ type StorageMap = HashMap<String, StorageItem>;
 #[derive(Debug)]
 pub struct Storage {
     items: StorageMap,
-    file_path: String,
+    file_path: PathBuf,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -30,10 +31,15 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(file: &str, config: &StorageConfig) -> Self {
-        let file_path = config_path(file);
+    pub fn new(config: &StorageConfig) -> Self {
+        // TODO: Storage path should be configurable
+        let storage_parent_path = get_data_dir();
+        if !storage_parent_path.exists() {
+            create_dir_all(&storage_parent_path).unwrap();
+        }
+        let storage_path = storage_parent_path.join(DEFAULT_STORAGE_FILE_NAME);
 
-        if !Path::new(&file_path).exists() {
+        if !Path::new(&storage_path).exists() {
             let mut items = StorageMap::new();
 
             for item_key in ITEM_KEYS.iter() {
@@ -55,18 +61,24 @@ impl Storage {
 
             let storage_str = serde_json::to_string(&items).unwrap();
 
-            let mut file = File::create(&file_path).unwrap();
+            let mut file = File::create(&storage_path).unwrap();
 
             file.write_all(storage_str.as_bytes()).unwrap();
 
-            return Self { items, file_path };
+            return Self {
+                items,
+                file_path: storage_path,
+            };
         }
 
-        let file_content = read_to_string(&file_path).unwrap();
+        let file_content = read_to_string(&storage_path).unwrap();
 
         let items: StorageMap = serde_json::from_str(&file_content).unwrap();
 
-        Self { items, file_path }
+        Self {
+            items,
+            file_path: storage_path,
+        }
     }
 
     pub fn dump_data(&self) {

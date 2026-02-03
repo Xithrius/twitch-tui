@@ -17,8 +17,11 @@ use tracing::{error, info, warn};
 
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::{config::CoreConfig, context::Context},
-    utils::{emotes::get_emote_offset, pathing::cache_path},
+    handlers::{
+        config::{CoreConfig, persistence::get_cache_dir},
+        context::Context,
+    },
+    utils::emotes::get_emote_offset,
 };
 
 mod downloader;
@@ -176,13 +179,15 @@ pub fn load_emote(
         let hash = hasher.finish() as u32 & 0x00FF_FFFF;
 
         // Tells the terminal to load the image for later use
-        let image = Image::new(
-            hash,
-            word.to_string(),
-            &cache_path(filename),
-            overlay,
-            cell_size,
-        )?;
+        let path = get_cache_dir().join(filename);
+        let image = Image::builder()
+            .id(hash)
+            .name(word.to_string())
+            .path(path)
+            .overlay(overlay)
+            .cell_w(cell_size.0)
+            .cell_h(cell_size.1)
+            .build()?;
 
         let width = image.width;
         let cols = image.cols;
@@ -224,13 +229,15 @@ pub fn load_picker_emote(
         let hash = hasher.finish() as u32 & 0x00FF_FFFF;
 
         // Tells the terminal to load the image for later use
-        let image = Image::new(
-            hash,
-            word.to_string(),
-            &cache_path(filename),
-            overlay,
-            cell_size,
-        )?;
+        let path = get_cache_dir().join(filename);
+        let image = Image::builder()
+            .id(hash)
+            .name(word.to_string())
+            .path(path)
+            .overlay(overlay)
+            .cell_w(cell_size.0)
+            .cell_h(cell_size.1)
+            .build()?;
 
         let width = image.width;
 

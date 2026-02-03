@@ -2,7 +2,6 @@ use std::{
     cell::RefCell,
     env,
     fs::{create_dir_all, read_to_string},
-    path::Path,
     rc::Rc,
 };
 
@@ -16,10 +15,10 @@ use crate::{
         config::{
             FiltersConfig, FrontendConfig, KeybindsConfig, StorageConfig, TerminalConfig,
             TwitchConfig, persist_config, persist_default_config,
+            persistence::{get_cache_dir, get_config_dir},
         },
         interactive::interactive_config,
     },
-    utils::pathing::{cache_path, config_path},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -43,30 +42,25 @@ pub type SharedCoreConfig = Rc<RefCell<CoreConfig>>;
 
 impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
-        let path_str = cache_path("");
-
-        let p = Path::new(&path_str);
-        if !p.exists() {
-            create_dir_all(p).unwrap();
+        let cache_path = get_cache_dir();
+        if !cache_path.exists() {
+            create_dir_all(cache_path).unwrap();
         }
 
-        let path_str = config_path("config.toml");
-
-        let p = Path::new(&path_str);
-
-        if !p.exists() {
-            create_dir_all(p.parent().unwrap()).unwrap();
+        let config_path = get_config_dir().join("config.toml");
+        if !config_path.exists() {
+            create_dir_all(config_path.parent().unwrap()).unwrap();
 
             if let Some(config) = interactive_config() {
-                persist_config(p, &config)?;
+                persist_config(&config_path, &config)?;
                 Ok(config)
             } else {
-                persist_default_config(p);
+                persist_default_config(&config_path);
                 bail!(
-                    "Default configuration was generated at {path_str}, please fill it out with necessary information."
+                    "Default configuration was generated at {config_path:?}, please fill it out with necessary information."
                 )
             }
-        } else if let Ok(file_content) = read_to_string(p) {
+        } else if let Ok(file_content) = read_to_string(config_path) {
             let mut config: Self = match toml::from_str(&file_content) {
                 Ok(c) => c,
                 Err(err) => bail!("Config could not be processed. Error: {:?}", err.message()),

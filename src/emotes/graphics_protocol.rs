@@ -1,6 +1,11 @@
-use std::{env, fmt, io::Write, path::PathBuf};
+use std::{
+    env, fmt,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
+use bon::bon;
 use color_eyre::{
     Result,
     eyre::{ContextCompat, anyhow},
@@ -14,9 +19,17 @@ use image::{
 };
 use tui::crossterm::{Command, csi, queue};
 
-use crate::utils::pathing::{
-    create_temp_file, pathbuf_try_to_string, remove_temp_file, save_in_temp_file,
-};
+use crate::utils::tmp::{create_tmp_file, remove_tmp_file, save_in_tmp_file};
+
+pub fn pathbuf_try_to_string(pathbuf: &Path) -> Result<String> {
+    pathbuf.to_str().map_or_else(
+        || {
+            remove_tmp_file(pathbuf);
+            Err(anyhow!("Could not convert pathbuf to string."))
+        },
+        |str| Ok(str.to_string()),
+    )
+}
 
 /// Macro to add the graphics protocol escape sequence around a command.
 /// See <https://sw.kovidgoyal.net/kitty/graphics-protocol/> for documentation of the terminal graphics protocol
@@ -154,15 +167,17 @@ pub struct Image<'a> {
     decoder: Box<dyn IntoFrames<'a> + 'a>,
 }
 
+#[bon]
 impl<'a> Image<'a> {
+    #[builder]
     pub fn new(
         id: u32,
         name: String,
-        path: &str,
+        path: PathBuf,
         overlay: bool,
-        (cell_w, cell_h): (f32, f32),
+        cell_w: f32,
+        cell_h: f32,
     ) -> Result<Self> {
-        let path = std::path::PathBuf::from(path);
         let image = ImageReader::open(path)?.with_guessed_format()?;
 
         let (width, height, decoder) = match image.format() {
@@ -242,9 +257,9 @@ impl<'a> Image<'a> {
             };
 
             let (width, height) = image.dimensions();
-            let (mut tempfile, path) = create_temp_file(GP_PREFIX)?;
-            if let Err(e) = save_in_temp_file(image.as_raw(), &mut tempfile) {
-                remove_temp_file(&path);
+            let (mut tempfile, path) = create_tmp_file(GP_PREFIX)?;
+            if let Err(e) = save_in_tmp_file(image.as_raw(), &mut tempfile) {
+                remove_tmp_file(&path);
                 return Err(e);
             }
 
@@ -262,7 +277,7 @@ impl<'a> Image<'a> {
                 Ok(i) => images.push(i),
                 Err(e) => {
                     for DecodedImage { path, .. } in images {
-                        remove_temp_file(&path);
+                        remove_tmp_file(&path);
                     }
 
                     return Err(anyhow!("Unable to decode frame: {e}"));

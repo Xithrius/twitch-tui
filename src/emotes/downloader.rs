@@ -7,12 +7,11 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     emotes::DownloadedEmotes,
-    handlers::config::{CoreConfig, FrontendConfig},
+    handlers::config::{CoreConfig, FrontendConfig, persistence::get_cache_dir},
     twitch::{
         api::channels::get_channel_id,
         oauth::{get_twitch_client, get_twitch_client_oauth},
     },
-    utils::pathing::cache_path,
 };
 
 // HashMap of emote name, emote filename, emote url, and if the emote is an overlay
@@ -374,8 +373,7 @@ async fn download_emotes(emotes: EmoteMap) -> DownloadedEmotes {
         emotes
             .into_iter()
             .map(|(x, (filename, url, o))| async move {
-                let path = cache_path(&filename);
-                let path = Path::new(&path);
+                let path = get_cache_dir().join(&filename);
 
                 if tokio::fs::metadata(&path).await.is_ok() {
                     return Ok((x, (filename, o)));
@@ -383,7 +381,7 @@ async fn download_emotes(emotes: EmoteMap) -> DownloadedEmotes {
 
                 let res = client.get(&url).send().await?.error_for_status()?;
 
-                save_emote(path, res).await?;
+                save_emote(&path, res).await?;
 
                 Ok((x, (filename, o)))
             }),
@@ -472,8 +470,7 @@ pub async fn get_emotes(
 
 pub async fn get_twitch_emote(emote_id: &str) -> Result<()> {
     // Checks if emote is already downloaded.
-    let path = cache_path(emote_id);
-    let path = Path::new(&path);
+    let path = get_cache_dir().join(emote_id);
 
     if tokio::fs::metadata(&path).await.is_ok() {
         return Ok(());
@@ -494,5 +491,5 @@ pub async fn get_twitch_emote(emote_id: &str) -> Result<()> {
         res
     }?;
 
-    save_emote(path, res).await
+    save_emote(&path, res).await
 }

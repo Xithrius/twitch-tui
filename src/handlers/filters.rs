@@ -2,7 +2,9 @@ use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
 use regex::Regex;
 
-use crate::{handlers::config::FiltersConfig, utils::pathing::config_path};
+use crate::handlers::config::{FiltersConfig, persistence::get_config_dir};
+
+const DEFAULT_FILTERS_FILE_NAME: &str = "filters.txt";
 
 pub type SharedFilters = Rc<RefCell<Filters>>;
 
@@ -14,19 +16,21 @@ pub struct Filters {
 }
 
 impl Filters {
-    pub fn new(file: &str, config: &FiltersConfig) -> Self {
-        let file_path = config_path(file);
+    pub fn new(config: &FiltersConfig) -> Self {
+        // TODO: Filters path should be configurable
+        let filters_path = get_config_dir().join(DEFAULT_FILTERS_FILE_NAME);
+        let captures = read_to_string(filters_path).map_or_else(
+            |_| vec![],
+            |f| {
+                f.split('\n')
+                    .filter(|s| !s.is_empty())
+                    .flat_map(Regex::new)
+                    .collect::<Vec<Regex>>()
+            },
+        );
 
         Self {
-            captures: read_to_string(file_path).map_or_else(
-                |_| vec![],
-                |f| {
-                    f.split('\n')
-                        .filter(|s| !s.is_empty())
-                        .flat_map(Regex::new)
-                        .collect::<Vec<Regex>>()
-                },
-            ),
+            captures,
             enabled: config.enabled,
             reversed: config.reversed,
         }
