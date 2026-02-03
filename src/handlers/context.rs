@@ -5,7 +5,6 @@ use std::{
     rc::Rc,
 };
 
-use chrono::{DateTime, Local};
 use tracing::error;
 use tui::{
     Frame,
@@ -54,7 +53,7 @@ macro_rules! shared {
 }
 
 impl Context {
-    pub fn new(config: CoreConfig, startup_time: DateTime<Local>) -> Self {
+    pub fn new(config: CoreConfig) -> Self {
         let shared_config = shared!(config.clone());
 
         let shared_config_borrow = shared_config.borrow();
@@ -85,7 +84,6 @@ impl Context {
             .filters(filters)
             .messages(messages.clone())
             .emotes(&emotes)
-            .startup_time(startup_time)
             .build();
 
         Self {

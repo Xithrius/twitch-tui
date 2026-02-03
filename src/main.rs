@@ -38,8 +38,6 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let startup_time = chrono::Local::now();
-
     color_eyre::install()?;
 
     let mut config = CoreConfig::new(Cli::parse()).wrap_err("Configuration error.")?;
@@ -51,7 +49,7 @@ async fn main() -> Result<()> {
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
 
-    let context = Context::new(config.clone(), startup_time);
+    let context = Context::new(config.clone());
 
     let decoded_rx = initialize_emote_decoder(&mut config, &context);
 

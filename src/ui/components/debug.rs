@@ -24,7 +24,9 @@ pub struct DebugWidget {
 }
 
 impl DebugWidget {
-    pub const fn new(config: SharedCoreConfig, startup_time: DateTime<Local>) -> Self {
+    pub fn new(config: SharedCoreConfig) -> Self {
+        let startup_time = Local::now();
+
         Self {
             config,
             focused: false,

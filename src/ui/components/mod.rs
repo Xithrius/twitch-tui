@@ -18,7 +18,6 @@ use bon::bon;
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
 pub use chat_input::ChatInputWidget;
-use chrono::{DateTime, Local};
 pub use dashboard::DashboardWidget;
 pub use debug::DebugWidget;
 pub use error::ErrorWidget;
@@ -74,14 +73,13 @@ impl Components {
         filters: SharedFilters,
         messages: SharedMessages,
         emotes: &SharedEmotes,
-        startup_time: DateTime<Local>,
     ) -> Self {
         let window_size_error =
             ErrorWidget::new(config.clone(), WINDOW_SIZE_TOO_SMALL_ERROR.to_vec());
 
         Self {
             tabs: StateTabsWidget::new(config.clone()),
-            debug: DebugWidget::new(config.clone(), startup_time),
+            debug: DebugWidget::new(config.clone()),
 
             chat: ChatWidget::new(config.clone(), messages, &storage, emotes, filters),
             dashboard: DashboardWidget::new(config.clone(), storage),
