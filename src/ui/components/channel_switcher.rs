@@ -45,7 +45,7 @@ pub struct ChannelSwitcherWidget {
 impl ChannelSwitcherWidget {
     pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
         let input_validator = Box::new(|_, s: String| -> bool {
-            Regex::new(&NAME_RESTRICTION_REGEX)
+            Regex::new(NAME_RESTRICTION_REGEX)
                 .unwrap()
                 .is_match(s.as_str())
         });

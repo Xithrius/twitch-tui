@@ -41,7 +41,7 @@ impl Storage {
         if !Path::new(&storage_path).exists() {
             let mut items = StorageMap::new();
 
-            for item_key in ITEM_KEYS.iter() {
+            for item_key in ITEM_KEYS {
                 let enabled = match *item_key {
                     "channels" => config.channels,
                     "mentions" => config.mentions,
