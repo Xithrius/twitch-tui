@@ -7,7 +7,7 @@ use crate::twitch::{
 
 #[test]
 fn test_deserialize_reply() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&REPLY)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(REPLY)?;
 
     let raw_parent_message_body = raw
         .pointer("/event/reply/parent_message_body")

@@ -12,7 +12,7 @@ use crate::twitch::{
 
 #[test]
 fn test_deserialize_emote() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&EMOTE)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(EMOTE)?;
 
     let raw_emote_ids: Vec<String> = raw
         .pointer("/event/message/fragments")
@@ -45,7 +45,7 @@ fn test_deserialize_emote() -> Result<()> {
 
 #[test]
 fn test_deserialize_many_emotes() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&MANY_EMOTES)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(MANY_EMOTES)?;
 
     let raw_emote_ids: Vec<String> = raw
         .pointer("/event/message/fragments")

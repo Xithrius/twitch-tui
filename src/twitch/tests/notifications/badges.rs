@@ -12,7 +12,7 @@ use crate::twitch::{
 
 #[test]
 fn test_deserialize_badges() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&BADGES)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(BADGES)?;
 
     let raw_badges: Vec<String> = raw
         .pointer("/event/badges")
@@ -42,7 +42,7 @@ fn test_deserialize_badges() -> Result<()> {
 
 #[test]
 fn test_deserialize_no_badges() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&NO_BADGES)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(NO_BADGES)?;
 
     let raw_badges_len = raw
         .pointer("/event/badges")
@@ -66,5 +66,5 @@ fn test_deserialize_no_badges() -> Result<()> {
 #[test]
 #[should_panic(expected = "Invalid badges field")]
 fn test_deserialize_invalid_badges() {
-    load_data::<ReceivedTwitchMessagePayload>(&INVALID_BADGES).expect("Invalid badges field");
+    load_data::<ReceivedTwitchMessagePayload>(INVALID_BADGES).expect("Invalid badges field");
 }

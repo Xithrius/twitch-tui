@@ -10,7 +10,7 @@ use crate::twitch::{
 
 #[test]
 fn test_deserialize_user_ban() -> Result<()> {
-    let (_, message) = load_data::<ReceivedTwitchMessagePayload>(&USER_BAN)?;
+    let (_, message) = load_data::<ReceivedTwitchMessagePayload>(USER_BAN)?;
 
     let event = message.event().context("Could not find message event")?;
     let timeout_duration = event.timeout_duration();
@@ -22,7 +22,7 @@ fn test_deserialize_user_ban() -> Result<()> {
 
 #[test]
 fn test_deserialize_user_timeout() -> Result<()> {
-    let (_, message) = load_data::<ReceivedTwitchMessagePayload>(&USER_TIMEOUT)?;
+    let (_, message) = load_data::<ReceivedTwitchMessagePayload>(USER_TIMEOUT)?;
 
     let event = message.event().context("Could not find message event")?;
     let timeout_duration = event

@@ -43,7 +43,7 @@ fn build_message_text_vec(
 
 #[test]
 fn test_deserialize_message_text_fragment() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&MESSAGE_TEXT_FRAGMENT)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(MESSAGE_TEXT_FRAGMENT)?;
 
     let (raw_message_text, message_text) = build_message_text_vec(&raw, &message)?;
 
@@ -54,7 +54,7 @@ fn test_deserialize_message_text_fragment() -> Result<()> {
 
 #[test]
 fn test_deserialize_message_text_emote_fragments() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&MESSAGE_TEXT_EMOTE_FRAGMENTS)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(MESSAGE_TEXT_EMOTE_FRAGMENTS)?;
 
     let (raw_message_text, message_text) = build_message_text_vec(&raw, &message)?;
 
@@ -65,8 +65,7 @@ fn test_deserialize_message_text_emote_fragments() -> Result<()> {
 
 #[test]
 fn test_deserialize_message_text_mention_fragments() -> Result<()> {
-    let (raw, message) =
-        load_data::<ReceivedTwitchMessagePayload>(&MESSAGE_TEXT_MENTION_FRAGMENTS)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(MESSAGE_TEXT_MENTION_FRAGMENTS)?;
 
     let (raw_message_text, message_text) = build_message_text_vec(&raw, &message)?;
 
