@@ -1,5 +1,3 @@
-use std::sync::LazyLock;
-
 use tui::{Frame, layout::Rect};
 
 use super::utils::SearchWidget;
@@ -11,16 +9,14 @@ use crate::{
     utils::sanitization::clean_channel_name,
 };
 
-static INCORRECT_SCOPES_ERROR_MESSAGE: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
-    vec![
-        "Failed to get the list of streamers you currently follow.",
-        "Either you have incorrect scopes in your token, or the API is down.",
-        "To get the correct scopes, see the default config at the link below:",
-        "https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml#L8-L13",
-        "",
-        "Hit ESC to dismiss this error.",
-    ]
-});
+static INCORRECT_SCOPES_ERROR_MESSAGE: &[&str] = &[
+    "Failed to get the list of streamers you currently follow.",
+    "Either you have incorrect scopes in your token, or the API is down.",
+    "To get the correct scopes, see the default config at the link below:",
+    "https://github.com/Xithrius/twitch-tui/blob/main/default-config.toml#L8-L13",
+    "",
+    "Hit ESC to dismiss this error.",
+];
 
 pub struct FollowingWidget {
     config: SharedCoreConfig,

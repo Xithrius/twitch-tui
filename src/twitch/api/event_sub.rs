@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use ::std::hash::BuildHasher;
 use color_eyre::{
@@ -17,15 +17,13 @@ use crate::twitch::{
 
 /// Events that should be subscribed to when the first chat room is entered.
 /// Channel chat messages are excluded since it's subscribed to on channel join.
-pub static INITIAL_EVENT_SUBSCRIPTIONS: LazyLock<Vec<Subscription>> = LazyLock::new(|| {
-    vec![
-        Subscription::Message,
-        Subscription::Notification,
-        Subscription::Clear,
-        Subscription::ClearUserMessages,
-        Subscription::MessageDelete,
-    ]
-});
+pub static INITIAL_EVENT_SUBSCRIPTIONS: &[Subscription] = &[
+    Subscription::Message,
+    Subscription::Notification,
+    Subscription::Clear,
+    Subscription::ClearUserMessages,
+    Subscription::MessageDelete,
+];
 
 /// Subscribe to a set of events, returning a hashmap of subscription types corresponding to their ID
 ///

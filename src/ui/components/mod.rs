@@ -12,8 +12,6 @@ mod state_tabs;
 mod emote_picker;
 pub mod utils;
 
-use std::sync::LazyLock;
-
 use bon::bon;
 pub use channel_switcher::ChannelSwitcherWidget;
 pub use chat::ChatWidget;
@@ -35,13 +33,11 @@ use crate::{
     terminal::TerminalAction,
 };
 
-static WINDOW_SIZE_TOO_SMALL_ERROR: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
-    vec![
-        "Window too small!",
-        "Must allow for at least 60x10.",
-        "Restart and resize.",
-    ]
-});
+static WINDOW_SIZE_TOO_SMALL_ERROR: &[&str] = &[
+    "Window too small!",
+    "Must allow for at least 60x10.",
+    "Restart and resize.",
+];
 
 pub trait Component {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
