@@ -9,7 +9,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::config::{StorageConfig, persistence::get_data_dir};
+use crate::handlers::config::{SharedCoreConfig, persistence::get_data_dir};
 
 static ITEM_KEYS: &[&str] = &["channels", "mentions", "chatters"];
 const DEFAULT_STORAGE_FILE_NAME: &str = "storage.json";
@@ -30,7 +30,10 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(config: &StorageConfig) -> Self {
+    pub fn new(config: &SharedCoreConfig) -> Self {
+        let core_config = &config.borrow();
+        let twitch_channel = &core_config.twitch.channel;
+        let storage_config = core_config.storage.clone();
         // TODO: Storage path should be configurable
         let storage_parent_path = get_data_dir();
         if !storage_parent_path.exists() {
@@ -38,31 +41,10 @@ impl Storage {
         }
         let storage_path = storage_parent_path.join(DEFAULT_STORAGE_FILE_NAME);
 
-        if !Path::new(&storage_path).exists() {
-            let mut items = StorageMap::new();
+        if Path::new(&storage_path).exists() {
+            let file_content = read_to_string(&storage_path).unwrap();
 
-            for item_key in ITEM_KEYS {
-                let enabled = match *item_key {
-                    "channels" => config.channels,
-                    "mentions" => config.mentions,
-                    "chatters" => config.chatters,
-                    _ => panic!("Invalid storage key {item_key}."),
-                };
-
-                items.insert(
-                    (*item_key).to_string(),
-                    StorageItem {
-                        content: vec![],
-                        enabled,
-                    },
-                );
-            }
-
-            let storage_str = serde_json::to_string(&items).unwrap();
-
-            let mut file = File::create(&storage_path).unwrap();
-
-            file.write_all(storage_str.as_bytes()).unwrap();
+            let items: StorageMap = serde_json::from_str(&file_content).unwrap();
 
             return Self {
                 items,
@@ -70,9 +52,34 @@ impl Storage {
             };
         }
 
-        let file_content = read_to_string(&storage_path).unwrap();
+        let mut items = StorageMap::new();
 
-        let items: StorageMap = serde_json::from_str(&file_content).unwrap();
+        for item_key in ITEM_KEYS {
+            let enabled = match *item_key {
+                "channels" => storage_config.channels,
+                "mentions" => storage_config.mentions,
+                "chatters" => storage_config.chatters,
+                _ => panic!("Invalid storage key {item_key}."),
+            };
+
+            items.insert(
+                (*item_key).to_string(),
+                StorageItem {
+                    content: vec![],
+                    enabled,
+                },
+            );
+        }
+
+        if let Some(channels) = items.get_mut("channels") {
+            if !channels.content.contains(twitch_channel) {
+                channels.content.push(twitch_channel.clone());
+            }
+        }
+
+        let storage_str = serde_json::to_string(&items).unwrap();
+        let mut file = File::create(&storage_path).unwrap();
+        file.write_all(storage_str.as_bytes()).unwrap();
 
         Self {
             items,
@@ -127,10 +134,6 @@ impl Storage {
         }
 
         out
-    }
-
-    pub fn contains(&self, key: &str, value: &str) -> bool {
-        self.get(key).contains(&value.to_string())
     }
 
     pub fn remove_inner_with(&mut self, key: &str, value: &str) -> String {

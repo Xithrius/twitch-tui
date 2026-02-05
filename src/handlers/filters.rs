@@ -2,7 +2,7 @@ use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
 use regex::Regex;
 
-use crate::handlers::config::{FiltersConfig, persistence::get_config_dir};
+use crate::handlers::config::{SharedCoreConfig, persistence::get_config_dir};
 
 const DEFAULT_FILTERS_FILE_NAME: &str = "filters.txt";
 
@@ -16,8 +16,10 @@ pub struct Filters {
 }
 
 impl Filters {
-    pub fn new(config: &FiltersConfig) -> Self {
+    pub fn new(config: &SharedCoreConfig) -> Self {
         // TODO: Filters path should be configurable
+        let filters_config = &config.borrow().filters;
+
         let filters_path = get_config_dir().join(DEFAULT_FILTERS_FILE_NAME);
         let captures = read_to_string(filters_path).map_or_else(
             |_| vec![],
@@ -31,8 +33,8 @@ impl Filters {
 
         Self {
             captures,
-            enabled: config.enabled,
-            reversed: config.reversed,
+            enabled: filters_config.enabled,
+            reversed: filters_config.reversed,
         }
     }
 

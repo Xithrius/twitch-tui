@@ -54,32 +54,18 @@ macro_rules! shared {
 
 impl Context {
     pub fn new(config: CoreConfig) -> Self {
-        let shared_config = shared!(config.clone());
+        let maximum_messages = config.terminal.maximum_messages;
+        let first_state = config.terminal.first_state.clone();
+        let emotes_enabled = config.frontend.is_emotes_enabled();
 
-        let shared_config_borrow = shared_config.borrow();
-
-        // TODO: Storage path should be specified in the config, default next to config.toml
-        let storage = shared!(Storage::new(&shared_config_borrow.storage));
-
-        if !storage
-            .borrow()
-            .contains("channels", &config.twitch.channel)
-        {
-            storage.borrow_mut().add("channels", config.twitch.channel);
-        }
-
-        // TODO: Filters path should be specified in the config, default next to config.toml
-        let filters = shared!(Filters::new(&shared_config_borrow.filters));
-
-        let messages = shared!(VecDeque::with_capacity(
-            shared_config_borrow.terminal.maximum_messages,
-        ));
-
-        let emotes_enabled: bool = shared_config.borrow().frontend.is_emotes_enabled();
+        let config = shared!(config);
+        let storage = shared!(Storage::new(&config));
+        let filters = shared!(Filters::new(&config));
+        let messages = shared!(VecDeque::with_capacity(maximum_messages));
         let emotes = Rc::new(Emotes::new(emotes_enabled));
 
         let components = Components::builder()
-            .config(&shared_config)
+            .config(&config)
             .storage(storage.clone())
             .filters(filters)
             .messages(messages.clone())
@@ -88,10 +74,10 @@ impl Context {
 
         Self {
             components,
-            config: shared_config.clone(),
+            config,
             messages,
             storage,
-            state: shared_config_borrow.terminal.first_state.clone(),
+            state: first_state,
             previous_state: None,
             emotes,
             running_stream: None,
