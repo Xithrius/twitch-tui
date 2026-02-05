@@ -5,14 +5,13 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     rc::Rc,
-    sync::LazyLock,
 };
 
 use serde::{Deserialize, Serialize};
 
 use crate::handlers::config::{StorageConfig, persistence::get_data_dir};
 
-static ITEM_KEYS: LazyLock<Vec<&str>> = LazyLock::new(|| vec!["channels", "mentions", "chatters"]);
+static ITEM_KEYS: &[&str] = &["channels", "mentions", "chatters"];
 const DEFAULT_STORAGE_FILE_NAME: &str = "storage.json";
 
 pub type SharedStorage = Rc<RefCell<Storage>>;
@@ -42,7 +41,7 @@ impl Storage {
         if !Path::new(&storage_path).exists() {
             let mut items = StorageMap::new();
 
-            for item_key in ITEM_KEYS.iter() {
+            for item_key in ITEM_KEYS {
                 let enabled = match *item_key {
                     "channels" => config.channels,
                     "mentions" => config.mentions,
