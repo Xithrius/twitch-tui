@@ -218,7 +218,7 @@ impl Component for EmotePickerWidget {
                 Block::default()
                     .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .highlight_style(if *NO_COLOR {
                 Style::default()
@@ -233,7 +233,7 @@ impl Component for EmotePickerWidget {
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into());
+            .border_type(self.config.frontend.border_type.clone().into());
 
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
 
@@ -246,7 +246,7 @@ impl Component for EmotePickerWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.selection.clone();
+            let keybinds = self.config.keybinds.selection.clone();
             match key {
                 key if keybinds.back_to_previous_window.contains(key) => self.toggle_focus(),
                 key if keybinds.next_item.contains(key) => self.next(),

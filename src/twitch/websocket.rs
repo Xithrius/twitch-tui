@@ -6,7 +6,7 @@ use tracing::{debug, info};
 
 use crate::{
     handlers::{
-        config::CoreConfig,
+        config::SharedCoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },
@@ -17,9 +17,8 @@ use crate::{
     },
 };
 
-#[allow(clippy::cognitive_complexity)]
 pub async fn twitch_websocket(
-    mut config: CoreConfig,
+    config: SharedCoreConfig,
     tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
 ) -> Result<()> {
@@ -39,14 +38,16 @@ pub async fn twitch_websocket(
 
     let (_, mut stream) = ws_stream.split();
 
+    let mut context = TwitchWebsocketContext::default();
+
     // If the dashboard is the start state, wait until the user has selected
     // a channel before connecting to Twitch's websocket server.
     if config.terminal.first_state == State::Dashboard {
         debug!("Waiting for user to select channel from debug screen");
 
         loop {
-            if let Ok(TwitchAction::JoinChannel(channel)) = rx.recv().await {
-                config.twitch.channel = channel;
+            if let Ok(TwitchAction::JoinChannel(channel_name)) = rx.recv().await {
+                context.set_channel_name(Some(channel_name));
 
                 debug!("User has selected channel from start screen");
                 break;
@@ -56,7 +57,6 @@ pub async fn twitch_websocket(
 
     let emotes_enabled = config.frontend.is_emotes_enabled();
 
-    let mut context = TwitchWebsocketContext::default();
     context.set_emotes(emotes_enabled);
     context.set_token(config.twitch.token.clone());
 
@@ -71,7 +71,7 @@ pub async fn twitch_websocket(
             .await?;
         bail!(error_message);
     };
-    if let Err(err) = handle_welcome_message(&mut config.twitch, &mut context, &tx, message).await {
+    if let Err(err) = handle_welcome_message(&mut context, &tx, message).await {
         let error_message = format!("Failed to handle welcome message: {err}");
         tx.send(DataBuilder::system(error_message.clone())).await?;
         bail!(error_message);

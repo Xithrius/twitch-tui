@@ -126,7 +126,7 @@ impl Component for ChatInputWidget {
                 self.input.insert(" ");
             }
         } else if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.insert.clone();
+            let keybinds = self.config.keybinds.insert.clone();
             match key {
                 key if keybinds.confirm_text_input.contains(key) => {
                     if self.input.is_valid() {
@@ -138,7 +138,7 @@ impl Component for ChatInputWidget {
                         self.input.clear();
 
                         if let Some(message) = current_input.strip_prefix('@') {
-                            if self.config.borrow().storage.mentions {
+                            if self.config.storage.mentions {
                                 self.storage
                                     .borrow_mut()
                                     .add("mentions", message.to_string());
@@ -149,7 +149,7 @@ impl Component for ChatInputWidget {
                     }
                 }
                 key if keybinds.toggle_emote_picker.contains(key) => {
-                    if self.config.borrow().frontend.is_emotes_enabled() {
+                    if self.config.frontend.is_emotes_enabled() {
                         self.emote_picker.toggle_focus();
                     }
                 }

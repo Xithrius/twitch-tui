@@ -30,8 +30,8 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(config: &SharedCoreConfig) -> Self {
-        let core_config = &config.borrow();
+    pub fn new(config: SharedCoreConfig) -> Self {
+        let core_config = config.clone();
         let twitch_channel = &core_config.twitch.channel;
         let storage_config = core_config.storage.clone();
         // TODO: Storage path should be configurable

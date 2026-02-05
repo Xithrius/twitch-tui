@@ -114,7 +114,7 @@ impl DashboardWidget {
         let current_channel_selection = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled(
-                get_keybind_text(&self.config.borrow().keybinds.dashboard.join),
+                get_keybind_text(&self.config.keybinds.dashboard.join),
                 Style::default().fg(Color::LightMagenta),
             ),
             Span::raw("] "),
@@ -157,7 +157,7 @@ impl DashboardWidget {
         let quit_option = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled(
-                get_keybind_text(&self.config.borrow().keybinds.dashboard.quit),
+                get_keybind_text(&self.config.keybinds.dashboard.quit),
                 Style::default().fg(Color::LightMagenta),
             ),
             Span::raw("] "),
@@ -173,14 +173,14 @@ impl Component for DashboardWidget {
         let r = area.unwrap_or_else(|| f.area());
 
         let favorite_channels_len = {
-            let l = self.config.borrow().frontend.favorite_channels.len() as u16;
+            let l = self.config.frontend.favorite_channels.len() as u16;
 
             if l == 0 { 2 } else { l + 1 }
         };
 
         let recent_channels_len = {
             let current_len = self.storage.borrow().get("channels").len() as u16;
-            let recent_channel_config_count = self.config.borrow().frontend.recent_channel_count;
+            let recent_channel_config_count = self.config.frontend.recent_channel_count;
 
             if current_len == 0 {
                 2
@@ -218,8 +218,8 @@ impl Component for DashboardWidget {
         self.render_channel_selection_widget(
             f,
             &mut v_chunks,
-            self.config.borrow().twitch.channel.clone(),
-            &self.config.borrow().frontend.favorite_channels.clone(),
+            self.config.twitch.channel.clone(),
+            &self.config.frontend.favorite_channels.clone(),
         );
 
         self.render_quit_selection_widget(f, &mut v_chunks);
@@ -239,7 +239,7 @@ impl Component for DashboardWidget {
                 return self.following.event(event).await;
             }
 
-            let keybinds = self.config.borrow().keybinds.dashboard.clone();
+            let keybinds = self.config.keybinds.dashboard.clone();
             match key {
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 key if keybinds.recent_channels_search.contains(key) => {
@@ -250,7 +250,7 @@ impl Component for DashboardWidget {
                 }
                 key if keybinds.join.contains(key) => {
                     let action = TerminalAction::Enter(TwitchAction::JoinChannel(
-                        self.config.borrow().twitch.channel.clone(),
+                        self.config.twitch.channel.clone(),
                     ));
 
                     return Some(action);
@@ -260,7 +260,7 @@ impl Component for DashboardWidget {
                 }
                 Key::Char(c) => {
                     if let Some(digit) = c.to_digit(10) {
-                        let mut channels = self.config.borrow().frontend.favorite_channels.clone();
+                        let mut channels = self.config.frontend.favorite_channels.clone();
                         let mut selected_channels = self.storage.borrow().get("channels");
                         selected_channels.reverse();
 
@@ -276,7 +276,8 @@ impl Component for DashboardWidget {
                             } as usize;
 
                         if let Some(channel) = channels.get(selection) {
-                            self.config.borrow_mut().twitch.channel.clone_from(channel);
+                            // TODO: Switch context channel
+                            // self.config.borrow_mut().twitch.channel.clone_from(channel);
                             self.storage.borrow_mut().add("channels", channel.clone());
                             if selection != 0 && selection * 10 <= channels.len() {
                                 return None;

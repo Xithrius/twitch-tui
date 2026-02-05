@@ -25,7 +25,7 @@ pub struct FollowingWidget {
 
 impl FollowingWidget {
     pub fn new(config: SharedCoreConfig) -> Self {
-        let item_getter = Following::new(config.borrow().clone());
+        let item_getter = Following::new(config.clone());
 
         let search_widget = SearchWidget::new(
             config.clone(),
@@ -57,11 +57,12 @@ impl Component for FollowingWidget {
         let action = self.search_widget.event(event).await;
 
         if let Some(TerminalAction::Enter(TwitchAction::JoinChannel(channel))) = &action {
-            self.config
-                .borrow_mut()
-                .twitch
-                .channel
-                .clone_from(&clean_channel_name(channel));
+            // TODO: Switch context channel
+            // self.config
+            //     .borrow_mut()
+            //     .twitch
+            //     .channel
+            //     .clone_from(&clean_channel_name(channel));
         }
 
         action

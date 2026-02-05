@@ -53,13 +53,12 @@ macro_rules! shared {
 }
 
 impl Context {
-    pub fn new(config: CoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig) -> Self {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
         let emotes_enabled = config.frontend.is_emotes_enabled();
 
-        let config = shared!(config);
-        let storage = shared!(Storage::new(&config));
+        let storage = shared!(Storage::new(config.clone()));
         let filters = shared!(Filters::new(&config));
         let messages = shared!(VecDeque::with_capacity(maximum_messages));
         let emotes = Rc::new(Emotes::new(emotes_enabled));
@@ -87,7 +86,7 @@ impl Context {
     pub fn draw(&mut self, f: &mut Frame) {
         let mut size = f.area();
 
-        if self.config.borrow().frontend.state_tabs {
+        if self.config.frontend.state_tabs {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
@@ -99,7 +98,7 @@ impl Context {
         }
 
         if (size.height < 10 || size.width < 60)
-            && self.config.borrow().frontend.show_unsupported_screen_size
+            && self.config.frontend.show_unsupported_screen_size
         {
             self.components.window_size_error.draw(f, Some(f.area()));
         } else {
@@ -130,13 +129,7 @@ impl Context {
 
             match key {
                 // Global keybinds
-                key if self
-                    .config
-                    .borrow()
-                    .keybinds
-                    .toggle_debug_focus
-                    .contains(key) =>
-                {
+                key if self.config.keybinds.toggle_debug_focus.contains(key) => {
                     self.components.debug.toggle_focus();
                 }
                 _ => {
@@ -154,7 +147,7 @@ impl Context {
 
     pub fn open_stream(&mut self, channel: &str) {
         self.close_current_stream();
-        let view_command = &self.config.borrow().frontend.view_command;
+        let view_command = &self.config.frontend.view_command;
 
         if let Some((command, args)) = view_command.split_first() {
             self.running_stream = Command::new(command.clone())

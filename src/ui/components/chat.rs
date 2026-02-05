@@ -56,7 +56,7 @@ impl ChatWidget {
         let search_input = MessageSearchWidget::new(config.clone());
         let following = FollowingWidget::new(config.clone());
 
-        let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
+        let scroll_offset = Scrolling::new(config.frontend.inverted_scrolling);
 
         Self {
             config,
@@ -71,9 +71,8 @@ impl ChatWidget {
     }
 
     pub fn open_in_player(&self) -> Option<TerminalAction> {
-        let config = self.config.borrow();
-        let channel_name = config.twitch.channel.as_str();
-        if config.frontend.view_command.is_empty() {
+        let channel_name = self.config.twitch.channel.as_str();
+        if self.config.frontend.view_command.is_empty() {
             webbrowser::open(format!(
             "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
             ).as_str()).unwrap();
@@ -96,7 +95,7 @@ impl ChatWidget {
         let mut messages = VecDeque::new();
 
         let mut general_chunk_height = area.height as usize;
-        if !self.config.borrow().frontend.hide_chat_border {
+        if !self.config.frontend.hide_chat_border {
             general_chunk_height -= 2;
         }
 
@@ -109,8 +108,6 @@ impl ChatWidget {
             .split(frame.area());
 
         let message_chunk_width = h_chunk[0].width as usize;
-
-        let config = self.config.borrow();
 
         'outer: for data in messages_data {
             if self
@@ -128,8 +125,8 @@ impl ChatWidget {
                 continue;
             }
 
-            let username_highlight: Option<&str> = if config.frontend.username_highlight {
-                Some(config.twitch.username.as_str())
+            let username_highlight: Option<&str> = if self.config.frontend.username_highlight {
+                Some(self.config.twitch.username.as_str())
             } else {
                 None
             };
@@ -137,7 +134,7 @@ impl ChatWidget {
             let search = self.search_input.to_string();
 
             let lines = data.to_vec(
-                &self.config.borrow().frontend,
+                &self.config.frontend,
                 message_chunk_width,
                 if self.search_input.is_focused() {
                     Some(&search)
@@ -172,8 +169,6 @@ impl Component for ChatWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let r = area.unwrap_or_else(|| f.area());
 
-        let config = self.config.borrow();
-
         let mut v_constraints = vec![Constraint::Min(1)];
 
         if self.chat_input.is_focused() || self.search_input.is_focused() {
@@ -182,7 +177,7 @@ impl Component for ChatWidget {
 
         let v_chunks_binding = Layout::default()
             .direction(Direction::Vertical)
-            .margin(self.config.borrow().frontend.margin)
+            .margin(self.config.frontend.margin)
             .constraints(v_constraints)
             .split(r);
 
@@ -190,10 +185,10 @@ impl Component for ChatWidget {
 
         let first_v_chunk = v_chunks.next().unwrap();
 
-        if self.messages.borrow().len() > self.config.borrow().terminal.maximum_messages {
+        if self.messages.borrow().len() > self.config.terminal.maximum_messages {
             self.messages
                 .borrow_mut()
-                .truncate(self.config.borrow().terminal.maximum_messages);
+                .truncate(self.config.terminal.maximum_messages);
         }
 
         let messages_data = self.messages.borrow();
@@ -201,12 +196,12 @@ impl Component for ChatWidget {
         let messages = self.get_messages(f, *first_v_chunk, &messages_data);
 
         let current_time = Local::now()
-            .format(&config.frontend.datetime_format)
+            .format(&self.config.frontend.datetime_format)
             .to_string();
 
         let spans = [
             TitleStyle::Combined("Time", &current_time),
-            TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
+            TitleStyle::Combined("Channel", self.config.twitch.channel.as_str()),
             TitleStyle::Custom(Span::styled(
                 if self.filters.borrow().reversed() {
                     "retliF"
@@ -227,7 +222,7 @@ impl Component for ChatWidget {
             )),
         ];
 
-        let chat_title = if self.config.borrow().frontend.title_shown {
+        let chat_title = if self.config.frontend.title_shown {
             Line::from(title_line(&spans, *TITLE_STYLE))
         } else {
             Line::default()
@@ -239,13 +234,13 @@ impl Component for ChatWidget {
             final_messages.push(ListItem::new(Text::from(item)));
         }
 
-        let list = if self.config.borrow().frontend.hide_chat_border {
+        let list = if self.config.frontend.hide_chat_border {
             List::new(final_messages)
         } else {
             List::new(final_messages).block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into())
+                    .border_type(self.config.frontend.border_type.clone().into())
                     .title(chat_title),
             )
         }
@@ -253,7 +248,7 @@ impl Component for ChatWidget {
 
         f.render_widget(list, *first_v_chunk);
 
-        if self.config.borrow().frontend.show_scroll_offset {
+        if self.config.frontend.show_scroll_offset {
             // Cannot scroll past the first message
             let message_amount = messages_data.len().saturating_sub(1);
 
@@ -267,7 +262,7 @@ impl Component for ChatWidget {
 
             let bottom_block = Block::default()
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-                .border_type(self.config.borrow().frontend.border_type.clone().into())
+                .border_type(self.config.frontend.border_type.clone().into())
                 .title(title_line(&title, Style::default()))
                 .title_position(TitlePosition::Bottom)
                 .title_alignment(Alignment::Right);
@@ -308,7 +303,7 @@ impl Component for ChatWidget {
             } else if self.following.is_focused() {
                 self.following.event(event).await
             } else {
-                let keybinds = self.config.borrow().keybinds.normal.clone();
+                let keybinds = self.config.keybinds.normal.clone();
                 match key {
                     key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
                     key if keybinds.enter_insert_with_mention.contains(key) => {

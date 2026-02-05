@@ -16,6 +16,8 @@
     clippy::too_many_arguments
 )]
 
+use std::sync::Arc;
+
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use logging::initialize_logging;
@@ -49,19 +51,39 @@ async fn main() -> Result<()> {
     let (twitch_tx, terminal_rx) = mpsc::channel(100);
     let (terminal_tx, twitch_rx) = broadcast::channel(100);
 
+    let emotes = initialize_emote_decoder(&mut config);
+
+    let config = Arc::new(config);
+
     let context = Context::new(config.clone());
 
-    let decoded_rx = initialize_emote_decoder(&mut config, &context);
-
-    let cloned_config = config.clone();
+    let decoded_rx = if let Some((rx, cell_size)) = emotes {
+        context.emotes.cell_size.get_or_init(|| cell_size);
+        Some(rx)
+    } else {
+        None
+    };
 
     tokio::task::spawn(async move {
-        if let Err(err) = Box::pin(twitch::twitch_websocket(config, twitch_tx, twitch_rx)).await {
+        if let Err(err) = Box::pin(twitch::twitch_websocket(
+            config.clone(),
+            twitch_tx,
+            twitch_rx,
+        ))
+        .await
+        {
             error!("Error when running Twitch websocket client: {err}");
         }
     });
 
-    terminal::ui_driver(cloned_config, context, terminal_tx, terminal_rx, decoded_rx).await;
+    terminal::ui_driver(
+        config.clone(),
+        context,
+        terminal_tx,
+        terminal_rx,
+        decoded_rx,
+    )
+    .await;
 
     std::process::exit(0)
 }

@@ -5,7 +5,7 @@ use tokio::sync::mpsc::Sender;
 use crate::{
     emotes::get_twitch_emote,
     handlers::{
-        config::CoreConfig,
+        config::SharedCoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
     },
     twitch::{
@@ -71,7 +71,7 @@ async fn handle_chat_notification(
 }
 
 pub async fn handle_incoming_message(
-    config: CoreConfig,
+    config: SharedCoreConfig,
     context: &TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     received_message: ReceivedTwitchMessage,
