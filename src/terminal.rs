@@ -1,4 +1,4 @@
-use std::{rc::Rc, time::Duration};
+use std::time::Duration;
 
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tracing::{info, warn};
@@ -7,7 +7,7 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
-        config::{CoreConfig, SharedCoreConfig},
+        config::SharedCoreConfig,
         context::Context,
         data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
         state::State,

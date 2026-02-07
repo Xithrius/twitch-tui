@@ -288,6 +288,7 @@ pub fn overlay_emote(
 
 /// Initialize the emote decoder if emotes are enabled.
 /// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
+#[allow(clippy::type_complexity)]
 pub fn initialize_emote_decoder(
     config: &mut CoreConfig,
 ) -> Option<(mpsc::Receiver<Result<DecodedEmote, String>>, (f32, f32))> {

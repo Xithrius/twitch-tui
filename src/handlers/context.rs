@@ -14,7 +14,7 @@ use tui::{
 use crate::{
     emotes::{Emotes, SharedEmotes},
     handlers::{
-        config::{CoreConfig, SharedCoreConfig},
+        config::SharedCoreConfig,
         data::MessageData,
         filters::Filters,
         state::State,
@@ -58,7 +58,7 @@ impl Context {
         let first_state = config.terminal.first_state.clone();
         let emotes_enabled = config.frontend.is_emotes_enabled();
 
-        let storage = shared!(Storage::new(config.clone()));
+        let storage = shared!(Storage::new(&config));
         let filters = shared!(Filters::new(&config));
         let messages = shared!(VecDeque::with_capacity(maximum_messages));
         let emotes = Rc::new(Emotes::new(emotes_enabled));

@@ -6,7 +6,7 @@ use crate::{
     terminal::TerminalAction,
     twitch::{TwitchAction, api::following::Following},
     ui::components::Component,
-    utils::sanitization::clean_channel_name,
+    // utils::sanitization::clean_channel_name,
 };
 
 static INCORRECT_SCOPES_ERROR_MESSAGE: &[&str] = &[
@@ -19,7 +19,6 @@ static INCORRECT_SCOPES_ERROR_MESSAGE: &[&str] = &[
 ];
 
 pub struct FollowingWidget {
-    config: SharedCoreConfig,
     search_widget: SearchWidget<String, Following>,
 }
 
@@ -27,16 +26,10 @@ impl FollowingWidget {
     pub fn new(config: SharedCoreConfig) -> Self {
         let item_getter = Following::new(config.clone());
 
-        let search_widget = SearchWidget::new(
-            config.clone(),
-            item_getter,
-            INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
-        );
+        let search_widget =
+            SearchWidget::new(config, item_getter, INCORRECT_SCOPES_ERROR_MESSAGE.to_vec());
 
-        Self {
-            config,
-            search_widget,
-        }
+        Self { search_widget }
     }
 
     pub const fn is_focused(&self) -> bool {
@@ -56,13 +49,8 @@ impl Component for FollowingWidget {
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         let action = self.search_widget.event(event).await;
 
-        if let Some(TerminalAction::Enter(TwitchAction::JoinChannel(channel))) = &action {
-            // TODO: Switch context channel
-            // self.config
-            //     .borrow_mut()
-            //     .twitch
-            //     .channel
-            //     .clone_from(&clean_channel_name(channel));
+        if let Some(TerminalAction::Enter(TwitchAction::JoinChannel(_channel))) = &action {
+            todo!()
         }
 
         action

@@ -51,7 +51,8 @@ impl ChatWidget {
         emotes: &SharedEmotes,
         filters: SharedFilters,
     ) -> Self {
-        let chat_input = ChatInputWidget::new(config.clone(), storage.clone(), emotes.clone());
+        let chat_input: ChatInputWidget =
+            ChatInputWidget::new(config.clone(), storage.clone(), emotes.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone());
         let following = FollowingWidget::new(config.clone());

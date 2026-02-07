@@ -17,7 +17,6 @@ pub struct Filters {
 
 impl Filters {
     pub fn new(config: &SharedCoreConfig) -> Self {
-        // TODO: Filters path should be configurable
         let filters_config = &config.filters;
 
         let filters_path = get_config_dir().join(DEFAULT_FILTERS_FILE_NAME);

@@ -64,14 +64,10 @@ async fn main() -> Result<()> {
         None
     };
 
+    let cloned_config = config.clone();
     tokio::task::spawn(async move {
-        if let Err(err) = Box::pin(twitch::twitch_websocket(
-            config.clone(),
-            twitch_tx,
-            twitch_rx,
-        ))
-        .await
-        {
+        let task = twitch::twitch_websocket(cloned_config, twitch_tx, twitch_rx);
+        if let Err(err) = Box::pin(task).await {
             error!("Error when running Twitch websocket client: {err}");
         }
     });

@@ -260,7 +260,6 @@ impl Component for ChannelSwitcherWidget {
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.delete_item.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
-                        // TODO: Make this just two if lets
                         if let Some(filtered) = self.filtered_channels.clone() {
                             if let Some(value) = filtered.get(index) {
                                 self.storage
@@ -296,13 +295,6 @@ impl Component for ChannelSwitcherWidget {
 
                                     self.search_input.clear();
 
-                                    // TODO: Switch context channel
-                                    // self.config
-                                    //     .borrow_mut()
-                                    //     .twitch
-                                    //     .channel
-                                    //     .clone_from(&selected_channel);
-
                                     return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                                         selected_channel,
                                     )));
@@ -321,13 +313,6 @@ impl Component for ChannelSwitcherWidget {
                         }
 
                         self.search_input.clear();
-
-                        // TODO: Switch context channel
-                        // self.config
-                        //     .borrow_mut()
-                        //     .twitch
-                        //     .channel
-                        //     .clone_from(selected_channel);
 
                         debug!(
                             "Joining previously joined channel {:?}",
@@ -350,13 +335,6 @@ impl Component for ChannelSwitcherWidget {
                         }
 
                         self.search_input.clear();
-
-                        // TODO: Switch context channel
-                        // self.config
-                        //     .borrow_mut()
-                        //     .twitch
-                        //     .channel
-                        //     .clone_from(&selected_channel);
 
                         info!("Joining new channel {selected_channel:?}");
 
