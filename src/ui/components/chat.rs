@@ -12,18 +12,13 @@ use tui::{
 use crate::{
     emotes::SharedEmotes,
     handlers::{
-        config::SharedCoreConfig,
-        context::SharedMessages,
-        data::MessageData,
-        filters::SharedFilters,
-        state::State,
-        storage::SharedStorage,
-        user_input::{events::Event, scrolling::Scrolling},
+        config::SharedCoreConfig, context::SharedMessages, data::MessageData,
+        filters::SharedFilters, state::State, storage::SharedStorage, user_input::events::Event,
     },
     terminal::TerminalAction,
     ui::components::{
         ChannelSwitcherWidget, ChatInputWidget, Component, MessageSearchWidget,
-        following::FollowingWidget,
+        following::FollowingWidget, utils::Scrolling,
     },
     utils::{
         styles::{NO_COLOR, TEXT_DARK_STYLE, TITLE_STYLE},
