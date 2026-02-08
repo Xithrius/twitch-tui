@@ -6,7 +6,7 @@ use reqwest::{Client, Response};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
-    config::{CoreConfig, FrontendConfig, persistence::get_cache_dir},
+    config::{CoreConfig, FrontendConfig, get_cache_dir},
     emotes::DownloadedEmotes,
     twitch::{
         api::channels::get_channel_id,

@@ -25,7 +25,7 @@ use tokio::sync::{broadcast, mpsc};
 use tracing::{info, warn};
 
 use crate::{
-    cli::args::Cli, config::core::CoreConfig, emotes::initialize_emote_decoder,
+    cli::args::Cli, config::CoreConfig, emotes::initialize_emote_decoder,
     handlers::context::Context, twitch::websocket::TwitchWebsocket,
 };
 

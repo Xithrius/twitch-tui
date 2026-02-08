@@ -9,7 +9,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::{SharedCoreConfig, persistence::get_data_dir};
+use crate::config::{SharedCoreConfig, get_data_dir};
 
 static ITEM_KEYS: &[&str] = &["channels", "mentions", "chatters"];
 const DEFAULT_STORAGE_FILE_NAME: &str = "storage.json";

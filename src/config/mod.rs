@@ -1,16 +1,17 @@
-pub mod core;
-pub mod filters;
-pub mod frontend;
-pub mod keybinds;
-pub mod logs;
-pub mod persistence;
-pub mod storage;
-pub mod terminal;
-pub mod twitch;
+mod core;
+mod filters;
+mod frontend;
+mod keybinds;
+mod logs;
+mod persistence;
+mod storage;
+mod terminal;
+mod twitch;
 
 pub use crate::config::{
     core::{CoreConfig, SharedCoreConfig},
     frontend::{CursorType, FrontendConfig, Palette, Theme},
     logs::LogLevel,
+    persistence::{get_cache_dir, get_config_dir, get_data_dir},
     twitch::TwitchConfig,
 };

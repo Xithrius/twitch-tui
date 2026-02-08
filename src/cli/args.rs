@@ -1,11 +1,7 @@
 use clap::{Parser, ValueEnum, builder::PossibleValue};
 
 use crate::{
-    config::{
-        core::CoreConfig,
-        frontend::{Palette, Theme},
-        logs::LogLevel,
-    },
+    config::{CoreConfig, LogLevel, Palette, Theme},
     handlers::state::State,
 };
 

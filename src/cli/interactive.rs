@@ -1,6 +1,6 @@
 use dialoguer::{Confirm, Input, Password, console::Style, theme::ColorfulTheme};
 
-use crate::config::{core::CoreConfig, twitch::TwitchConfig};
+use crate::config::{CoreConfig, TwitchConfig};
 
 pub fn interactive_config() -> Option<CoreConfig> {
     let theme = ColorfulTheme {
