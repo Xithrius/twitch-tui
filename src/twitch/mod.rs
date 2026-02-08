@@ -2,7 +2,6 @@ pub mod actions;
 pub mod api;
 pub mod badges;
 pub mod channels;
-pub mod client;
 pub mod context;
 pub mod handlers;
 pub mod models;
