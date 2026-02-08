@@ -5,7 +5,7 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
-    events::{Events, TwitchAction, TwitchNotification},
+    events::{Events, InternalEvent, TwitchAction, TwitchNotification},
     handlers::{
         context::Context,
         data::{KNOWN_CHATTERS, MessageData},
@@ -13,14 +13,6 @@ use crate::{
     },
     utils::sanitization::clean_channel_name,
 };
-
-pub enum TerminalAction {
-    Quit,
-    BackOneLayer,
-    SwitchState(State),
-    Enter(TwitchAction),
-    OpenStream(String),
-}
 
 #[allow(
     clippy::match_wildcard_for_single_variants,
@@ -120,28 +112,28 @@ pub async fn ui_driver(
         if let Some(event) = events.next().await {
             if let Some(action) = context.event(&event).await {
                 match action {
-                    TerminalAction::Quit => {
+                    InternalEvent::Quit => {
                         // Emotes need to be unloaded before we exit the alternate screen
                         context.emotes.unload();
                         quit_terminal(terminal);
 
                         break;
                     }
-                    TerminalAction::BackOneLayer => {
+                    InternalEvent::BackOneLayer => {
                         if let Some(previous_state) = context.get_previous_state() {
                             context.set_state(previous_state);
                         } else {
                             context.set_state(config.terminal.first_state.clone());
                         }
                     }
-                    TerminalAction::SwitchState(state) => {
+                    InternalEvent::SwitchState(state) => {
                         if state == State::Normal {
                             context.clear_messages();
                         }
 
                         context.set_state(state);
                     }
-                    TerminalAction::Enter(action) => {
+                    InternalEvent::Enter(action) => {
                         if let TwitchAction::JoinChannel(channel) = action {
                             let channel = clean_channel_name(&channel);
                             context.clear_messages();
@@ -157,7 +149,7 @@ pub async fn ui_driver(
                             tx.send(action).unwrap();
                         }
                     }
-                    TerminalAction::OpenStream(channel) => {
+                    InternalEvent::OpenStream(channel) => {
                         context.open_stream(&channel);
                     }
                 }

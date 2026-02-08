@@ -12,12 +12,11 @@ use tui::{
 use crate::{
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    events::Event,
+    events::{Event, InternalEvent},
     handlers::{
         context::SharedMessages, data::MessageData, filters::SharedFilters, state::State,
         storage::SharedStorage,
     },
-    terminal::TerminalAction,
     ui::components::{
         ChannelSwitcherWidget, ChatInputWidget, Component, FollowingWidget, MessageSearchWidget,
         utils::Scrolling,
@@ -72,7 +71,7 @@ impl ChatWidget {
         }
     }
 
-    pub fn open_in_player(&self) -> Option<TerminalAction> {
+    pub fn open_in_player(&self) -> Option<InternalEvent> {
         let channel_name = self.config.twitch.channel.as_str();
         if self.config.frontend.view_command.is_empty() {
             webbrowser::open(format!(
@@ -80,7 +79,7 @@ impl ChatWidget {
             ).as_str()).unwrap();
             None
         } else {
-            Some(TerminalAction::OpenStream(channel_name.to_string()))
+            Some(InternalEvent::OpenStream(channel_name.to_string()))
         }
     }
 
@@ -291,7 +290,7 @@ impl Component for ChatWidget {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         // TODO: Once centralized events are implemented, make sure the channel name attribute is changed here on channel join.
         if let Event::Input(key) = event {
             let limit =
@@ -331,12 +330,12 @@ impl Component for ChatWidget {
                         self.filters.borrow_mut().reverse();
                     }
                     key if keybinds.enter_dashboard.contains(key) => {
-                        return Some(TerminalAction::SwitchState(State::Dashboard));
+                        return Some(InternalEvent::SwitchState(State::Dashboard));
                     }
                     key if keybinds.help.contains(key) => {
-                        return Some(TerminalAction::SwitchState(State::Help));
+                        return Some(InternalEvent::SwitchState(State::Help));
                     }
-                    key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                    key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
                     key if keybinds.open_in_player.contains(key) => return self.open_in_player(),
                     key if keybinds.scroll_to_end.contains(key) => {
                         self.scroll_offset.jump_to(0);
@@ -347,7 +346,7 @@ impl Component for ChatWidget {
                     }
                     key if keybinds.back_to_previous_window.contains(key) => {
                         if self.scroll_offset.get_offset() == 0 {
-                            return Some(TerminalAction::BackOneLayer);
+                            return Some(InternalEvent::BackOneLayer);
                         }
 
                         self.scroll_offset.jump_to(0);

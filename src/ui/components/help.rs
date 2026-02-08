@@ -6,8 +6,7 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, get_keybind_text},
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, get_keybind_text},
     ui::{components::Component, statics::HELP_COLUMN_TITLES},
     utils::styles::{BOLD_STYLE, COLUMN_TITLE_STYLE},
 };
@@ -262,13 +261,13 @@ impl Component for HelpWidget {
     }
 
     // TODO: should be default impl if not for the config requirement
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
                 key if keybinds.back_to_previous_window.contains(key) => {
-                    return Some(TerminalAction::BackOneLayer);
+                    return Some(InternalEvent::BackOneLayer);
                 }
                 _ => {}
             }

@@ -8,8 +8,7 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    events::Event,
-    terminal::TerminalAction,
+    events::{Event, InternalEvent},
     ui::components::Component,
     utils::styles::{NO_COLOR, TEXT_DARK_STYLE},
 };
@@ -65,13 +64,14 @@ impl Component for ErrorWidget {
         f.render_widget(Clear, r);
         f.render_widget(paragraph, r);
     }
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
                 key if keybinds.back_to_previous_window.contains(key) => {
-                    return Some(TerminalAction::BackOneLayer);
+                    return Some(InternalEvent::BackOneLayer);
                 }
                 _ => {}
             }

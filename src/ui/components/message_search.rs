@@ -4,8 +4,7 @@ use tui::{Frame, layout::Rect};
 
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, Key},
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, Key},
     ui::{
         components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
@@ -56,7 +55,7 @@ impl Component for MessageSearchWidget {
         self.input.draw(f, area);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {

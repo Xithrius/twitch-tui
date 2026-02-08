@@ -18,9 +18,8 @@ use tui::{
 use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, TwitchAction},
+    events::{Event, InternalEvent, TwitchAction},
     handlers::storage::SharedStorage,
-    terminal::TerminalAction,
     ui::{
         components::{Component, utils::InputWidget},
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
@@ -245,7 +244,7 @@ impl Component for ChannelSwitcherWidget {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
@@ -296,7 +295,7 @@ impl Component for ChannelSwitcherWidget {
 
                                     self.search_input.clear();
 
-                                    return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                                    return Some(InternalEvent::Enter(TwitchAction::JoinChannel(
                                         selected_channel,
                                     )));
                                 }
@@ -320,7 +319,7 @@ impl Component for ChannelSwitcherWidget {
                             selected_channel.clone()
                         );
 
-                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                        return Some(InternalEvent::Enter(TwitchAction::JoinChannel(
                             selected_channel.clone(),
                         )));
                     } else if self.search_input.is_valid() {
@@ -339,7 +338,7 @@ impl Component for ChannelSwitcherWidget {
 
                         info!("Joining new channel {selected_channel:?}");
 
-                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                        return Some(InternalEvent::Enter(TwitchAction::JoinChannel(
                             selected_channel,
                         )));
                     }

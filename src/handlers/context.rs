@@ -14,14 +14,13 @@ use tui::{
 use crate::{
     config::SharedCoreConfig,
     emotes::{Emotes, SharedEmotes},
-    events::Event,
+    events::{Event, InternalEvent},
     handlers::{
         data::MessageData,
         filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
     },
-    terminal::TerminalAction,
     ui::components::{Component, Components},
 };
 
@@ -121,7 +120,7 @@ impl Context {
         }
     }
 
-    pub async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    pub async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             if self.components.debug.is_focused() {
                 return self.components.debug.event(event).await;

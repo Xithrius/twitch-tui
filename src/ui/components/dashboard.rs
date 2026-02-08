@@ -10,9 +10,8 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, Key, TwitchAction, get_keybind_text},
+    events::{Event, InternalEvent, Key, TwitchAction, get_keybind_text},
     handlers::{state::State, storage::SharedStorage},
-    terminal::TerminalAction,
     ui::components::{ChannelSwitcherWidget, Component, FollowingWidget},
     utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };
@@ -226,7 +225,7 @@ impl Component for DashboardWidget {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             if self.channel_input.is_focused() {
                 return self.channel_input.event(event).await;
@@ -236,7 +235,7 @@ impl Component for DashboardWidget {
 
             let keybinds = self.config.keybinds.dashboard.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
                 key if keybinds.recent_channels_search.contains(key) => {
                     self.channel_input.toggle_focus();
                 }
@@ -244,14 +243,14 @@ impl Component for DashboardWidget {
                     self.following.toggle_focus().await;
                 }
                 key if keybinds.join.contains(key) => {
-                    let action = TerminalAction::Enter(TwitchAction::JoinChannel(
+                    let action = InternalEvent::Enter(TwitchAction::JoinChannel(
                         self.config.twitch.channel.clone(),
                     ));
 
                     return Some(action);
                 }
                 key if keybinds.help.contains(key) => {
-                    return Some(TerminalAction::SwitchState(State::Help));
+                    return Some(InternalEvent::SwitchState(State::Help));
                 }
                 Key::Char(c) => {
                     if let Some(digit) = c.to_digit(10) {
@@ -279,7 +278,7 @@ impl Component for DashboardWidget {
                             }
                             self.channel_selection = None;
                             let action =
-                                TerminalAction::Enter(TwitchAction::JoinChannel(channel.clone()));
+                                InternalEvent::Enter(TwitchAction::JoinChannel(channel.clone()));
 
                             return Some(action);
                         }

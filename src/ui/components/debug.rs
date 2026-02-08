@@ -8,8 +8,7 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    events::Event,
-    terminal::TerminalAction,
+    events::{Event, InternalEvent},
     ui::components::Component,
     utils::{
         styles::{BOLD_STYLE, TITLE_STYLE},
@@ -127,15 +126,15 @@ impl Component for DebugWidget {
         f.render_widget(bottom_block, rect);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.normal.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
                 key if keybinds.back_to_previous_window.contains(key) => {
                     self.toggle_focus();
 
-                    return Some(TerminalAction::BackOneLayer);
+                    return Some(InternalEvent::BackOneLayer);
                 }
                 _ => {}
             }

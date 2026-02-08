@@ -4,9 +4,8 @@ use tui::{Frame, layout::Rect};
 use crate::{
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    events::Event,
+    events::{Event, InternalEvent},
     handlers::{context::SharedMessages, filters::SharedFilters, storage::SharedStorage},
-    terminal::TerminalAction,
     ui::components::{
         ChatWidget, DashboardWidget, DebugWidget, ErrorWidget, HelpWidget, StateTabsWidget,
     },
@@ -22,7 +21,7 @@ pub trait Component {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
 
     #[allow(clippy::unused_async)]
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction>;
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent>;
 }
 
 pub struct Components {

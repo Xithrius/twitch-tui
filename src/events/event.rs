@@ -1,4 +1,7 @@
-use crate::{events::key::Key, handlers::data::RawMessageData};
+use crate::{
+    events::key::Key,
+    handlers::{data::RawMessageData, state::State},
+};
 
 pub enum Event {
     /// An event that is emitted on a regular schedule.
@@ -15,7 +18,13 @@ pub enum Event {
     Twitch(TwitchEvent),
 }
 
-pub enum InternalEvent {}
+pub enum InternalEvent {
+    Quit,
+    BackOneLayer,
+    SwitchState(State),
+    Enter(TwitchAction),
+    OpenStream(String),
+}
 
 #[derive(Debug, Clone)]
 pub enum TwitchAction {

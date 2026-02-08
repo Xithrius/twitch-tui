@@ -14,8 +14,7 @@ use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
     emotes::{SharedEmotes, load_picker_emote},
-    events::{Event, TwitchAction},
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, TwitchAction},
     ui::{
         components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
@@ -244,7 +243,7 @@ impl Component for EmotePickerWidget {
         self.input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
@@ -260,7 +259,7 @@ impl Component for EmotePickerWidget {
                         self.unselect();
                         self.filtered_emotes.clear();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Message(emote)));
+                        return Some(InternalEvent::Enter(TwitchAction::Message(emote)));
                     }
                 }
                 _ => {

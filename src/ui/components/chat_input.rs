@@ -5,9 +5,8 @@ use tui::{Frame, layout::Rect};
 use crate::{
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    events::{Event, TwitchAction},
+    events::{Event, InternalEvent, TwitchAction},
     handlers::storage::SharedStorage,
-    terminal::TerminalAction,
     ui::{
         components::{Component, EmotePickerWidget, utils::InputWidget},
         statics::{SUPPORTED_COMMANDS, TWITCH_MESSAGE_LIMIT},
@@ -118,9 +117,9 @@ impl Component for ChatInputWidget {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if self.emote_picker.is_focused() {
-            if let Some(TerminalAction::Enter(TwitchAction::Message(emote))) =
+            if let Some(InternalEvent::Enter(TwitchAction::Message(emote))) =
                 self.emote_picker.event(event).await
             {
                 self.input.insert(&emote);
@@ -134,7 +133,7 @@ impl Component for ChatInputWidget {
                         let current_input = self.input.to_string();
 
                         let action =
-                            TerminalAction::Enter(TwitchAction::Message(current_input.clone()));
+                            InternalEvent::Enter(TwitchAction::Message(current_input.clone()));
 
                         self.input.clear();
 

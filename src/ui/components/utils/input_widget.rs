@@ -16,8 +16,7 @@ use tui::{
 use super::popup_area;
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, Key},
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, Key},
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
     utils::{
         styles::NO_COLOR,
@@ -210,7 +209,7 @@ impl<T: Clone> Component for InputWidget<T> {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.insert.clone();
             match key {
@@ -265,7 +264,7 @@ impl<T: Clone> Component for InputWidget<T> {
                             .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
                 Key::Char(c) => {
                     self.input.insert(*c, 1, &mut self.input_listener);
                 }

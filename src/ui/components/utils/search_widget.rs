@@ -17,8 +17,7 @@ use tui::{
 use super::{InputWidget, popup_area};
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, Key, TwitchAction},
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, Key, TwitchAction},
     ui::components::{Component, ErrorWidget},
     utils::{
         sanitization::clean_channel_name,
@@ -256,7 +255,7 @@ where
         self.search_input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
             self.error_widget.toggle_focus();
             self.toggle_focus().await;
@@ -295,7 +294,7 @@ where
 
                         let selected_channel_trimmed = clean_channel_name(&selected_channel);
 
-                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
+                        return Some(InternalEvent::Enter(TwitchAction::JoinChannel(
                             selected_channel_trimmed,
                         )));
                     }

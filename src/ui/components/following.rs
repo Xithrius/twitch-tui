@@ -3,8 +3,7 @@ use tui::{Frame, layout::Rect};
 use super::utils::SearchWidget;
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, TwitchAction},
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, TwitchAction},
     twitch::api::following::Following,
     ui::components::Component,
     // utils::sanitization::clean_channel_name,
@@ -47,10 +46,10 @@ impl Component for FollowingWidget {
         self.search_widget.draw(f, area);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
         let action = self.search_widget.event(event).await;
 
-        if let Some(TerminalAction::Enter(TwitchAction::JoinChannel(_channel))) = &action {
+        if let Some(InternalEvent::Enter(TwitchAction::JoinChannel(_channel))) = &action {
             todo!()
         }
 
