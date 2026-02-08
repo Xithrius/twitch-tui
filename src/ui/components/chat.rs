@@ -37,6 +37,7 @@ pub struct ChatWidget {
     following: FollowingWidget,
     filters: SharedFilters,
     pub scroll_offset: Scrolling,
+    current_channel_name: String,
     // theme: Theme,
 }
 
@@ -48,6 +49,8 @@ impl ChatWidget {
         emotes: &SharedEmotes,
         filters: SharedFilters,
     ) -> Self {
+        let current_channel_name = config.twitch.channel.clone();
+
         let chat_input: ChatInputWidget =
             ChatInputWidget::new(config.clone(), storage.clone(), emotes.clone());
         let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
@@ -65,6 +68,7 @@ impl ChatWidget {
             following,
             filters,
             scroll_offset,
+            current_channel_name,
         }
     }
 
@@ -199,7 +203,7 @@ impl Component for ChatWidget {
 
         let spans = [
             TitleStyle::Combined("Time", &current_time),
-            TitleStyle::Combined("Channel", self.config.twitch.channel.as_str()),
+            TitleStyle::Combined("Channel", self.current_channel_name.as_str()),
             TitleStyle::Custom(Span::styled(
                 if self.filters.borrow().reversed() {
                     "retliF"
@@ -288,6 +292,7 @@ impl Component for ChatWidget {
 
     #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+        // TODO: Once centralized events are implemented, make sure the channel name attribute is changed here on channel join.
         if let Event::Input(key) = event {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
