@@ -3,6 +3,7 @@ use crate::{
     handlers::{data::RawMessageData, state::State},
 };
 
+#[derive(Debug, Clone)]
 pub enum Event {
     /// An event that is emitted on a regular schedule.
     ///
@@ -18,6 +19,7 @@ pub enum Event {
     Twitch(TwitchEvent),
 }
 
+#[derive(Debug, Clone)]
 pub enum InternalEvent {
     Quit,
     BackOneLayer,
@@ -27,18 +29,20 @@ pub enum InternalEvent {
 }
 
 #[derive(Debug, Clone)]
+pub enum TwitchEvent {
+    Action(TwitchAction),
+    Notification(TwitchNotification),
+}
+
+#[derive(Debug, Clone)]
 pub enum TwitchAction {
     Message(String),
     JoinChannel(String),
 }
 
+#[derive(Debug, Clone)]
 pub enum TwitchNotification {
     Message(RawMessageData),
     ClearChat(Option<String>),
     DeleteMessage(String),
-}
-
-pub enum TwitchEvent {
-    Action(TwitchAction),
-    Notification(TwitchNotification),
 }
