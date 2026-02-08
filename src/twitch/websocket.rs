@@ -2,7 +2,7 @@ use color_eyre::{Result, eyre::bail};
 use futures::StreamExt;
 use tokio::sync::{broadcast::Receiver, mpsc::Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::{
     config::SharedCoreConfig,
@@ -13,7 +13,13 @@ use crate::{
     twitch::{
         actions::TwitchAction,
         context::TwitchWebsocketContext,
-        handlers::{event_loop::websocket_event_loop, welcome_message::handle_welcome_message},
+        handlers::{
+            incoming_message::handle_incoming_message,
+            message_commands::handle_command_message,
+            send_message::handle_send_message,
+            welcome_message::{handle_channel_join, handle_welcome_message},
+        },
+        models::ReceivedTwitchMessage,
     },
 };
 
@@ -57,7 +63,7 @@ impl TwitchWebsocketThread {
     ) -> Self {
         Self {
             config,
-            context: Default::default(),
+            context: TwitchWebsocketContext::default(),
             tx,
             rx,
         }
@@ -124,16 +130,64 @@ impl TwitchWebsocketThread {
     }
 
     async fn run(&mut self) -> Result<()> {
-        let stream = self.connect().await?;
-        websocket_event_loop(
-            self.config.clone(),
-            self.tx.clone(),
-            self.rx,
-            stream,
-            self.context.clone(),
-        )
-        .await?;
+        let mut stream = self.connect().await?;
 
-        Ok(())
+        loop {
+            tokio::select! {
+                biased;
+
+                Ok(action) = self.rx.recv() => {
+                    match action {
+                        TwitchAction::Message(message) => {
+                            if let Some(command) = message.strip_prefix('/') {
+                                if let Err(err) = handle_command_message(&self.context, &self.tx, command).await {
+                                    error!("Failed to handle Twitch message command from terminal: {err}");
+                                    self.tx.send(DataBuilder::twitch(format!("Failed to handle Twitch message command from terminal: {err}"))).await?;
+                                }
+                            }
+                            else if let Err(err) = handle_send_message(&self.context, message).await {
+                                error!("Failed to send Twitch message from terminal: {err}");
+                            }
+                        },
+                        TwitchAction::JoinChannel(channel_name) => {
+                            if let Err(err) = handle_channel_join(&mut self.context, &self.tx, channel_name, false).await {
+                                error!("Joining channel failed: {err}");
+                            }
+                        },
+                    }
+                }
+                Some(message) = stream.next() => {
+                    match message {
+                        Ok(message) => {
+                            let Message::Text(message_text) = message else {
+                                continue;
+                            };
+
+                            let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
+                                Ok(received_message) => received_message,
+                                Err(err) => {
+                                    error!("Error when deserializing received message: {err}");
+                                    continue;
+                                }
+                            };
+
+                            if let Err(err) = handle_incoming_message(
+                                self.config.clone(),
+                                &self.context,
+                                &self.tx,
+                                received_message,
+                                self.context.is_emotes_enabled(),
+                            ).await {
+                                error!("Error when handling incoming message: {err}");
+                            }
+                        }
+                        Err(err) => {
+                            error!("Twitch connection error encountered: {err}, attempting to reconnect.");
+                        }
+                    }
+                }
+                else => {}
+            };
+        }
     }
 }
