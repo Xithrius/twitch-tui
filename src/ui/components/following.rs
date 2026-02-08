@@ -3,7 +3,7 @@ use tui::{Frame, layout::Rect};
 use super::utils::SearchWidget;
 use crate::{
     config::SharedCoreConfig,
-    handlers::user_input::events::Event,
+    events::Event,
     terminal::TerminalAction,
     twitch::{TwitchAction, api::following::Following},
     ui::components::Component,

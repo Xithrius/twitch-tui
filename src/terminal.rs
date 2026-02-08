@@ -7,11 +7,11 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
+    events::event_loop::{EventConfig, Events},
     handlers::{
         context::Context,
         data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
         state::State,
-        user_input::events::{EventConfig, Events},
     },
     twitch::TwitchAction,
     utils::sanitization::clean_channel_name,

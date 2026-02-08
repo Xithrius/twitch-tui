@@ -14,7 +14,7 @@ use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
     emotes::{SharedEmotes, load_picker_emote},
-    handlers::user_input::events::Event,
+    events::Event,
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{

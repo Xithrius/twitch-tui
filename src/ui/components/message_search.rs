@@ -4,7 +4,7 @@ use tui::{Frame, layout::Rect};
 
 use crate::{
     config::SharedCoreConfig,
-    handlers::user_input::events::{Event, Key},
+    events::{Event, Key},
     terminal::TerminalAction,
     ui::{
         components::{Component, utils::InputWidget},

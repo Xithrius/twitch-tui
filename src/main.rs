@@ -33,6 +33,7 @@ mod cli;
 mod commands;
 mod config;
 mod emotes;
+mod events;
 mod handlers;
 mod logging;
 mod terminal;

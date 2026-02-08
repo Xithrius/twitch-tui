@@ -14,12 +14,12 @@ use tui::{
 use crate::{
     config::SharedCoreConfig,
     emotes::{Emotes, SharedEmotes},
+    events::Event,
     handlers::{
         data::MessageData,
         filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
-        user_input::events::Event,
     },
     terminal::TerminalAction,
     ui::components::{Component, Components},

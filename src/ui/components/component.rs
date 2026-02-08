@@ -4,10 +4,8 @@ use tui::{Frame, layout::Rect};
 use crate::{
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    handlers::{
-        context::SharedMessages, filters::SharedFilters, storage::SharedStorage,
-        user_input::events::Event,
-    },
+    events::Event,
+    handlers::{context::SharedMessages, filters::SharedFilters, storage::SharedStorage},
     terminal::TerminalAction,
     ui::components::{
         ChatWidget, DashboardWidget, DebugWidget, ErrorWidget, HelpWidget, StateTabsWidget,

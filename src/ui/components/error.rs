@@ -8,7 +8,7 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    handlers::user_input::events::Event,
+    events::Event,
     terminal::TerminalAction,
     ui::components::Component,
     utils::styles::{NO_COLOR, TEXT_DARK_STYLE},

@@ -5,7 +5,8 @@ use tui::{Frame, layout::Rect};
 use crate::{
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    handlers::{storage::SharedStorage, user_input::events::Event},
+    events::Event,
+    handlers::storage::SharedStorage,
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{

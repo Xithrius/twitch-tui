@@ -18,7 +18,8 @@ use tui::{
 use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
-    handlers::{storage::SharedStorage, user_input::events::Event},
+    events::Event,
+    handlers::storage::SharedStorage,
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{

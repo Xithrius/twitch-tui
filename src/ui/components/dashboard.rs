@@ -10,11 +10,8 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    handlers::{
-        state::State,
-        storage::SharedStorage,
-        user_input::events::{Event, Key, get_keybind_text},
-    },
+    events::{Event, Key, get_keybind_text},
+    handlers::{state::State, storage::SharedStorage},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::components::{ChannelSwitcherWidget, Component, FollowingWidget},
