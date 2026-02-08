@@ -14,9 +14,8 @@ use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
     emotes::{SharedEmotes, load_picker_emote},
-    events::Event,
+    events::{Event, TwitchAction},
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::{
         components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,

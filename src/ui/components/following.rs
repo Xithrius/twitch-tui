@@ -3,9 +3,9 @@ use tui::{Frame, layout::Rect};
 use super::utils::SearchWidget;
 use crate::{
     config::SharedCoreConfig,
-    events::Event,
+    events::{Event, TwitchAction},
     terminal::TerminalAction,
-    twitch::{TwitchAction, api::following::Following},
+    twitch::api::following::Following,
     ui::components::Component,
     // utils::sanitization::clean_channel_name,
 };

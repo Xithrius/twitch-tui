@@ -1,4 +1,3 @@
-pub mod actions;
 pub mod api;
 pub mod badges;
 pub mod channels;
@@ -11,5 +10,3 @@ pub mod websocket;
 
 #[cfg(test)]
 mod tests;
-
-pub use actions::TwitchAction;

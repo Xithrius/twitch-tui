@@ -17,7 +17,11 @@ pub enum Event {
 
 pub enum InternalEvent {}
 
-pub enum TwitchAction {}
+#[derive(Debug, Clone)]
+pub enum TwitchAction {
+    Message(String),
+    JoinChannel(String),
+}
 
 pub enum TwitchNotification {
     Message(RawMessageData),

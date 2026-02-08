@@ -10,10 +10,9 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, Key, get_keybind_text},
+    events::{Event, Key, TwitchAction, get_keybind_text},
     handlers::{state::State, storage::SharedStorage},
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::components::{ChannelSwitcherWidget, Component, FollowingWidget},
     utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };

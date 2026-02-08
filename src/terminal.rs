@@ -5,13 +5,12 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
-    events::{Events, TwitchNotification},
+    events::{Events, TwitchAction, TwitchNotification},
     handlers::{
         context::Context,
         data::{KNOWN_CHATTERS, MessageData},
         state::State,
     },
-    twitch::TwitchAction,
     utils::sanitization::clean_channel_name,
 };
 

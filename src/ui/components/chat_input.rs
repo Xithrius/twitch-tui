@@ -5,10 +5,9 @@ use tui::{Frame, layout::Rect};
 use crate::{
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    events::Event,
+    events::{Event, TwitchAction},
     handlers::storage::SharedStorage,
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::{
         components::{Component, EmotePickerWidget, utils::InputWidget},
         statics::{SUPPORTED_COMMANDS, TWITCH_MESSAGE_LIMIT},

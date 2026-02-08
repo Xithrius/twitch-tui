@@ -17,9 +17,8 @@ use tui::{
 use super::{InputWidget, popup_area};
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, Key},
+    events::{Event, Key, TwitchAction},
     terminal::TerminalAction,
-    twitch::TwitchAction,
     ui::components::{Component, ErrorWidget},
     utils::{
         sanitization::clean_channel_name,

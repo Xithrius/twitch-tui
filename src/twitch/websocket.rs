@@ -6,10 +6,9 @@ use tracing::{debug, error, info};
 
 use crate::{
     config::SharedCoreConfig,
-    events::TwitchNotification,
+    events::{TwitchAction, TwitchNotification},
     handlers::{data::DataBuilder, state::State},
     twitch::{
-        actions::TwitchAction,
         context::TwitchWebsocketContext,
         handlers::{
             incoming_message::handle_incoming_message,
