@@ -22,11 +22,11 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use logging::initialize_logging;
 use tokio::sync::{broadcast, mpsc};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 use crate::{
     cli::args::Cli, config::core::CoreConfig, emotes::initialize_emote_decoder,
-    handlers::context::Context,
+    handlers::context::Context, twitch::websocket::TwitchWebsocket,
 };
 
 mod cli;
@@ -67,13 +67,7 @@ async fn main() -> Result<()> {
         None
     };
 
-    let cloned_config = config.clone();
-    tokio::task::spawn(async move {
-        let task = twitch::twitch_websocket(cloned_config, twitch_tx, twitch_rx);
-        if let Err(err) = Box::pin(task).await {
-            error!("Error when running Twitch websocket client: {err}");
-        }
-    });
+    TwitchWebsocket::new(config.clone(), twitch_tx, twitch_rx);
 
     terminal::ui_driver(
         config.clone(),

@@ -14,4 +14,3 @@ pub mod websocket;
 mod tests;
 
 pub use actions::TwitchAction;
-pub use websocket::twitch_websocket;

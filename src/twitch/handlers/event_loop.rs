@@ -15,21 +15,19 @@ use crate::{
             send_message::handle_send_message, welcome_message::handle_channel_join,
         },
         models::ReceivedTwitchMessage,
+        websocket::WebsocketStream,
     },
 };
-
-type WebsocketStream = futures::stream::SplitStream<
-    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
->;
 
 pub async fn websocket_event_loop(
     config: SharedCoreConfig,
     tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
     mut stream: WebsocketStream,
-    emotes_enabled: bool,
     mut context: TwitchWebsocketContext,
 ) -> Result<()> {
+    let emotes_enabled = context.is_emotes_enabled();
+
     loop {
         tokio::select! {
             biased;
