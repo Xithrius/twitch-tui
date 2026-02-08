@@ -73,7 +73,6 @@ pub async fn handle_incoming_message(
     context: &TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     received_message: ReceivedTwitchMessage,
-    emotes_enabled: bool,
 ) -> Result<()> {
     // Don't allow messages from other channels go through
     if let Some(condition) = received_message.subscription_condition() {
@@ -99,7 +98,7 @@ pub async fn handle_incoming_message(
         .message_text()
         .context("Could not find message text")?;
     let (msg, highlight) = parse_message_action(&message_text);
-    let received_emotes = if emotes_enabled {
+    let received_emotes = if context.is_emotes_enabled() {
         event.emote_fragments()
     } else {
         Option::default()

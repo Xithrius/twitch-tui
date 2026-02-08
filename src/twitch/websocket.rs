@@ -137,50 +137,15 @@ impl TwitchWebsocketThread {
                 biased;
 
                 Ok(action) = self.rx.recv() => {
-                    match action {
-                        TwitchAction::Message(message) => {
-                            if let Some(command) = message.strip_prefix('/') {
-                                if let Err(err) = handle_command_message(&self.context, &self.tx, command).await {
-                                    error!("Failed to handle Twitch message command from terminal: {err}");
-                                    self.tx.send(DataBuilder::twitch(format!("Failed to handle Twitch message command from terminal: {err}"))).await?;
-                                }
-                            }
-                            else if let Err(err) = handle_send_message(&self.context, message).await {
-                                error!("Failed to send Twitch message from terminal: {err}");
-                            }
-                        },
-                        TwitchAction::JoinChannel(channel_name) => {
-                            if let Err(err) = handle_channel_join(&mut self.context, &self.tx, channel_name, false).await {
-                                error!("Joining channel failed: {err}");
-                            }
-                        },
+                    if let Err(err) = self.handle_twitch_action(action).await {
+                        error!("Failed to handle twitch action: {err}");
                     }
                 }
                 Some(message) = stream.next() => {
                     match message {
-                        Ok(message) => {
-                            let Message::Text(message_text) = message else {
-                                continue;
-                            };
-
-                            let received_message = match serde_json::from_str::<ReceivedTwitchMessage>(&message_text) {
-                                Ok(received_message) => received_message,
-                                Err(err) => {
-                                    error!("Error when deserializing received message: {err}");
-                                    continue;
-                                }
-                            };
-
-                            if let Err(err) = handle_incoming_message(
-                                self.config.clone(),
-                                &self.context,
-                                &self.tx,
-                                received_message,
-                                self.context.is_emotes_enabled(),
-                            ).await {
-                                error!("Error when handling incoming message: {err}");
-                            }
-                        }
+                        Ok(msg) => if let Err(err) = self.handle_websocket_stream_message(msg).await {
+                            error!("Failed to handle websocket message: {err}");
+                        },
                         Err(err) => {
                             error!("Twitch connection error encountered: {err}, attempting to reconnect.");
                         }
@@ -189,5 +154,46 @@ impl TwitchWebsocketThread {
                 else => {}
             };
         }
+    }
+
+    async fn handle_twitch_action(&mut self, action: TwitchAction) -> Result<()> {
+        match action {
+            TwitchAction::Message(message) => {
+                if let Some(command) = message.strip_prefix('/') {
+                    if let Err(err) = handle_command_message(&self.context, &self.tx, command).await
+                    {
+                        self.tx
+                            .send(DataBuilder::twitch(format!(
+                                "Failed to handle Twitch message command from terminal: {err}"
+                            )))
+                            .await?;
+                        return Err(err);
+                    }
+                }
+
+                handle_send_message(&self.context, message).await?;
+            }
+            TwitchAction::JoinChannel(channel_name) => {
+                handle_channel_join(&mut self.context, &self.tx, channel_name, false).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn handle_websocket_stream_message(&self, message: Message) -> Result<()> {
+        let Message::Text(message_text) = message else {
+            return Ok(());
+        };
+
+        let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message_text)?;
+
+        handle_incoming_message(
+            self.config.clone(),
+            &self.context,
+            &self.tx,
+            received_message,
+        )
+        .await
     }
 }
