@@ -8,14 +8,9 @@ pub mod storage;
 pub mod terminal;
 pub mod twitch;
 
-pub use crate::handlers::config::{
+pub use crate::config::{
     core::{CoreConfig, SharedCoreConfig},
-    filters::FiltersConfig,
     frontend::{CursorType, FrontendConfig, Palette, Theme},
-    keybinds::KeybindsConfig,
     logs::LogLevel,
-    persistence::{persist_config, persist_default_config},
-    storage::StorageConfig,
-    terminal::TerminalConfig,
     twitch::TwitchConfig,
 };

@@ -15,7 +15,7 @@ use tui::{
     },
 };
 
-use crate::handlers::config::{CursorType, FrontendConfig};
+use crate::config::{CursorType, FrontendConfig};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResetCursorShape;

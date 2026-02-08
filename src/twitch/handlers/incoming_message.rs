@@ -3,11 +3,9 @@ use futures::StreamExt;
 use tokio::sync::mpsc::Sender;
 
 use crate::{
+    config::SharedCoreConfig,
     emotes::get_twitch_emote,
-    handlers::{
-        config::SharedCoreConfig,
-        data::{DataBuilder, TwitchToTerminalAction},
-    },
+    handlers::data::{DataBuilder, TwitchToTerminalAction},
     twitch::{
         api::subscriptions::Subscription,
         badges::retrieve_user_badges,

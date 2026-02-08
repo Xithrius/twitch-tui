@@ -12,8 +12,9 @@ use tui::{
 
 use super::utils::popup_area;
 use crate::{
+    config::SharedCoreConfig,
     emotes::{SharedEmotes, load_picker_emote},
-    handlers::{config::SharedCoreConfig, user_input::events::Event},
+    handlers::user_input::events::Event,
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{

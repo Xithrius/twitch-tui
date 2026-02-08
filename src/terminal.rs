@@ -5,9 +5,9 @@ use tracing::{info, warn};
 
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
+    config::SharedCoreConfig,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
-        config::SharedCoreConfig,
         context::Context,
         data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
         state::State,

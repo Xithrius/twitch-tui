@@ -3,10 +3,8 @@ use std::fmt::Display;
 use tui::{Frame, layout::Rect};
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
+    config::SharedCoreConfig,
+    handlers::user_input::events::{Event, Key},
     terminal::TerminalAction,
     ui::{
         components::{Component, utils::InputWidget},

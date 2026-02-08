@@ -3,12 +3,13 @@ use std::fmt::Display;
 use tui::{Frame, layout::Rect};
 
 use crate::{
+    config::SharedCoreConfig,
     emotes::SharedEmotes,
-    handlers::{config::SharedCoreConfig, storage::SharedStorage, user_input::events::Event},
+    handlers::{storage::SharedStorage, user_input::events::Event},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::{
-        components::{Component, emote_picker::EmotePickerWidget, utils::InputWidget},
+        components::{Component, EmotePickerWidget, utils::InputWidget},
         statics::{SUPPORTED_COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
     utils::text::first_similarity,

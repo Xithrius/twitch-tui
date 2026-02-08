@@ -8,16 +8,20 @@ use color_eyre::eyre::{Error, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    emotes::support_graphics_protocol,
-    handlers::{
+    cli::{
         args::{Cli, merge_args_into_config},
-        config::{
-            FiltersConfig, FrontendConfig, KeybindsConfig, StorageConfig, TerminalConfig,
-            TwitchConfig, persist_config, persist_default_config,
-            persistence::{get_cache_dir, get_config_dir},
-        },
         interactive::interactive_config,
     },
+    config::{
+        filters::FiltersConfig,
+        frontend::FrontendConfig,
+        keybinds::KeybindsConfig,
+        persistence::{get_cache_dir, get_config_dir, persist_config, persist_default_config},
+        storage::StorageConfig,
+        terminal::TerminalConfig,
+        twitch::TwitchConfig,
+    },
+    emotes::support_graphics_protocol,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

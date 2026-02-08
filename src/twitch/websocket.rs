@@ -5,8 +5,8 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use tracing::{debug, info};
 
 use crate::{
+    config::SharedCoreConfig,
     handlers::{
-        config::SharedCoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
         state::State,
     },

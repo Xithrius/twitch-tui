@@ -16,10 +16,8 @@ use tui::{
 
 use super::{InputWidget, popup_area};
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
+    config::SharedCoreConfig,
+    handlers::user_input::events::{Event, Key},
     terminal::TerminalAction,
     twitch::TwitchAction,
     ui::components::{Component, ErrorWidget},

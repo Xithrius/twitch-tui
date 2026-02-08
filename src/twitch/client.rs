@@ -4,7 +4,7 @@ use color_eyre::Result;
 use reqwest::Client;
 
 use super::oauth::{TwitchOauth, get_twitch_client, get_twitch_client_oauth};
-use crate::handlers::config::TwitchConfig;
+use crate::config::TwitchConfig;
 
 pub struct TwitchClient {
     client: Client,

@@ -16,8 +16,8 @@ use tokio::sync::{
 use tracing::{error, info, warn};
 
 use crate::{
+    config::{CoreConfig, persistence::get_cache_dir},
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::config::{CoreConfig, persistence::get_cache_dir},
     utils::emotes::get_emote_offset,
 };
 

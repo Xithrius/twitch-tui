@@ -7,7 +7,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCoreConfig, user_input::events::Event},
+    config::SharedCoreConfig,
+    handlers::user_input::events::Event,
     terminal::TerminalAction,
     ui::components::Component,
     utils::{

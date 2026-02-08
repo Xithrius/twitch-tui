@@ -5,10 +5,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, get_keybind_text},
-    },
+    config::SharedCoreConfig,
+    handlers::user_input::events::{Event, get_keybind_text},
     terminal::TerminalAction,
     ui::{components::Component, statics::HELP_COLUMN_TITLES},
     utils::styles::{BOLD_STYLE, COLUMN_TITLE_STYLE},

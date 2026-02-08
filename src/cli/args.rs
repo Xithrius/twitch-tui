@@ -1,9 +1,12 @@
 use clap::{Parser, ValueEnum, builder::PossibleValue};
 
-use super::config::LogLevel;
-use crate::handlers::{
-    config::{CoreConfig, Palette, Theme},
-    state::State,
+use crate::{
+    config::{
+        core::CoreConfig,
+        frontend::{Palette, Theme},
+        logs::LogLevel,
+    },
+    handlers::state::State,
 };
 
 impl ValueEnum for Palette {

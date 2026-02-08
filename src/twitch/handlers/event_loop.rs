@@ -5,10 +5,8 @@ use tokio_tungstenite::tungstenite::protocol::Message;
 use tracing::error;
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        data::{DataBuilder, TwitchToTerminalAction},
-    },
+    config::SharedCoreConfig,
+    handlers::data::{DataBuilder, TwitchToTerminalAction},
     twitch::{
         actions::TwitchAction,
         context::TwitchWebsocketContext,

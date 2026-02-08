@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use super::TWITCH_API_BASE_URL;
 use crate::{
-    handlers::config::{SharedCoreConfig, TwitchConfig},
+    config::{SharedCoreConfig, TwitchConfig},
     twitch::oauth::{get_twitch_client, get_twitch_client_oauth},
 };
 

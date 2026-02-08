@@ -8,17 +8,16 @@ use tui::{
     widgets::{List, ListItem, Paragraph},
 };
 
-use super::following::FollowingWidget;
 use crate::{
+    config::SharedCoreConfig,
     handlers::{
-        config::SharedCoreConfig,
         state::State,
         storage::SharedStorage,
         user_input::events::{Event, Key, get_keybind_text},
     },
     terminal::TerminalAction,
     twitch::TwitchAction,
-    ui::components::{ChannelSwitcherWidget, Component},
+    ui::components::{ChannelSwitcherWidget, Component, FollowingWidget},
     utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };
 

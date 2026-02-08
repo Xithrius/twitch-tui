@@ -12,9 +12,9 @@ use tui::{
 };
 
 use crate::{
+    config::SharedCoreConfig,
     emotes::{Emotes, SharedEmotes},
     handlers::{
-        config::SharedCoreConfig,
         data::MessageData,
         filters::Filters,
         state::State,

@@ -25,11 +25,13 @@ use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info, warn};
 
 use crate::{
-    emotes::initialize_emote_decoder,
-    handlers::{args::Cli, config::CoreConfig, context::Context},
+    cli::args::Cli, config::core::CoreConfig, emotes::initialize_emote_decoder,
+    handlers::context::Context,
 };
 
+mod cli;
 mod commands;
+mod config;
 mod emotes;
 mod handlers;
 mod logging;

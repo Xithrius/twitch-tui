@@ -11,7 +11,7 @@ use color_eyre::Result;
 use directories::ProjectDirs;
 use tokio::{runtime::Handle, task};
 
-use crate::handlers::config::CoreConfig;
+use crate::config::CoreConfig;
 
 static PACKAGE_NAME: LazyLock<String> = LazyLock::new(|| env!("CARGO_PKG_NAME").to_lowercase());
 static BINARY_NAME: LazyLock<String> = LazyLock::new(|| env!("CARGO_BIN_NAME").to_lowercase());
