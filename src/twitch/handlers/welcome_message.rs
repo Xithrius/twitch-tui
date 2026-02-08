@@ -8,7 +8,8 @@ use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::Utf8Bytes;
 
 use crate::{
-    handlers::data::{DataBuilder, TwitchToTerminalAction},
+    events::TwitchNotification,
+    handlers::data::DataBuilder,
     twitch::{
         api::{
             channels::get_channel_id,
@@ -28,7 +29,7 @@ use crate::{
 /// Handling either the terminal joining a new channel, or the application just starting up
 pub async fn handle_channel_join(
     context: &mut TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
+    tx: &Sender<TwitchNotification>,
     channel_name: String,
     first_channel: bool,
 ) -> Result<()> {
@@ -93,7 +94,7 @@ pub async fn handle_channel_join(
 
 pub async fn handle_welcome_message(
     context: &mut TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
+    tx: &Sender<TwitchNotification>,
     message: Utf8Bytes,
 ) -> Result<()> {
     let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message)

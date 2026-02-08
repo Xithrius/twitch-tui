@@ -5,10 +5,10 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
-    events::Events,
+    events::{Events, TwitchNotification},
     handlers::{
         context::Context,
-        data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
+        data::{KNOWN_CHATTERS, MessageData},
         state::State,
     },
     twitch::TwitchAction,
@@ -31,7 +31,7 @@ pub async fn ui_driver(
     config: SharedCoreConfig,
     mut context: Context,
     tx: Sender<TwitchAction>,
-    mut rx: Receiver<TwitchToTerminalAction>,
+    mut rx: Receiver<TwitchNotification>,
     mut drx: Option<Receiver<Result<DecodedEmote, String>>>,
 ) {
     info!("Started UI driver.");
@@ -88,7 +88,7 @@ pub async fn ui_driver(
 
         if let Ok(msg) = rx.try_recv() {
             match msg {
-                TwitchToTerminalAction::Message(m) => {
+                TwitchNotification::Message(m) => {
                     let message_data = MessageData::from_twitch_message(m, &context.emotes);
                     if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
                         && config.twitch.username != message_data.author
@@ -105,14 +105,14 @@ pub async fn ui_driver(
                         context.components.chat.scroll_offset.up();
                     }
                 }
-                TwitchToTerminalAction::ClearChat(user_id) => {
+                TwitchNotification::ClearChat(user_id) => {
                     if let Some(user) = user_id {
                         context.purge_user_messages(user.as_str());
                     } else {
                         context.clear_messages();
                     }
                 }
-                TwitchToTerminalAction::DeleteMessage(message_id) => {
+                TwitchNotification::DeleteMessage(message_id) => {
                     context.remove_message_with(message_id.as_str());
                 }
             }

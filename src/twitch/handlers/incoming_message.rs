@@ -5,7 +5,8 @@ use tokio::sync::mpsc::Sender;
 use crate::{
     config::SharedCoreConfig,
     emotes::get_twitch_emote,
-    handlers::data::{DataBuilder, TwitchToTerminalAction},
+    events::TwitchNotification,
+    handlers::data::DataBuilder,
     twitch::{
         api::subscriptions::Subscription,
         badges::retrieve_user_badges,
@@ -16,7 +17,7 @@ use crate::{
 };
 
 async fn handle_chat_notification(
-    tx: &Sender<TwitchToTerminalAction>,
+    tx: &Sender<TwitchNotification>,
     event: ReceivedTwitchEvent,
     subscription_type: Subscription,
 ) -> Result<()> {
@@ -28,7 +29,7 @@ async fn handle_chat_notification(
             }
         }
         Subscription::Clear => {
-            tx.send(TwitchToTerminalAction::ClearChat(None)).await?;
+            tx.send(TwitchNotification::ClearChat(None)).await?;
             tx.send(DataBuilder::twitch(
                 "Chat was cleared for non-Moderators viewing this room".to_string(),
             ))
@@ -36,15 +37,13 @@ async fn handle_chat_notification(
         }
         Subscription::ClearUserMessages => {
             if let Some(target_user_id) = event.target_user_id() {
-                tx.send(TwitchToTerminalAction::ClearChat(Some(
-                    target_user_id.clone(),
-                )))
-                .await?;
+                tx.send(TwitchNotification::ClearChat(Some(target_user_id.clone())))
+                    .await?;
             }
         }
         Subscription::MessageDelete => {
             if let Some(message_id) = event.message_id() {
-                tx.send(TwitchToTerminalAction::DeleteMessage(message_id.clone()))
+                tx.send(TwitchNotification::DeleteMessage(message_id.clone()))
                     .await?;
             }
         }
@@ -71,7 +70,7 @@ async fn handle_chat_notification(
 pub async fn handle_incoming_message(
     config: SharedCoreConfig,
     context: &TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
+    tx: &Sender<TwitchNotification>,
     received_message: ReceivedTwitchMessage,
 ) -> Result<()> {
     // Don't allow messages from other channels go through

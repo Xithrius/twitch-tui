@@ -5,7 +5,8 @@ use tokio::sync::mpsc::Sender;
 use tracing::debug;
 
 use crate::{
-    handlers::data::{DataBuilder, TwitchToTerminalAction},
+    events::TwitchNotification,
+    handlers::data::DataBuilder,
     twitch::{
         api::{
             channel_information::{
@@ -34,7 +35,7 @@ use crate::{
 #[allow(clippy::cognitive_complexity)]
 pub async fn handle_command_message(
     context: &TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
+    tx: &Sender<TwitchNotification>,
     user_command: &str,
 ) -> Result<()> {
     let Ok(command) = TwitchCommand::from_str(user_command) else {

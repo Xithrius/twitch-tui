@@ -4,11 +4,11 @@ use color_eyre::{Result, eyre::Context};
 use tokio::sync::mpsc::Sender;
 
 use super::api::chat_settings::TwitchChatSettingsResponse;
-use crate::handlers::data::{DataBuilder, TwitchToTerminalAction};
+use crate::{events::TwitchNotification, handlers::data::DataBuilder};
 
 pub async fn handle_roomstate(
     chat_settings: &TwitchChatSettingsResponse,
-    tx: &Sender<TwitchToTerminalAction>,
+    tx: &Sender<TwitchNotification>,
 ) -> Result<()> {
     let mut room_state = String::new();
 

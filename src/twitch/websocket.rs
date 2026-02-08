@@ -6,10 +6,8 @@ use tracing::{debug, error, info};
 
 use crate::{
     config::SharedCoreConfig,
-    handlers::{
-        data::{DataBuilder, TwitchToTerminalAction},
-        state::State,
-    },
+    events::TwitchNotification,
+    handlers::{data::DataBuilder, state::State},
     twitch::{
         actions::TwitchAction,
         context::TwitchWebsocketContext,
@@ -30,7 +28,7 @@ pub struct TwitchWebsocket {
 impl TwitchWebsocket {
     pub fn new(
         config: SharedCoreConfig,
-        tx: Sender<TwitchToTerminalAction>,
+        tx: Sender<TwitchNotification>,
         rx: Receiver<TwitchAction>,
     ) -> Self {
         let mut actor = TwitchWebsocketThread::new(config, tx, rx);
@@ -51,14 +49,14 @@ pub type WebsocketStream = futures::stream::SplitStream<
 pub struct TwitchWebsocketThread {
     config: SharedCoreConfig,
     context: TwitchWebsocketContext,
-    tx: Sender<TwitchToTerminalAction>,
+    tx: Sender<TwitchNotification>,
     rx: Receiver<TwitchAction>,
 }
 
 impl TwitchWebsocketThread {
     fn new(
         config: SharedCoreConfig,
-        tx: Sender<TwitchToTerminalAction>,
+        tx: Sender<TwitchNotification>,
         rx: Receiver<TwitchAction>,
     ) -> Self {
         Self {
