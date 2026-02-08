@@ -191,7 +191,7 @@ impl Component for ChannelSwitcherWidget {
                 Block::default()
                     .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .highlight_style(
                 Style::default()
@@ -229,7 +229,7 @@ impl Component for ChannelSwitcherWidget {
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .title(title_line(&title, Style::default()))
             .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Right);
@@ -246,7 +246,7 @@ impl Component for ChannelSwitcherWidget {
     #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.selection.clone();
+            let keybinds = self.config.keybinds.selection.clone();
             match key {
                 key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
@@ -260,7 +260,6 @@ impl Component for ChannelSwitcherWidget {
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.delete_item.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
-                        // TODO: Make this just two if lets
                         if let Some(filtered) = self.filtered_channels.clone() {
                             if let Some(value) = filtered.get(index) {
                                 self.storage
@@ -288,19 +287,13 @@ impl Component for ChannelSwitcherWidget {
                                 let selected_channel = self.search_input.to_string();
 
                                 if !selected_channel.is_empty() {
-                                    if self.config.borrow().storage.channels {
+                                    if self.config.storage.channels {
                                         self.storage
                                             .borrow_mut()
                                             .add("channels", selected_channel.clone());
                                     }
 
                                     self.search_input.clear();
-
-                                    self.config
-                                        .borrow_mut()
-                                        .twitch
-                                        .channel
-                                        .clone_from(&selected_channel);
 
                                     return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
                                         selected_channel,
@@ -313,19 +306,13 @@ impl Component for ChannelSwitcherWidget {
                             channels.get(i).unwrap()
                         };
 
-                        if self.config.borrow().storage.channels {
+                        if self.config.storage.channels {
                             self.storage
                                 .borrow_mut()
                                 .add("channels", selected_channel.clone());
                         }
 
                         self.search_input.clear();
-
-                        self.config
-                            .borrow_mut()
-                            .twitch
-                            .channel
-                            .clone_from(selected_channel);
 
                         debug!(
                             "Joining previously joined channel {:?}",
@@ -341,19 +328,13 @@ impl Component for ChannelSwitcherWidget {
 
                         let selected_channel = self.search_input.to_string();
 
-                        if self.config.borrow().storage.channels {
+                        if self.config.storage.channels {
                             self.storage
                                 .borrow_mut()
                                 .add("channels", selected_channel.clone());
                         }
 
                         self.search_input.clear();
-
-                        self.config
-                            .borrow_mut()
-                            .twitch
-                            .channel
-                            .clone_from(&selected_channel);
 
                         info!("Joining new channel {selected_channel:?}");
 

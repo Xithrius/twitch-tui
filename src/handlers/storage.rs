@@ -31,10 +31,8 @@ pub struct StorageItem {
 
 impl Storage {
     pub fn new(config: &SharedCoreConfig) -> Self {
-        let core_config = &config.borrow();
-        let twitch_channel = &core_config.twitch.channel;
-        let storage_config = core_config.storage.clone();
-        // TODO: Storage path should be configurable
+        let twitch_channel = &config.twitch.channel;
+        let storage_config = config.storage.clone();
         let storage_parent_path = get_data_dir();
         if !storage_parent_path.exists() {
             create_dir_all(&storage_parent_path).unwrap();

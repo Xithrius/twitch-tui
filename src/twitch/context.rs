@@ -17,6 +17,8 @@ pub struct TwitchWebsocketContext {
     session_id: Option<String>,
     /// Which channel ID the client is currently connected to
     channel_id: Option<String>,
+    /// The current channel name
+    channel_name: Option<String>,
 
     /// Are emotes enabled right now?
     emotes_enabled: bool,
@@ -50,6 +52,10 @@ impl TwitchWebsocketContext {
         self.channel_id.as_ref()
     }
 
+    pub const fn channel_name(&self) -> Option<&String> {
+        self.channel_name.as_ref()
+    }
+
     pub fn set_twitch_client(&mut self, client: Option<Client>) {
         self.client = client;
     }
@@ -68,6 +74,10 @@ impl TwitchWebsocketContext {
 
     pub fn set_channel_id(&mut self, channel_id: Option<String>) {
         self.channel_id = channel_id;
+    }
+
+    pub fn set_channel_name(&mut self, channel_name: Option<String>) {
+        self.channel_name = channel_name;
     }
 
     pub const fn set_emotes(&mut self, state: bool) {

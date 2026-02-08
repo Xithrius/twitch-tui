@@ -43,14 +43,27 @@ impl DebugWidget {
     }
 
     fn get_config_values(&self) -> Vec<(String, Vec<(String, String)>)> {
-        let c = self.config.borrow().clone();
-
         vec![
-            ("Twitch Config".to_string(), c.twitch.into()),
-            ("Terminal Config".to_string(), c.terminal.into()),
-            ("Storage Config".to_string(), c.storage.into()),
-            ("Filter Config".to_string(), c.filters.into()),
-            ("Frontend Config".to_string(), c.frontend.into()),
+            (
+                "Twitch Config".to_string(),
+                self.config.twitch.clone().into(),
+            ),
+            (
+                "Terminal Config".to_string(),
+                self.config.terminal.clone().into(),
+            ),
+            (
+                "Storage Config".to_string(),
+                self.config.storage.clone().into(),
+            ),
+            (
+                "Filter Config".to_string(),
+                self.config.filters.clone().into(),
+            ),
+            (
+                "Frontend Config".to_string(),
+                self.config.frontend.clone().into(),
+            ),
         ]
     }
 }
@@ -88,7 +101,7 @@ impl Component for DebugWidget {
             Block::default()
                 .title(title_line(&title_binding, *TITLE_STYLE))
                 .borders(Borders::ALL)
-                .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                .border_type(self.config.frontend.border_type.clone().into()),
         );
 
         f.render_widget(Clear, r);
@@ -96,14 +109,14 @@ impl Component for DebugWidget {
 
         let title_binding = self
             .startup_time
-            .format(&self.config.borrow().frontend.datetime_format)
+            .format(&self.config.frontend.datetime_format)
             .to_string();
 
         let title = [TitleStyle::Combined("Startup time", &title_binding)];
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .title(title_line(&title, *TITLE_STYLE))
             .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Left);
@@ -115,7 +128,7 @@ impl Component for DebugWidget {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.normal.clone();
+            let keybinds = self.config.keybinds.normal.clone();
             match key {
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 key if keybinds.back_to_previous_window.contains(key) => {

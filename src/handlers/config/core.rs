@@ -1,8 +1,7 @@
 use std::{
-    cell::RefCell,
     env,
     fs::{create_dir_all, read_to_string},
-    rc::Rc,
+    sync::Arc,
 };
 
 use color_eyre::eyre::{Error, Result, bail};
@@ -38,7 +37,7 @@ pub struct CoreConfig {
     pub keybinds: KeybindsConfig,
 }
 
-pub type SharedCoreConfig = Rc<RefCell<CoreConfig>>;
+pub type SharedCoreConfig = Arc<CoreConfig>;
 
 impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {

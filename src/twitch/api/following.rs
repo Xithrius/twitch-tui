@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use super::TWITCH_API_BASE_URL;
 use crate::{
-    handlers::config::{CoreConfig, TwitchConfig},
+    handlers::config::{SharedCoreConfig, TwitchConfig},
     twitch::oauth::{get_twitch_client, get_twitch_client_oauth},
 };
 
@@ -92,12 +92,12 @@ impl From<LiveChannelList> for FollowingChannelList {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct Following {
-    pub config: CoreConfig,
+    pub config: SharedCoreConfig,
     list: FollowingChannelList,
 }
 
 impl Following {
-    pub fn new(config: CoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig) -> Self {
         Self {
             config,
             list: FollowingChannelList::default(),

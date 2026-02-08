@@ -204,7 +204,7 @@ where
                 Block::default()
                     .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .highlight_style(if *NO_COLOR {
                 Style::default()
@@ -245,7 +245,7 @@ where
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .title(title_line(&title, Style::default()))
             .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Right);
@@ -268,7 +268,7 @@ where
         }
 
         if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.selection.clone();
+            let keybinds = self.config.keybinds.selection.clone();
             match key {
                 key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {

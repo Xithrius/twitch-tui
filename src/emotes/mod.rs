@@ -17,10 +17,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::{
-        config::{CoreConfig, persistence::get_cache_dir},
-        context::Context,
-    },
+    handlers::config::{CoreConfig, persistence::get_cache_dir},
     utils::emotes::get_emote_offset,
 };
 
@@ -291,10 +288,10 @@ pub fn overlay_emote(
 
 /// Initialize the emote decoder if emotes are enabled.
 /// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
+#[allow(clippy::type_complexity)]
 pub fn initialize_emote_decoder(
     config: &mut CoreConfig,
-    context: &Context,
-) -> Option<mpsc::Receiver<Result<DecodedEmote, String>>> {
+) -> Option<(mpsc::Receiver<Result<DecodedEmote, String>>, (f32, f32))> {
     if !config.frontend.is_emotes_enabled() {
         return None;
     }
@@ -303,12 +300,10 @@ pub fn initialize_emote_decoder(
     // as writing on stdout on a different thread can interfere.
     match tui::crossterm::terminal::window_size() {
         Ok(size) => {
-            context.emotes.cell_size.get_or_init(|| {
-                (
-                    f32::from(size.width / size.columns),
-                    f32::from(size.height / size.rows),
-                )
-            });
+            let cell_size = (
+                f32::from(size.width / size.columns),
+                f32::from(size.height / size.rows),
+            );
 
             let (decoder_tx, decoder_rx) = mpsc::channel(100);
             DECODE_EMOTE_SENDER.get_or_init(|| decoder_tx);
@@ -319,7 +314,7 @@ pub fn initialize_emote_decoder(
             // We cannot use tokio tasks here as it will create noticeable freezes.
             thread::spawn(move || decoder(decoder_rx, &decoded_tx));
 
-            Some(decoded_rx)
+            Some((decoded_rx, cell_size))
         }
         Err(e) => {
             config.frontend.twitch_emotes = false;

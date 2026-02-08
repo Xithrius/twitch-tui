@@ -149,7 +149,7 @@ impl<T: Clone> Component for InputWidget<T> {
 
         let block = Block::default()
             .borders(Borders::ALL)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .border_style(Style::default().fg(status_color))
             .title(title_line(
                 &binding,
@@ -203,7 +203,7 @@ impl<T: Clone> Component for InputWidget<T> {
                 ))
                 .title_position(TitlePosition::Bottom)
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-                .border_type(self.config.borrow().frontend.border_type.clone().into());
+                .border_type(self.config.frontend.border_type.clone().into());
 
             // This is only supposed to render on the very bottom line of the area.
             // If some rendering breaks for input boxes, this is a possible source.
@@ -214,7 +214,7 @@ impl<T: Clone> Component for InputWidget<T> {
 
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.insert.clone();
+            let keybinds = self.config.keybinds.insert.clone();
             match key {
                 key if keybinds.move_cursor_right.contains(key) => {
                     if self.input.next_pos(1).is_none() {

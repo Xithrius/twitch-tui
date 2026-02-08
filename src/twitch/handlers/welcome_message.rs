@@ -8,10 +8,7 @@ use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::Utf8Bytes;
 
 use crate::{
-    handlers::{
-        config::TwitchConfig,
-        data::{DataBuilder, TwitchToTerminalAction},
-    },
+    handlers::data::{DataBuilder, TwitchToTerminalAction},
     twitch::{
         api::{
             channels::get_channel_id,
@@ -30,7 +27,6 @@ use crate::{
 
 /// Handling either the terminal joining a new channel, or the application just starting up
 pub async fn handle_channel_join(
-    twitch_config: &mut TwitchConfig,
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     channel_name: String,
@@ -80,7 +76,7 @@ pub async fn handle_channel_join(
     context.set_event_subscriptions(new_subscriptions);
 
     // Set old channel to new channel
-    twitch_config.channel.clone_from(&channel_name);
+    context.set_channel_name(Some(channel_name.clone()));
     context.set_channel_id(Some(context_channel_id));
 
     // Notify frontend that new channel has been joined
@@ -96,7 +92,6 @@ pub async fn handle_channel_join(
 }
 
 pub async fn handle_welcome_message(
-    twitch_config: &mut TwitchConfig,
     context: &mut TwitchWebsocketContext,
     tx: &Sender<TwitchToTerminalAction>,
     message: Utf8Bytes,
@@ -117,7 +112,11 @@ pub async fn handle_welcome_message(
     let session_id = received_message.session_id();
     context.set_session_id(session_id.clone());
 
-    let channel_id = get_channel_id(&twitch_client, &twitch_config.channel).await?;
+    let channel_name = context
+        .channel_name()
+        .context("Could not retrieve context channel name")?
+        .clone();
+    let channel_id = get_channel_id(&twitch_client, &channel_name).await?;
 
     context.set_channel_id(Some(channel_id.clone()));
 
@@ -129,15 +128,9 @@ pub async fn handle_welcome_message(
 
     context.set_event_subscriptions(initial_event_subscriptions);
 
-    handle_channel_join(
-        twitch_config,
-        context,
-        tx,
-        twitch_config.channel.clone(),
-        true,
-    )
-    .await
-    .context("Failed to join first channel")?;
+    handle_channel_join(context, tx, channel_name, true)
+        .await
+        .context("Failed to join first channel")?;
 
     Ok(())
 }

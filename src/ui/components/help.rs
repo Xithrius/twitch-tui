@@ -28,7 +28,7 @@ impl HelpWidget {
         Self { config }
     }
     fn get_help_keybinds(&self) -> Vec<(&'static str, Vec<(String, &'static str)>)> {
-        let keybinds = self.config.borrow().keybinds.clone();
+        let keybinds = self.config.keybinds.clone();
         let dashboard_keybinds = vec![
             (
                 get_keybind_text(&keybinds.dashboard.join),
@@ -256,7 +256,7 @@ impl Component for HelpWidget {
                 Block::default()
                     .borders(Borders::ALL)
                     .title("[ Keybinds ]")
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .column_spacing(2);
 
@@ -266,7 +266,7 @@ impl Component for HelpWidget {
     // TODO: should be default impl if not for the config requirement
     async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.borrow().keybinds.selection.clone();
+            let keybinds = self.config.keybinds.selection.clone();
             match key {
                 key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
                 key if keybinds.back_to_previous_window.contains(key) => {

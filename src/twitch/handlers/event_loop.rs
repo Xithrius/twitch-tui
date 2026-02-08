@@ -6,7 +6,7 @@ use tracing::error;
 
 use crate::{
     handlers::{
-        config::CoreConfig,
+        config::SharedCoreConfig,
         data::{DataBuilder, TwitchToTerminalAction},
     },
     twitch::{
@@ -25,7 +25,7 @@ type WebsocketStream = futures::stream::SplitStream<
 >;
 
 pub async fn websocket_event_loop(
-    mut config: CoreConfig,
+    config: SharedCoreConfig,
     tx: Sender<TwitchToTerminalAction>,
     mut rx: Receiver<TwitchAction>,
     mut stream: WebsocketStream,
@@ -50,7 +50,7 @@ pub async fn websocket_event_loop(
                         }
                     },
                     TwitchAction::JoinChannel(channel_name) => {
-                        if let Err(err) = handle_channel_join(&mut config.twitch, &mut context, &tx, channel_name, false).await {
+                        if let Err(err) = handle_channel_join(&mut context, &tx, channel_name, false).await {
                             error!("Joining channel failed: {err}");
                         }
                     },

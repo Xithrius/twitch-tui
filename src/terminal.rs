@@ -7,7 +7,7 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     handlers::{
-        config::CoreConfig,
+        config::SharedCoreConfig,
         context::Context,
         data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
         state::State,
@@ -30,7 +30,7 @@ pub enum TerminalAction {
     clippy::cognitive_complexity
 )]
 pub async fn ui_driver(
-    config: CoreConfig,
+    config: SharedCoreConfig,
     mut context: Context,
     tx: Sender<TwitchAction>,
     mut rx: Receiver<TwitchToTerminalAction>,
