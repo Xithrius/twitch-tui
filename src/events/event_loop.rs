@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use color_eyre::{Result, eyre::bail};
+use color_eyre::Result;
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     time::Instant,
@@ -57,8 +57,8 @@ impl EventsThread {
                         kind: KeyEventKind::Press,
                         modifiers,
                         state: _,
-                    })) => self.handle_crossterm_key_event(code, modifiers).await?,
-                    Ok(CEvent::Mouse(key)) => self.handle_crossterm_mouse_event(key).await?,
+                    })) => self.translate_key_event(code, modifiers).await,
+                    Ok(CEvent::Mouse(key)) => self.translate_mouse_event(key).await,
                     _ => (),
                 }
             }
@@ -70,11 +70,7 @@ impl EventsThread {
         }
     }
 
-    async fn handle_crossterm_key_event(
-        &self,
-        code: KeyCode,
-        modifiers: KeyModifiers,
-    ) -> Result<()> {
+    async fn translate_key_event(&self, code: KeyCode, modifiers: KeyModifiers) {
         let key = match code {
             KeyCode::Backspace => Key::Backspace,
             KeyCode::Esc => Key::Esc,
@@ -97,24 +93,22 @@ impl EventsThread {
             _ => Key::Null,
         };
 
-        if let Err(err) = self.tx.send(Event::Input(key)).await {
-            bail!("Keyboard input error: {err}");
-        }
-
-        Ok(())
+        self.send(Event::Input(key)).await;
     }
 
-    async fn handle_crossterm_mouse_event(&self, key: MouseEvent) -> Result<()> {
+    async fn translate_mouse_event(&self, key: MouseEvent) {
         let key = match key.kind {
             MouseEventKind::ScrollDown => Key::ScrollDown,
             MouseEventKind::ScrollUp => Key::ScrollUp,
             _ => Key::Null,
         };
 
-        if let Err(err) = self.tx.send(Event::Input(key)).await {
-            bail!("Mouse input error: {err}");
-        }
+        self.send(Event::Input(key)).await;
+    }
 
-        Ok(())
+    async fn send(&self, event: Event) {
+        // Ignores the result because shutting down the app drops the receiver, which causes the send
+        // operation to fail. This is expected behavior and should not panic.
+        let _ = self.tx.send(event).await;
     }
 }
