@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use tokio::sync::{broadcast::Sender, mpsc::Receiver};
 use tracing::{info, warn};
 
@@ -7,7 +5,7 @@ use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
-    events::event_loop::{EventConfig, Events},
+    events::Events,
     handlers::{
         context::Context,
         data::{KNOWN_CHATTERS, MessageData, TwitchToTerminalAction},
@@ -44,8 +42,7 @@ pub async fn ui_driver(
         original_hook(panic);
     }));
 
-    let event_config = EventConfig::new(Duration::from_millis(config.terminal.delay));
-    let mut events = Events::with_config(event_config);
+    let mut events = Events::new(config.terminal.delay);
 
     let mut erx = query_emotes(&config, config.twitch.channel.clone());
 

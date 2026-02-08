@@ -84,7 +84,7 @@ impl TwitchWebsocketThread {
 
         info!("Twitch websocket handshake successful");
 
-        let mut stream = ws_stream.split().1;
+        let (_, mut stream) = ws_stream.split();
 
         // If the dashboard is the start state, wait until the user has selected
         // a channel before connecting to Twitch's websocket server.
