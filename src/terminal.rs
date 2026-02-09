@@ -4,10 +4,10 @@ use tracing::{info, warn};
 use crate::{
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
+    context::Context,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     events::{Events, InternalEvent, TwitchAction, TwitchNotification},
     handlers::{
-        context::Context,
         data::{KNOWN_CHATTERS, MessageData},
         state::State,
     },

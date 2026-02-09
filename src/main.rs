@@ -25,13 +25,14 @@ use tokio::sync::{broadcast, mpsc};
 use tracing::{info, warn};
 
 use crate::{
-    cli::args::Cli, config::CoreConfig, emotes::initialize_emote_decoder,
-    handlers::context::Context, twitch::websocket::TwitchWebsocket,
+    cli::args::Cli, config::CoreConfig, context::Context, emotes::initialize_emote_decoder,
+    twitch::websocket::TwitchWebsocket,
 };
 
 mod cli;
 mod commands;
 mod config;
+mod context;
 mod emotes;
 mod events;
 mod handlers;

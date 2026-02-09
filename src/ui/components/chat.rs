@@ -11,12 +11,10 @@ use tui::{
 
 use crate::{
     config::SharedCoreConfig,
+    context::SharedMessages,
     emotes::SharedEmotes,
     events::{Event, InternalEvent},
-    handlers::{
-        context::SharedMessages, data::MessageData, filters::SharedFilters, state::State,
-        storage::SharedStorage,
-    },
+    handlers::{data::MessageData, filters::SharedFilters, state::State, storage::SharedStorage},
     ui::components::{
         ChannelSwitcherWidget, ChatInputWidget, Component, FollowingWidget, MessageSearchWidget,
         utils::Scrolling,
