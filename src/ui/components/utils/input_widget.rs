@@ -217,8 +217,6 @@ impl<T: Clone> Component for InputWidget<T> {
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
-            debug!("{} input widget received key event: {}", self.title, key);
-
             let keybinds = self.config.keybinds.insert.clone();
             match key {
                 key if keybinds.move_cursor_right.contains(key) => {

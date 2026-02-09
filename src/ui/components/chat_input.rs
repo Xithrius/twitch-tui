@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use color_eyre::Result;
 use tokio::sync::mpsc::Sender;
-use tracing::debug;
 use tui::{Frame, layout::Rect};
 
 use crate::{
@@ -129,16 +128,16 @@ impl Component for ChatInputWidget {
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
-        debug!("Chat input received event {:?}", event);
-
         if let Event::Internal(InternalEvent::SelectEmote(emote)) = event {
             self.input.insert(emote);
             self.input.insert(" ");
         }
 
         if self.emote_picker.is_focused() {
-            self.emote_picker.event(event).await?;
-        } else if let Event::Input(key) = event {
+            return self.emote_picker.event(event).await;
+        }
+
+        if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.insert.clone();
             match key {
                 key if keybinds.confirm_text_input.contains(key) => {
