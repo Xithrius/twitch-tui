@@ -3,7 +3,7 @@ use std::cmp::max;
 use color_eyre::Result;
 use fuzzy_matcher::FuzzyMatcher;
 use tokio::sync::mpsc::Sender;
-use tracing::warn;
+use tracing::{debug, warn};
 use tui::{
     Frame,
     layout::Rect,
@@ -266,6 +266,7 @@ impl Component for EmotePickerWidget {
                         self.unselect();
                         self.filtered_emotes.clear();
 
+                        debug!("Emote picker output of emote {}", emote);
                         self.event_tx
                             .send(Event::Internal(InternalEvent::SelectEmote(emote)))
                             .await?;
