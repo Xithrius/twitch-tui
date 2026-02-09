@@ -8,7 +8,7 @@ use color_eyre::eyre::{Error, Result, bail};
 use serde::Serialize;
 use serde_with::DeserializeFromStr;
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr, Default, Hash)]
 pub enum State {
     #[default]
     Dashboard,

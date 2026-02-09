@@ -308,97 +308,97 @@ impl Component for ChatWidget {
             self.current_channel_name.clone_from(channel);
         }
 
+        if self.chat_input.is_focused() {
+            return self.chat_input.event(event).await;
+        } else if self.channel_input.is_focused() {
+            return self.channel_input.event(event).await;
+        } else if self.search_input.is_focused() {
+            return self.search_input.event(event).await;
+        } else if self.following.is_focused() {
+            return self.following.event(event).await;
+        }
+
         if let Event::Input(key) = event {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
-            if self.chat_input.is_focused() {
-                self.chat_input.event(event).await?;
-            } else if self.channel_input.is_focused() {
-                self.channel_input.event(event).await?;
-            } else if self.search_input.is_focused() {
-                self.search_input.event(event).await?;
-            } else if self.following.is_focused() {
-                self.following.event(event).await?;
-            } else {
-                let keybinds = self.config.keybinds.normal.clone();
-                match key {
-                    key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
-                    key if keybinds.enter_insert_with_mention.contains(key) => {
-                        self.chat_input.toggle_focus_with("@");
-                    }
-                    key if keybinds.enter_insert_with_command.contains(key) => {
-                        self.chat_input.toggle_focus_with("/");
-                    }
-                    key if keybinds.recent_channels_search.contains(key) => {
-                        self.channel_input.toggle_focus();
-                    }
-                    key if keybinds.search_messages.contains(key) => {
-                        self.search_input.toggle_focus();
-                    }
-                    key if keybinds.followed_channels_search.contains(key) => {
-                        self.following.toggle_focus().await;
-                    }
-                    key if keybinds.toggle_message_filter.contains(key) => {
-                        self.filters.borrow_mut().toggle();
-                    }
-                    key if keybinds.reverse_message_filter.contains(key) => {
-                        self.filters.borrow_mut().reverse();
-                    }
-                    key if keybinds.enter_dashboard.contains(key) => {
+            let keybinds = self.config.keybinds.normal.clone();
+            match key {
+                key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
+                key if keybinds.enter_insert_with_mention.contains(key) => {
+                    self.chat_input.toggle_focus_with("@");
+                }
+                key if keybinds.enter_insert_with_command.contains(key) => {
+                    self.chat_input.toggle_focus_with("/");
+                }
+                key if keybinds.recent_channels_search.contains(key) => {
+                    self.channel_input.toggle_focus();
+                }
+                key if keybinds.search_messages.contains(key) => {
+                    self.search_input.toggle_focus();
+                }
+                key if keybinds.followed_channels_search.contains(key) => {
+                    self.following.toggle_focus().await;
+                }
+                key if keybinds.toggle_message_filter.contains(key) => {
+                    self.filters.borrow_mut().toggle();
+                }
+                key if keybinds.reverse_message_filter.contains(key) => {
+                    self.filters.borrow_mut().reverse();
+                }
+                key if keybinds.enter_dashboard.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::SwitchState(
+                            State::Dashboard,
+                        )))
+                        .await?;
+                }
+                key if keybinds.help.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::SwitchState(State::Help)))
+                        .await?;
+                }
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
+                key if keybinds.open_in_player.contains(key) => {
+                    self.open_in_player().await?;
+                }
+                key if keybinds.scroll_to_end.contains(key) => {
+                    self.scroll_offset.jump_to(0);
+                }
+                key if keybinds.scroll_to_start.contains(key) => {
+                    // TODO: Make this not jump to nothingness
+                    self.scroll_offset.jump_to(self.messages.borrow().len());
+                }
+                key if keybinds.back_to_previous_window.contains(key) => {
+                    if self.scroll_offset.get_offset() == 0 {
                         self.event_tx
-                            .send(Event::Internal(InternalEvent::SwitchState(
-                                State::Dashboard,
-                            )))
+                            .send(Event::Internal(InternalEvent::BackOneLayer))
                             .await?;
                     }
-                    key if keybinds.help.contains(key) => {
-                        self.event_tx
-                            .send(Event::Internal(InternalEvent::SwitchState(State::Help)))
-                            .await?;
-                    }
-                    key if keybinds.quit.contains(key) => {
-                        self.event_tx
-                            .send(Event::Internal(InternalEvent::Quit))
-                            .await?;
-                    }
-                    key if keybinds.open_in_player.contains(key) => {
-                        self.open_in_player().await?;
-                    }
-                    key if keybinds.scroll_to_end.contains(key) => {
-                        self.scroll_offset.jump_to(0);
-                    }
-                    key if keybinds.scroll_to_start.contains(key) => {
-                        // TODO: Make this not jump to nothingness
-                        self.scroll_offset.jump_to(self.messages.borrow().len());
-                    }
-                    key if keybinds.back_to_previous_window.contains(key) => {
-                        if self.scroll_offset.get_offset() == 0 {
-                            self.event_tx
-                                .send(Event::Internal(InternalEvent::BackOneLayer))
-                                .await?;
-                        }
 
-                        self.scroll_offset.jump_to(0);
+                    self.scroll_offset.jump_to(0);
+                }
+                key if keybinds.scroll_up.contains(key) => {
+                    if limit {
+                        self.scroll_offset.up();
+                    } else if self.scroll_offset.is_inverted() {
+                        self.scroll_offset.down();
                     }
-                    key if keybinds.scroll_up.contains(key) => {
+                }
+                key if keybinds.scroll_down.contains(key) => {
+                    if self.scroll_offset.is_inverted() {
                         if limit {
                             self.scroll_offset.up();
-                        } else if self.scroll_offset.is_inverted() {
-                            self.scroll_offset.down();
                         }
+                    } else {
+                        self.scroll_offset.down();
                     }
-                    key if keybinds.scroll_down.contains(key) => {
-                        if self.scroll_offset.is_inverted() {
-                            if limit {
-                                self.scroll_offset.up();
-                            }
-                        } else {
-                            self.scroll_offset.down();
-                        }
-                    }
-                    _ => {}
                 }
+                _ => {}
             }
         }
 

@@ -3,7 +3,7 @@ use crate::{
     handlers::{data::RawMessageData, state::State},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     /// An event that is emitted on a regular schedule.
     ///
@@ -19,7 +19,7 @@ pub enum Event {
     Twitch(TwitchEvent),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InternalEvent {
     Quit,
     BackOneLayer,
@@ -28,19 +28,19 @@ pub enum InternalEvent {
     SelectEmote(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TwitchEvent {
     Action(TwitchAction),
     Notification(TwitchNotification),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TwitchAction {
     Message(String),
     JoinChannel(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TwitchNotification {
     Message(RawMessageData),
     ClearChat(Option<String>),

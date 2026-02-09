@@ -36,7 +36,7 @@ enum Word {
     Text(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
@@ -49,7 +49,7 @@ pub struct MessageData {
     pub badges: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawMessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
