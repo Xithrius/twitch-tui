@@ -78,6 +78,7 @@ impl EmotePickerWidget {
             filtered_emotes: vec![],
         }
     }
+
     fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {
@@ -105,6 +106,7 @@ impl EmotePickerWidget {
     const fn unselect(&mut self) {
         self.list_state.select(None);
     }
+
     pub const fn is_focused(&self) -> bool {
         self.input.is_focused()
     }

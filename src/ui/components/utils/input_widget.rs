@@ -7,6 +7,7 @@ use rustyline::{
     line_buffer::{ChangeListener, DeleteListener, LineBuffer},
 };
 use tokio::sync::mpsc::Sender;
+use tracing::debug;
 use tui::{
     Frame,
     layout::{Position as LayoutPosition, Rect},
@@ -216,6 +217,8 @@ impl<T: Clone> Component for InputWidget<T> {
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
+            debug!("{} input widget received key event: {}", self.title, key);
+
             let keybinds = self.config.keybinds.insert.clone();
             match key {
                 key if keybinds.move_cursor_right.contains(key) => {

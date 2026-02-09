@@ -87,9 +87,9 @@ impl EventsThread {
                 KeyModifiers::NONE | KeyModifiers::SHIFT => Key::Char(c),
                 KeyModifiers::CONTROL => Key::Ctrl(c),
                 KeyModifiers::ALT => Key::Alt(c),
-                _ => Key::Null,
+                _ => return,
             },
-            _ => Key::Null,
+            _ => return,
         };
 
         self.send(Event::Input(key)).await;
@@ -99,7 +99,7 @@ impl EventsThread {
         let key = match key.kind {
             MouseEventKind::ScrollDown => Key::ScrollDown,
             MouseEventKind::ScrollUp => Key::ScrollUp,
-            _ => Key::Null,
+            _ => return,
         };
 
         self.send(Event::Input(key)).await;

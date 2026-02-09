@@ -21,7 +21,6 @@ pub enum Key {
     Char(char),
     Ctrl(char),
     Alt(char),
-    Null,
 
     // Mouse controls
     ScrollUp,
@@ -90,7 +89,6 @@ impl Display for Key {
             Self::Backspace => write!(f, "Backspace"),
             Self::ScrollDown => write!(f, "ScrollDown"),
             Self::ScrollUp => write!(f, "ScrollUp"),
-            Self::Null => unimplemented!(),
         }
     }
 }

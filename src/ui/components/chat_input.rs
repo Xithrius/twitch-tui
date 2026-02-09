@@ -133,6 +133,8 @@ impl Component for ChatInputWidget {
                 self.input.insert(emote);
                 self.input.insert(" ");
             }
+
+            self.emote_picker.event(event).await?;
         } else if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.insert.clone();
             match key {

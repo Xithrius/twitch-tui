@@ -82,7 +82,7 @@ impl TwitchWebsocketThread {
         // If the dashboard is the start state, wait until the user has selected
         // a channel before connecting to Twitch's websocket server.
         if self.config.terminal.first_state == State::Dashboard {
-            debug!("Waiting for user to select channel from debug screen");
+            debug!("Waiting for user to select channel from dashboard screen");
 
             loop {
                 if let Some(TwitchAction::JoinChannel(channel_name)) = self.action_rx.recv().await {
