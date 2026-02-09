@@ -92,6 +92,9 @@ impl TwitchWebsocketThread {
                     break;
                 }
             }
+        } else {
+            self.context
+                .set_channel_name(Some(self.config.twitch.channel.clone()));
         }
 
         let emotes_enabled = self.config.frontend.is_emotes_enabled();
