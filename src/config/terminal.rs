@@ -2,7 +2,7 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::{config::LogLevel, state::State};
+use crate::{config::LogLevel, handlers::state::State};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]

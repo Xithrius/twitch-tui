@@ -1,7 +1,9 @@
 use std::cmp::max;
 
+use color_eyre::Result;
 use fuzzy_matcher::FuzzyMatcher;
-use tracing::warn;
+use tokio::sync::mpsc::Sender;
+use tracing::{debug, warn};
 use tui::{
     Frame,
     layout::Rect,
@@ -12,10 +14,9 @@ use tui::{
 
 use super::utils::popup_area;
 use crate::{
+    config::SharedCoreConfig,
     emotes::{SharedEmotes, load_picker_emote},
-    handlers::{config::SharedCoreConfig, user_input::events::Event},
-    terminal::TerminalAction,
-    twitch::TwitchAction,
+    events::{Event, InternalEvent},
     ui::{
         components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
@@ -31,6 +32,7 @@ use crate::{
 
 pub struct EmotePickerWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     emotes: SharedEmotes,
     input: InputWidget<SharedEmotes>,
     search_theme: Style,
@@ -39,7 +41,7 @@ pub struct EmotePickerWidget {
 }
 
 impl EmotePickerWidget {
-    pub fn new(config: SharedCoreConfig, emotes: SharedEmotes) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>, emotes: SharedEmotes) -> Self {
         let input_validator = Box::new(|emotes: SharedEmotes, s: String| -> bool {
             !s.is_empty()
                 && s.len() < TWITCH_MESSAGE_LIMIT
@@ -60,6 +62,7 @@ impl EmotePickerWidget {
 
         let input = InputWidget::builder()
             .config(config.clone())
+            .event_tx(event_tx.clone())
             .title("Emote")
             .input_validator((emotes.clone(), input_validator))
             .input_suggester((emotes.clone(), input_suggester))
@@ -67,6 +70,7 @@ impl EmotePickerWidget {
 
         Self {
             config,
+            event_tx,
             emotes,
             input,
             search_theme: *SEARCH_STYLE,
@@ -74,6 +78,7 @@ impl EmotePickerWidget {
             filtered_emotes: vec![],
         }
     }
+
     fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {
@@ -101,6 +106,7 @@ impl EmotePickerWidget {
     const fn unselect(&mut self) {
         self.list_state.select(None);
     }
+
     pub const fn is_focused(&self) -> bool {
         self.input.is_focused()
     }
@@ -244,7 +250,7 @@ impl Component for EmotePickerWidget {
         self.input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
@@ -260,11 +266,14 @@ impl Component for EmotePickerWidget {
                         self.unselect();
                         self.filtered_emotes.clear();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Message(emote)));
+                        debug!("Emote picker output of emote {}", emote);
+                        self.event_tx
+                            .send(Event::Internal(InternalEvent::SelectEmote(emote)))
+                            .await?;
                     }
                 }
                 _ => {
-                    self.input.event(event).await;
+                    self.input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
                     match self.filtered_emotes.len() {
@@ -275,6 +284,6 @@ impl Component for EmotePickerWidget {
             }
         }
 
-        None
+        Ok(())
     }
 }

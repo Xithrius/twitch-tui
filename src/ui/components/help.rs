@@ -1,3 +1,5 @@
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Constraint, Rect},
@@ -5,11 +7,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, get_keybind_text},
-    },
-    terminal::TerminalAction,
+    config::SharedCoreConfig,
+    events::{Event, InternalEvent, get_keybind_text},
     ui::{components::Component, statics::HELP_COLUMN_TITLES},
     utils::styles::{BOLD_STYLE, COLUMN_TITLE_STYLE},
 };
@@ -21,11 +20,12 @@ const TABLE_CONSTRAINTS: [Constraint; 3] =
 #[derive(Debug, Clone)]
 pub struct HelpWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
 }
 
 impl HelpWidget {
-    pub const fn new(config: SharedCoreConfig) -> Self {
-        Self { config }
+    pub const fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
+        Self { config, event_tx }
     }
     fn get_help_keybinds(&self) -> Vec<(&'static str, Vec<(String, &'static str)>)> {
         let keybinds = self.config.keybinds.clone();
@@ -263,19 +263,24 @@ impl Component for HelpWidget {
         f.render_widget(help_table, r);
     }
 
-    // TODO: should be default impl if not for the config requirement
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
                 key if keybinds.back_to_previous_window.contains(key) => {
-                    return Some(TerminalAction::BackOneLayer);
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::BackOneLayer))
+                        .await?;
                 }
                 _ => {}
             }
         }
 
-        None
+        Ok(())
     }
 }

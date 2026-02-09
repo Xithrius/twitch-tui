@@ -1,13 +1,12 @@
 use std::fmt::Display;
 
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{Frame, layout::Rect};
 
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
+    config::SharedCoreConfig,
+    events::{Event, Key},
     ui::{
         components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
@@ -19,7 +18,7 @@ pub struct MessageSearchWidget {
 }
 
 impl MessageSearchWidget {
-    pub fn new(config: SharedCoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         let input_validator =
             Box::new(|(), s: String| -> bool { !s.is_empty() && s.len() <= TWITCH_MESSAGE_LIMIT });
 
@@ -30,6 +29,7 @@ impl MessageSearchWidget {
 
         let input = InputWidget::builder()
             .config(config)
+            .event_tx(event_tx)
             .title("Message search")
             .input_validator(((), input_validator))
             .visual_indicator(visual_indicator)
@@ -58,18 +58,18 @@ impl Component for MessageSearchWidget {
         self.input.draw(f, area);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             match key {
                 Key::Esc => {
                     self.input.toggle_focus();
                 }
                 _ => {
-                    self.input.event(event).await;
+                    self.input.event(event).await?;
                 }
             }
         }
 
-        None
+        Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Alignment, Rect},
@@ -7,8 +8,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCoreConfig, user_input::events::Event},
-    terminal::TerminalAction,
+    config::SharedCoreConfig,
+    events::{Event, InternalEvent},
     ui::components::Component,
     utils::styles::{NO_COLOR, TEXT_DARK_STYLE},
 };
@@ -16,14 +17,20 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct ErrorWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     message: Vec<&'static str>,
     focused: bool,
 }
 
 impl ErrorWidget {
-    pub const fn new(config: SharedCoreConfig, message: Vec<&'static str>) -> Self {
+    pub const fn new(
+        config: SharedCoreConfig,
+        event_tx: Sender<Event>,
+        message: Vec<&'static str>,
+    ) -> Self {
         Self {
             config,
+            event_tx,
             message,
             focused: false,
         }
@@ -64,18 +71,25 @@ impl Component for ErrorWidget {
         f.render_widget(Clear, r);
         f.render_widget(paragraph, r);
     }
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+
+    async fn event(&mut self, event: &Event) -> color_eyre::Result<()> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
                 key if keybinds.back_to_previous_window.contains(key) => {
-                    return Some(TerminalAction::BackOneLayer);
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::BackOneLayer))
+                        .await?;
                 }
                 _ => {}
             }
         }
 
-        None
+        Ok(())
     }
 }

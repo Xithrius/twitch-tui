@@ -2,7 +2,7 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::handlers::user_input::events::Key;
+use crate::events::Key;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]

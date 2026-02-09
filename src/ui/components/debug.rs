@@ -1,4 +1,6 @@
 use chrono::{DateTime, Local};
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Constraint, Rect},
@@ -7,8 +9,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCoreConfig, user_input::events::Event},
-    terminal::TerminalAction,
+    config::SharedCoreConfig,
+    events::{Event, InternalEvent},
     ui::components::Component,
     utils::{
         styles::{BOLD_STYLE, TITLE_STYLE},
@@ -19,16 +21,18 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct DebugWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     focused: bool,
     startup_time: DateTime<Local>,
 }
 
 impl DebugWidget {
-    pub fn new(config: SharedCoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         let startup_time = Local::now();
 
         Self {
             config,
+            event_tx,
             focused: false,
             startup_time,
         }
@@ -126,20 +130,26 @@ impl Component for DebugWidget {
         f.render_widget(bottom_block, rect);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.normal.clone();
             match key {
-                key if keybinds.quit.contains(key) => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
                 key if keybinds.back_to_previous_window.contains(key) => {
                     self.toggle_focus();
 
-                    return Some(TerminalAction::BackOneLayer);
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::BackOneLayer))
+                        .await?;
                 }
                 _ => {}
             }
         }
 
-        None
+        Ok(())
     }
 }

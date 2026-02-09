@@ -2,7 +2,7 @@ use std::{cell::RefCell, fs::read_to_string, rc::Rc};
 
 use regex::Regex;
 
-use crate::handlers::config::{SharedCoreConfig, persistence::get_config_dir};
+use crate::config::{SharedCoreConfig, get_config_dir};
 
 const DEFAULT_FILTERS_FILE_NAME: &str = "filters.txt";
 

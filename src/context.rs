@@ -5,6 +5,8 @@ use std::{
     rc::Rc,
 };
 
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tracing::error;
 use tui::{
     Frame,
@@ -12,16 +14,15 @@ use tui::{
 };
 
 use crate::{
+    config::SharedCoreConfig,
     emotes::{Emotes, SharedEmotes},
+    events::Event,
     handlers::{
-        config::SharedCoreConfig,
         data::MessageData,
         filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
-        user_input::events::Event,
     },
-    terminal::TerminalAction,
     ui::components::{Component, Components},
 };
 
@@ -53,7 +54,7 @@ macro_rules! shared {
 }
 
 impl Context {
-    pub fn new(config: SharedCoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
         let emotes_enabled = config.frontend.is_emotes_enabled();
@@ -65,6 +66,7 @@ impl Context {
 
         let components = Components::builder()
             .config(&config)
+            .event_tx(event_tx)
             .storage(storage.clone())
             .filters(filters)
             .messages(messages.clone())
@@ -81,68 +83,6 @@ impl Context {
             emotes,
             running_stream: None,
         }
-    }
-
-    pub fn draw(&mut self, f: &mut Frame) {
-        let mut size = f.area();
-
-        if self.config.frontend.state_tabs {
-            let layout = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
-                .split(f.area());
-
-            size = layout[0];
-
-            self.components.tabs.draw(f, Some(layout[1]), &self.state);
-        }
-
-        if (size.height < 10 || size.width < 60)
-            && self.config.frontend.show_unsupported_screen_size
-        {
-            self.components.window_size_error.draw(f, Some(f.area()));
-        } else {
-            match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None),
-                State::Normal => self.components.chat.draw(f, None),
-                State::Help => self.components.help.draw(f, None),
-            }
-        }
-
-        if self.components.debug.is_focused() {
-            let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
-
-            let rect = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .split(new_rect)[1];
-
-            self.components.debug.draw(f, Some(rect));
-        }
-    }
-
-    pub async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
-        if let Event::Input(key) = event {
-            if self.components.debug.is_focused() {
-                return self.components.debug.event(event).await;
-            }
-
-            match key {
-                // Global keybinds
-                key if self.config.keybinds.toggle_debug_focus.contains(key) => {
-                    self.components.debug.toggle_focus();
-                }
-                _ => {
-                    return match self.state {
-                        State::Dashboard => self.components.dashboard.event(event).await,
-                        State::Normal => self.components.chat.event(event).await,
-                        State::Help => self.components.help.event(event).await,
-                    };
-                }
-            }
-        }
-
-        None
     }
 
     pub fn open_stream(&mut self, channel: &str) {
@@ -218,5 +158,63 @@ impl Context {
     pub fn set_state(&mut self, other: State) {
         self.previous_state = Some(self.state.clone());
         self.state = other;
+    }
+}
+
+impl Component for Context {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+        let mut size = area.unwrap_or_else(|| f.area());
+
+        if self.config.frontend.state_tabs {
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
+                .split(f.area());
+
+            size = layout[0];
+
+            self.components.tabs.draw(f, Some(layout[1]), &self.state);
+        }
+
+        if (size.height < 10 || size.width < 60)
+            && self.config.frontend.show_unsupported_screen_size
+        {
+            self.components.window_size_error.draw(f, Some(f.area()));
+        } else {
+            match self.state {
+                State::Dashboard => self.components.dashboard.draw(f, None),
+                State::Normal => self.components.chat.draw(f, None),
+                State::Help => self.components.help.draw(f, None),
+            }
+        }
+
+        if self.components.debug.is_focused() {
+            let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
+
+            let rect = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(new_rect)[1];
+
+            self.components.debug.draw(f, Some(rect));
+        }
+    }
+
+    async fn event(&mut self, event: &Event) -> Result<()> {
+        if let Event::Input(key) = event {
+            if self.components.debug.is_focused() {
+                return self.components.debug.event(event).await;
+            }
+
+            if self.config.keybinds.toggle_debug_focus.contains(key) {
+                self.components.debug.toggle_focus();
+            }
+        }
+
+        match self.state {
+            State::Dashboard => self.components.dashboard.event(event).await,
+            State::Normal => self.components.chat.event(event).await,
+            State::Help => self.components.help.event(event).await,
+        }
     }
 }

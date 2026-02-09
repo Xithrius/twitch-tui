@@ -8,7 +8,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCoreConfig, state::State},
+    config::SharedCoreConfig,
+    handlers::state::State,
     utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 

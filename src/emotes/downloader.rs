@@ -6,8 +6,8 @@ use reqwest::{Client, Response};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
+    config::{CoreConfig, FrontendConfig, get_cache_dir},
     emotes::DownloadedEmotes,
-    handlers::config::{CoreConfig, FrontendConfig, persistence::get_cache_dir},
     twitch::{
         api::channels::get_channel_id,
         oauth::{get_twitch_client, get_twitch_client_oauth},

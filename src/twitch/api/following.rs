@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use super::TWITCH_API_BASE_URL;
 use crate::{
-    handlers::config::{SharedCoreConfig, TwitchConfig},
+    config::{SharedCoreConfig, TwitchConfig},
     twitch::oauth::{get_twitch_client, get_twitch_client_oauth},
 };
 
@@ -59,21 +59,21 @@ impl From<StreamingUser> for FollowingUser {
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
-#[allow(dead_code)]
 struct Pagination {
+    #[allow(unused)]
     cursor: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
-#[allow(dead_code)]
 pub struct FollowingChannelList {
+    #[allow(unused)]
     pub total: u64,
     pub data: Vec<FollowingUser>,
+    #[allow(unused)]
     pagination: Pagination,
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
-#[allow(dead_code)]
 pub struct LiveChannelList {
     pub data: Vec<StreamingUser>,
     pagination: Pagination,
@@ -90,9 +90,9 @@ impl From<LiveChannelList> for FollowingChannelList {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct Following {
     pub config: SharedCoreConfig,
+    #[allow(unused)]
     list: FollowingChannelList,
 }
 

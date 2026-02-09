@@ -8,39 +8,7 @@ use color_eyre::eyre::{Error, Result, bail};
 use serde::Serialize;
 use serde_with::DeserializeFromStr;
 
-#[allow(dead_code)]
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr)]
-pub enum NormalMode {
-    Insert,
-    Search,
-}
-
-impl Display for NormalMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Insert => "insert",
-                Self::Search => "search",
-            }
-        )
-    }
-}
-
-impl FromStr for NormalMode {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "insert" | "input" => Ok(Self::Insert),
-            "search" => Ok(Self::Search),
-            _ => bail!("Normal mode '{}' cannot be deserialized", s),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, DeserializeFromStr, Default, Hash)]
 pub enum State {
     #[default]
     Dashboard,

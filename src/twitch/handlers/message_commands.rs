@@ -5,7 +5,8 @@ use tokio::sync::mpsc::Sender;
 use tracing::debug;
 
 use crate::{
-    handlers::data::{DataBuilder, TwitchToTerminalAction},
+    events::Event,
+    handlers::data::DataBuilder,
     twitch::{
         api::{
             channel_information::{
@@ -31,17 +32,20 @@ use crate::{
     },
 };
 
-#[allow(clippy::cognitive_complexity)]
 pub async fn handle_command_message(
     context: &TwitchWebsocketContext,
-    tx: &Sender<TwitchToTerminalAction>,
+    event_tx: &Sender<Event>,
     user_command: &str,
 ) -> Result<()> {
     let Ok(command) = TwitchCommand::from_str(user_command) else {
-        tx.send(DataBuilder::system(format!(
-            "Command /{user_command} either does not exist, or is not supported"
-        )))
-        .await?;
+        event_tx
+            .send(
+                DataBuilder::system(format!(
+                    "Command /{user_command} either does not exist, or is not supported"
+                ))
+                .into(),
+            )
+            .await?;
 
         return Ok(());
     };
@@ -273,7 +277,9 @@ pub async fn handle_command_message(
     };
 
     debug!("Sending command message: {command_message}");
-    tx.send(DataBuilder::twitch(command_message)).await?;
+    event_tx
+        .send(DataBuilder::twitch(command_message).into())
+        .await?;
 
     Ok(())
 }

@@ -80,8 +80,12 @@ impl TwitchWebsocketContext {
         self.channel_name = channel_name;
     }
 
-    pub const fn set_emotes(&mut self, state: bool) {
+    pub const fn set_emotes_state(&mut self, state: bool) {
         self.emotes_enabled = state;
+    }
+
+    pub const fn is_emotes_enabled(&self) -> bool {
+        self.emotes_enabled
     }
 
     pub fn set_event_subscriptions(&mut self, event_subscriptions: HashMap<Subscription, String>) {

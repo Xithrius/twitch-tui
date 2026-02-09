@@ -12,8 +12,9 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
+    config::{FrontendConfig, Palette, Theme},
     emotes::{DownloadedEmotes, EmoteData, SharedEmotes, display_emote, load_emote, overlay_emote},
-    handlers::config::{FrontendConfig, Palette, Theme},
+    events::{Event, TwitchEvent, TwitchNotification},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::{hsl_to_rgb, u32_to_color},
@@ -30,18 +31,12 @@ use crate::{
     },
 };
 
-pub enum TwitchToTerminalAction {
-    Message(RawMessageData),
-    ClearChat(Option<String>),
-    DeleteMessage(String),
-}
-
 enum Word {
     Emote(Vec<EmoteData>),
     Text(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
@@ -54,7 +49,7 @@ pub struct MessageData {
     pub badges: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawMessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
@@ -610,7 +605,7 @@ impl DataBuilder {
         message_id: Option<String>,
         highlight: bool,
         badges: Option<String>,
-    ) -> TwitchToTerminalAction {
+    ) -> TwitchNotification {
         let message = RawMessageData::builder()
             .author(user)
             .maybe_user_id(user_id)
@@ -622,11 +617,11 @@ impl DataBuilder {
             .maybe_badges(badges)
             .build();
 
-        TwitchToTerminalAction::Message(message)
+        TwitchNotification::Message(message)
     }
 
     /// Notification messages from the terminal
-    pub fn system(payload: String) -> TwitchToTerminalAction {
+    pub fn system(payload: String) -> TwitchNotification {
         let message = RawMessageData::builder()
             .author("System".to_string())
             .system(true)
@@ -635,11 +630,11 @@ impl DataBuilder {
             .highlight(false)
             .build();
 
-        TwitchToTerminalAction::Message(message)
+        TwitchNotification::Message(message)
     }
 
     /// Notification messages from Twitch
-    pub fn twitch(payload: String) -> TwitchToTerminalAction {
+    pub fn twitch(payload: String) -> TwitchNotification {
         let message = RawMessageData::builder()
             .author("Twitch".to_string())
             .system(true)
@@ -648,7 +643,13 @@ impl DataBuilder {
             .highlight(false)
             .build();
 
-        TwitchToTerminalAction::Message(message)
+        TwitchNotification::Message(message)
+    }
+}
+
+impl From<TwitchNotification> for Event {
+    fn from(value: TwitchNotification) -> Self {
+        Self::Twitch(TwitchEvent::Notification(value))
     }
 }
 
