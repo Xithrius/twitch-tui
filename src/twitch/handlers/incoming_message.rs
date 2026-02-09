@@ -5,7 +5,7 @@ use tokio::sync::mpsc::Sender;
 use crate::{
     config::SharedCoreConfig,
     emotes::get_twitch_emote,
-    events::TwitchNotification,
+    events::{Event, TwitchEvent, TwitchNotification},
     handlers::data::DataBuilder,
     twitch::{
         api::subscriptions::Subscription,
@@ -17,33 +17,48 @@ use crate::{
 };
 
 async fn handle_chat_notification(
-    tx: &Sender<TwitchNotification>,
+    event_tx: &Sender<Event>,
     event: ReceivedTwitchEvent,
     subscription_type: Subscription,
 ) -> Result<()> {
     match subscription_type {
         Subscription::Notification => {
             if let Some(twitch_notification_message) = event.system_message() {
-                tx.send(DataBuilder::twitch(twitch_notification_message.clone()))
+                event_tx
+                    .send(DataBuilder::twitch(twitch_notification_message.clone()).into())
                     .await?;
             }
         }
         Subscription::Clear => {
-            tx.send(TwitchNotification::ClearChat(None)).await?;
-            tx.send(DataBuilder::twitch(
-                "Chat was cleared for non-Moderators viewing this room".to_string(),
-            ))
-            .await?;
+            event_tx
+                .send(Event::Twitch(TwitchEvent::Notification(
+                    TwitchNotification::ClearChat(None),
+                )))
+                .await?;
+            event_tx
+                .send(
+                    DataBuilder::twitch(
+                        "Chat was cleared for non-Moderators viewing this room".to_string(),
+                    )
+                    .into(),
+                )
+                .await?;
         }
         Subscription::ClearUserMessages => {
             if let Some(target_user_id) = event.target_user_id() {
-                tx.send(TwitchNotification::ClearChat(Some(target_user_id.clone())))
+                event_tx
+                    .send(Event::Twitch(TwitchEvent::Notification(
+                        TwitchNotification::ClearChat(Some(target_user_id.clone())),
+                    )))
                     .await?;
             }
         }
         Subscription::MessageDelete => {
             if let Some(message_id) = event.message_id() {
-                tx.send(TwitchNotification::DeleteMessage(message_id.clone()))
+                event_tx
+                    .send(Event::Twitch(TwitchEvent::Notification(
+                        TwitchNotification::DeleteMessage(message_id.clone()),
+                    )))
                     .await?;
             }
         }
@@ -59,7 +74,9 @@ async fn handle_chat_notification(
                 },
             );
 
-            tx.send(DataBuilder::twitch(timeout_message)).await?;
+            event_tx
+                .send(DataBuilder::twitch(timeout_message).into())
+                .await?;
         }
         _ => {}
     }
@@ -70,7 +87,7 @@ async fn handle_chat_notification(
 pub async fn handle_incoming_message(
     config: SharedCoreConfig,
     context: &TwitchWebsocketContext,
-    tx: &Sender<TwitchNotification>,
+    event_tx: &Sender<Event>,
     received_message: ReceivedTwitchMessage,
 ) -> Result<()> {
     // Don't allow messages from other channels go through
@@ -89,7 +106,7 @@ pub async fn handle_incoming_message(
 
     if let Some(subscription_type) = received_message.subscription_type() {
         if subscription_type != Subscription::Message {
-            return handle_chat_notification(tx, event, subscription_type).await;
+            return handle_chat_notification(event_tx, event, subscription_type).await;
         }
     }
 
@@ -148,16 +165,20 @@ pub async fn handle_incoming_message(
 
     let message_emotes = emotes.await.into_iter().flatten().collect();
 
-    tx.send(DataBuilder::user(
-        chatter_user_name,
-        Some(chatter_user_id.clone()),
-        cleaned_message,
-        message_emotes,
-        Some(message_id),
-        highlight,
-        badges,
-    ))
-    .await?;
+    event_tx
+        .send(
+            DataBuilder::user(
+                chatter_user_name,
+                Some(chatter_user_id.clone()),
+                cleaned_message,
+                message_emotes,
+                Some(message_id),
+                highlight,
+                badges,
+            )
+            .into(),
+        )
+        .await?;
 
     Ok(())
 }

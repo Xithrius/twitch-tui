@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::Utf8Bytes;
 
 use crate::{
-    events::TwitchNotification,
+    events::Event,
     handlers::data::DataBuilder,
     twitch::{
         api::{
@@ -29,7 +29,7 @@ use crate::{
 /// Handling either the terminal joining a new channel, or the application just starting up
 pub async fn handle_channel_join(
     context: &mut TwitchWebsocketContext,
-    tx: &Sender<TwitchNotification>,
+    event_tx: &Sender<Event>,
     channel_name: String,
     first_channel: bool,
 ) -> Result<()> {
@@ -81,20 +81,21 @@ pub async fn handle_channel_join(
     context.set_channel_id(Some(context_channel_id));
 
     // Notify frontend that new channel has been joined
-    tx.send(DataBuilder::twitch(format!("Joined #{channel_name}")))
+    event_tx
+        .send(DataBuilder::twitch(format!("Joined #{channel_name}")).into())
         .await
         .context("Failed to send twitch join message")?;
 
     // Handle new chat settings with roomstate
     let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await?;
-    handle_roomstate(&chat_settings, tx).await?;
+    handle_roomstate(&chat_settings, event_tx).await?;
 
     Ok(())
 }
 
 pub async fn handle_welcome_message(
     context: &mut TwitchWebsocketContext,
-    tx: &Sender<TwitchNotification>,
+    event_tx: &Sender<Event>,
     message: Utf8Bytes,
 ) -> Result<()> {
     let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message)
@@ -129,7 +130,7 @@ pub async fn handle_welcome_message(
 
     context.set_event_subscriptions(initial_event_subscriptions);
 
-    handle_channel_join(context, tx, channel_name, true)
+    handle_channel_join(context, event_tx, channel_name, true)
         .await
         .context("Failed to join first channel")?;
 

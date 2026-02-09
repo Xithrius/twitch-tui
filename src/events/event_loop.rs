@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use color_eyre::Result;
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender},
     time::Instant,
 };
 use tui::crossterm::event::{
@@ -17,9 +17,8 @@ pub struct Events {
 }
 
 impl Events {
-    pub fn new(delay: u64) -> Self {
+    pub fn new(delay: u64, tx: Sender<Event>, rx: Receiver<Event>) -> Self {
         let tick_rate = Duration::from_millis(delay);
-        let (tx, rx) = mpsc::channel(100);
         let actor = EventsThread::new(tx, tick_rate);
         tokio::task::spawn(async move { actor.run().await });
 

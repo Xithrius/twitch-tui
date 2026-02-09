@@ -24,8 +24,8 @@ pub enum InternalEvent {
     Quit,
     BackOneLayer,
     SwitchState(State),
-    Enter(TwitchAction),
     OpenStream(String),
+    SelectEmote(String),
 }
 
 #[derive(Debug, Clone)]

@@ -14,7 +14,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     config::{FrontendConfig, Palette, Theme},
     emotes::{DownloadedEmotes, EmoteData, SharedEmotes, display_emote, load_emote, overlay_emote},
-    events::TwitchNotification,
+    events::{Event, TwitchEvent, TwitchNotification},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::{hsl_to_rgb, u32_to_color},
@@ -644,6 +644,12 @@ impl DataBuilder {
             .build();
 
         TwitchNotification::Message(message)
+    }
+}
+
+impl From<TwitchNotification> for Event {
+    fn from(value: TwitchNotification) -> Self {
+        Self::Twitch(TwitchEvent::Notification(value))
     }
 }
 

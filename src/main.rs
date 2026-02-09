@@ -21,12 +21,12 @@ use std::sync::Arc;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use logging::initialize_logging;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::mpsc;
 use tracing::{info, warn};
 
 use crate::{
     cli::args::Cli, config::CoreConfig, context::Context, emotes::initialize_emote_decoder,
-    twitch::websocket::TwitchWebsocket,
+    events::Events, twitch::websocket::TwitchWebsocket,
 };
 
 mod cli;
@@ -52,14 +52,14 @@ async fn main() -> Result<()> {
 
     info!("Logging system initialised");
 
-    let (twitch_tx, terminal_rx) = mpsc::channel(100);
-    let (terminal_tx, twitch_rx) = broadcast::channel(100);
+    let (event_tx, event_rx) = mpsc::channel(100);
+    let (twitch_tx, twitch_rx) = mpsc::channel(100);
 
     let emotes = initialize_emote_decoder(&mut config);
 
     let config = Arc::new(config);
 
-    let context = Context::new(config.clone());
+    let context = Context::new(config.clone(), event_tx.clone());
 
     let decoded_rx = if let Some((rx, cell_size)) = emotes {
         context.emotes.cell_size.get_or_init(|| cell_size);
@@ -68,16 +68,10 @@ async fn main() -> Result<()> {
         None
     };
 
-    TwitchWebsocket::new(config.clone(), twitch_tx, twitch_rx);
+    TwitchWebsocket::new(config.clone(), event_tx.clone(), twitch_rx);
 
-    terminal::ui_driver(
-        config.clone(),
-        context,
-        terminal_tx,
-        terminal_rx,
-        decoded_rx,
-    )
-    .await;
+    let events = Events::new(config.terminal.delay, event_tx, event_rx);
+    terminal::ui_driver(config, context, events, twitch_tx, decoded_rx).await;
 
     std::process::exit(0)
 }

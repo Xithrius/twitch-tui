@@ -1,12 +1,12 @@
 use color_eyre::{Result, eyre::bail};
 use futures::StreamExt;
-use tokio::sync::{broadcast::Receiver, mpsc::Sender};
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use tracing::{debug, error, info};
 
 use crate::{
     config::SharedCoreConfig,
-    events::{TwitchAction, TwitchNotification},
+    events::{Event, TwitchAction},
     handlers::{data::DataBuilder, state::State},
     twitch::{
         context::TwitchWebsocketContext,
@@ -25,11 +25,7 @@ pub struct TwitchWebsocket {
 }
 
 impl TwitchWebsocket {
-    pub fn new(
-        config: SharedCoreConfig,
-        tx: Sender<TwitchNotification>,
-        rx: Receiver<TwitchAction>,
-    ) -> Self {
+    pub fn new(config: SharedCoreConfig, tx: Sender<Event>, rx: Receiver<TwitchAction>) -> Self {
         let mut actor = TwitchWebsocketThread::new(config, tx, rx);
         tokio::task::spawn(async move { actor.run().await });
 
@@ -48,21 +44,21 @@ pub type WebsocketStream = futures::stream::SplitStream<
 pub struct TwitchWebsocketThread {
     config: SharedCoreConfig,
     context: TwitchWebsocketContext,
-    tx: Sender<TwitchNotification>,
-    rx: Receiver<TwitchAction>,
+    event_tx: Sender<Event>,
+    action_rx: Receiver<TwitchAction>,
 }
 
 impl TwitchWebsocketThread {
     fn new(
         config: SharedCoreConfig,
-        tx: Sender<TwitchNotification>,
-        rx: Receiver<TwitchAction>,
+        event_tx: Sender<Event>,
+        action_rx: Receiver<TwitchAction>,
     ) -> Self {
         Self {
             config,
             context: TwitchWebsocketContext::default(),
-            tx,
-            rx,
+            event_tx,
+            action_rx,
         }
     }
 
@@ -89,7 +85,7 @@ impl TwitchWebsocketThread {
             debug!("Waiting for user to select channel from debug screen");
 
             loop {
-                if let Ok(TwitchAction::JoinChannel(channel_name)) = self.rx.recv().await {
+                if let Some(TwitchAction::JoinChannel(channel_name)) = self.action_rx.recv().await {
                     self.context.set_channel_name(Some(channel_name));
 
                     debug!("User has selected channel from start screen");
@@ -110,15 +106,15 @@ impl TwitchWebsocketThread {
         // Handle the welcome message, it should arrive after the initial ping
         let Some(Ok(Message::Text(message))) = stream.next().await else {
             let error_message = "Welcome message from websocket server was not found, something has gone terribly wrong";
-            self.tx
-                .send(DataBuilder::system(error_message.to_string()))
+            self.event_tx
+                .send(DataBuilder::system(error_message.to_string()).into())
                 .await?;
             bail!(error_message);
         };
-        if let Err(err) = handle_welcome_message(&mut self.context, &self.tx, message).await {
+        if let Err(err) = handle_welcome_message(&mut self.context, &self.event_tx, message).await {
             let error_message = format!("Failed to handle welcome message: {err}");
-            self.tx
-                .send(DataBuilder::system(error_message.clone()))
+            self.event_tx
+                .send(DataBuilder::system(error_message.clone()).into())
                 .await?;
             bail!(error_message);
         }
@@ -133,7 +129,7 @@ impl TwitchWebsocketThread {
             tokio::select! {
                 biased;
 
-                Ok(action) = self.rx.recv() => {
+                Some(action) = self.action_rx.recv() => {
                     if let Err(err) = self.handle_twitch_action(action).await {
                         error!("Failed to handle twitch action: {err}");
                     }
@@ -157,12 +153,16 @@ impl TwitchWebsocketThread {
         match action {
             TwitchAction::Message(message) => {
                 if let Some(command) = message.strip_prefix('/') {
-                    if let Err(err) = handle_command_message(&self.context, &self.tx, command).await
+                    if let Err(err) =
+                        handle_command_message(&self.context, &self.event_tx, command).await
                     {
-                        self.tx
-                            .send(DataBuilder::twitch(format!(
-                                "Failed to handle Twitch message command from terminal: {err}"
-                            )))
+                        self.event_tx
+                            .send(
+                                DataBuilder::twitch(format!(
+                                    "Failed to handle Twitch message command from terminal: {err}"
+                                ))
+                                .into(),
+                            )
                             .await?;
                         return Err(err);
                     }
@@ -171,7 +171,7 @@ impl TwitchWebsocketThread {
                 handle_send_message(&self.context, message).await?;
             }
             TwitchAction::JoinChannel(channel_name) => {
-                handle_channel_join(&mut self.context, &self.tx, channel_name, false).await?;
+                handle_channel_join(&mut self.context, &self.event_tx, channel_name, false).await?;
             }
         }
 
@@ -188,7 +188,7 @@ impl TwitchWebsocketThread {
         handle_incoming_message(
             self.config.clone(),
             &self.context,
-            &self.tx,
+            &self.event_tx,
             received_message,
         )
         .await

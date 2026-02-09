@@ -1,10 +1,12 @@
 use std::fmt::Display;
 
 use bon::bon;
+use color_eyre::Result;
 use rustyline::{
     At, Word,
     line_buffer::{ChangeListener, DeleteListener, LineBuffer},
 };
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Position as LayoutPosition, Rect},
@@ -43,6 +45,7 @@ impl DeleteListener for InputListener {
 
 pub struct InputWidget<T: Clone> {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     input: LineBuffer,
     title: String,
     focused: bool,
@@ -58,6 +61,7 @@ impl<T: Clone> InputWidget<T> {
     #[builder]
     pub fn new(
         config: SharedCoreConfig,
+        event_tx: Sender<Event>,
         title: &str,
         input_validator: Option<(T, InputValidator<T>)>,
         visual_indicator: Option<VisualValidator>,
@@ -65,6 +69,7 @@ impl<T: Clone> InputWidget<T> {
     ) -> Self {
         Self {
             config,
+            event_tx,
             input: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             title: title.to_string(),
             focused: false,
@@ -209,7 +214,7 @@ impl<T: Clone> Component for InputWidget<T> {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.insert.clone();
             match key {
@@ -264,7 +269,11 @@ impl<T: Clone> Component for InputWidget<T> {
                             .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
-                key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
                 Key::Char(c) => {
                     self.input.insert(*c, 1, &mut self.input_listener);
                 }
@@ -272,6 +281,6 @@ impl<T: Clone> Component for InputWidget<T> {
             }
         }
 
-        None
+        Ok(())
     }
 }

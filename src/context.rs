@@ -5,6 +5,8 @@ use std::{
     rc::Rc,
 };
 
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tracing::error;
 use tui::{
     Frame,
@@ -14,7 +16,7 @@ use tui::{
 use crate::{
     config::SharedCoreConfig,
     emotes::{Emotes, SharedEmotes},
-    events::{Event, InternalEvent},
+    events::Event,
     handlers::{
         data::MessageData,
         filters::Filters,
@@ -52,7 +54,7 @@ macro_rules! shared {
 }
 
 impl Context {
-    pub fn new(config: SharedCoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
         let emotes_enabled = config.frontend.is_emotes_enabled();
@@ -64,6 +66,7 @@ impl Context {
 
         let components = Components::builder()
             .config(&config)
+            .event_tx(event_tx)
             .storage(storage.clone())
             .filters(filters)
             .messages(messages.clone())
@@ -197,7 +200,7 @@ impl Component for Context {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             if self.components.debug.is_focused() {
                 return self.components.debug.event(event).await;
@@ -217,6 +220,6 @@ impl Component for Context {
             }
         }
 
-        None
+        Ok(())
     }
 }

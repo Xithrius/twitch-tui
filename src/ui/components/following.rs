@@ -1,12 +1,11 @@
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{Frame, layout::Rect};
 
 use super::utils::SearchWidget;
 use crate::{
-    config::SharedCoreConfig,
-    events::{Event, InternalEvent, TwitchAction},
-    twitch::api::following::Following,
+    config::SharedCoreConfig, events::Event, twitch::api::following::Following,
     ui::components::Component,
-    // utils::sanitization::clean_channel_name,
 };
 
 static INCORRECT_SCOPES_ERROR_MESSAGE: &[&str] = &[
@@ -23,11 +22,15 @@ pub struct FollowingWidget {
 }
 
 impl FollowingWidget {
-    pub fn new(config: SharedCoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         let item_getter = Following::new(config.clone());
 
-        let search_widget =
-            SearchWidget::new(config, item_getter, INCORRECT_SCOPES_ERROR_MESSAGE.to_vec());
+        let search_widget = SearchWidget::new(
+            config,
+            event_tx,
+            item_getter,
+            INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
+        );
 
         Self { search_widget }
     }
@@ -46,13 +49,7 @@ impl Component for FollowingWidget {
         self.search_widget.draw(f, area);
     }
 
-    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
-        let action = self.search_widget.event(event).await;
-
-        if let Some(InternalEvent::Enter(TwitchAction::JoinChannel(_channel))) = &action {
-            todo!()
-        }
-
-        action
+    async fn event(&mut self, event: &Event) -> Result<()> {
+        self.search_widget.event(event).await
     }
 }

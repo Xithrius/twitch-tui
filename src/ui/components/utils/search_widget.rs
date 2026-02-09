@@ -1,6 +1,7 @@
 use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
 use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::Rect,
@@ -17,7 +18,7 @@ use tui::{
 use super::{InputWidget, popup_area};
 use crate::{
     config::SharedCoreConfig,
-    events::{Event, InternalEvent, Key, TwitchAction},
+    events::{Event, Key, TwitchAction, TwitchEvent},
     ui::components::{Component, ErrorWidget},
     utils::{
         sanitization::clean_channel_name,
@@ -40,6 +41,7 @@ where
     U: SearchItemGetter<T>,
 {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     focused: bool,
 
     item_getter: U,
@@ -59,15 +61,22 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
+    pub fn new(
+        config: SharedCoreConfig,
+        event_tx: Sender<Event>,
+        item_getter: U,
+        error_message: Vec<&'static str>,
+    ) -> Self {
         let search_input = InputWidget::builder()
             .config(config.clone())
+            .event_tx(event_tx.clone())
             .title("Search")
             .build();
-        let error_widget = ErrorWidget::new(config.clone(), error_message);
+        let error_widget = ErrorWidget::new(config.clone(), event_tx.clone(), error_message);
 
         Self {
             config,
+            event_tx,
             focused: false,
             item_getter,
             items: Ok(vec![]),
@@ -255,12 +264,12 @@ where
         self.search_input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
             self.error_widget.toggle_focus();
             self.toggle_focus().await;
 
-            return None;
+            return Ok(());
         }
 
         if let Event::Input(key) = event {
@@ -279,7 +288,7 @@ where
                     if let Some(i) = self.list_state.selected() {
                         let selected_channel = if let Some(v) = self.filtered_items.clone() {
                             if v.is_empty() {
-                                return None;
+                                return Ok(());
                             }
 
                             v.get(i).unwrap().to_string()
@@ -294,13 +303,15 @@ where
 
                         let selected_channel_trimmed = clean_channel_name(&selected_channel);
 
-                        return Some(InternalEvent::Enter(TwitchAction::JoinChannel(
-                            selected_channel_trimmed,
-                        )));
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(
+                                TwitchAction::JoinChannel(selected_channel_trimmed),
+                            )))
+                            .await?;
                     }
                 }
                 _ => {
-                    self.search_input.event(event).await;
+                    self.search_input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_items {
@@ -312,6 +323,6 @@ where
             }
         }
 
-        None
+        Ok(())
     }
 }

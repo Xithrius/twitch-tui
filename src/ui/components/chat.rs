@@ -1,6 +1,8 @@
 use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -27,6 +29,7 @@ use crate::{
 
 pub struct ChatWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     messages: SharedMessages,
     chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
@@ -41,6 +44,7 @@ pub struct ChatWidget {
 impl ChatWidget {
     pub fn new(
         config: SharedCoreConfig,
+        event_tx: Sender<Event>,
         messages: SharedMessages,
         storage: &SharedStorage,
         emotes: &SharedEmotes,
@@ -48,16 +52,22 @@ impl ChatWidget {
     ) -> Self {
         let current_channel_name = config.twitch.channel.clone();
 
-        let chat_input: ChatInputWidget =
-            ChatInputWidget::new(config.clone(), storage.clone(), emotes.clone());
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
-        let search_input = MessageSearchWidget::new(config.clone());
-        let following = FollowingWidget::new(config.clone());
+        let chat_input: ChatInputWidget = ChatInputWidget::new(
+            config.clone(),
+            event_tx.clone(),
+            storage.clone(),
+            emotes.clone(),
+        );
+        let channel_input =
+            ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
+        let search_input = MessageSearchWidget::new(config.clone(), event_tx.clone());
+        let following = FollowingWidget::new(config.clone(), event_tx.clone());
 
         let scroll_offset = Scrolling::new(config.frontend.inverted_scrolling);
 
         Self {
             config,
+            event_tx,
             messages,
             chat_input,
             channel_input,
@@ -69,16 +79,21 @@ impl ChatWidget {
         }
     }
 
-    pub fn open_in_player(&self) -> Option<InternalEvent> {
+    pub async fn open_in_player(&self) -> Result<()> {
         let channel_name = self.config.twitch.channel.as_str();
         if self.config.frontend.view_command.is_empty() {
             webbrowser::open(format!(
             "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
-            ).as_str()).unwrap();
-            None
+            ).as_str())?;
         } else {
-            Some(InternalEvent::OpenStream(channel_name.to_string()))
+            self.event_tx
+                .send(Event::Internal(InternalEvent::OpenStream(
+                    channel_name.to_string(),
+                )))
+                .await?;
         }
+
+        Ok(())
     }
 
     pub fn get_messages<'a>(
@@ -288,20 +303,20 @@ impl Component for ChatWidget {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    async fn event(&mut self, event: &Event) -> Option<InternalEvent> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         // TODO: Once centralized events are implemented, make sure the channel name attribute is changed here on channel join.
         if let Event::Input(key) = event {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
             if self.chat_input.is_focused() {
-                self.chat_input.event(event).await
+                self.chat_input.event(event).await?;
             } else if self.channel_input.is_focused() {
-                self.channel_input.event(event).await
+                self.channel_input.event(event).await?;
             } else if self.search_input.is_focused() {
-                self.search_input.event(event).await
+                self.search_input.event(event).await?;
             } else if self.following.is_focused() {
-                self.following.event(event).await
+                self.following.event(event).await?;
             } else {
                 let keybinds = self.config.keybinds.normal.clone();
                 match key {
@@ -328,13 +343,25 @@ impl Component for ChatWidget {
                         self.filters.borrow_mut().reverse();
                     }
                     key if keybinds.enter_dashboard.contains(key) => {
-                        return Some(InternalEvent::SwitchState(State::Dashboard));
+                        self.event_tx
+                            .send(Event::Internal(InternalEvent::SwitchState(
+                                State::Dashboard,
+                            )))
+                            .await?;
                     }
                     key if keybinds.help.contains(key) => {
-                        return Some(InternalEvent::SwitchState(State::Help));
+                        self.event_tx
+                            .send(Event::Internal(InternalEvent::SwitchState(State::Help)))
+                            .await?;
                     }
-                    key if keybinds.quit.contains(key) => return Some(InternalEvent::Quit),
-                    key if keybinds.open_in_player.contains(key) => return self.open_in_player(),
+                    key if keybinds.quit.contains(key) => {
+                        self.event_tx
+                            .send(Event::Internal(InternalEvent::Quit))
+                            .await?;
+                    }
+                    key if keybinds.open_in_player.contains(key) => {
+                        self.open_in_player().await?;
+                    }
                     key if keybinds.scroll_to_end.contains(key) => {
                         self.scroll_offset.jump_to(0);
                     }
@@ -344,7 +371,9 @@ impl Component for ChatWidget {
                     }
                     key if keybinds.back_to_previous_window.contains(key) => {
                         if self.scroll_offset.get_offset() == 0 {
-                            return Some(InternalEvent::BackOneLayer);
+                            self.event_tx
+                                .send(Event::Internal(InternalEvent::BackOneLayer))
+                                .await?;
                         }
 
                         self.scroll_offset.jump_to(0);
@@ -367,11 +396,9 @@ impl Component for ChatWidget {
                     }
                     _ => {}
                 }
-
-                None
             }
-        } else {
-            None
         }
+
+        Ok(())
     }
 }
