@@ -206,20 +206,15 @@ impl Component for Context {
                 return self.components.debug.event(event).await;
             }
 
-            match key {
-                key if self.config.keybinds.toggle_debug_focus.contains(key) => {
-                    self.components.debug.toggle_focus();
-                }
-                _ => {
-                    return match self.state {
-                        State::Dashboard => self.components.dashboard.event(event).await,
-                        State::Normal => self.components.chat.event(event).await,
-                        State::Help => self.components.help.event(event).await,
-                    };
-                }
+            if self.config.keybinds.toggle_debug_focus.contains(key) {
+                self.components.debug.toggle_focus();
             }
         }
 
-        Ok(())
+        match self.state {
+            State::Dashboard => self.components.dashboard.event(event).await,
+            State::Normal => self.components.chat.event(event).await,
+            State::Help => self.components.help.event(event).await,
+        }
     }
 }

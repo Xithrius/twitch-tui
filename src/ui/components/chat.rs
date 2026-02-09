@@ -15,7 +15,7 @@ use crate::{
     config::SharedCoreConfig,
     context::SharedMessages,
     emotes::SharedEmotes,
-    events::{Event, InternalEvent},
+    events::{Event, InternalEvent, TwitchAction, TwitchEvent},
     handlers::{data::MessageData, filters::SharedFilters, state::State, storage::SharedStorage},
     ui::components::{
         ChannelSwitcherWidget, ChatInputWidget, Component, FollowingWidget, MessageSearchWidget,
@@ -304,7 +304,10 @@ impl Component for ChatWidget {
 
     #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Result<()> {
-        // TODO: Once centralized events are implemented, make sure the channel name attribute is changed here on channel join.
+        if let Event::Twitch(TwitchEvent::Action(TwitchAction::JoinChannel(channel))) = event {
+            self.current_channel_name.clone_from(channel);
+        }
+
         if let Event::Input(key) = event {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);

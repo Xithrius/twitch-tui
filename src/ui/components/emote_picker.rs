@@ -273,8 +273,7 @@ impl Component for EmotePickerWidget {
                     }
                 }
                 _ => {
-                    // TODO: Handle error
-                    let _ = self.input.event(event).await;
+                    self.input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
                     match self.filtered_emotes.len() {

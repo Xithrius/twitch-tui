@@ -300,13 +300,11 @@ impl Component for ChannelSwitcherWidget {
 
                                     self.search_input.clear();
 
-                                    // TODO: Handle error
-                                    let _ = self
-                                        .event_tx
+                                    self.event_tx
                                         .send(Event::Twitch(TwitchEvent::Action(
                                             TwitchAction::JoinChannel(selected_channel),
                                         )))
-                                        .await;
+                                        .await?;
                                 }
                             }
 
