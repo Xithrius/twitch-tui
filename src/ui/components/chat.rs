@@ -302,7 +302,6 @@ impl Component for ChatWidget {
         }
     }
 
-    #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Twitch(TwitchEvent::Action(TwitchAction::JoinChannel(channel))) = event {
             self.current_channel_name.clone_from(channel);

@@ -248,7 +248,6 @@ impl Component for ChannelSwitcherWidget {
         self.search_input.draw(f, Some(input_rect));
     }
 
-    #[allow(clippy::cognitive_complexity)]
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             let keybinds = self.config.keybinds.selection.clone();

@@ -7,7 +7,6 @@ use rustyline::{
     line_buffer::{ChangeListener, DeleteListener, LineBuffer},
 };
 use tokio::sync::mpsc::Sender;
-use tracing::debug;
 use tui::{
     Frame,
     layout::{Position as LayoutPosition, Rect},

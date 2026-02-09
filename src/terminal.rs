@@ -15,10 +15,6 @@ use crate::{
     utils::sanitization::clean_channel_name,
 };
 
-#[allow(
-    clippy::match_wildcard_for_single_variants,
-    clippy::cognitive_complexity
-)]
 pub async fn ui_driver(
     config: SharedCoreConfig,
     mut context: Context,
@@ -104,7 +100,7 @@ pub async fn ui_driver(
                         InternalEvent::OpenStream(channel) => {
                             context.open_stream(&channel);
                         }
-                        _ => {}
+                        InternalEvent::SelectEmote(_) => {}
                     }
                 }
                 Event::Twitch(twitch_event) => match twitch_event {

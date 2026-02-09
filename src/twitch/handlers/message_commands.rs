@@ -32,7 +32,6 @@ use crate::{
     },
 };
 
-#[allow(clippy::cognitive_complexity)]
 pub async fn handle_command_message(
     context: &TwitchWebsocketContext,
     event_tx: &Sender<Event>,
