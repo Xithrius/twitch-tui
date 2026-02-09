@@ -11,6 +11,7 @@ use crate::{
         data::{KNOWN_CHATTERS, MessageData},
         state::State,
     },
+    ui::components::Component,
     utils::sanitization::clean_channel_name,
 };
 
@@ -156,7 +157,7 @@ pub async fn ui_driver(
             }
         }
 
-        terminal.draw(|f| context.draw(f)).unwrap();
+        terminal.draw(|f| context.draw(f, Some(f.area()))).unwrap();
     }
 
     context.cleanup();
