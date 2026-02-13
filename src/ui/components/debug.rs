@@ -136,7 +136,7 @@ impl Component for DebugWidget {
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.keybinds.normal.clone();
+            let keybinds = &self.config.keybinds.normal;
             match key {
                 key if keybinds.quit.contains(key) => {
                     self.event_tx
