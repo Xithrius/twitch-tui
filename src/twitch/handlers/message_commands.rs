@@ -70,7 +70,7 @@ pub async fn handle_command_message(
         TwitchCommand::Ban(username, reason) => {
             let target_user_id = get_channel_id(&twitch_client, &username).await?;
 
-            let ban_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let ban_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let ban_payload = TimeoutPayload::new(target_user_id, None, reason.clone());
 
@@ -84,7 +84,7 @@ pub async fn handle_command_message(
         TwitchCommand::Timeout(username, duration, reason) => {
             let target_user_id = get_channel_id(&twitch_client, &username).await?;
 
-            let timeout_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let timeout_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let timeout_payload =
                 TimeoutPayload::new(target_user_id, Some(duration), reason.clone());
@@ -122,7 +122,7 @@ pub async fn handle_command_message(
             "Raid cancelled".to_string()
         }
         TwitchCommand::Followers(duration) => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_follower_mode(true, duration);
 
@@ -134,7 +134,7 @@ pub async fn handle_command_message(
             )
         }
         TwitchCommand::FollowersOff => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_follower_mode(false, None);
 
@@ -143,7 +143,7 @@ pub async fn handle_command_message(
             "Disabled followers-only mode for this room".to_string()
         }
         TwitchCommand::Slow(duration) => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload =
                 UpdateTwitchChatSettingsPayload::new_slow_mode(true, Some(duration));
@@ -153,7 +153,7 @@ pub async fn handle_command_message(
             format!("Enabled {duration}-second slow mode for this room")
         }
         TwitchCommand::SlowOff => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_slow_mode(false, None);
 
@@ -162,7 +162,7 @@ pub async fn handle_command_message(
             "Disabled slow mode for this room".to_string()
         }
         TwitchCommand::Subscribers => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_subscriber_mode(true);
 
@@ -171,7 +171,7 @@ pub async fn handle_command_message(
             "Enabled subscribers-only mode for this room".to_string()
         }
         TwitchCommand::SubscribersOff => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_subscriber_mode(false);
 
@@ -180,7 +180,7 @@ pub async fn handle_command_message(
             "Disabled subscribers-only mode for this room".to_string()
         }
         TwitchCommand::EmoteOnly => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_emote_only_mode(true);
 
@@ -189,7 +189,7 @@ pub async fn handle_command_message(
             "Enabled emote-only mode for this room".to_string()
         }
         TwitchCommand::EmoteOnlyOff => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_emote_only_mode(false);
 
@@ -198,7 +198,7 @@ pub async fn handle_command_message(
             "Disabled emote-only mode for this room".to_string()
         }
         TwitchCommand::UniqueChat => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_unique_chat_mode(true);
 
@@ -207,7 +207,7 @@ pub async fn handle_command_message(
             "Enabled unique-chat mode for this room".to_string()
         }
         TwitchCommand::UniqueChatOff => {
-            let update_query = ModeratorQuery::new(channel_id.to_string(), user_id);
+            let update_query = ModeratorQuery::new(channel_id.clone(), user_id);
 
             let update_payload = UpdateTwitchChatSettingsPayload::new_unique_chat_mode(false);
 
@@ -218,7 +218,7 @@ pub async fn handle_command_message(
         TwitchCommand::Vip(username) => {
             let target_user_id = get_channel_id(&twitch_client, &username).await?;
 
-            let vip_query = BroadcasterQuery::new(channel_id.to_string(), target_user_id);
+            let vip_query = BroadcasterQuery::new(channel_id.clone(), target_user_id);
 
             vip_twitch_user(&twitch_client, vip_query).await?;
 
@@ -227,7 +227,7 @@ pub async fn handle_command_message(
         TwitchCommand::Unvip(username) => {
             let target_user_id = get_channel_id(&twitch_client, &username).await?;
 
-            let unvip_query = BroadcasterQuery::new(channel_id.to_string(), target_user_id);
+            let unvip_query = BroadcasterQuery::new(channel_id.clone(), target_user_id);
 
             unvip_twitch_user(&twitch_client, unvip_query).await?;
 
@@ -236,7 +236,7 @@ pub async fn handle_command_message(
         TwitchCommand::Mod(username) => {
             let target_user_id = get_channel_id(&twitch_client, &username).await?;
 
-            let mod_query = BroadcasterQuery::new(channel_id.to_string(), target_user_id);
+            let mod_query = BroadcasterQuery::new(channel_id.clone(), target_user_id);
 
             mod_twitch_user(&twitch_client, mod_query).await?;
 
@@ -245,7 +245,7 @@ pub async fn handle_command_message(
         TwitchCommand::Unmod(username) => {
             let target_user_id = get_channel_id(&twitch_client, &username).await?;
 
-            let unmod_query = BroadcasterQuery::new(channel_id.to_string(), target_user_id);
+            let unmod_query = BroadcasterQuery::new(channel_id.clone(), target_user_id);
 
             unmod_twitch_user(&twitch_client, unmod_query).await?;
 
