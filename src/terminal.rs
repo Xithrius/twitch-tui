@@ -34,8 +34,6 @@ pub async fn ui_driver(
 
     let mut terminal = init_terminal(&config.frontend);
 
-    terminal.clear().unwrap();
-
     let is_emotes_enabled = context.emotes.enabled;
 
     loop {

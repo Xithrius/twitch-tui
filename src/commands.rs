@@ -69,7 +69,11 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBack
 
     let backend = CrosstermBackend::new(stdout);
 
-    Terminal::new(backend).unwrap()
+    let mut terminal = Terminal::new(backend).unwrap();
+
+    terminal.clear().unwrap();
+
+    terminal
 }
 
 pub fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
