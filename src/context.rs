@@ -23,6 +23,7 @@ use crate::{
         state::State,
         storage::{SharedStorage, Storage},
     },
+    twitch::oauth::TwitchOauth,
     ui::components::{Component, Components},
 };
 
@@ -54,18 +55,22 @@ macro_rules! shared {
 }
 
 impl Context {
-    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
+    pub fn new(
+        config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
+        event_tx: Sender<Event>,
+        emotes: Rc<Emotes>,
+    ) -> Self {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
-        let emotes_enabled = config.frontend.is_emotes_enabled();
 
         let storage = shared!(Storage::new(&config));
         let filters = shared!(Filters::new(&config));
         let messages = shared!(VecDeque::with_capacity(maximum_messages));
-        let emotes = Rc::new(Emotes::new(emotes_enabled));
 
         let components = Components::builder()
             .config(&config)
+            .twitch_oauth(twitch_oauth)
             .event_tx(event_tx)
             .storage(storage.clone())
             .filters(filters)

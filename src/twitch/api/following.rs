@@ -5,15 +5,12 @@ use std::{
     vec::Vec,
 };
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 use serde::Deserialize;
 
 use super::TWITCH_API_BASE_URL;
-use crate::{
-    config::{SharedCoreConfig, TwitchConfig},
-    twitch::oauth::{get_twitch_client, get_twitch_client_oauth},
-};
+use crate::{config::SharedCoreConfig, twitch::oauth::TwitchOauth};
 
 const FOLLOWER_COUNT: usize = 100;
 
@@ -92,14 +89,16 @@ impl From<LiveChannelList> for FollowingChannelList {
 #[derive(Debug, Clone)]
 pub struct Following {
     pub config: SharedCoreConfig,
+    pub twitch_oauth: TwitchOauth,
     #[allow(unused)]
     list: FollowingChannelList,
 }
 
 impl Following {
-    pub fn new(config: SharedCoreConfig) -> Self {
+    pub fn new(config: SharedCoreConfig, twitch_oauth: TwitchOauth) -> Self {
         Self {
             config,
+            twitch_oauth,
             list: FollowingChannelList::default(),
         }
     }
@@ -141,13 +140,13 @@ pub async fn get_user_following(
     Ok(channels)
 }
 
-pub async fn get_following(
-    twitch_config: &TwitchConfig,
-    live: bool,
-) -> Result<FollowingChannelList> {
-    let oauth = &get_twitch_client_oauth(None).await?;
-    let user_id = &oauth.user_id;
-    let client = get_twitch_client(oauth, twitch_config.token.clone().as_ref()).await?;
+pub async fn get_following(twitch_oauth: TwitchOauth, live: bool) -> Result<FollowingChannelList> {
+    let client = twitch_oauth
+        .client()
+        .context("Unable to get OAuth from twitch OAuth")?;
+    let user_id = twitch_oauth
+        .user_id()
+        .context("Unable to get user ID from Twitch OAuth")?;
 
-    get_user_following(&client, user_id, live).await
+    get_user_following(&client, &user_id, live).await
 }

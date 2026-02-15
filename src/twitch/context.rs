@@ -6,8 +6,6 @@ use super::{api::subscriptions::Subscription, oauth::TwitchOauth};
 
 #[derive(Debug, Clone, Default)]
 pub struct TwitchWebsocketContext {
-    /// Client for doing Twitch API requests
-    client: Option<Client>,
     /// Data from the authentication endpoint for the current session
     oauth: Option<TwitchOauth>,
     /// The OAuth token for the user
@@ -28,16 +26,12 @@ pub struct TwitchWebsocketContext {
 }
 
 impl TwitchWebsocketContext {
-    pub const fn twitch_client(&self) -> Option<&Client> {
-        self.client.as_ref()
+    pub fn twitch_client(&self) -> Option<Client> {
+        self.oauth.as_ref().and_then(TwitchOauth::client)
     }
 
     pub const fn oauth(&self) -> Option<&TwitchOauth> {
         self.oauth.as_ref()
-    }
-
-    pub fn token(self) -> Option<String> {
-        self.token
     }
 
     pub const fn event_subscriptions(&self) -> &HashMap<Subscription, String> {
@@ -54,10 +48,6 @@ impl TwitchWebsocketContext {
 
     pub const fn channel_name(&self) -> Option<&String> {
         self.channel_name.as_ref()
-    }
-
-    pub fn set_twitch_client(&mut self, client: Option<Client>) {
-        self.client = client;
     }
 
     pub fn set_oauth(&mut self, oauth: Option<TwitchOauth>) {

@@ -17,6 +17,7 @@ use crate::{
             welcome_message::{handle_channel_join, handle_welcome_message},
         },
         models::ReceivedTwitchMessage,
+        oauth::TwitchOauth,
     },
 };
 
@@ -25,8 +26,16 @@ pub struct TwitchWebsocket {
 }
 
 impl TwitchWebsocket {
-    pub fn new(config: SharedCoreConfig, tx: Sender<Event>, rx: Receiver<TwitchAction>) -> Self {
-        let mut actor = TwitchWebsocketThread::new(config, tx, rx);
+    pub fn new(
+        config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
+        tx: Sender<Event>,
+        rx: Receiver<TwitchAction>,
+    ) -> Self {
+        let mut context = TwitchWebsocketContext::default();
+        context.set_oauth(Some(twitch_oauth));
+
+        let mut actor = TwitchWebsocketThread::new(config, context, tx, rx);
         tokio::task::spawn(async move { actor.run().await });
 
         Self {}
@@ -49,14 +58,15 @@ pub struct TwitchWebsocketThread {
 }
 
 impl TwitchWebsocketThread {
-    fn new(
+    const fn new(
         config: SharedCoreConfig,
+        context: TwitchWebsocketContext,
         event_tx: Sender<Event>,
         action_rx: Receiver<TwitchAction>,
     ) -> Self {
         Self {
             config,
-            context: TwitchWebsocketContext::default(),
+            context,
             event_tx,
             action_rx,
         }

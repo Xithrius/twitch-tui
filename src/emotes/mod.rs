@@ -18,6 +18,7 @@ use tracing::{error, info, warn};
 use crate::{
     config::{CoreConfig, get_cache_dir},
     emotes::{downloader::get_emotes, graphics_protocol::Image},
+    twitch::oauth::TwitchOauth,
     utils::emotes::get_emote_offset,
 };
 
@@ -111,13 +112,14 @@ impl From<LoadedEmote> for EmoteData {
 
 pub fn query_emotes(
     config: &CoreConfig,
+    twitch_oauth: TwitchOauth,
     channel: String,
 ) -> OSReceiver<(DownloadedEmotes, DownloadedEmotes)> {
     let (tx, mut rx) = tokio::sync::oneshot::channel();
 
     if config.frontend.is_emotes_enabled() {
         let config = config.clone();
-        tokio::spawn(async move { send_emotes(&config, tx, channel).await });
+        tokio::spawn(async move { send_emotes(&config, twitch_oauth, tx, channel).await });
     } else {
         rx.close();
     }
@@ -127,11 +129,12 @@ pub fn query_emotes(
 
 pub async fn send_emotes(
     config: &CoreConfig,
+    twitch_oauth: TwitchOauth,
     tx: OSSender<(DownloadedEmotes, DownloadedEmotes)>,
     channel: String,
 ) {
     info!("Starting emotes download.");
-    match get_emotes(config, &channel).await {
+    match get_emotes(config, twitch_oauth, &channel).await {
         Ok(emotes) => {
             info!("Emotes downloaded.");
             if tx.send(emotes).is_err() {
