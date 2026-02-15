@@ -25,23 +25,23 @@ use tokio::sync::mpsc;
 use tracing::{info, warn};
 
 use crate::{
+    app::App,
     cli::args::Cli,
+    commands::{init_terminal, reset_terminal},
     config::CoreConfig,
-    context::Context,
     emotes::{Emotes, initialize_emote_decoder},
-    events::Events,
+    events::{Events, TwitchAction},
     twitch::{oauth::TwitchOauth, websocket::TwitchWebsocket},
 };
 
+mod app;
 mod cli;
 mod commands;
 mod config;
-mod context;
 mod emotes;
 mod events;
 mod handlers;
 mod logging;
-mod terminal;
 mod twitch;
 mod ui;
 mod utils;
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
     info!("Logging system initialised");
 
     let (event_tx, event_rx) = mpsc::channel(100);
-    let (twitch_tx, twitch_rx) = mpsc::channel(100);
+    let (twitch_tx, twitch_rx) = mpsc::channel::<TwitchAction>(100);
 
     let emotes = initialize_emote_decoder(&mut config);
 
@@ -67,29 +67,31 @@ async fn main() -> Result<()> {
     let emotes_enabled = config.frontend.is_emotes_enabled();
     let context_emotes = Rc::new(Emotes::new(emotes_enabled));
 
-    let context = Context::new(
-        config.clone(),
-        twitch_oauth.clone(),
-        event_tx.clone(),
-        context_emotes.clone(),
-    );
+    let events = Events::new(config.terminal.delay, event_tx.clone(), event_rx);
 
-    let decoded_rx = if let Some((rx, cell_size)) = emotes {
+    let decoded_emotes_rx = if let Some((rx, cell_size)) = emotes {
         context_emotes.cell_size.get_or_init(|| cell_size);
         Some(rx)
     } else {
         None
     };
 
-    TwitchWebsocket::new(
+    let app = App::new(
         config.clone(),
         twitch_oauth.clone(),
+        events,
         event_tx.clone(),
-        twitch_rx,
+        twitch_tx,
+        context_emotes,
+        decoded_emotes_rx,
     );
 
-    let events = Events::new(config.terminal.delay, event_tx, event_rx);
-    terminal::ui_driver(config, context, events, twitch_oauth, twitch_tx, decoded_rx).await;
+    TwitchWebsocket::new(config.clone(), twitch_oauth, event_tx.clone(), twitch_rx);
+
+    let terminal = init_terminal(&config.frontend);
+    app.run(terminal).await?;
+
+    reset_terminal();
 
     std::process::exit(0)
 }

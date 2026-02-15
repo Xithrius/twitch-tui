@@ -12,8 +12,8 @@ use tui::{
 };
 
 use crate::{
+    app::SharedMessages,
     config::SharedCoreConfig,
-    context::SharedMessages,
     emotes::SharedEmotes,
     events::{Event, InternalEvent, TwitchAction, TwitchEvent},
     handlers::{data::MessageData, filters::SharedFilters, state::State, storage::SharedStorage},

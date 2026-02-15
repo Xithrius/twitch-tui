@@ -29,13 +29,13 @@ impl TwitchWebsocket {
     pub fn new(
         config: SharedCoreConfig,
         twitch_oauth: TwitchOauth,
-        tx: Sender<Event>,
-        rx: Receiver<TwitchAction>,
+        event_tx: Sender<Event>,
+        twitch_rx: Receiver<TwitchAction>,
     ) -> Self {
         let mut context = TwitchWebsocketContext::default();
         context.set_oauth(Some(twitch_oauth));
 
-        let mut actor = TwitchWebsocketThread::new(config, context, tx, rx);
+        let mut actor = TwitchWebsocketThread::new(config, context, event_tx, twitch_rx);
         tokio::task::spawn(async move { actor.run().await });
 
         Self {}
