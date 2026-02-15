@@ -4,6 +4,7 @@ use color_eyre::{Result, eyre::ContextCompat};
 use tokio::sync::mpsc::Sender;
 use tracing::debug;
 
+use super::super::oauth::TwitchOauth;
 use crate::{
     events::Event,
     handlers::data::DataBuilder,
@@ -60,7 +61,7 @@ pub async fn handle_command_message(
 
     let user_id = context
         .oauth()
-        .and_then(|oauth| oauth.user_id())
+        .and_then(TwitchOauth::user_id)
         .context("Twitch OAuth could not be found when sending command")?;
 
     let command_message = match command {

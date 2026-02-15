@@ -58,7 +58,7 @@ pub struct TwitchWebsocketThread {
 }
 
 impl TwitchWebsocketThread {
-    fn new(
+    const fn new(
         config: SharedCoreConfig,
         context: TwitchWebsocketContext,
         event_tx: Sender<Event>,

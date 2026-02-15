@@ -27,15 +27,11 @@ pub struct TwitchWebsocketContext {
 
 impl TwitchWebsocketContext {
     pub fn twitch_client(&self) -> Option<Client> {
-        self.oauth.as_ref().and_then(|oauth| oauth.client())
+        self.oauth.as_ref().and_then(TwitchOauth::client)
     }
 
     pub const fn oauth(&self) -> Option<&TwitchOauth> {
         self.oauth.as_ref()
-    }
-
-    pub fn token(self) -> Option<String> {
-        self.token
     }
 
     pub const fn event_subscriptions(&self) -> &HashMap<Subscription, String> {

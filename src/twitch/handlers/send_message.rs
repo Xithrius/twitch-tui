@@ -1,5 +1,6 @@
 use color_eyre::{Result, eyre::ContextCompat};
 
+use super::super::oauth::TwitchOauth;
 use crate::twitch::{
     api::messages::{NewTwitchMessage, send_twitch_message},
     context::TwitchWebsocketContext,
@@ -17,7 +18,7 @@ pub async fn handle_send_message(context: &TwitchWebsocketContext, message: Stri
 
     let user_id = context
         .oauth()
-        .and_then(|oauth| oauth.user_id())
+        .and_then(TwitchOauth::user_id)
         .context("Twitch OAuth could not be found when sending message")?;
 
     let new_message = NewTwitchMessage::new(channel_id.clone(), user_id.clone(), message);

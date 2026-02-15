@@ -32,7 +32,7 @@ impl TwitchOauth {
     pub async fn init(&mut self, config: SharedCoreConfig) -> Result<Self> {
         let token = config.twitch.token.as_ref();
         self.init_oauth(token).await?;
-        self.init_client(token).await?;
+        self.init_client(token)?;
 
         Ok(self.to_owned())
     }
@@ -72,7 +72,7 @@ impl TwitchOauth {
         Ok(())
     }
 
-    async fn init_client(&mut self, token: Option<&String>) -> Result<()> {
+    fn init_client(&mut self, token: Option<&String>) -> Result<()> {
         let Some(twitch_oauth) = self.inner_oauth.as_ref() else {
             bail!(
                 "Twitch OAuth was not initialized (successfully?) before attempting to initialize the client."
@@ -107,6 +107,7 @@ impl TwitchOauth {
         self.inner_client.clone()
     }
 
+    #[allow(unused)]
     pub fn client_id(&self) -> Option<String> {
         self.inner_oauth
             .as_ref()
