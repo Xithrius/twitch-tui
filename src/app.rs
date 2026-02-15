@@ -204,7 +204,7 @@ impl App {
             }
 
             if let Some(event) = self.events.next().await {
-                self.event(&event).await;
+                self.event(&event).await?;
             }
 
             terminal.draw(|f| self.draw(f, Some(f.area()))).unwrap();
@@ -318,11 +318,9 @@ impl Component for App {
                         self.clear_messages();
                         self.emotes.unload();
 
-                        // TODO: Handle error
-                        let _ = self
-                            .twitch_tx
+                        self.twitch_tx
                             .send(TwitchAction::JoinChannel(channel.clone()))
-                            .await;
+                            .await?;
 
                         if self.config.frontend.autostart_view_command {
                             self.open_stream(&channel);
@@ -332,8 +330,7 @@ impl Component for App {
                         self.set_state(State::Normal);
                     }
                     TwitchAction::Message(message) => {
-                        // TODO: Handle error
-                        let _ = self.twitch_tx.send(TwitchAction::Message(message)).await;
+                        self.twitch_tx.send(TwitchAction::Message(message)).await?;
                     }
                 },
                 TwitchEvent::Notification(twitch_notification) => {
