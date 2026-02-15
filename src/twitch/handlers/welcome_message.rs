@@ -21,7 +21,6 @@ use crate::{
         },
         context::TwitchWebsocketContext,
         models::ReceivedTwitchMessage,
-        oauth::{get_twitch_client, get_twitch_client_oauth},
         roomstate::handle_roomstate,
     },
 };
@@ -101,18 +100,12 @@ pub async fn handle_welcome_message(
     let received_message = serde_json::from_str::<ReceivedTwitchMessage>(&message)
         .context("Could not convert welcome message to received message")?;
 
-    let oauth_token = context.clone().token();
-
-    let twitch_oauth = get_twitch_client_oauth(oauth_token.as_ref()).await?;
-    context.set_oauth(Some(twitch_oauth.clone()));
-
-    let twitch_client = get_twitch_client(&twitch_oauth, oauth_token.as_ref())
-        .await
-        .expect("failed to authenticate twitch client");
-    context.set_twitch_client(Some(twitch_client.clone()));
-
     let session_id = received_message.session_id();
     context.set_session_id(session_id.clone());
+
+    let twitch_client = context
+        .twitch_client()
+        .context("Failed to get twitch client from context")?;
 
     let channel_name = context
         .channel_name()

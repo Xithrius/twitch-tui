@@ -15,12 +15,12 @@ pub async fn handle_send_message(context: &TwitchWebsocketContext, message: Stri
         .channel_id()
         .context("Channel ID could not be found when sending message")?;
 
-    let twitch_oauth = context
+    let user_id = context
         .oauth()
+        .and_then(|oauth| oauth.user_id())
         .context("Twitch OAuth could not be found when sending message")?;
 
-    let new_message =
-        NewTwitchMessage::new(channel_id.clone(), twitch_oauth.user_id.clone(), message);
+    let new_message = NewTwitchMessage::new(channel_id.clone(), user_id.clone(), message);
 
     send_twitch_message(twitch_client, new_message).await?;
 

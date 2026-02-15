@@ -1,80 +1,109 @@
-use std::sync::OnceLock;
+use std::sync::Arc;
 
-use color_eyre::{Result, eyre::ContextCompat};
+use color_eyre::{
+    Result,
+    eyre::{ContextCompat, bail},
+};
 use reqwest::{
     Client,
     header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
+
+use crate::config::SharedCoreConfig;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TwitchOauthInner {
+    client_id: String,
+    login: String,
+    scopes: Vec<String>,
+    user_id: String,
+    expires_in: i32,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct TwitchOauth {
-    pub client_id: String,
-    pub login: String,
-    pub scopes: Vec<String>,
-    pub user_id: String,
-    pub expires_in: i32,
+    inner_oauth: Option<Arc<TwitchOauthInner>>,
+    inner_client: Option<Client>,
 }
 
-pub async fn get_twitch_client_oauth(oauth_token: Option<&String>) -> Result<TwitchOauth> {
-    static TWITCH_CLIENT_OAUTH: OnceLock<TwitchOauth> = OnceLock::new();
+impl TwitchOauth {
+    pub async fn init(&mut self, config: SharedCoreConfig) -> Result<Self> {
+        let token = config.twitch.token.as_ref();
+        self.init_oauth(token).await?;
+        self.init_client(token).await?;
 
-    if let Some(twitch_oauth) = TWITCH_CLIENT_OAUTH.get() {
-        return Ok(twitch_oauth.clone());
+        Ok(self.to_owned())
     }
 
-    let token = oauth_token
-        .context("Twitch token is empty")?
-        .strip_prefix("oauth:")
-        .context("token does not start with `oauth:`")?;
+    async fn init_oauth(&mut self, token: Option<&String>) -> Result<()> {
+        if self.inner_oauth.is_some() {
+            warn!("Twitch OAuth tried to re-initialize. Maybe a second call happened somewhere?");
+            return Ok(());
+        }
 
-    // Strips the `oauth:` prefix if it exists
-    let token = token.strip_prefix("oauth:").unwrap_or(token);
+        let token = token
+            .context("Twitch token is empty")?
+            .strip_prefix("oauth:")
+            .context("token does not start with `oauth:`")?;
 
-    let client = Client::new();
+        // Strips the `oauth:` prefix if it exists
+        let token = token.strip_prefix("oauth:").unwrap_or(token);
 
-    let data = client
-        .get("https://id.twitch.tv/oauth2/validate")
-        .header(AUTHORIZATION, &format!("OAuth {token}"))
-        .send()
-        .await?
-        .error_for_status()?;
+        let client = Client::new();
 
-    let twitch_oauth = data.json::<TwitchOauth>().await?;
+        let data = client
+            .get("https://id.twitch.tv/oauth2/validate")
+            .header(AUTHORIZATION, &format!("OAuth {token}"))
+            .send()
+            .await?
+            .error_for_status()?;
 
-    info!(
-        "Authentication successful. Enabled scopes: {:?}",
-        twitch_oauth.scopes
-    );
+        let twitch_oauth = data.json::<TwitchOauthInner>().await?;
 
-    Ok(TWITCH_CLIENT_OAUTH.get_or_init(|| twitch_oauth)).cloned()
-}
+        info!(
+            "Authentication successful. Enabled scopes: {:?}",
+            twitch_oauth.scopes
+        );
 
-pub async fn get_twitch_client(
-    twitch_oauth: &TwitchOauth,
-    oauth_token: Option<&String>,
-) -> Result<Client> {
-    static TWITCH_CLIENT: OnceLock<Client> = OnceLock::new();
+        self.inner_oauth = Some(Arc::new(twitch_oauth));
 
-    if let Some(twitch_client) = TWITCH_CLIENT.get() {
-        return Ok(twitch_client.clone());
+        Ok(())
     }
 
-    let token = oauth_token
-        .context("Twitch token is empty")?
-        .strip_prefix("oauth:")
-        .context("token does not start with `oauth:`")?;
+    async fn init_client(&mut self, token: Option<&String>) -> Result<()> {
+        let Some(twitch_oauth) = self.inner_oauth.as_ref() else {
+            bail!(
+                "Twitch OAuth was not initialized (successfully?) before attempting to initialize the client."
+            );
+        };
 
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        HeaderValue::from_str(&format!("Bearer {token}"))?,
-    );
-    headers.insert("Client-Id", HeaderValue::from_str(&twitch_oauth.client_id)?);
-    headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
+        let token = token
+            .context("Twitch token is empty")?
+            .strip_prefix("oauth:")
+            .context("token does not start with `oauth:`")?;
 
-    let twitch_client = Client::builder().default_headers(headers).build()?;
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {token}"))?,
+        );
+        headers.insert("Client-Id", HeaderValue::from_str(&twitch_oauth.client_id)?);
+        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
 
-    Ok(TWITCH_CLIENT.get_or_init(|| twitch_client)).cloned()
+        let twitch_client = Client::builder().default_headers(headers).build()?;
+
+        self.inner_client = Some(twitch_client);
+
+        Ok(())
+    }
+
+    pub fn user_id(&self) -> Option<String> {
+        self.inner_oauth.as_ref().map(|oauth| oauth.user_id.clone())
+    }
+
+    pub fn client(&self) -> Option<Client> {
+        self.inner_client.clone()
+    }
 }

@@ -10,10 +10,7 @@ use reqwest::Client;
 use serde::Deserialize;
 
 use super::TWITCH_API_BASE_URL;
-use crate::{
-    config::{SharedCoreConfig, TwitchConfig},
-    twitch::oauth::{get_twitch_client, get_twitch_client_oauth},
-};
+use crate::config::{SharedCoreConfig, TwitchConfig};
 
 const FOLLOWER_COUNT: usize = 100;
 

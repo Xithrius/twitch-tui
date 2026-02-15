@@ -47,13 +47,11 @@ pub async fn subscribe_to_events(
 
     let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
 
-    let mut subscription = ReceivedTwitchSubscription::new(
-        // Set to None here so we can modify otherwise in the loop
-        None,
-        channel_id,
-        oauth.user_id.clone(),
-        session_id,
-    );
+    let user_id = oauth
+        .user_id()
+        .context("Faield to get user ID from twitch OAuth context")?;
+
+    let mut subscription = ReceivedTwitchSubscription::new(channel_id, user_id, session_id);
 
     let mut subscription_map = HashMap::new();
 

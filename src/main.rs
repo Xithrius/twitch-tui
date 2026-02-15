@@ -16,7 +16,7 @@
     clippy::too_many_arguments
 )]
 
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
@@ -25,8 +25,12 @@ use tokio::sync::mpsc;
 use tracing::{info, warn};
 
 use crate::{
-    cli::args::Cli, config::CoreConfig, context::Context, emotes::initialize_emote_decoder,
-    events::Events, twitch::websocket::TwitchWebsocket,
+    cli::args::Cli,
+    config::CoreConfig,
+    context::Context,
+    emotes::{Emotes, initialize_emote_decoder},
+    events::Events,
+    twitch::{oauth::TwitchOauth, websocket::TwitchWebsocket},
 };
 
 mod cli;
@@ -59,10 +63,14 @@ async fn main() -> Result<()> {
 
     let config = Arc::new(config);
 
-    let context = Context::new(config.clone(), event_tx.clone());
+    let twitch_oauth = TwitchOauth::default().init(config.clone()).await?;
+    let emotes_enabled = config.frontend.is_emotes_enabled();
+    let context_emotes = Rc::new(Emotes::new(emotes_enabled));
+
+    let context = Context::new(config.clone(), event_tx.clone(), context_emotes.clone());
 
     let decoded_rx = if let Some((rx, cell_size)) = emotes {
-        context.emotes.cell_size.get_or_init(|| cell_size);
+        context_emotes.cell_size.get_or_init(|| cell_size);
         Some(rx)
     } else {
         None

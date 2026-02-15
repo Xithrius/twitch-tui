@@ -58,11 +58,10 @@ pub async fn handle_command_message(
         .channel_id()
         .context("Channel ID could not be found when sending command")?;
 
-    let twitch_oauth = context
+    let user_id = context
         .oauth()
+        .and_then(|oauth| oauth.user_id())
         .context("Twitch OAuth could not be found when sending command")?;
-
-    let user_id = twitch_oauth.user_id.clone();
 
     let command_message = match command {
         TwitchCommand::Clear => {

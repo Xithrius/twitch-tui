@@ -54,9 +54,11 @@ impl TwitchWebsocketThread {
         event_tx: Sender<Event>,
         action_rx: Receiver<TwitchAction>,
     ) -> Self {
+        let context = TwitchWebsocketContext::default();
+
         Self {
             config,
-            context: TwitchWebsocketContext::default(),
+            context,
             event_tx,
             action_rx,
         }

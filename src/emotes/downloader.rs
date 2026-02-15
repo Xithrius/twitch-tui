@@ -8,10 +8,7 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     config::{CoreConfig, FrontendConfig, get_cache_dir},
     emotes::DownloadedEmotes,
-    twitch::{
-        api::channels::get_channel_id,
-        oauth::{get_twitch_client, get_twitch_client_oauth},
-    },
+    twitch::api::channels::get_channel_id,
 };
 
 // HashMap of emote name, emote filename, emote url, and if the emote is an overlay
