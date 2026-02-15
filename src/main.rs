@@ -67,7 +67,12 @@ async fn main() -> Result<()> {
     let emotes_enabled = config.frontend.is_emotes_enabled();
     let context_emotes = Rc::new(Emotes::new(emotes_enabled));
 
-    let context = Context::new(config.clone(), event_tx.clone(), context_emotes.clone());
+    let context = Context::new(
+        config.clone(),
+        twitch_oauth.clone(),
+        event_tx.clone(),
+        context_emotes.clone(),
+    );
 
     let decoded_rx = if let Some((rx, cell_size)) = emotes {
         context_emotes.cell_size.get_or_init(|| cell_size);
@@ -76,10 +81,15 @@ async fn main() -> Result<()> {
         None
     };
 
-    TwitchWebsocket::new(config.clone(), event_tx.clone(), twitch_rx);
+    TwitchWebsocket::new(
+        config.clone(),
+        twitch_oauth.clone(),
+        event_tx.clone(),
+        twitch_rx,
+    );
 
     let events = Events::new(config.terminal.delay, event_tx, event_rx);
-    terminal::ui_driver(config, context, events, twitch_tx, decoded_rx).await;
+    terminal::ui_driver(config, context, events, twitch_oauth, twitch_tx, decoded_rx).await;
 
     std::process::exit(0)
 }

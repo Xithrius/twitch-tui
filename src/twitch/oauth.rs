@@ -106,4 +106,10 @@ impl TwitchOauth {
     pub fn client(&self) -> Option<Client> {
         self.inner_client.clone()
     }
+
+    pub fn client_id(&self) -> Option<String> {
+        self.inner_oauth
+            .as_ref()
+            .map(|oauth| oauth.client_id.clone())
+    }
 }

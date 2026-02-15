@@ -14,6 +14,7 @@ use crate::{
     config::SharedCoreConfig,
     events::{Event, InternalEvent, Key, TwitchAction, TwitchEvent, get_keybind_text},
     handlers::{state::State, storage::SharedStorage},
+    twitch::oauth::TwitchOauth,
     ui::components::{ChannelSwitcherWidget, Component, FollowingWidget},
     utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };
@@ -36,10 +37,15 @@ pub struct DashboardWidget {
 }
 
 impl DashboardWidget {
-    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>, storage: SharedStorage) -> Self {
+    pub fn new(
+        config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
+        event_tx: Sender<Event>,
+        storage: SharedStorage,
+    ) -> Self {
         let channel_input =
             ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
-        let following = FollowingWidget::new(config.clone(), event_tx.clone());
+        let following = FollowingWidget::new(config.clone(), twitch_oauth, event_tx.clone());
         let switcher_count = None;
 
         Self {

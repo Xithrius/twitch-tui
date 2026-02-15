@@ -22,7 +22,7 @@ pub async fn handle_send_message(context: &TwitchWebsocketContext, message: Stri
 
     let new_message = NewTwitchMessage::new(channel_id.clone(), user_id.clone(), message);
 
-    send_twitch_message(twitch_client, new_message).await?;
+    send_twitch_message(&twitch_client, new_message).await?;
 
     Ok(())
 }

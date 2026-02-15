@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, collections::HashMap, path::Path};
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use futures::StreamExt;
 use reqwest::{Client, Response};
 use tokio::io::AsyncWriteExt;
@@ -8,7 +8,7 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     config::{CoreConfig, FrontendConfig, get_cache_dir},
     emotes::DownloadedEmotes,
-    twitch::api::channels::get_channel_id,
+    twitch::{api::channels::get_channel_id, oauth::TwitchOauth},
 };
 
 // HashMap of emote name, emote filename, emote url, and if the emote is an overlay
@@ -420,18 +420,22 @@ fn get_enabled_emote_providers(config: &FrontendConfig) -> Vec<EmoteProvider> {
 
 pub async fn get_emotes(
     config: &CoreConfig,
+    twitch_oauth: TwitchOauth,
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
-    // Reuse the same client and headers for twitch requests
-    let client_id = &get_twitch_client_oauth(config.twitch.token.as_ref()).await?;
-    let twitch_client = get_twitch_client(client_id, config.twitch.token.as_ref()).await?;
+    let user_id = twitch_oauth
+        .user_id()
+        .context("Unable to get user ID from Twitch OAuth")?;
+    let twitch_client = twitch_oauth
+        .client()
+        .context("Unable to get client from Twitch OAuth")?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 
     let enabled_emotes = get_enabled_emote_providers(&config.frontend);
 
     let user_emotes = if enabled_emotes.contains(&EmoteProvider::Twitch) {
-        twitch::get_user_emotes(&twitch_client, &client_id.user_id)
+        twitch::get_user_emotes(&twitch_client, &user_id)
             .await
             .unwrap_or_default()
     } else {

@@ -43,7 +43,7 @@ pub async fn handle_channel_join(
     // Unsubscribe from previous channel
     if !first_channel {
         unsubscribe_from_events(
-            twitch_client,
+            &twitch_client,
             context.event_subscriptions(),
             current_subscriptions.clone(),
         )
@@ -56,11 +56,11 @@ pub async fn handle_channel_join(
             .channel_id()
             .context("Failed to get channel ID from context")?
     } else {
-        &get_channel_id(twitch_client, &channel_name).await?
+        &get_channel_id(&twitch_client, &channel_name).await?
     };
 
     let new_subscriptions = subscribe_to_events(
-        twitch_client,
+        &twitch_client,
         twitch_oauth,
         context.session_id().cloned(),
         channel_id.clone(),
@@ -86,7 +86,8 @@ pub async fn handle_channel_join(
         .context("Failed to send twitch join message")?;
 
     // Handle new chat settings with roomstate
-    let chat_settings = get_chat_settings(context.twitch_client(), context.channel_id()).await?;
+    let chat_settings =
+        get_chat_settings(context.twitch_client().as_ref(), context.channel_id()).await?;
     handle_roomstate(&chat_settings, event_tx).await?;
 
     Ok(())

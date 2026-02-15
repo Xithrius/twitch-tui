@@ -11,6 +11,7 @@ use crate::{
         data::{KNOWN_CHATTERS, MessageData},
         state::State,
     },
+    twitch::oauth::TwitchOauth,
     ui::components::Component,
     utils::sanitization::clean_channel_name,
 };
@@ -19,6 +20,7 @@ pub async fn ui_driver(
     config: SharedCoreConfig,
     mut context: Context,
     mut events: Events,
+    twitch_oauth: TwitchOauth,
     twitch_tx: Sender<TwitchAction>,
     mut drx: Option<Receiver<Result<DecodedEmote, String>>>,
 ) {
@@ -30,7 +32,7 @@ pub async fn ui_driver(
         original_hook(panic);
     }));
 
-    let mut erx = query_emotes(&config, config.twitch.channel.clone());
+    let mut erx = query_emotes(&config, twitch_oauth.clone(), config.twitch.channel.clone());
 
     let mut terminal = init_terminal(&config.frontend);
 
@@ -116,7 +118,7 @@ pub async fn ui_driver(
                             if config.frontend.autostart_view_command {
                                 context.open_stream(&channel);
                             }
-                            erx = query_emotes(&config, channel);
+                            erx = query_emotes(&config, twitch_oauth.clone(), channel);
                             context.set_state(State::Normal);
                         }
                         TwitchAction::Message(message) => {

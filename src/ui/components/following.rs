@@ -4,7 +4,9 @@ use tui::{Frame, layout::Rect};
 
 use super::utils::SearchWidget;
 use crate::{
-    config::SharedCoreConfig, events::Event, twitch::api::following::Following,
+    config::SharedCoreConfig,
+    events::Event,
+    twitch::{api::following::Following, oauth::TwitchOauth},
     ui::components::Component,
 };
 
@@ -22,8 +24,12 @@ pub struct FollowingWidget {
 }
 
 impl FollowingWidget {
-    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
-        let item_getter = Following::new(config.clone());
+    pub fn new(
+        config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
+        event_tx: Sender<Event>,
+    ) -> Self {
+        let item_getter = Following::new(config.clone(), twitch_oauth);
 
         let search_widget = SearchWidget::new(
             config,

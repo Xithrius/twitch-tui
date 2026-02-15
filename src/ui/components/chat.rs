@@ -17,6 +17,7 @@ use crate::{
     emotes::SharedEmotes,
     events::{Event, InternalEvent, TwitchAction, TwitchEvent},
     handlers::{data::MessageData, filters::SharedFilters, state::State, storage::SharedStorage},
+    twitch::oauth::TwitchOauth,
     ui::components::{
         ChannelSwitcherWidget, ChatInputWidget, Component, FollowingWidget, MessageSearchWidget,
         utils::Scrolling,
@@ -44,6 +45,7 @@ pub struct ChatWidget {
 impl ChatWidget {
     pub fn new(
         config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
         event_tx: Sender<Event>,
         messages: SharedMessages,
         storage: &SharedStorage,
@@ -61,7 +63,7 @@ impl ChatWidget {
         let channel_input =
             ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
         let search_input = MessageSearchWidget::new(config.clone(), event_tx.clone());
-        let following = FollowingWidget::new(config.clone(), event_tx.clone());
+        let following = FollowingWidget::new(config.clone(), twitch_oauth, event_tx.clone());
 
         let scroll_offset = Scrolling::new(config.frontend.inverted_scrolling);
 
