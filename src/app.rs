@@ -120,7 +120,7 @@ impl App {
         }
     }
 
-    pub fn open_stream(&mut self, channel: &str) {
+    fn open_stream(&mut self, channel: &str) {
         self.close_current_stream();
         let view_command = &self.config.frontend.view_command;
 
@@ -141,7 +141,7 @@ impl App {
         }
     }
 
-    pub fn close_current_stream(&mut self) {
+    fn close_current_stream(&mut self) {
         if let Some(process) = self.running_stream.as_mut() {
             _ = process
                 .kill()
@@ -150,19 +150,19 @@ impl App {
         self.running_stream = None;
     }
 
-    pub fn cleanup(&mut self) {
+    fn cleanup(&mut self) {
         self.close_current_stream();
         self.storage.borrow().dump_data();
         self.emotes.unload();
     }
 
-    pub fn clear_messages(&mut self) {
+    fn clear_messages(&mut self) {
         self.messages.borrow_mut().clear();
 
         self.components.chat.scroll_offset.jump_to(0);
     }
 
-    pub fn purge_user_messages(&self, user_id: &str) {
+    fn purge_user_messages(&self, user_id: &str) {
         let messages = self
             .messages
             .borrow_mut()
@@ -174,7 +174,7 @@ impl App {
         self.messages.replace(messages);
     }
 
-    pub fn remove_message_with(&self, message_id: &str) {
+    fn remove_message_with(&self, message_id: &str) {
         let index = self
             .messages
             .borrow_mut()
@@ -186,11 +186,11 @@ impl App {
         }
     }
 
-    pub fn get_previous_state(&self) -> Option<State> {
+    fn get_previous_state(&self) -> Option<State> {
         self.previous_state.clone()
     }
 
-    pub fn set_state(&mut self, other: State) {
+    fn set_state(&mut self, other: State) {
         self.previous_state = Some(self.state.clone());
         self.state = other;
     }
@@ -200,7 +200,7 @@ impl App {
 
         while self.running {
             if is_emotes_enabled {
-                self.handle_emote_events();
+                self.handle_emote_event();
             }
 
             if let Some(event) = self.events.next().await {
@@ -215,7 +215,7 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_emote_events(&mut self) {
+    fn handle_emote_event(&mut self) {
         // Check if we have received any emotes
         if let Ok((user_emotes, global_emotes)) = self.emotes_rx.try_recv() {
             *self.emotes.user_emotes.borrow_mut() = user_emotes;
@@ -244,6 +244,88 @@ impl App {
                         self.emotes.info.borrow_mut().remove(&name);
                     }
                 }
+            }
+        }
+    }
+
+    fn handle_internal_event(&mut self, internal_event: &InternalEvent) {
+        match internal_event {
+            InternalEvent::Quit => self.running = false,
+            InternalEvent::BackOneLayer => {
+                if let Some(previous_state) = self.get_previous_state() {
+                    self.set_state(previous_state);
+                } else {
+                    self.set_state(self.config.terminal.first_state.clone());
+                }
+            }
+            InternalEvent::SwitchState(state) => {
+                if self.state == State::Normal {
+                    self.clear_messages();
+                }
+
+                self.set_state(state.clone());
+            }
+            InternalEvent::OpenStream(channel) => {
+                self.open_stream(channel);
+            }
+            InternalEvent::SelectEmote(_) => {}
+        }
+    }
+
+    async fn handle_twitch_action(&mut self, twitch_action: &TwitchAction) -> Result<()> {
+        match twitch_action {
+            TwitchAction::JoinChannel(channel) => {
+                let channel = clean_channel_name(channel);
+                self.clear_messages();
+                self.emotes.unload();
+
+                self.twitch_tx
+                    .send(TwitchAction::JoinChannel(channel.clone()))
+                    .await?;
+
+                if self.config.frontend.autostart_view_command {
+                    self.open_stream(&channel);
+                }
+                self.emotes_rx = query_emotes(&self.config, self.twitch_oauth.clone(), channel);
+                self.set_state(State::Normal);
+            }
+            TwitchAction::Message(message) => {
+                self.twitch_tx
+                    .send(TwitchAction::Message(message.clone()))
+                    .await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn handle_twitch_notification(&mut self, twitch_notification: &TwitchNotification) {
+        match twitch_notification {
+            TwitchNotification::Message(m) => {
+                let message_data = MessageData::from_twitch_message(m.clone(), &self.emotes);
+                if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
+                    && self.config.twitch.username != message_data.author
+                {
+                    self.storage
+                        .borrow_mut()
+                        .add("chatters", message_data.author.clone());
+                }
+                self.messages.borrow_mut().push_front(message_data);
+
+                // If scrolling is enabled, pad for more messages.
+                if self.components.chat.scroll_offset.get_offset() > 0 {
+                    self.components.chat.scroll_offset.up();
+                }
+            }
+            TwitchNotification::ClearChat(user_id) => {
+                if let Some(user) = user_id {
+                    self.purge_user_messages(user.as_str());
+                } else {
+                    self.clear_messages();
+                }
+            }
+            TwitchNotification::DeleteMessage(message_id) => {
+                self.remove_message_with(message_id.as_str());
             }
         }
     }
@@ -290,81 +372,15 @@ impl Component for App {
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         match event {
-            Event::Internal(internal_event) => match internal_event {
-                InternalEvent::Quit => self.running = false,
-                InternalEvent::BackOneLayer => {
-                    if let Some(previous_state) = self.get_previous_state() {
-                        self.set_state(previous_state);
-                    } else {
-                        self.set_state(self.config.terminal.first_state.clone());
-                    }
-                }
-                InternalEvent::SwitchState(state) => {
-                    if *state == State::Normal {
-                        self.clear_messages();
-                    }
-
-                    self.set_state(state.clone());
-                }
-                InternalEvent::OpenStream(channel) => {
-                    self.open_stream(channel);
-                }
-                InternalEvent::SelectEmote(_) => {}
-            },
+            Event::Internal(internal_event) => {
+                self.handle_internal_event(internal_event);
+            }
             Event::Twitch(twitch_event) => match twitch_event {
-                TwitchEvent::Action(twitch_action) => match twitch_action {
-                    TwitchAction::JoinChannel(channel) => {
-                        let channel = clean_channel_name(channel);
-                        self.clear_messages();
-                        self.emotes.unload();
-
-                        self.twitch_tx
-                            .send(TwitchAction::JoinChannel(channel.clone()))
-                            .await?;
-
-                        if self.config.frontend.autostart_view_command {
-                            self.open_stream(&channel);
-                        }
-                        self.emotes_rx =
-                            query_emotes(&self.config, self.twitch_oauth.clone(), channel);
-                        self.set_state(State::Normal);
-                    }
-                    TwitchAction::Message(message) => {
-                        self.twitch_tx
-                            .send(TwitchAction::Message(message.clone()))
-                            .await?;
-                    }
-                },
+                TwitchEvent::Action(twitch_action) => {
+                    self.handle_twitch_action(twitch_action).await?;
+                }
                 TwitchEvent::Notification(twitch_notification) => {
-                    match twitch_notification {
-                        TwitchNotification::Message(m) => {
-                            let message_data =
-                                MessageData::from_twitch_message(m.clone(), &self.emotes);
-                            if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
-                                && self.config.twitch.username != message_data.author
-                            {
-                                self.storage
-                                    .borrow_mut()
-                                    .add("chatters", message_data.author.clone());
-                            }
-                            self.messages.borrow_mut().push_front(message_data);
-
-                            // If scrolling is enabled, pad for more messages.
-                            if self.components.chat.scroll_offset.get_offset() > 0 {
-                                self.components.chat.scroll_offset.up();
-                            }
-                        }
-                        TwitchNotification::ClearChat(user_id) => {
-                            if let Some(user) = user_id {
-                                self.purge_user_messages(user.as_str());
-                            } else {
-                                self.clear_messages();
-                            }
-                        }
-                        TwitchNotification::DeleteMessage(message_id) => {
-                            self.remove_message_with(message_id.as_str());
-                        }
-                    }
+                    self.handle_twitch_notification(twitch_notification);
                 }
             },
             Event::Input(key) => {

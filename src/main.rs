@@ -30,7 +30,7 @@ use crate::{
     commands::{init_terminal, reset_terminal},
     config::CoreConfig,
     emotes::{Emotes, initialize_emote_decoder},
-    events::{Events, TwitchAction},
+    events::{Event, Events, TwitchAction},
     twitch::{oauth::TwitchOauth, websocket::TwitchWebsocket},
 };
 
@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
 
     info!("Logging system initialised");
 
-    let (event_tx, event_rx) = mpsc::channel(100);
+    let (event_tx, event_rx) = mpsc::channel::<Event>(100);
     let (twitch_tx, twitch_rx) = mpsc::channel::<TwitchAction>(100);
 
     let emotes = initialize_emote_decoder(&mut config);
