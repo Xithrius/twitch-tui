@@ -29,7 +29,7 @@ use crate::{
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
-pub struct Context {
+pub struct App {
     /// All the available components.
     pub components: Components,
     /// Shared core config loaded from file and CLI arguments.
@@ -54,7 +54,7 @@ macro_rules! shared {
     };
 }
 
-impl Context {
+impl App {
     pub fn new(
         config: SharedCoreConfig,
         twitch_oauth: TwitchOauth,
@@ -166,7 +166,7 @@ impl Context {
     }
 }
 
-impl Component for Context {
+impl Component for App {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
         let mut size = area.unwrap_or_else(|| f.area());
 

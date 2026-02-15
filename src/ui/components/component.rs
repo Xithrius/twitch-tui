@@ -3,8 +3,8 @@ use tokio::sync::mpsc::Sender;
 use tui::{Frame, layout::Rect};
 
 use crate::{
+    app::SharedMessages,
     config::SharedCoreConfig,
-    context::SharedMessages,
     emotes::SharedEmotes,
     events::Event,
     handlers::{filters::SharedFilters, storage::SharedStorage},

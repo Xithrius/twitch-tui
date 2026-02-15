@@ -25,18 +25,18 @@ use tokio::sync::mpsc;
 use tracing::{info, warn};
 
 use crate::{
+    app::App,
     cli::args::Cli,
     config::CoreConfig,
-    context::Context,
     emotes::{Emotes, initialize_emote_decoder},
     events::Events,
     twitch::{oauth::TwitchOauth, websocket::TwitchWebsocket},
 };
 
+mod app;
 mod cli;
 mod commands;
 mod config;
-mod context;
 mod emotes;
 mod events;
 mod handlers;
@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
     let emotes_enabled = config.frontend.is_emotes_enabled();
     let context_emotes = Rc::new(Emotes::new(emotes_enabled));
 
-    let context = Context::new(
+    let context = App::new(
         config.clone(),
         twitch_oauth.clone(),
         event_tx.clone(),

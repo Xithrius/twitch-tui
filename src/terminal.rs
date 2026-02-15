@@ -2,9 +2,9 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{info, warn};
 
 use crate::{
+    app::App,
     commands::{init_terminal, quit_terminal, reset_terminal},
     config::SharedCoreConfig,
-    context::Context,
     emotes::{ApplyCommand, DecodedEmote, display_emote, query_emotes},
     events::{Event, Events, InternalEvent, TwitchAction, TwitchEvent, TwitchNotification},
     handlers::{
@@ -18,7 +18,7 @@ use crate::{
 
 pub async fn ui_driver(
     config: SharedCoreConfig,
-    mut context: Context,
+    mut app: App,
     mut events: Events,
     twitch_oauth: TwitchOauth,
     twitch_tx: Sender<TwitchAction>,
@@ -26,27 +26,21 @@ pub async fn ui_driver(
 ) {
     info!("Started UI driver.");
 
-    let original_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |panic| {
-        reset_terminal();
-        original_hook(panic);
-    }));
-
     let mut erx = query_emotes(&config, twitch_oauth.clone(), config.twitch.channel.clone());
 
     let mut terminal = init_terminal(&config.frontend);
 
-    let is_emotes_enabled = context.emotes.enabled;
+    let is_emotes_enabled = app.emotes.enabled;
 
     loop {
         if is_emotes_enabled {
             // Check if we have received any emotes
             if let Ok((user_emotes, global_emotes)) = erx.try_recv() {
-                *context.emotes.user_emotes.borrow_mut() = user_emotes;
-                *context.emotes.global_emotes.borrow_mut() = global_emotes;
+                *app.emotes.user_emotes.borrow_mut() = user_emotes;
+                *app.emotes.global_emotes.borrow_mut() = global_emotes;
 
-                for message in &mut *context.messages.borrow_mut() {
-                    message.reparse_emotes(&context.emotes);
+                for message in &mut *app.messages.borrow_mut() {
+                    message.reparse_emotes(&app.emotes);
                 }
             }
 
@@ -63,9 +57,9 @@ pub async fn ui_driver(
                         }
                         Err(name) => {
                             warn!("Unable to load emote: {name}.");
-                            context.emotes.user_emotes.borrow_mut().remove(&name);
-                            context.emotes.global_emotes.borrow_mut().remove(&name);
-                            context.emotes.info.borrow_mut().remove(&name);
+                            app.emotes.user_emotes.borrow_mut().remove(&name);
+                            app.emotes.global_emotes.borrow_mut().remove(&name);
+                            app.emotes.info.borrow_mut().remove(&name);
                         }
                     }
                 }
@@ -78,27 +72,27 @@ pub async fn ui_driver(
                     match internal_event {
                         InternalEvent::Quit => {
                             // Emotes need to be unloaded before we exit the alternate screen
-                            context.emotes.unload();
+                            app.emotes.unload();
                             quit_terminal(terminal);
 
                             break;
                         }
                         InternalEvent::BackOneLayer => {
-                            if let Some(previous_state) = context.get_previous_state() {
-                                context.set_state(previous_state);
+                            if let Some(previous_state) = app.get_previous_state() {
+                                app.set_state(previous_state);
                             } else {
-                                context.set_state(config.terminal.first_state.clone());
+                                app.set_state(config.terminal.first_state.clone());
                             }
                         }
                         InternalEvent::SwitchState(state) => {
                             if state == State::Normal {
-                                context.clear_messages();
+                                app.clear_messages();
                             }
 
-                            context.set_state(state);
+                            app.set_state(state);
                         }
                         InternalEvent::OpenStream(channel) => {
-                            context.open_stream(&channel);
+                            app.open_stream(&channel);
                         }
                         InternalEvent::SelectEmote(_) => {}
                     }
@@ -107,8 +101,8 @@ pub async fn ui_driver(
                     TwitchEvent::Action(twitch_action) => match twitch_action {
                         TwitchAction::JoinChannel(channel) => {
                             let channel = clean_channel_name(&channel);
-                            context.clear_messages();
-                            context.emotes.unload();
+                            app.clear_messages();
+                            app.emotes.unload();
 
                             // TODO: Handle error
                             let _ = twitch_tx
@@ -116,10 +110,10 @@ pub async fn ui_driver(
                                 .await;
 
                             if config.frontend.autostart_view_command {
-                                context.open_stream(&channel);
+                                app.open_stream(&channel);
                             }
                             erx = query_emotes(&config, twitch_oauth.clone(), channel);
-                            context.set_state(State::Normal);
+                            app.set_state(State::Normal);
                         }
                         TwitchAction::Message(message) => {
                             // TODO: Handle error
@@ -129,32 +123,30 @@ pub async fn ui_driver(
                     TwitchEvent::Notification(twitch_notification) => {
                         match twitch_notification {
                             TwitchNotification::Message(m) => {
-                                let message_data =
-                                    MessageData::from_twitch_message(m, &context.emotes);
+                                let message_data = MessageData::from_twitch_message(m, &app.emotes);
                                 if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
                                     && config.twitch.username != message_data.author
                                 {
-                                    context
-                                        .storage
+                                    app.storage
                                         .borrow_mut()
                                         .add("chatters", message_data.author.clone());
                                 }
-                                context.messages.borrow_mut().push_front(message_data);
+                                app.messages.borrow_mut().push_front(message_data);
 
                                 // If scrolling is enabled, pad for more messages.
-                                if context.components.chat.scroll_offset.get_offset() > 0 {
-                                    context.components.chat.scroll_offset.up();
+                                if app.components.chat.scroll_offset.get_offset() > 0 {
+                                    app.components.chat.scroll_offset.up();
                                 }
                             }
                             TwitchNotification::ClearChat(user_id) => {
                                 if let Some(user) = user_id {
-                                    context.purge_user_messages(user.as_str());
+                                    app.purge_user_messages(user.as_str());
                                 } else {
-                                    context.clear_messages();
+                                    app.clear_messages();
                                 }
                             }
                             TwitchNotification::DeleteMessage(message_id) => {
-                                context.remove_message_with(message_id.as_str());
+                                app.remove_message_with(message_id.as_str());
                             }
                         }
                     }
@@ -163,13 +155,13 @@ pub async fn ui_driver(
             }
 
             // TODO: Handle possible errors
-            let _ = context.event(&event).await;
+            let _ = app.event(&event).await;
         }
 
-        terminal.draw(|f| context.draw(f, Some(f.area()))).unwrap();
+        terminal.draw(|f| app.draw(f, Some(f.area()))).unwrap();
     }
 
-    context.cleanup();
+    app.cleanup();
 
     reset_terminal();
 }
