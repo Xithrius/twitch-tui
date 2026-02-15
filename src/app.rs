@@ -289,7 +289,7 @@ impl Component for App {
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
-        match event.clone() {
+        match event {
             Event::Internal(internal_event) => match internal_event {
                 InternalEvent::Quit => self.running = false,
                 InternalEvent::BackOneLayer => {
@@ -300,21 +300,21 @@ impl Component for App {
                     }
                 }
                 InternalEvent::SwitchState(state) => {
-                    if state == State::Normal {
+                    if *state == State::Normal {
                         self.clear_messages();
                     }
 
-                    self.set_state(state);
+                    self.set_state(state.clone());
                 }
                 InternalEvent::OpenStream(channel) => {
-                    self.open_stream(&channel);
+                    self.open_stream(channel);
                 }
                 InternalEvent::SelectEmote(_) => {}
             },
             Event::Twitch(twitch_event) => match twitch_event {
                 TwitchEvent::Action(twitch_action) => match twitch_action {
                     TwitchAction::JoinChannel(channel) => {
-                        let channel = clean_channel_name(&channel);
+                        let channel = clean_channel_name(channel);
                         self.clear_messages();
                         self.emotes.unload();
 
@@ -330,13 +330,16 @@ impl Component for App {
                         self.set_state(State::Normal);
                     }
                     TwitchAction::Message(message) => {
-                        self.twitch_tx.send(TwitchAction::Message(message)).await?;
+                        self.twitch_tx
+                            .send(TwitchAction::Message(message.clone()))
+                            .await?;
                     }
                 },
                 TwitchEvent::Notification(twitch_notification) => {
                     match twitch_notification {
                         TwitchNotification::Message(m) => {
-                            let message_data = MessageData::from_twitch_message(m, &self.emotes);
+                            let message_data =
+                                MessageData::from_twitch_message(m.clone(), &self.emotes);
                             if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
                                 && self.config.twitch.username != message_data.author
                             {
@@ -369,7 +372,7 @@ impl Component for App {
                     return self.components.debug.event(event).await;
                 }
 
-                if self.config.keybinds.toggle_debug_focus.contains(&key) {
+                if self.config.keybinds.toggle_debug_focus.contains(key) {
                     self.components.debug.toggle_focus();
                 }
             }
