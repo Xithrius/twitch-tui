@@ -6,45 +6,64 @@ use std::{
 };
 
 use color_eyre::Result;
-use tokio::sync::mpsc::Sender;
-use tracing::error;
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    oneshot::Receiver as OSReceiver,
+};
+use tracing::{error, warn};
 use tui::{
-    Frame,
+    DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout, Rect},
 };
 
 use crate::{
     config::SharedCoreConfig,
-    emotes::{Emotes, SharedEmotes},
-    events::Event,
+    emotes::{
+        ApplyCommand, DecodedEmote, DownloadedEmotes, Emotes, SharedEmotes, display_emote,
+        query_emotes,
+    },
+    events::{Event, Events, InternalEvent, TwitchAction, TwitchEvent, TwitchNotification},
     handlers::{
-        data::MessageData,
+        data::{KNOWN_CHATTERS, MessageData},
         filters::Filters,
         state::State,
         storage::{SharedStorage, Storage},
     },
     twitch::oauth::TwitchOauth,
     ui::components::{Component, Components},
+    utils::sanitization::clean_channel_name,
 };
 
 pub type SharedMessages = Rc<RefCell<VecDeque<MessageData>>>;
 
 pub struct App {
-    /// All the available components.
+    pub running: bool,
+
+    /// UI components
     pub components: Components,
-    /// Shared core config loaded from file and CLI arguments.
+
+    /// Configuration loaded from file and CLI arguments
     pub config: SharedCoreConfig,
-    /// History of recorded messages (time, username, message, etc).
+
+    /// Twitch OAuth client and session info
+    pub twitch_oauth: TwitchOauth,
+    pub events: Events,
+    pub twitch_tx: Sender<TwitchAction>,
+
     pub messages: SharedMessages,
+
     /// Data loaded in from a JSON file.
     pub storage: SharedStorage,
-    /// Which window the terminal is currently focused on.
+
+    /// States
     state: State,
-    /// The previous state, if any.
     previous_state: Option<State>,
-    /// Emotes
+
+    /// Emote encoding pipeline
     pub emotes: SharedEmotes,
-    /// Running stream
+    pub emotes_rx: OSReceiver<(DownloadedEmotes, DownloadedEmotes)>,
+    pub decoded_emotes_rx: Option<Receiver<Result<DecodedEmote, String>>>,
+
     pub running_stream: Option<Child>,
 }
 
@@ -58,8 +77,11 @@ impl App {
     pub fn new(
         config: SharedCoreConfig,
         twitch_oauth: TwitchOauth,
+        events: Events,
         event_tx: Sender<Event>,
+        twitch_tx: Sender<TwitchAction>,
         emotes: Rc<Emotes>,
+        decoded_emotes_rx: Option<Receiver<Result<DecodedEmote, String>>>,
     ) -> Self {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
@@ -70,7 +92,7 @@ impl App {
 
         let components = Components::builder()
             .config(&config)
-            .twitch_oauth(twitch_oauth)
+            .twitch_oauth(twitch_oauth.clone())
             .event_tx(event_tx)
             .storage(storage.clone())
             .filters(filters)
@@ -78,14 +100,22 @@ impl App {
             .emotes(&emotes)
             .build();
 
+        let emotes_rx = query_emotes(&config, twitch_oauth.clone(), config.twitch.channel.clone());
+
         Self {
+            running: true,
             components,
             config,
+            twitch_oauth,
+            events,
+            twitch_tx,
             messages,
             storage,
             state: first_state,
             previous_state: None,
             emotes,
+            emotes_rx,
+            decoded_emotes_rx,
             running_stream: None,
         }
     }
@@ -164,6 +194,59 @@ impl App {
         self.previous_state = Some(self.state.clone());
         self.state = other;
     }
+
+    pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        let is_emotes_enabled = self.emotes.enabled;
+
+        while self.running {
+            if is_emotes_enabled {
+                self.handle_emote_events();
+            }
+
+            if let Some(event) = self.events.next().await {
+                self.event(&event).await;
+            }
+
+            terminal.draw(|f| self.draw(f, Some(f.area()))).unwrap();
+        }
+
+        self.cleanup();
+
+        Ok(())
+    }
+
+    pub fn handle_emote_events(&mut self) {
+        // Check if we have received any emotes
+        if let Ok((user_emotes, global_emotes)) = self.emotes_rx.try_recv() {
+            *self.emotes.user_emotes.borrow_mut() = user_emotes;
+            *self.emotes.global_emotes.borrow_mut() = global_emotes;
+
+            for message in &mut *self.messages.borrow_mut() {
+                message.reparse_emotes(&self.emotes);
+            }
+        }
+
+        // Check if we need to load a decoded emote
+        if let Some(rx) = &mut self.decoded_emotes_rx {
+            if let Ok(r) = rx.try_recv() {
+                match r {
+                    Ok(d) => {
+                        if let Err(e) = d.apply() {
+                            warn!("Unable to send command to load emote. {e}");
+                        } else if let Err(e) = display_emote(d.id(), 1, d.cols()) {
+                            warn!("Unable to send command to display emote. {e}");
+                        }
+                    }
+                    Err(name) => {
+                        warn!("Unable to load emote: {name}.");
+                        self.emotes.user_emotes.borrow_mut().remove(&name);
+                        self.emotes.global_emotes.borrow_mut().remove(&name);
+                        self.emotes.info.borrow_mut().remove(&name);
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl Component for App {
@@ -206,14 +289,94 @@ impl Component for App {
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
-        if let Event::Input(key) = event {
-            if self.components.debug.is_focused() {
-                return self.components.debug.event(event).await;
-            }
+        match event.clone() {
+            Event::Internal(internal_event) => match internal_event {
+                InternalEvent::Quit => self.running = false,
+                InternalEvent::BackOneLayer => {
+                    if let Some(previous_state) = self.get_previous_state() {
+                        self.set_state(previous_state);
+                    } else {
+                        self.set_state(self.config.terminal.first_state.clone());
+                    }
+                }
+                InternalEvent::SwitchState(state) => {
+                    if state == State::Normal {
+                        self.clear_messages();
+                    }
 
-            if self.config.keybinds.toggle_debug_focus.contains(key) {
-                self.components.debug.toggle_focus();
+                    self.set_state(state);
+                }
+                InternalEvent::OpenStream(channel) => {
+                    self.open_stream(&channel);
+                }
+                InternalEvent::SelectEmote(_) => {}
+            },
+            Event::Twitch(twitch_event) => match twitch_event {
+                TwitchEvent::Action(twitch_action) => match twitch_action {
+                    TwitchAction::JoinChannel(channel) => {
+                        let channel = clean_channel_name(&channel);
+                        self.clear_messages();
+                        self.emotes.unload();
+
+                        // TODO: Handle error
+                        let _ = self
+                            .twitch_tx
+                            .send(TwitchAction::JoinChannel(channel.clone()))
+                            .await;
+
+                        if self.config.frontend.autostart_view_command {
+                            self.open_stream(&channel);
+                        }
+                        self.emotes_rx =
+                            query_emotes(&self.config, self.twitch_oauth.clone(), channel);
+                        self.set_state(State::Normal);
+                    }
+                    TwitchAction::Message(message) => {
+                        // TODO: Handle error
+                        let _ = self.twitch_tx.send(TwitchAction::Message(message)).await;
+                    }
+                },
+                TwitchEvent::Notification(twitch_notification) => {
+                    match twitch_notification {
+                        TwitchNotification::Message(m) => {
+                            let message_data = MessageData::from_twitch_message(m, &self.emotes);
+                            if !KNOWN_CHATTERS.contains(&message_data.author.as_str())
+                                && self.config.twitch.username != message_data.author
+                            {
+                                self.storage
+                                    .borrow_mut()
+                                    .add("chatters", message_data.author.clone());
+                            }
+                            self.messages.borrow_mut().push_front(message_data);
+
+                            // If scrolling is enabled, pad for more messages.
+                            if self.components.chat.scroll_offset.get_offset() > 0 {
+                                self.components.chat.scroll_offset.up();
+                            }
+                        }
+                        TwitchNotification::ClearChat(user_id) => {
+                            if let Some(user) = user_id {
+                                self.purge_user_messages(user.as_str());
+                            } else {
+                                self.clear_messages();
+                            }
+                        }
+                        TwitchNotification::DeleteMessage(message_id) => {
+                            self.remove_message_with(message_id.as_str());
+                        }
+                    }
+                }
+            },
+            Event::Input(key) => {
+                if self.components.debug.is_focused() {
+                    return self.components.debug.event(event).await;
+                }
+
+                if self.config.keybinds.toggle_debug_focus.contains(&key) {
+                    self.components.debug.toggle_focus();
+                }
             }
+            Event::Tick => {}
         }
 
         match self.state {
