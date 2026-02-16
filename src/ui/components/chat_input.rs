@@ -138,7 +138,7 @@ impl Component for ChatInputWidget {
         }
 
         if let Event::Input(key) = event {
-            let keybinds = self.config.keybinds.insert.clone();
+            let keybinds = &self.config.keybinds.insert;
             match key {
                 key if keybinds.confirm_text_input.contains(key) => {
                     if self.input.is_valid() {

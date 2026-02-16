@@ -1,13 +1,13 @@
-use std::vec;
-
 use serde::{Deserialize, Serialize};
 
 use crate::events::Key;
 
+type Keybind = Box<[Key]>;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct KeybindsConfig {
-    pub toggle_debug_focus: Vec<Key>,
+    pub toggle_debug_focus: Keybind,
     pub dashboard: DashboardKeybindsConfig,
     pub normal: NormalKeybindsConfig,
     pub insert: InsertKeybindsConfig,
@@ -17,74 +17,74 @@ pub struct KeybindsConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct DashboardKeybindsConfig {
-    pub join: Vec<Key>,
-    pub recent_channels_search: Vec<Key>,
-    pub followed_channels_search: Vec<Key>,
-    pub help: Vec<Key>,
-    pub quit: Vec<Key>,
+    pub join: Keybind,
+    pub recent_channels_search: Keybind,
+    pub followed_channels_search: Keybind,
+    pub help: Keybind,
+    pub quit: Keybind,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct NormalKeybindsConfig {
-    pub enter_insert: Vec<Key>,
-    pub enter_insert_with_mention: Vec<Key>,
-    pub enter_insert_with_command: Vec<Key>,
-    pub enter_dashboard: Vec<Key>,
-    pub search_messages: Vec<Key>,
-    pub toggle_filters: Vec<Key>,
-    pub reverse_filters: Vec<Key>,
-    pub back_to_previous_window: Vec<Key>,
-    pub scroll_down: Vec<Key>,
-    pub scroll_up: Vec<Key>,
-    pub scroll_to_end: Vec<Key>,
-    pub scroll_to_start: Vec<Key>,
-    pub open_in_player: Vec<Key>,
-    pub recent_channels_search: Vec<Key>,
-    pub followed_channels_search: Vec<Key>,
-    pub help: Vec<Key>,
-    pub quit: Vec<Key>,
+    pub enter_insert: Keybind,
+    pub enter_insert_with_mention: Keybind,
+    pub enter_insert_with_command: Keybind,
+    pub enter_dashboard: Keybind,
+    pub search_messages: Keybind,
+    pub toggle_filters: Keybind,
+    pub reverse_filters: Keybind,
+    pub back_to_previous_window: Keybind,
+    pub scroll_down: Keybind,
+    pub scroll_up: Keybind,
+    pub scroll_to_end: Keybind,
+    pub scroll_to_start: Keybind,
+    pub open_in_player: Keybind,
+    pub recent_channels_search: Keybind,
+    pub followed_channels_search: Keybind,
+    pub help: Keybind,
+    pub quit: Keybind,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct InsertKeybindsConfig {
-    pub fill_suggestion: Vec<Key>,
-    pub confirm_text_input: Vec<Key>,
-    pub back_to_previous_window: Vec<Key>,
-    pub move_cursor_right: Vec<Key>,
-    pub move_cursor_left: Vec<Key>,
-    pub move_cursor_start: Vec<Key>,
-    pub move_cursor_end: Vec<Key>,
-    pub swap_previous_item_with_current: Vec<Key>,
-    pub remove_after_cursor: Vec<Key>,
-    pub remove_before_cursor: Vec<Key>,
-    pub remove_previous_word: Vec<Key>,
-    pub remove_item_to_right: Vec<Key>,
-    pub toggle_filters: Vec<Key>,
-    pub reverse_filters: Vec<Key>,
-    pub end_of_next_word: Vec<Key>,
-    pub start_of_previous_word: Vec<Key>,
-    pub swap_previous_word_with_current: Vec<Key>,
-    pub toggle_emote_picker: Vec<Key>,
-    pub quit: Vec<Key>,
+    pub fill_suggestion: Keybind,
+    pub confirm_text_input: Keybind,
+    pub back_to_previous_window: Keybind,
+    pub move_cursor_right: Keybind,
+    pub move_cursor_left: Keybind,
+    pub move_cursor_start: Keybind,
+    pub move_cursor_end: Keybind,
+    pub swap_previous_item_with_current: Keybind,
+    pub remove_after_cursor: Keybind,
+    pub remove_before_cursor: Keybind,
+    pub remove_previous_word: Keybind,
+    pub remove_item_to_right: Keybind,
+    pub toggle_filters: Keybind,
+    pub reverse_filters: Keybind,
+    pub end_of_next_word: Keybind,
+    pub start_of_previous_word: Keybind,
+    pub swap_previous_word_with_current: Keybind,
+    pub toggle_emote_picker: Keybind,
+    pub quit: Keybind,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct SelectionKeybindsConfig {
-    pub next_item: Vec<Key>,
-    pub prev_item: Vec<Key>,
-    pub delete_item: Vec<Key>,
-    pub select: Vec<Key>,
-    pub back_to_previous_window: Vec<Key>,
-    pub quit: Vec<Key>,
+    pub next_item: Keybind,
+    pub prev_item: Keybind,
+    pub delete_item: Keybind,
+    pub select: Keybind,
+    pub back_to_previous_window: Keybind,
+    pub quit: Keybind,
 }
 
 impl Default for KeybindsConfig {
     fn default() -> Self {
         Self {
-            toggle_debug_focus: vec![Key::Ctrl('d')],
+            toggle_debug_focus: Box::new([Key::Ctrl('d')]),
             dashboard: DashboardKeybindsConfig::default(),
             normal: NormalKeybindsConfig::default(),
             insert: InsertKeybindsConfig::default(),
@@ -96,34 +96,34 @@ impl Default for KeybindsConfig {
 impl Default for DashboardKeybindsConfig {
     fn default() -> Self {
         Self {
-            join: vec![Key::Enter],
-            recent_channels_search: vec![Key::Char('s')],
-            followed_channels_search: vec![Key::Char('f')],
-            help: vec![Key::Char('?'), Key::Char('h')],
-            quit: vec![Key::Char('q')],
+            join: Box::new([Key::Enter]),
+            recent_channels_search: Box::new([Key::Char('s')]),
+            followed_channels_search: Box::new([Key::Char('f')]),
+            help: Box::new([Key::Char('?'), Key::Char('h')]),
+            quit: Box::new([Key::Char('q')]),
         }
     }
 }
 impl Default for NormalKeybindsConfig {
     fn default() -> Self {
         Self {
-            enter_insert: vec![Key::Char('i'), Key::Char('c')],
-            enter_insert_with_mention: vec![Key::Char('@')],
-            enter_insert_with_command: vec![Key::Char('/')],
-            enter_dashboard: vec![Key::Char('S')],
-            search_messages: vec![Key::Ctrl('f')],
-            toggle_filters: vec![Key::Ctrl('t')],
-            reverse_filters: vec![Key::Ctrl('r')],
-            back_to_previous_window: vec![Key::Esc],
-            scroll_up: vec![Key::ScrollUp, Key::Up, Key::Char('k')],
-            scroll_down: vec![Key::ScrollDown, Key::Down, Key::Char('j')],
-            scroll_to_end: vec![Key::Char('G')],
-            scroll_to_start: vec![Key::Char('g')],
-            open_in_player: vec![Key::Char('o')],
-            recent_channels_search: vec![Key::Char('s')],
-            followed_channels_search: vec![Key::Char('f')],
-            help: vec![Key::Char('?'), Key::Char('h')],
-            quit: vec![Key::Char('q')],
+            enter_insert: Box::new([Key::Char('i'), Key::Char('c')]),
+            enter_insert_with_mention: Box::new([Key::Char('@')]),
+            enter_insert_with_command: Box::new([Key::Char('/')]),
+            enter_dashboard: Box::new([Key::Char('S')]),
+            search_messages: Box::new([Key::Ctrl('f')]),
+            toggle_filters: Box::new([Key::Ctrl('t')]),
+            reverse_filters: Box::new([Key::Ctrl('r')]),
+            back_to_previous_window: Box::new([Key::Esc]),
+            scroll_up: Box::new([Key::ScrollUp, Key::Up, Key::Char('k')]),
+            scroll_down: Box::new([Key::ScrollDown, Key::Down, Key::Char('j')]),
+            scroll_to_end: Box::new([Key::Char('G')]),
+            scroll_to_start: Box::new([Key::Char('g')]),
+            open_in_player: Box::new([Key::Char('o')]),
+            recent_channels_search: Box::new([Key::Char('s')]),
+            followed_channels_search: Box::new([Key::Char('f')]),
+            help: Box::new([Key::Char('?'), Key::Char('h')]),
+            quit: Box::new([Key::Char('q')]),
         }
     }
 }
@@ -131,25 +131,25 @@ impl Default for NormalKeybindsConfig {
 impl Default for InsertKeybindsConfig {
     fn default() -> Self {
         Self {
-            fill_suggestion: vec![Key::Tab],
-            confirm_text_input: vec![Key::Enter],
-            back_to_previous_window: vec![Key::Esc],
-            move_cursor_right: vec![Key::Right, Key::Ctrl('f')],
-            move_cursor_left: vec![Key::Left, Key::Ctrl('b')],
-            move_cursor_start: vec![Key::Home, Key::Ctrl('a')],
-            move_cursor_end: vec![Key::End, Key::Ctrl('e')],
-            swap_previous_item_with_current: vec![Key::Ctrl('t')],
-            remove_after_cursor: vec![Key::Ctrl('k')],
-            remove_before_cursor: vec![Key::Ctrl('u')],
-            remove_previous_word: vec![Key::Ctrl('w')],
-            remove_item_to_right: vec![Key::Delete, Key::Ctrl('d')],
-            toggle_filters: vec![Key::Ctrl('t')],
-            reverse_filters: vec![Key::Ctrl('r')],
-            end_of_next_word: vec![Key::Alt('f')],
-            start_of_previous_word: vec![Key::Alt('b')],
-            swap_previous_word_with_current: vec![Key::Alt('t')],
-            toggle_emote_picker: vec![Key::Alt('e')],
-            quit: vec![Key::Ctrl('q')],
+            fill_suggestion: Box::new([Key::Tab]),
+            confirm_text_input: Box::new([Key::Enter]),
+            back_to_previous_window: Box::new([Key::Esc]),
+            move_cursor_right: Box::new([Key::Right, Key::Ctrl('f')]),
+            move_cursor_left: Box::new([Key::Left, Key::Ctrl('b')]),
+            move_cursor_start: Box::new([Key::Home, Key::Ctrl('a')]),
+            move_cursor_end: Box::new([Key::End, Key::Ctrl('e')]),
+            swap_previous_item_with_current: Box::new([Key::Ctrl('t')]),
+            remove_after_cursor: Box::new([Key::Ctrl('k')]),
+            remove_before_cursor: Box::new([Key::Ctrl('u')]),
+            remove_previous_word: Box::new([Key::Ctrl('w')]),
+            remove_item_to_right: Box::new([Key::Delete, Key::Ctrl('d')]),
+            toggle_filters: Box::new([Key::Ctrl('t')]),
+            reverse_filters: Box::new([Key::Ctrl('r')]),
+            end_of_next_word: Box::new([Key::Alt('f')]),
+            start_of_previous_word: Box::new([Key::Alt('b')]),
+            swap_previous_word_with_current: Box::new([Key::Alt('t')]),
+            toggle_emote_picker: Box::new([Key::Alt('e')]),
+            quit: Box::new([Key::Ctrl('q')]),
         }
     }
 }
@@ -157,12 +157,12 @@ impl Default for InsertKeybindsConfig {
 impl Default for SelectionKeybindsConfig {
     fn default() -> Self {
         Self {
-            prev_item: vec![Key::ScrollUp, Key::Up],
-            next_item: vec![Key::ScrollDown, Key::Down],
-            select: vec![Key::Enter],
-            delete_item: vec![Key::Ctrl('d')],
-            back_to_previous_window: vec![Key::Esc],
-            quit: vec![Key::Char('q')],
+            prev_item: Box::new([Key::ScrollUp, Key::Up]),
+            next_item: Box::new([Key::ScrollDown, Key::Down]),
+            select: Box::new([Key::Enter]),
+            delete_item: Box::new([Key::Ctrl('d')]),
+            back_to_previous_window: Box::new([Key::Esc]),
+            quit: Box::new([Key::Char('q')]),
         }
     }
 }

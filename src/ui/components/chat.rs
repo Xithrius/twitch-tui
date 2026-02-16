@@ -323,7 +323,7 @@ impl Component for ChatWidget {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
-            let keybinds = self.config.keybinds.normal.clone();
+            let keybinds = &self.config.keybinds.normal;
             match key {
                 key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
                 key if keybinds.enter_insert_with_mention.contains(key) => {

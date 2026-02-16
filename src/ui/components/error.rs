@@ -74,7 +74,7 @@ impl Component for ErrorWidget {
 
     async fn event(&mut self, event: &Event) -> color_eyre::Result<()> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.keybinds.selection.clone();
+            let keybinds = &self.config.keybinds.selection;
             match key {
                 key if keybinds.quit.contains(key) => {
                     self.event_tx

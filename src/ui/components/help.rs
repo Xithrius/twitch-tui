@@ -28,7 +28,7 @@ impl HelpWidget {
         Self { config, event_tx }
     }
     fn get_help_keybinds(&self) -> Vec<(&'static str, Vec<(String, &'static str)>)> {
-        let keybinds = self.config.keybinds.clone();
+        let keybinds = &self.config.keybinds;
         let dashboard_keybinds = vec![
             (
                 get_keybind_text(&keybinds.dashboard.join),
@@ -265,7 +265,7 @@ impl Component for HelpWidget {
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.keybinds.selection.clone();
+            let keybinds = &self.config.keybinds.selection;
             match key {
                 key if keybinds.quit.contains(key) => {
                     self.event_tx
