@@ -73,11 +73,11 @@ impl HelpWidget {
                 "Search messages",
             ),
             (
-                get_keybind_text(&keybinds.normal.toggle_message_filter),
+                get_keybind_text(&keybinds.normal.toggle_filters),
                 "Toggle the message filter",
             ),
             (
-                get_keybind_text(&keybinds.normal.reverse_message_filter),
+                get_keybind_text(&keybinds.normal.reverse_filters),
                 "Reverse the message filter",
             ),
             (
@@ -168,12 +168,12 @@ impl HelpWidget {
                 "Remove item to the right",
             ),
             (
-                get_keybind_text(&keybinds.insert.toggle_message_filter),
-                "Toggle the filter",
+                get_keybind_text(&keybinds.insert.toggle_filters),
+                "Toggle the filters",
             ),
             (
-                get_keybind_text(&keybinds.insert.reverse_message_filter),
-                "Reverse the filter",
+                get_keybind_text(&keybinds.insert.reverse_filters),
+                "Reverse the filters",
             ),
             (
                 get_keybind_text(&keybinds.insert.end_of_next_word),

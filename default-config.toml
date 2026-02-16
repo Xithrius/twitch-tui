@@ -136,9 +136,9 @@ enter_dashboard = ["S"]
 # Search messages
 search_messages = ["Ctrl+f"]
 # Toggle the message filter
-toggle_message_filter = ["Ctrl+t"]
+toggle_filters = ["Ctrl+t"]
 # Reverse the message filter
-reverse_message_filter = ["Ctrl+r"]
+reverse_filters = ["Ctrl+r"]
 # Go back to the previous window
 back_to_previous_window = ["Esc"]
 # Scroll chat down
@@ -186,9 +186,9 @@ remove_previous_word = ["Ctrl+w"]
 # Remove item to the right
 remove_item_to_right = ["Delete", "Ctrl+d"]
 # Toggle the filter
-toggle_message_filter = ["Ctrl+t"]
+toggle_filters = ["Ctrl+t"]
 # Reverse the filter
-reverse_message_filter = ["Ctrl+r"]
+reverse_filters = ["Ctrl+r"]
 # Move to the end of the next word
 end_of_next_word = ["Alt+f"]
 # Move to the start of the previous word

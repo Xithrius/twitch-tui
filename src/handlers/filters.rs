@@ -36,19 +36,19 @@ impl MessageFilters {
         self.reversed
     }
 
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn toggle(&mut self) {
+    pub const fn toggle(&mut self) {
         self.enabled = !self.enabled;
     }
 
-    pub fn is_reversed(&self) -> bool {
+    pub const fn is_reversed(&self) -> bool {
         self.reversed
     }
 
-    pub fn reverse(&mut self) {
+    pub const fn reverse(&mut self) {
         self.reversed = !self.reversed;
     }
 }
@@ -61,7 +61,7 @@ pub struct UsernameFilters {
 }
 
 impl UsernameFilters {
-    fn contaminated(&self, data: &str) -> bool {
+    pub fn contaminated(&self, data: &str) -> bool {
         if self.enabled {
             for re in &self.captures {
                 if re.is_match(data) {
@@ -73,19 +73,19 @@ impl UsernameFilters {
         self.reversed
     }
 
-    fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    fn toggle(&mut self) {
+    pub const fn toggle(&mut self) {
         self.enabled = !self.enabled;
     }
 
-    fn is_reversed(&self) -> bool {
+    pub const fn is_reversed(&self) -> bool {
         self.reversed
     }
 
-    fn reverse(&mut self) {
+    pub const fn reverse(&mut self) {
         self.reversed = !self.reversed;
     }
 }
