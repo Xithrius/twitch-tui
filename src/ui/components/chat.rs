@@ -129,6 +129,7 @@ impl ChatWidget {
             if self
                 .filters
                 .borrow()
+                .message
                 .contaminated(data.payload.clone().as_str())
             {
                 continue;
@@ -219,7 +220,7 @@ impl Component for ChatWidget {
             TitleStyle::Combined("Time", &current_time),
             TitleStyle::Combined("Channel", self.current_channel_name.as_str()),
             TitleStyle::Custom(Span::styled(
-                if self.filters.borrow().reversed() {
+                if self.filters.borrow().message.is_reversed() {
                     "retliF"
                 } else {
                     "Filter"
@@ -228,7 +229,7 @@ impl Component for ChatWidget {
                     Style::default()
                 } else {
                     Style::default().add_modifier(Modifier::BOLD).fg(
-                        if self.filters.borrow().enabled() {
+                        if self.filters.borrow().message.is_enabled() {
                             Color::Green
                         } else {
                             Color::Red
@@ -342,10 +343,10 @@ impl Component for ChatWidget {
                     self.following.toggle_focus().await;
                 }
                 key if keybinds.toggle_message_filter.contains(key) => {
-                    self.filters.borrow_mut().toggle();
+                    self.filters.borrow_mut().message.toggle();
                 }
                 key if keybinds.reverse_message_filter.contains(key) => {
-                    self.filters.borrow_mut().reverse();
+                    self.filters.borrow_mut().message.reverse();
                 }
                 key if keybinds.enter_dashboard.contains(key) => {
                     self.event_tx
