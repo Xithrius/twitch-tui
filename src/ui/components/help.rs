@@ -74,11 +74,11 @@ impl HelpWidget {
             ),
             (
                 get_keybind_text(&keybinds.normal.toggle_filters),
-                "Toggle the message filter",
+                "Toggle filters",
             ),
             (
                 get_keybind_text(&keybinds.normal.reverse_filters),
-                "Reverse the message filter",
+                "Reverse filters",
             ),
             (
                 get_keybind_text(&keybinds.normal.back_to_previous_window),

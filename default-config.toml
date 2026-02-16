@@ -135,9 +135,9 @@ enter_insert_with_command = ["/"]
 enter_dashboard = ["S"]
 # Search messages
 search_messages = ["Ctrl+f"]
-# Toggle the message filter
+# Toggle filters
 toggle_filters = ["Ctrl+t"]
-# Reverse the message filter
+# Reverse filters
 reverse_filters = ["Ctrl+r"]
 # Go back to the previous window
 back_to_previous_window = ["Esc"]
