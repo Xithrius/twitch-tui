@@ -250,7 +250,7 @@ impl Component for ChannelSwitcherWidget {
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
-            let keybinds = self.config.keybinds.selection.clone();
+            let keybinds = &self.config.keybinds.selection;
             match key {
                 key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
