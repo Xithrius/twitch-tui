@@ -126,11 +126,11 @@ impl ChatWidget {
         let message_chunk_width = h_chunk[0].width as usize;
 
         'outer: for data in messages_data {
-            if self
-                .filters
-                .borrow()
-                .contaminated(data.payload.clone().as_str())
-            {
+            let filters = self.filters.borrow();
+            let contaminated_message = filters.message.contaminated(&data.payload);
+            let contaminated_username = filters.username.contaminated(&data.author.clone());
+
+            if contaminated_message || contaminated_username {
                 continue;
             }
 
@@ -215,25 +215,25 @@ impl Component for ChatWidget {
             .format(&self.config.frontend.datetime_format)
             .to_string();
 
+        let filters = self.filters.borrow();
+        let reversed_filters = filters.message.is_reversed() || filters.username.is_reversed();
+        let enabled_filters = filters.message.is_enabled() || filters.username.is_enabled();
+
         let spans = [
             TitleStyle::Combined("Time", &current_time),
             TitleStyle::Combined("Channel", self.current_channel_name.as_str()),
             TitleStyle::Custom(Span::styled(
-                if self.filters.borrow().reversed() {
-                    "retliF"
-                } else {
-                    "Filter"
-                },
+                if reversed_filters { "retliF" } else { "Filter" },
                 if *NO_COLOR {
                     Style::default()
                 } else {
-                    Style::default().add_modifier(Modifier::BOLD).fg(
-                        if self.filters.borrow().enabled() {
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .fg(if enabled_filters {
                             Color::Green
                         } else {
                             Color::Red
-                        },
-                    )
+                        })
                 },
             )),
         ];
@@ -341,11 +341,16 @@ impl Component for ChatWidget {
                 key if keybinds.followed_channels_search.contains(key) => {
                     self.following.toggle_focus().await;
                 }
-                key if keybinds.toggle_message_filter.contains(key) => {
-                    self.filters.borrow_mut().toggle();
+                key if keybinds.toggle_filters.contains(key) => {
+                    let mut filters = self.filters.borrow_mut();
+                    filters.message.toggle();
+                    filters.username.toggle();
                 }
-                key if keybinds.reverse_message_filter.contains(key) => {
-                    self.filters.borrow_mut().reverse();
+                key if keybinds.reverse_filters.contains(key) => {
+                    let mut filters = self.filters.borrow_mut();
+                    // TODO: Find a better way to interact with these filters
+                    filters.message.reverse();
+                    filters.username.reverse();
                 }
                 key if keybinds.enter_dashboard.contains(key) => {
                     self.event_tx

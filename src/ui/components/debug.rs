@@ -61,8 +61,12 @@ impl DebugWidget {
                 self.config.storage.clone().into(),
             ),
             (
-                "Filter Config".to_string(),
-                self.config.filters.clone().into(),
+                "Message Filters Config".to_string(),
+                self.config.filters.message.clone().into(),
+            ),
+            (
+                "Username Filters Config".to_string(),
+                self.config.filters.username.clone().into(),
             ),
             (
                 "Frontend Config".to_string(),
