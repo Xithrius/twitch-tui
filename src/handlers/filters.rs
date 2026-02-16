@@ -173,43 +173,83 @@ impl Filters {
 mod tests {
     use super::*;
 
-    // fn setup() -> Filters {
-    //     Filters {
-    //         captures: vec![Regex::new("^bad.*$").unwrap()],
-    //         enabled: true,
-    //         reversed: false,
-    //     }
-    // }
+    fn setup_message_filters() -> MessageFilters {
+        MessageFilters {
+            captures: vec![Regex::new("^bad.*$").unwrap()],
+            enabled: true,
+            reversed: false,
+        }
+    }
 
-    // #[test]
-    // fn test_contaminated() {
-    //     let filters = setup();
+    fn setup_username_filters() -> UsernameFilters {
+        UsernameFilters {
+            captures: vec![Regex::new("^not-good.*$").unwrap()],
+            enabled: true,
+            reversed: false,
+        }
+    }
 
-    //     assert!(filters.contaminated("bad word"));
-    // }
+    #[test]
+    fn test_contaminated_message() {
+        let filters = setup_message_filters();
 
-    // #[test]
-    // fn test_non_contaminated() {
-    //     let filters = setup();
+        assert!(filters.contaminated("bad word"));
+    }
 
-    //     assert!(!filters.contaminated("not a bad word"));
-    // }
+    #[test]
+    fn test_non_contaminated_message() {
+        let filters = setup_message_filters();
 
-    // #[test]
-    // fn test_reversed_contaminated() {
-    //     let mut filters = setup();
+        assert!(!filters.contaminated("not a bad word"));
+    }
 
-    //     filters.reverse();
+    #[test]
+    fn test_reversed_contaminated_message() {
+        let mut filters = setup_message_filters();
 
-    //     assert!(!filters.contaminated("bad word"));
-    // }
+        filters.reverse();
 
-    // #[test]
-    // fn test_reversed_non_contaminated() {
-    //     let mut filters = setup();
+        assert!(!filters.contaminated("bad word"));
+    }
 
-    //     filters.reverse();
+    #[test]
+    fn test_reversed_non_contaminated_message() {
+        let mut filters = setup_message_filters();
 
-    //     assert!(filters.contaminated("not a bad word"));
-    // }
+        filters.reverse();
+
+        assert!(filters.contaminated("not a bad word"));
+    }
+
+    #[test]
+    fn test_contaminated_username() {
+        let filters = setup_username_filters();
+
+        assert!(filters.contaminated("not-good-username"));
+    }
+
+    #[test]
+    fn test_non_contaminated_username() {
+        let filters = setup_username_filters();
+
+        assert!(!filters.contaminated("good-username"));
+    }
+
+    #[test]
+    fn test_reversed_contaminated_username() {
+        let mut filters = setup_username_filters();
+
+        filters.reverse();
+
+        assert!(!filters.contaminated("not-good-username"));
+    }
+
+    #[test]
+    fn test_reversed_non_contaminated_username() {
+        let mut filters = setup_username_filters();
+
+        filters.reverse();
+
+        assert!(filters.contaminated("good-username"));
+    }
 }
