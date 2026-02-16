@@ -179,9 +179,9 @@ impl TwitchWebsocketThread {
                             .await?;
                         return Err(err);
                     }
+                } else {
+                    handle_send_message(&self.context, message).await?;
                 }
-
-                handle_send_message(&self.context, message).await?;
             }
             TwitchAction::JoinChannel(channel_name) => {
                 handle_channel_join(&mut self.context, &self.event_tx, channel_name, false).await?;
