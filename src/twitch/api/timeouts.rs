@@ -3,9 +3,8 @@ use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::twitch::api::ResponseList;
-
 use super::{ModeratorQuery, TWITCH_API_BASE_URL};
+use crate::twitch::api::ResponseList;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TimeoutInnerPayload {
