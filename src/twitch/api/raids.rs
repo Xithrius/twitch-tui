@@ -37,14 +37,9 @@ struct TwitchRaidResponseList {
 pub async fn raid_twitch_user(client: &Client, query: RaidQuery) -> Result<TwitchRaidResponse> {
     let url = format!("{TWITCH_API_BASE_URL}/raids");
 
-    let raid_query = &[
-        ("from_broadcaster_id", query.from_broadcaster_id),
-        ("to_broadcaster_id", query.to_broadcaster_id),
-    ];
-
     let response_data = client
         .post(url)
-        .query(raid_query)
+        .query(&query)
         .send()
         .await?
         .error_for_status()?
