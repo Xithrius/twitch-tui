@@ -82,7 +82,7 @@ impl ChatWidget {
     }
 
     pub async fn open_in_player(&self) -> Result<()> {
-        let channel_name = self.config.twitch.channel.as_str();
+        let channel_name = self.current_channel_name.as_str();
         if self.config.frontend.view_command.is_empty() {
             webbrowser::open(format!(
             "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
