@@ -43,7 +43,7 @@ impl Display for StreamingUser {
             title,
         } = self;
         let fmt_game = format!("[{game_name:.22}]");
-        write!(f, "{user_login:<25.25}: {fmt_game:<24} {title}",)
+        write!(f, "{user_login:<25.25}: {fmt_game:<24} {title}")
     }
 }
 
