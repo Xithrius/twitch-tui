@@ -211,7 +211,7 @@ mod seventv {
         let client = Client::new();
 
         let channel_emotes = client
-            .get(format!("https://7tv.io/v3/users/twitch/{channel_id}",))
+            .get(format!("https://7tv.io/v3/users/twitch/{channel_id}"))
             .send()
             .await?
             .error_for_status()?
@@ -314,7 +314,7 @@ mod frankerfacez {
 
         let emotes = futures::stream::iter(sets.into_iter().map(|set| async move {
             Ok(client
-                .get(format!("https://api.frankerfacez.com/v1/_set/{set}",))
+                .get(format!("https://api.frankerfacez.com/v1/_set/{set}"))
                 .send()
                 .await?
                 .error_for_status()?
