@@ -50,7 +50,7 @@ pub struct UpdateChannelInformationPayload {
     title: Option<String>,
     delay: Option<usize>,
     tags: Option<Vec<String>>,
-    content_classification_labels: Vec<ChannelInformationLabel>,
+    content_classification_labels: Option<Vec<ChannelInformationLabel>>,
     is_branded_content: Option<bool>,
 }
 
