@@ -435,20 +435,24 @@ fn query_terminal(command: &[u8]) -> Result<String> {
 
 const SUPPORTED_TERMINALS: [&str; 2] = ["xterm-kitty", "xterm-ghostty"];
 
+/// A 1×1 RGB image used to query Kitty graphics support. RGB24 requires exactly
+/// three bytes; terminals such as current Ghostty reject an oversized payload.
+const GRAPHICS_PROTOCOL_QUERY_PIXEL: [u8; 3] = [0, 0, 0];
+
+fn graphics_protocol_query() -> String {
+    format!(
+        concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
+        STANDARD.encode(GRAPHICS_PROTOCOL_QUERY_PIXEL),
+    )
+}
+
 /// First check if the terminal is `kitty`, this is the only terminal that supports the graphics protocol using unicode placeholders as of 2023-07-13.
 /// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
 /// If we receive the terminal attributes without receiving the response for the graphics protocol, it does not support it.
 pub fn support_graphics_protocol() -> Result<bool> {
     Ok(
         env::var("TERM").is_ok_and(|term| SUPPORTED_TERMINALS.contains(&term.as_str()))
-            && query_terminal(
-                format!(
-                    concat!(gp!("i=31,s=1,v=1,a=q,t=d,f=24;{}"), csi!("c")),
-                    STANDARD.encode("AAAA"),
-                )
-                .as_bytes(),
-            )?
-            .contains("OK"),
+            && query_terminal(graphics_protocol_query().as_bytes())?.contains("OK"),
     )
 }
 
@@ -563,5 +567,14 @@ mod tests {
             .unwrap();
 
         assert_eq!(s, gp!("a=p,i=1,p=2,P=3,Q=4,z=1,H=1,X=4,q=2;"));
+    }
+
+    #[test]
+    fn graphics_protocol_query_uses_exactly_one_rgb_pixel() {
+        assert_eq!(GRAPHICS_PROTOCOL_QUERY_PIXEL.len(), 3);
+        assert_eq!(
+            graphics_protocol_query(),
+            "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[c"
+        );
     }
 }
