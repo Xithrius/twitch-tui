@@ -105,7 +105,7 @@ impl Component for DebugWidget {
 
         let title_binding = [TitleStyle::Single("Debug")];
 
-        let table = Table::new(rows, &[Constraint::Length(25), Constraint::Length(25)]).block(
+        let table = Table::new(rows, [Constraint::Length(25), Constraint::Length(25)]).block(
             Block::default()
                 .title(title_line(&title_binding, *TITLE_STYLE))
                 .borders(Borders::ALL)

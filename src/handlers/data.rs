@@ -713,7 +713,7 @@ mod tests {
         assert_eq!(span, Span::styled("", STYLES[1]));
 
         let span = MessageData::get_emote_span("", &mut emotes);
-        assert!(emotes.is_empty());
+        assert_eq!(emotes, []);
         assert_eq!(span, Span::styled("", STYLES[2]));
     }
 
@@ -836,7 +836,7 @@ mod tests {
             EMOTES_ID_PID.as_slice(),
         );
 
-        assert!(emotes.is_empty());
+        assert_eq!(emotes, []);
         assert_eq!(
             spans,
             vec![
@@ -919,7 +919,7 @@ mod tests {
             EMOTES_ID_PID.as_slice(),
         );
 
-        assert!(emotes.is_empty());
+        assert_eq!(emotes, []);
         assert_eq!(start_index, line.len());
 
         assert_eq!(
