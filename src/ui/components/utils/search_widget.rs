@@ -65,13 +65,16 @@ where
         config: SharedCoreConfig,
         event_tx: Sender<Event>,
         item_getter: U,
+        title: &str,
         error_message: Vec<&'static str>,
     ) -> Self {
         let search_input = InputWidget::builder()
             .config(config.clone())
             .event_tx(event_tx.clone())
-            .title("Search")
+            .title(title)
             .build();
+
+        // TODO: Only one error widget should exist throughout the entire application
         let error_widget = ErrorWidget::new(config.clone(), event_tx.clone(), error_message);
 
         Self {
@@ -79,7 +82,7 @@ where
             event_tx,
             focused: false,
             item_getter,
-            items: Ok(vec![]),
+            items: Ok(Vec::default()),
             filtered_items: None,
             list_state: ListState::default(),
             search_input,
@@ -286,7 +289,7 @@ where
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.select.contains(key) => {
                     if let Some(i) = self.list_state.selected() {
-                        let selected_channel = if let Some(v) = self.filtered_items.clone() {
+                        let selected_item = if let Some(v) = self.filtered_items.clone() {
                             if v.is_empty() {
                                 return Ok(());
                             }
@@ -301,7 +304,7 @@ where
 
                         self.unselect();
 
-                        let selected_channel_trimmed = clean_channel_name(&selected_channel);
+                        let selected_channel_trimmed = clean_channel_name(&selected_item);
 
                         self.event_tx
                             .send(Event::Twitch(TwitchEvent::Action(

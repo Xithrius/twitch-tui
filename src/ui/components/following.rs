@@ -35,6 +35,7 @@ impl FollowingWidget {
             config,
             event_tx,
             item_getter,
+            "Following",
             INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
         );
 
