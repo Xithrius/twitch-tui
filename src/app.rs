@@ -5,6 +5,7 @@ use std::{
     rc::Rc,
 };
 
+use bon::bon;
 use color_eyre::Result;
 use tokio::sync::{
     mpsc::{Receiver, Sender},
@@ -73,7 +74,9 @@ macro_rules! shared {
     };
 }
 
+#[bon]
 impl App {
+    #[builder]
     pub fn new(
         config: SharedCoreConfig,
         twitch_oauth: TwitchOauth,

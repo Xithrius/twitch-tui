@@ -22,7 +22,7 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use logging::initialize_logging;
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::{
     app::App,
@@ -76,15 +76,15 @@ async fn main() -> Result<()> {
         None
     };
 
-    let app = App::new(
-        config.clone(),
-        twitch_oauth.clone(),
-        events,
-        event_tx.clone(),
-        twitch_tx,
-        context_emotes,
-        decoded_emotes_rx,
-    );
+    let app = App::builder()
+        .config(config.clone())
+        .twitch_oauth(twitch_oauth.clone())
+        .events(events)
+        .event_tx(event_tx.clone())
+        .twitch_tx(twitch_tx)
+        .emotes(context_emotes)
+        .maybe_decoded_emotes_rx(decoded_emotes_rx)
+        .build();
 
     TwitchWebsocket::new(config.clone(), twitch_oauth, event_tx.clone(), twitch_rx);
 

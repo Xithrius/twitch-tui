@@ -8,24 +8,16 @@ use tui::{
 };
 
 use crate::{
-    config::SharedCoreConfig,
     handlers::state::State,
     utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 
 const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help];
 
-#[derive(Debug, Clone)]
-pub struct StateTabsWidget {
-    _config: SharedCoreConfig,
-}
+#[derive(Debug, Clone, Default)]
+pub struct StateTabsWidget;
 
 impl StateTabsWidget {
-    pub const fn new(config: SharedCoreConfig) -> Self {
-        Self { _config: config }
-    }
-
-    #[allow(clippy::unused_self)]
     pub fn draw(&self, f: &mut Frame, area: Option<Rect>, state: &State) {
         let tab_titles = TABS_TO_RENDER
             .iter()

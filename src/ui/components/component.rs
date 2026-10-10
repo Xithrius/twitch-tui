@@ -62,7 +62,7 @@ impl Components {
         );
 
         Self {
-            tabs: StateTabsWidget::new(config.clone()),
+            tabs: StateTabsWidget,
             debug: DebugWidget::new(config.clone(), event_tx.clone()),
 
             chat: ChatWidget::new(

@@ -47,7 +47,7 @@ impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
         let cache_path = get_cache_dir();
         if !cache_path.exists() {
-            create_dir_all(cache_path).unwrap();
+            create_dir_all(cache_path)?;
         }
 
         let config_path = get_config_dir().join("config.toml");
