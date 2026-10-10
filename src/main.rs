@@ -1,20 +1,4 @@
 #![forbid(unsafe_code)]
-#![warn(clippy::nursery, clippy::pedantic)]
-#![allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_precision_loss,
-    clippy::module_name_repetitions,
-    clippy::struct_excessive_bools,
-    clippy::future_not_send,
-    clippy::suboptimal_flops,
-    clippy::too_many_lines,
-    clippy::missing_errors_doc,
-    clippy::missing_panics_doc,
-    clippy::must_use_candidate,
-    clippy::struct_field_names,
-    clippy::too_many_arguments
-)]
 
 use std::{rc::Rc, sync::Arc};
 
