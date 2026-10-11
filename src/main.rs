@@ -1,3 +1,4 @@
+#![feature(array_try_from_fn)]
 #![forbid(unsafe_code)]
 
 use std::{rc::Rc, sync::Arc};
