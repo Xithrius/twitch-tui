@@ -73,10 +73,10 @@ async fn main() -> Result<()> {
 
     TwitchWebsocket::new(config.clone(), twitch_oauth, event_tx.clone(), twitch_rx);
 
-    let terminal = init_terminal(&config.frontend);
+    let terminal = init_terminal(&config.frontend)?;
     app.run(terminal).await?;
 
-    reset_terminal();
+    reset_terminal()?;
 
     std::process::exit(0)
 }
