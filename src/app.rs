@@ -210,7 +210,11 @@ impl App {
                 self.event(&event).await?;
             }
 
-            terminal.draw(|f| self.draw(f, Some(f.area())))?;
+            let mut draw_result = Ok(());
+            terminal.draw(|f| {
+                draw_result = self.draw(f, Some(f.area()));
+            })?;
+            draw_result?;
         }
 
         self.cleanup();
@@ -335,7 +339,7 @@ impl App {
 }
 
 impl Component for App {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let mut size = area.unwrap_or_else(|| f.area());
 
         if self.config.frontend.state_tabs {
@@ -352,12 +356,12 @@ impl Component for App {
         if (size.height < 10 || size.width < 60)
             && self.config.frontend.show_unsupported_screen_size
         {
-            self.components.window_size_error.draw(f, Some(f.area()));
+            self.components.window_size_error.draw(f, Some(f.area()))?;
         } else {
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None),
-                State::Normal => self.components.chat.draw(f, None),
-                State::Help => self.components.help.draw(f, None),
+                State::Dashboard => self.components.dashboard.draw(f, None)?,
+                State::Normal => self.components.chat.draw(f, None)?,
+                State::Help => self.components.help.draw(f, None)?,
             }
         }
 
@@ -369,8 +373,10 @@ impl Component for App {
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(new_rect)[1];
 
-            self.components.debug.draw(f, Some(rect));
+            self.components.debug.draw(f, Some(rect))?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

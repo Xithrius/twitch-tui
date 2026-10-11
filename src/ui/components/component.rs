@@ -21,7 +21,7 @@ static WINDOW_SIZE_TOO_SMALL_ERROR: &[&str] = &[
 ];
 
 pub trait Component {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> color_eyre::Result<()>;
 
     async fn event(&mut self, event: &Event) -> color_eyre::Result<()> {
         let _ = event;

@@ -182,7 +182,7 @@ impl ChatWidget {
 }
 
 impl Component for ChatWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let mut v_constraints = vec![Constraint::Min(1)];
@@ -294,14 +294,16 @@ impl Component for ChatWidget {
         }
 
         if self.chat_input.is_focused() {
-            self.chat_input.draw(f, v_chunks.next().copied());
+            self.chat_input.draw(f, v_chunks.next().copied())?;
         } else if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None);
+            self.channel_input.draw(f, None)?;
         } else if self.search_input.is_focused() {
-            self.search_input.draw(f, v_chunks.next().copied());
+            self.search_input.draw(f, v_chunks.next().copied())?;
         } else if self.following.is_focused() {
-            self.following.draw(f, None);
+            self.following.draw(f, None)?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

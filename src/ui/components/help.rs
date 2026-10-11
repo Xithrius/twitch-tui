@@ -233,7 +233,7 @@ impl HelpWidget {
 }
 
 impl Component for HelpWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let mut rows = vec![];
@@ -266,6 +266,8 @@ impl Component for HelpWidget {
             .column_spacing(2);
 
         f.render_widget(help_table, r);
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

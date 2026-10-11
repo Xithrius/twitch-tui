@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Context};
 use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
@@ -46,7 +46,6 @@ impl DashboardWidget {
         let channel_input =
             ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
         let following = FollowingWidget::new(config.clone(), twitch_oauth, event_tx.clone());
-        let switcher_count = None;
 
         Self {
             config,
@@ -54,7 +53,7 @@ impl DashboardWidget {
             storage,
             channel_input,
             following,
-            channel_selection: switcher_count,
+            channel_selection: None,
         }
     }
 
@@ -109,7 +108,7 @@ impl DashboardWidget {
         v_chunks: &mut Iter<Rect>,
         current_channel: String,
         default_channels: &[String],
-    ) {
+    ) -> Result<()> {
         frame.render_widget(
             Paragraph::new("Currently selected channel").style(*DASHBOARD_SECTION_STYLE),
             *v_chunks.next().unwrap(),
@@ -145,7 +144,11 @@ impl DashboardWidget {
             *v_chunks.next().unwrap(),
         );
 
-        let recent_channels = self.storage.borrow().get_last_n("channels", 5, true);
+        let recent_channels = self
+            .storage
+            .borrow()
+            .get_last_n("channels", 5, true)
+            .context("Failed to get recent channels")?;
 
         if recent_channels.is_empty() {
             frame.render_widget(Paragraph::new("None"), *v_chunks.next().unwrap());
@@ -155,6 +158,8 @@ impl DashboardWidget {
 
             frame.render_widget(recent_channels_widget, *v_chunks.next().unwrap());
         }
+
+        Ok(())
     }
 
     fn render_quit_selection_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
@@ -173,7 +178,7 @@ impl DashboardWidget {
 }
 
 impl Component for DashboardWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let favorite_channels_len = {
@@ -183,7 +188,7 @@ impl Component for DashboardWidget {
         };
 
         let recent_channels_len = {
-            let current_len = self.storage.borrow().get("channels").len() as u16;
+            let current_len = self.storage.borrow().get("channels")?.len() as u16;
             let recent_channel_config_count = self.config.frontend.recent_channel_count;
 
             if current_len == 0 {
@@ -224,15 +229,17 @@ impl Component for DashboardWidget {
             &mut v_chunks,
             self.config.twitch.channel.clone(),
             &self.config.frontend.favorite_channels.clone(),
-        );
+        )?;
 
         self.render_quit_selection_widget(f, &mut v_chunks);
 
         if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None);
+            self.channel_input.draw(f, None)?;
         } else if self.following.is_focused() {
-            self.following.draw(f, None);
+            self.following.draw(f, None)?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -272,7 +279,7 @@ impl Component for DashboardWidget {
                 Key::Char(c) => {
                     if let Some(digit) = c.to_digit(10) {
                         let mut channels = self.config.frontend.favorite_channels.clone();
-                        let mut selected_channels = self.storage.borrow().get("channels");
+                        let mut selected_channels = self.storage.borrow().get("channels")?;
                         selected_channels.reverse();
 
                         channels.extend(selected_channels);

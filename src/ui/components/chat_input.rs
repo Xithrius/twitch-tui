@@ -66,10 +66,11 @@ impl ChatInputWidget {
                         possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
                     }
                     '@' => {
-                        let possible_suggestion =
-                            first_similarity(&storage.borrow().get("mentions"), &s[1..]).or_else(
-                                || first_similarity(&storage.borrow().get("chatters"), &s[1..]),
-                            );
+                        let mentions = storage.borrow().get("mentions").ok()?;
+                        let channels = storage.borrow().get("channels").ok()?;
+
+                        let possible_suggestion = first_similarity(&mentions, &s[1..])
+                            .or_else(|| first_similarity(&channels, &s[1..]));
 
                         let default_suggestion = possible_suggestion.clone();
 
@@ -119,12 +120,14 @@ impl Display for ChatInputWidget {
 }
 
 impl Component for ChatInputWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        self.input.draw(f, area);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
+        self.input.draw(f, area)?;
 
         if self.emote_picker.is_focused() {
-            self.emote_picker.draw(f, None);
+            self.emote_picker.draw(f, None)?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

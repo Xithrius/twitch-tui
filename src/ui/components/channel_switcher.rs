@@ -56,15 +56,15 @@ impl ChannelSwitcherWidget {
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), NAME_MAX_CHARACTERS) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
-            first_similarity(
-                &storage
-                    .borrow()
-                    .get("channels")
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<String>>(),
-                &s,
-            )
+            let channels = storage
+                .borrow()
+                .get("channels")
+                .ok()?
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<String>>();
+
+            first_similarity(&channels, &s)
         });
 
         let search_input = InputWidget::builder()
@@ -89,10 +89,10 @@ impl ChannelSwitcherWidget {
         }
     }
 
-    fn next(&mut self) {
+    fn next(&mut self) -> Result<()> {
         let i = match self.list_state.selected() {
             Some(i) => {
-                let items = self.storage.borrow().get("channels");
+                let items = self.storage.borrow().get("channels")?;
 
                 if i >= items.len() - 1 {
                     items.len() - 1
@@ -107,6 +107,8 @@ impl ChannelSwitcherWidget {
 
         self.vertical_scroll = self.vertical_scroll.saturating_add(1);
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
+
+        Ok(())
     }
 
     fn previous(&mut self) {
@@ -138,7 +140,7 @@ impl ChannelSwitcherWidget {
             self.toggle_focus();
             self.unselect();
 
-            let channels = self.storage.borrow().get("channels");
+            let channels = self.storage.borrow().get("channels")?;
 
             let selected_channel = if let Some(v) = &self.filtered_channels {
                 if v.is_empty() {
@@ -218,10 +220,10 @@ impl Display for ChannelSwitcherWidget {
 }
 
 impl Component for ChannelSwitcherWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
-        let channels = self.storage.borrow().get("channels");
+        let channels = self.storage.borrow().get("channels")?;
 
         let mut items = vec![];
         let current_input = self.search_input.to_string();
@@ -320,7 +322,9 @@ impl Component for ChannelSwitcherWidget {
 
         let input_rect = Rect::new(r.x, r.bottom(), r.width, 3);
 
-        self.search_input.draw(f, Some(input_rect));
+        self.search_input.draw(f, Some(input_rect))?;
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -335,7 +339,7 @@ impl Component for ChannelSwitcherWidget {
                         self.search_input.clear();
                     }
                 }
-                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.next_item.contains(key) => self.next()?,
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.delete_item.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
@@ -345,7 +349,8 @@ impl Component for ChannelSwitcherWidget {
                                     .borrow_mut()
                                     .remove_inner_with("channels", value);
                             }
-                        } else if let Some(value) = self.storage.borrow().get("channels").get(index)
+                        } else if let Some(value) =
+                            self.storage.borrow().get("channels")?.get(index)
                         {
                             self.storage
                                 .borrow_mut()

@@ -153,13 +153,11 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         if self.error_widget.is_focused() {
-            self.error_widget.draw(f, Some(r));
-
-            return;
+            return self.error_widget.draw(f, Some(r));
         }
 
         let mut items = vec![];
@@ -264,7 +262,9 @@ where
 
         let input_rect = Rect::new(rect.x, rect.bottom(), rect.width, 3);
 
-        self.search_input.draw(f, Some(input_rect));
+        self.search_input.draw(f, Some(input_rect))?;
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

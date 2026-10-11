@@ -124,7 +124,7 @@ impl<T: Clone> Display for InputWidget<T> {
 }
 
 impl<T: Clone> Component for InputWidget<T> {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a.clamp(f.area()));
 
         let cursor_pos = get_cursor_position(&self.input);
@@ -212,6 +212,8 @@ impl<T: Clone> Component for InputWidget<T> {
             let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
             f.render_widget(bottom_block, rect);
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
