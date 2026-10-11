@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
-use color_eyre::Result;
-use regex::Regex;
+use color_eyre::{Result, eyre::ContextCompat};
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, info};
 use tui::{
@@ -17,13 +16,15 @@ use tui::{
     },
 };
 
-use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
     events::{Event, TwitchAction, TwitchEvent},
     handlers::storage::SharedStorage,
     ui::{
-        components::{Component, utils::InputWidget},
+        components::{
+            Component,
+            utils::{InputWidget, popup_area},
+        },
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
     utils::{
@@ -47,11 +48,8 @@ pub struct ChannelSwitcherWidget {
 
 impl ChannelSwitcherWidget {
     pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>, storage: SharedStorage) -> Self {
-        let input_validator = Box::new(|_, s: String| -> bool {
-            Regex::new(NAME_RESTRICTION_REGEX)
-                .unwrap()
-                .is_match(s.as_str())
-        });
+        let input_validator =
+            Box::new(|_, s: String| -> bool { NAME_RESTRICTION_REGEX.is_match(s.as_str()) });
 
         // Intuitively, a user will hit the username length limit rather than not hitting 4 characters.
         let visual_indicator =
@@ -133,6 +131,83 @@ impl ChannelSwitcherWidget {
 
     pub const fn toggle_focus(&mut self) {
         self.focused = !self.focused;
+    }
+
+    async fn join_channel(&mut self) -> Result<()> {
+        if let Some(i) = self.list_state.selected() {
+            self.toggle_focus();
+            self.unselect();
+
+            let channels = self.storage.borrow().get("channels");
+
+            let selected_channel = if let Some(v) = &self.filtered_channels {
+                if v.is_empty() {
+                    let selected_channel = self.search_input.to_string();
+
+                    if !selected_channel.is_empty() {
+                        if self.config.storage.channels {
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", selected_channel.clone());
+                        }
+
+                        self.search_input.clear();
+
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(
+                                TwitchAction::JoinChannel(selected_channel),
+                            )))
+                            .await?;
+                    }
+                }
+
+                v.get(i).context("Selected channel not found")?
+            } else {
+                channels.get(i).context("Selected channel not found")?
+            };
+
+            if self.config.storage.channels {
+                self.storage
+                    .borrow_mut()
+                    .add("channels", selected_channel.clone());
+            }
+
+            self.search_input.clear();
+
+            debug!(
+                "Joining previously joined channel {:?}",
+                selected_channel.clone()
+            );
+
+            self.event_tx
+                .send(Event::Twitch(TwitchEvent::Action(
+                    TwitchAction::JoinChannel(selected_channel.clone()),
+                )))
+                .await?;
+        } else if self.search_input.is_valid() {
+            self.toggle_focus();
+            self.unselect();
+
+            let selected_channel = self.search_input.to_string();
+
+            if self.config.storage.channels {
+                self.storage
+                    .borrow_mut()
+                    .add("channels", selected_channel.clone());
+            }
+
+            self.search_input.clear();
+
+            info!("Joining new channel {selected_channel:?}");
+
+            self.event_tx
+                .send(Event::Twitch(TwitchEvent::Action(
+                    TwitchAction::JoinChannel(selected_channel),
+                )))
+                .await?;
+        }
+
+        Ok(())
     }
 }
 
@@ -278,81 +353,7 @@ impl Component for ChannelSwitcherWidget {
                         }
                     }
                 }
-                key if keybinds.select.contains(key) => {
-                    // TODO: Reduce code duplication
-                    if let Some(i) = self.list_state.selected() {
-                        self.toggle_focus();
-                        self.unselect();
-
-                        let channels = self.storage.borrow().get("channels");
-
-                        let selected_channel = if let Some(v) = &self.filtered_channels {
-                            if v.is_empty() {
-                                let selected_channel = self.search_input.to_string();
-
-                                if !selected_channel.is_empty() {
-                                    if self.config.storage.channels {
-                                        self.storage
-                                            .borrow_mut()
-                                            .add("channels", selected_channel.clone());
-                                    }
-
-                                    self.search_input.clear();
-
-                                    self.event_tx
-                                        .send(Event::Twitch(TwitchEvent::Action(
-                                            TwitchAction::JoinChannel(selected_channel),
-                                        )))
-                                        .await?;
-                                }
-                            }
-
-                            v.get(i).unwrap()
-                        } else {
-                            channels.get(i).unwrap()
-                        };
-
-                        if self.config.storage.channels {
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", selected_channel.clone());
-                        }
-
-                        self.search_input.clear();
-
-                        debug!(
-                            "Joining previously joined channel {:?}",
-                            selected_channel.clone()
-                        );
-
-                        self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(
-                                TwitchAction::JoinChannel(selected_channel.clone()),
-                            )))
-                            .await?;
-                    } else if self.search_input.is_valid() {
-                        self.toggle_focus();
-                        self.unselect();
-
-                        let selected_channel = self.search_input.to_string();
-
-                        if self.config.storage.channels {
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", selected_channel.clone());
-                        }
-
-                        self.search_input.clear();
-
-                        info!("Joining new channel {selected_channel:?}");
-
-                        self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(
-                                TwitchAction::JoinChannel(selected_channel),
-                            )))
-                            .await?;
-                    }
-                }
+                key if keybinds.select.contains(key) => self.join_channel().await?,
                 _ => {
                     self.search_input.event(event).await?;
 
