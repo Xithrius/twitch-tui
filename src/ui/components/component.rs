@@ -9,7 +9,9 @@ use crate::{
     events::Event,
     handlers::{filters::SharedFilters, storage::SharedStorage},
     twitch::oauth::TwitchOauth,
-    ui::components::{ChatWidget, DashboardWidget, DebugWidget, ErrorWidget, HelpWidget},
+    ui::components::{
+        ChatWidget, DashboardWidget, DebugWidget, ErrorWidget, HelpWidget, StateTabsWidget,
+    },
 };
 
 static WINDOW_SIZE_TOO_SMALL_ERROR: &[&str] = &[
@@ -28,6 +30,7 @@ pub trait Component {
 }
 
 pub struct Components {
+    pub state_tabs: StateTabsWidget,
     // Partial window widgets
     pub debug: DebugWidget,
 
@@ -59,6 +62,8 @@ impl Components {
         );
 
         Self {
+            state_tabs: StateTabsWidget::new(config),
+
             debug: DebugWidget::new(config.clone(), event_tx.clone()),
 
             chat: ChatWidget::new(

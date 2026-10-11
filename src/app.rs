@@ -34,7 +34,7 @@ use crate::{
         storage::{SharedStorage, Storage},
     },
     twitch::oauth::TwitchOauth,
-    ui::components::{Component, Components, StateTabsWidget},
+    ui::components::{Component, Components},
     utils::sanitization::clean_channel_name,
 };
 
@@ -209,6 +209,8 @@ impl App {
     fn set_state(&mut self, other: State) {
         self.previous_state = Some(self.state.clone());
         self.state = other;
+
+        self.components.state_tabs.select(&self.state);
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
@@ -364,34 +366,34 @@ impl App {
 
 impl Component for App {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
-        let mut size = area.unwrap_or_else(|| f.area());
+        let mut area = area.unwrap_or_else(|| f.area());
 
         if self.config.frontend.state_tabs {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
+                .constraints([Constraint::Length(area.height - 1), Constraint::Length(1)])
                 .split(f.area());
 
-            size = *layout.first().context("Failed to get state tabs area")?;
+            area = *layout.first().context("Failed to get state tabs area")?;
 
             let rect = layout.last().context("Failed to get state tabs area")?;
-            StateTabsWidget::draw(f, Some(*rect), &self.state);
+            self.components.state_tabs.draw(f, Some(*rect))?;
         }
 
-        if (size.height < 10 || size.width < 60)
+        if (area.height < 10 || area.width < 60)
             && self.config.frontend.show_unsupported_screen_size
         {
             self.components.window_size_error.draw(f, Some(f.area()))?;
         } else {
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None)?,
-                State::Normal => self.components.chat.draw(f, None)?,
-                State::Help => self.components.help.draw(f, None)?,
+                State::Dashboard => self.components.dashboard.draw(f, Some(area))?,
+                State::Normal => self.components.chat.draw(f, Some(area))?,
+                State::Help => self.components.help.draw(f, Some(area))?,
             }
         }
 
         if self.components.debug.is_focused() {
-            let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
+            let new_rect = Rect::new(area.x, area.y + 1, area.width - 1, area.height - 2);
 
             let rects = Layout::default()
                 .direction(Direction::Horizontal)
