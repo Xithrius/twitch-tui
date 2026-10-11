@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-9ad8df38.js";
+            window.path_to_searchindex_js = "searchindex-170cfd7c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ee00a050.js"></script>
@@ -246,9 +246,10 @@ channel:edit:commercial
 </ol>
 <p>The environment variable will be used first, even if a token exists in <code>config.toml</code>. If one doesn’t exist there, your config token will be used.</p>
 <h2 id="emotes"><a class="header" href="#emotes">Emotes</a></h2>
-<p>Currently, only the <a href="#configuration">graphics protocol for kitty</a> is supported, so any other terminal without it won’t be able to render emotes.</p>
+<p>Currently, only the <a href="https://sw.kovidgoyal.net/kitty/graphics-protocol/">graphics protocol for kitty</a> is supported, so any other terminal without it won’t be able to render emotes.</p>
 <p>Enable the emotes by setting <code>twitch_emotes</code>, <code>betterttv_emotes</code> and/or <code>seventv_emotes</code> to <code>true</code>.</p>
 <p>The emotes will be downloaded to <code>~/.cache/twt/</code> on Linux/MacOs and <code>%appdata%\twt\cache\</code> on Windows.</p>
+<p>If you’re running tmux in kitty, run either <code>set -p allow-passthrough on</code>, or set <code>set -g allow-passthrough on</code> in your tmux config for emotes to be shown.</p>
 <h2 id="run-it"><a class="header" href="#run-it">Run it</a></h2>
 <p>Run <code>twt</code> in the terminal. For help, <code>twt --help</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
