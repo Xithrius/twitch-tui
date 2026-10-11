@@ -49,35 +49,35 @@ impl ChatInputWidget {
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
-            s.chars()
-                .next()
-                .and_then(|start_character| match start_character {
-                    '/' => {
-                        let possible_suggestion = first_similarity(
-                            &SUPPORTED_COMMANDS
-                                .iter()
-                                .map(ToString::to_string)
-                                .collect::<Vec<String>>(),
-                            &s[1..],
-                        );
+            let (command_str, command) = s.split_at_checked(1)?;
 
-                        let default_suggestion = possible_suggestion.clone();
+            match command_str {
+                "/" => {
+                    let possible_suggestion = first_similarity(
+                        &SUPPORTED_COMMANDS
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        command,
+                    );
 
-                        possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
-                    }
-                    '@' => {
-                        let mentions = storage.borrow().get("mentions").ok()?;
-                        let channels = storage.borrow().get("channels").ok()?;
+                    let default_suggestion = possible_suggestion.clone();
 
-                        let possible_suggestion = first_similarity(&mentions, &s[1..])
-                            .or_else(|| first_similarity(&channels, &s[1..]));
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
+                }
+                "@" => {
+                    let mentions = storage.borrow().get("mentions").ok()?;
+                    let channels = storage.borrow().get("channels").ok()?;
 
-                        let default_suggestion = possible_suggestion.clone();
+                    let possible_suggestion = first_similarity(&mentions, command)
+                        .or_else(|| first_similarity(&channels, command));
 
-                        possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
-                    }
-                    _ => None,
-                })
+                    let default_suggestion = possible_suggestion.clone();
+
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
+                }
+                _ => None,
+            }
         });
 
         let input = InputWidget::builder()
