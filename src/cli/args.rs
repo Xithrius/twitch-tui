@@ -27,8 +27,8 @@ impl ValueEnum for Theme {
 
     fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
         Some(PossibleValue::new(match self {
+            Self::Dark => "dark",
             Self::Light => "light",
-            _ => "dark",
         }))
     }
 }

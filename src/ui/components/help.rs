@@ -27,6 +27,11 @@ impl HelpWidget {
     pub const fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         Self { config, event_tx }
     }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "We have a lot of keybinds to display"
+    )]
     fn get_help_keybinds(&self) -> Vec<(&'static str, Vec<(String, &'static str)>)> {
         let keybinds = &self.config.keybinds;
         let dashboard_keybinds = vec![

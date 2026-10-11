@@ -92,7 +92,7 @@ pub async fn get_game_id(client: &Client, game_name: &str) -> Result<String> {
 /// Gets information about a channel
 ///
 /// <https://dev.twitch.tv/docs/api/reference/#get-channel-information>
-#[allow(unused)]
+#[expect(unused, reason = "Not used yet, but might be useful later")]
 pub async fn get_channel_information(
     client: &Client,
     broadcaster_id: String,

@@ -18,7 +18,7 @@ const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help
 pub struct StateTabsWidget;
 
 impl StateTabsWidget {
-    pub fn draw(&self, f: &mut Frame, area: Option<Rect>, state: &State) {
+    pub fn draw(f: &mut Frame, area: Option<Rect>, state: &State) {
         let tab_titles = TABS_TO_RENDER
             .iter()
             .map(|t| Line::from(capitalize_first_char(&t.to_string())))

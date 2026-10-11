@@ -31,7 +31,7 @@ use crate::{
         storage::{SharedStorage, Storage},
     },
     twitch::oauth::TwitchOauth,
-    ui::components::{Component, Components},
+    ui::components::{Component, Components, StateTabsWidget},
     utils::sanitization::clean_channel_name,
 };
 
@@ -346,7 +346,7 @@ impl Component for App {
 
             size = layout[0];
 
-            self.components.tabs.draw(f, Some(layout[1]), &self.state);
+            StateTabsWidget::draw(f, Some(layout[1]), &self.state);
         }
 
         if (size.height < 10 || size.width < 60)

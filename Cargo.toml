@@ -146,3 +146,5 @@ allow_attributes_without_reason = "warn"
 
 # Change to warn later
 struct_field_names = "allow"
+# Change to deny later
+future_not_send = "allow"
