@@ -10,7 +10,7 @@ use crate::twitch::{
 
 #[test]
 fn test_deserialize_cheer() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&CHEER)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(CHEER)?;
 
     let raw_bits = raw
         .pointer("/event/cheer/bits")
@@ -33,5 +33,5 @@ fn test_deserialize_cheer() -> Result<()> {
 #[test]
 #[should_panic(expected = "Invalid cheer field")]
 fn test_deserialize_invalid_cheer() {
-    load_data::<ReceivedTwitchMessagePayload>(&INVALID_CHEER).expect("Invalid cheer field");
+    load_data::<ReceivedTwitchMessagePayload>(INVALID_CHEER).expect("Invalid cheer field");
 }

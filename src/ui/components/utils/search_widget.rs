@@ -1,6 +1,7 @@
 use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
 use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::Rect,
@@ -10,20 +11,17 @@ use tui::{
     text::{Line, Span},
     widgets::{
         Block, Borders, Clear, List, ListItem, ListState, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, block::Position,
+        ScrollbarState, TitlePosition,
     },
 };
 
 use super::{InputWidget, popup_area};
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
-    twitch::TwitchAction,
+    config::SharedCoreConfig,
+    events::{Event, Key, TwitchAction, TwitchEvent},
     ui::components::{Component, ErrorWidget},
     utils::{
+        sanitization::clean_channel_name,
         search::fuzzy_pattern_match,
         styles::{NO_COLOR, SEARCH_STYLE, TITLE_STYLE},
         text::{TitleStyle, title_line},
@@ -43,6 +41,7 @@ where
     U: SearchItemGetter<T>,
 {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     focused: bool,
 
     item_getter: U,
@@ -62,12 +61,22 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    pub fn new(config: SharedCoreConfig, item_getter: U, error_message: Vec<&'static str>) -> Self {
-        let search_input = InputWidget::new(config.clone(), "Search", None, None, None);
-        let error_widget = ErrorWidget::new(error_message);
+    pub fn new(
+        config: SharedCoreConfig,
+        event_tx: Sender<Event>,
+        item_getter: U,
+        error_message: Vec<&'static str>,
+    ) -> Self {
+        let search_input = InputWidget::builder()
+            .config(config.clone())
+            .event_tx(event_tx.clone())
+            .title("Search")
+            .build();
+        let error_widget = ErrorWidget::new(config.clone(), event_tx.clone(), error_message);
 
         Self {
             config,
+            event_tx,
             focused: false,
             item_getter,
             items: Ok(vec![]),
@@ -115,7 +124,7 @@ where
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
-    fn unselect(&mut self) {
+    const fn unselect(&mut self) {
         self.list_state.select(None);
     }
 
@@ -142,7 +151,7 @@ where
     U: SearchItemGetter<T>,
 {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
+        let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         if self.error_widget.is_focused() {
             self.error_widget.draw(f, Some(r));
@@ -200,13 +209,14 @@ where
                 Block::default()
                     .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .highlight_style(if *NO_COLOR {
                 Style::default()
             } else {
                 Style::default()
                     .bg(Color::LightGreen)
+                    .fg(Color::DarkGray)
                     .add_modifier(Modifier::BOLD)
             });
 
@@ -240,9 +250,9 @@ where
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .title(title_line(&title, Style::default()))
-            .title_position(Position::Bottom)
+            .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Right);
 
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
@@ -254,30 +264,31 @@ where
         self.search_input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if self.error_widget.is_focused() && matches!(event, Event::Input(Key::Esc)) {
             self.error_widget.toggle_focus();
             self.toggle_focus().await;
 
-            return None;
+            return Ok(());
         }
 
         if let Event::Input(key) = event {
+            let keybinds = &self.config.keybinds.selection;
             match key {
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
                         self.toggle_focus().await;
                     }
                 }
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Enter => {
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
+                key if keybinds.select.contains(key) => {
                     if let Some(i) = self.list_state.selected() {
                         let selected_channel = if let Some(v) = self.filtered_items.clone() {
                             if v.is_empty() {
-                                return None;
+                                return Ok(());
                             }
 
                             v.get(i).unwrap().to_string()
@@ -290,13 +301,17 @@ where
 
                         self.unselect();
 
-                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
-                            selected_channel,
-                        )));
+                        let selected_channel_trimmed = clean_channel_name(&selected_channel);
+
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(
+                                TwitchAction::JoinChannel(selected_channel_trimmed),
+                            )))
+                            .await?;
                     }
                 }
                 _ => {
-                    self.search_input.event(event).await;
+                    self.search_input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_items {
@@ -308,6 +323,6 @@ where
             }
         }
 
-        None
+        Ok(())
     }
 }

@@ -309,14 +309,9 @@ pub struct ReceivedTwitchSubscription {
 
 impl ReceivedTwitchSubscription {
     #[must_use]
-    pub fn new(
-        maybe_subscription_type: Option<Subscription>,
-        channel_id: String,
-        user_id: String,
-        session_id: String,
-    ) -> Self {
+    pub fn new(channel_id: String, user_id: String, session_id: String) -> Self {
         Self {
-            subscription_type: maybe_subscription_type,
+            subscription_type: None,
             version: "1".to_string(),
             condition: ReceivedTwitchSubscriptionCondition::new(channel_id, user_id),
             transport: ReceivedTwitchSubscriptionTransport::new(session_id),

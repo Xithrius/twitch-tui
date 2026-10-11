@@ -38,13 +38,10 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> Enter message search mode, which highlights messages in the main window which match the query.
 <tr>
 <td> Ctrl + t
-<td> Toggle the message filter.
+<td> Toggle filters.
 <tr>
 <td> Ctrl + r
-<td> Reverse the message filter.
-<tr>
-<td> Ctrl + p
-<td> Manually crash the application.
+<td> Reverse filters.
 <tr>
 <td> Esc
 <td> Go back to the previous window.

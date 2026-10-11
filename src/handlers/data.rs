@@ -1,5 +1,6 @@
 use std::{borrow::Cow, mem::swap, string::ToString, sync::LazyLock};
 
+use bon::bon;
 use chrono::{DateTime, offset::Local};
 use fuzzy_matcher::FuzzyMatcher;
 use memchr::{memchr_iter, memmem};
@@ -11,8 +12,9 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
+    config::{FrontendConfig, Palette, Theme},
     emotes::{DownloadedEmotes, EmoteData, SharedEmotes, display_emote, load_emote, overlay_emote},
-    handlers::config::{FrontendConfig, Palette, Theme},
+    events::{Event, TwitchEvent, TwitchNotification},
     ui::statics::NAME_MAX_CHARACTERS,
     utils::{
         colors::{hsl_to_rgb, u32_to_color},
@@ -29,18 +31,12 @@ use crate::{
     },
 };
 
-pub enum TwitchToTerminalAction {
-    Message(RawMessageData),
-    ClearChat(Option<String>),
-    DeleteMessage(String),
-}
-
 enum Word {
     Emote(Vec<EmoteData>),
     Text(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
@@ -50,9 +46,10 @@ pub struct MessageData {
     pub emotes: Vec<(Color, Color)>,
     pub message_id: Option<String>,
     pub highlight: bool,
+    pub badges: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawMessageData {
     pub time_sent: DateTime<Local>,
     pub author: String,
@@ -62,9 +59,12 @@ pub struct RawMessageData {
     pub emotes: DownloadedEmotes,
     pub message_id: Option<String>,
     pub highlight: bool,
+    pub badges: Option<String>,
 }
 
+#[bon]
 impl RawMessageData {
+    #[builder]
     pub fn new(
         author: String,
         user_id: Option<String>,
@@ -73,6 +73,7 @@ impl RawMessageData {
         emotes: DownloadedEmotes,
         message_id: Option<String>,
         highlight: bool,
+        badges: Option<String>,
     ) -> Self {
         Self {
             time_sent: Local::now(),
@@ -83,6 +84,7 @@ impl RawMessageData {
             emotes,
             message_id,
             highlight,
+            badges,
         }
     }
 }
@@ -108,6 +110,7 @@ impl MessageData {
             emotes,
             message_id: msg.message_id,
             highlight: msg.highlight,
+            badges: msg.badges,
         }
     }
 
@@ -485,12 +488,17 @@ impl MessageData {
             None
         };
 
+        let author = self.badges.as_ref().map_or_else(
+            || self.author.clone(),
+            |badges| badges.clone() + &self.author,
+        );
+
         // Add 1 for the space after the timestamp
         let time_sent_len = time_sent.as_ref().map_or(0, |t| t.len() + 1);
 
         let prefix_len = if frontend_config.username_shown {
             // Add 2 for the ": "
-            time_sent_len + self.author.len() + 2
+            time_sent_len + author.len() + 2
         } else {
             time_sent_len
         };
@@ -512,7 +520,7 @@ impl MessageData {
 
         let username_alignment = if frontend_config.username_shown {
             if frontend_config.right_align_usernames {
-                NAME_MAX_CHARACTERS.saturating_sub(self.author.width()) + 1
+                NAME_MAX_CHARACTERS.saturating_sub(author.width()) + 1
             } else {
                 1
             }
@@ -530,10 +538,7 @@ impl MessageData {
         }
 
         if frontend_config.username_shown {
-            first_row.extend(vec![
-                Span::styled(&self.author, author_theme),
-                Span::raw(": "),
-            ]);
+            first_row.extend(vec![Span::styled(author, author_theme), Span::raw(": ")]);
         }
 
         let mut next_index = 0;
@@ -588,6 +593,8 @@ impl MessageData {
 #[derive(Debug, Copy, Clone)]
 pub struct DataBuilder;
 
+pub static KNOWN_CHATTERS: &[&str] = &["System", "Twitch"];
+
 impl DataBuilder {
     // User messages that come from either twitch or the terminal
     pub fn user(
@@ -597,36 +604,52 @@ impl DataBuilder {
         emotes: DownloadedEmotes,
         message_id: Option<String>,
         highlight: bool,
-    ) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(RawMessageData::new(
-            user, user_id, false, payload, emotes, message_id, highlight,
-        ))
+        badges: Option<String>,
+    ) -> TwitchNotification {
+        let message = RawMessageData::builder()
+            .author(user)
+            .maybe_user_id(user_id)
+            .system(false)
+            .payload(payload)
+            .emotes(emotes)
+            .maybe_message_id(message_id)
+            .highlight(highlight)
+            .maybe_badges(badges)
+            .build();
+
+        TwitchNotification::Message(message)
     }
 
     /// Notification messages from the terminal
-    pub fn system(payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(RawMessageData::new(
-            "System".to_string(),
-            None,
-            true,
-            payload,
-            DownloadedEmotes::default(),
-            None,
-            false,
-        ))
+    pub fn system(payload: String) -> TwitchNotification {
+        let message = RawMessageData::builder()
+            .author("System".to_string())
+            .system(true)
+            .payload(payload)
+            .emotes(DownloadedEmotes::default())
+            .highlight(false)
+            .build();
+
+        TwitchNotification::Message(message)
     }
 
     /// Notification messages from Twitch
-    pub fn twitch(payload: String) -> TwitchToTerminalAction {
-        TwitchToTerminalAction::Message(RawMessageData::new(
-            "Twitch".to_string(),
-            None,
-            true,
-            payload,
-            DownloadedEmotes::default(),
-            None,
-            false,
-        ))
+    pub fn twitch(payload: String) -> TwitchNotification {
+        let message = RawMessageData::builder()
+            .author("Twitch".to_string())
+            .system(true)
+            .payload(payload)
+            .emotes(DownloadedEmotes::default())
+            .highlight(false)
+            .build();
+
+        TwitchNotification::Message(message)
+    }
+}
+
+impl From<TwitchNotification> for Event {
+    fn from(value: TwitchNotification) -> Self {
+        Self::Twitch(TwitchEvent::Notification(value))
     }
 }
 
@@ -650,6 +673,7 @@ mod tests {
                 emotes: vec![],
                 message_id: None,
                 highlight: false,
+                badges: None,
             }
             .hash_username(&Palette::Pastel),
             Rgb(159, 223, 221)
@@ -689,7 +713,7 @@ mod tests {
         assert_eq!(span, Span::styled("", STYLES[1]));
 
         let span = MessageData::get_emote_span("", &mut emotes);
-        assert!(emotes.is_empty());
+        assert_eq!(emotes, []);
         assert_eq!(span, Span::styled("", STYLES[2]));
     }
 
@@ -812,7 +836,7 @@ mod tests {
             EMOTES_ID_PID.as_slice(),
         );
 
-        assert!(emotes.is_empty());
+        assert_eq!(emotes, []);
         assert_eq!(
             spans,
             vec![
@@ -895,7 +919,7 @@ mod tests {
             EMOTES_ID_PID.as_slice(),
         );
 
-        assert!(emotes.is_empty());
+        assert_eq!(emotes, []);
         assert_eq!(start_index, line.len());
 
         assert_eq!(
@@ -920,15 +944,16 @@ mod tests {
 
     #[test]
     fn build_vec_with_wraps_and_highlights() {
-        let raw_message = RawMessageData::new(
-            "foo".to_string(),
-            None,
-            false,
-            "foo bar baz".to_string(),
-            BTreeMap::new(),
-            None,
-            false,
-        );
+        let raw_message = RawMessageData::builder()
+            .author("foo".to_string())
+            .maybe_user_id(None)
+            .system(false)
+            .payload("foo bar baz".to_string())
+            .emotes(BTreeMap::new())
+            .maybe_message_id(None)
+            .highlight(false)
+            .maybe_badges(None)
+            .build();
 
         let emotes = Rc::new(Emotes::new(false));
         let data = MessageData::from_twitch_message(raw_message, &emotes);

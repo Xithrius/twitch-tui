@@ -31,15 +31,9 @@ impl ShoutoutQuery {
 pub async fn shoutout_twitch_user(client: &Client, query: ShoutoutQuery) -> Result<()> {
     let url = format!("{TWITCH_API_BASE_URL}/chat/shoutouts");
 
-    let mod_query = &[
-        ("from_broadcaster_id", query.from_broadcaster_id),
-        ("to_broadcaster_id", query.to_broadcaster_id),
-        ("moderator_id", query.moderator_id),
-    ];
-
     client
         .post(url)
-        .query(mod_query)
+        .query(&query)
         .send()
         .await?
         .error_for_status()?;

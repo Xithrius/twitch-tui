@@ -39,3 +39,5 @@ If you have any problems, do not hesitate to [submit an issue](https://github.co
 Combine this application with [streamlink](https://github.com/streamlink/streamlink) to rid the need of a browser while watching streams.
 
 This project follows the guidelines of [Semantic Versioning](https://semver.org/).
+
+[![](https://raw.githubusercontent.com/dch82/Nixpkgs-Badges/main/nixpkgs-badge-dark.svg)](https://search.nixos.org/packages?size=1&show=twitch-tui)

@@ -4,19 +4,22 @@ use std::{
     hash::{Hash, Hasher},
     rc::Rc,
     sync::OnceLock,
+    thread,
 };
 
 use color_eyre::{Result, eyre::anyhow};
 use tokio::sync::{
+    mpsc,
     mpsc::{Receiver, Sender},
     oneshot::{Receiver as OSReceiver, Sender as OSSender},
 };
 use tracing::{error, info, warn};
 
 use crate::{
+    config::{CoreConfig, get_cache_dir},
     emotes::{downloader::get_emotes, graphics_protocol::Image},
-    handlers::config::CoreConfig,
-    utils::{emotes::get_emote_offset, pathing::cache_path},
+    twitch::oauth::TwitchOauth,
+    utils::emotes::get_emote_offset,
 };
 
 mod downloader;
@@ -109,13 +112,14 @@ impl From<LoadedEmote> for EmoteData {
 
 pub fn query_emotes(
     config: &CoreConfig,
+    twitch_oauth: TwitchOauth,
     channel: String,
 ) -> OSReceiver<(DownloadedEmotes, DownloadedEmotes)> {
     let (tx, mut rx) = tokio::sync::oneshot::channel();
 
     if config.frontend.is_emotes_enabled() {
         let config = config.clone();
-        tokio::spawn(async move { send_emotes(&config, tx, channel).await });
+        tokio::spawn(async move { send_emotes(&config, twitch_oauth, tx, channel).await });
     } else {
         rx.close();
     }
@@ -125,11 +129,12 @@ pub fn query_emotes(
 
 pub async fn send_emotes(
     config: &CoreConfig,
+    twitch_oauth: TwitchOauth,
     tx: OSSender<(DownloadedEmotes, DownloadedEmotes)>,
     channel: String,
 ) {
     info!("Starting emotes download.");
-    match get_emotes(config, &channel).await {
+    match get_emotes(config, twitch_oauth, &channel).await {
         Ok(emotes) => {
             info!("Emotes downloaded.");
             if tx.send(emotes).is_err() {
@@ -174,13 +179,15 @@ pub fn load_emote(
         let hash = hasher.finish() as u32 & 0x00FF_FFFF;
 
         // Tells the terminal to load the image for later use
-        let image = Image::new(
-            hash,
-            word.to_string(),
-            &cache_path(filename),
-            overlay,
-            cell_size,
-        )?;
+        let path = get_cache_dir().join(filename);
+        let image = Image::builder()
+            .id(hash)
+            .name(word.to_string())
+            .path(path)
+            .overlay(overlay)
+            .cell_w(cell_size.0)
+            .cell_h(cell_size.1)
+            .build()?;
 
         let width = image.width;
         let cols = image.cols;
@@ -222,13 +229,15 @@ pub fn load_picker_emote(
         let hash = hasher.finish() as u32 & 0x00FF_FFFF;
 
         // Tells the terminal to load the image for later use
-        let image = Image::new(
-            hash,
-            word.to_string(),
-            &cache_path(filename),
-            overlay,
-            cell_size,
-        )?;
+        let path = get_cache_dir().join(filename);
+        let image = Image::builder()
+            .id(hash)
+            .name(word.to_string())
+            .path(path)
+            .overlay(overlay)
+            .cell_w(cell_size.0)
+            .cell_h(cell_size.1)
+            .build()?;
 
         let width = image.width;
 
@@ -278,4 +287,45 @@ pub fn overlay_emote(
         pixel_offset,
     )
     .apply()
+}
+
+/// Initialize the emote decoder if emotes are enabled.
+/// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
+#[allow(clippy::type_complexity)]
+pub fn initialize_emote_decoder(
+    config: &mut CoreConfig,
+) -> Option<(mpsc::Receiver<Result<DecodedEmote, String>>, (f32, f32))> {
+    if !config.frontend.is_emotes_enabled() {
+        return None;
+    }
+
+    // We need to probe the terminal for it's size before starting the tui,
+    // as writing on stdout on a different thread can interfere.
+    match tui::crossterm::terminal::window_size() {
+        Ok(size) => {
+            let cell_size = (
+                f32::from(size.width / size.columns),
+                f32::from(size.height / size.rows),
+            );
+
+            let (decoder_tx, decoder_rx) = mpsc::channel(100);
+            DECODE_EMOTE_SENDER.get_or_init(|| decoder_tx);
+
+            let (decoded_tx, decoded_rx) = mpsc::channel(100);
+
+            // As decoding an image is a blocking task, spawn a separate thread to handle it.
+            // We cannot use tokio tasks here as it will create noticeable freezes.
+            thread::spawn(move || decoder(decoder_rx, &decoded_tx));
+
+            Some((decoded_rx, cell_size))
+        }
+        Err(e) => {
+            config.frontend.twitch_emotes = false;
+            config.frontend.betterttv_emotes = false;
+            config.frontend.seventv_emotes = false;
+            config.frontend.frankerfacez_emotes = false;
+            warn!("Unable to query terminal for it's dimensions, disabling emotes. {e}");
+            None
+        }
+    }
 }

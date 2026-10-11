@@ -1,6 +1,6 @@
 [package]
 name = "twitch-tui"
-version = "3.0.0-alpha.2"
+version = "3.0.0-alpha.3"
 authors = ["Xithrius <xithrius@gmail.com>"]
 edition = "2024"
 rust-version = "1.85.0"
@@ -45,16 +45,18 @@ tempfile = "3.19.1"
 serde_with = "3.12.0"
 webbrowser = "1.0.4"
 memchr = "2.7.4"
+bon = "3.8.2"
+directories = "6.0.0"
 
 [target.'cfg(not(windows))'.dependencies]
-tui = { package = "ratatui", version = "0.29.0", default-features = false, features = [
+tui = { package = "ratatui", version = "0.30.0", default-features = false, features = [
     "crossterm",
     "serde",
     "underline-color",
 ] }
 
 [target.'cfg(windows)'.dependencies]
-tui = { package = "ratatui", version = "0.29.0", default-features = false, features = [
+tui = { package = "ratatui", version = "0.30.0", default-features = false, features = [
     "crossterm",
     "serde",
 ] }

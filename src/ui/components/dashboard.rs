@@ -1,24 +1,21 @@
 use std::slice::Iter;
 
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{List, ListItem, Paragraph},
 };
 
-use super::following::FollowingWidget;
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        state::State,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
-    twitch::TwitchAction,
-    ui::components::{ChannelSwitcherWidget, Component},
+    config::SharedCoreConfig,
+    events::{Event, InternalEvent, Key, TwitchAction, TwitchEvent, get_keybind_text},
+    handlers::{state::State, storage::SharedStorage},
+    twitch::oauth::TwitchOauth,
+    ui::components::{ChannelSwitcherWidget, Component, FollowingWidget},
     utils::styles::{DASHBOARD_SECTION_STYLE, DASHBOARD_TITLE_COLOR_STYLE, TEXT_DARK_STYLE},
 };
 
@@ -32,6 +29,7 @@ const DASHBOARD_TITLE: [&str; 5] = [
 
 pub struct DashboardWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     storage: SharedStorage,
     channel_input: ChannelSwitcherWidget,
     following: FollowingWidget,
@@ -39,13 +37,20 @@ pub struct DashboardWidget {
 }
 
 impl DashboardWidget {
-    pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
-        let following = FollowingWidget::new(config.clone());
+    pub fn new(
+        config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
+        event_tx: Sender<Event>,
+        storage: SharedStorage,
+    ) -> Self {
+        let channel_input =
+            ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
+        let following = FollowingWidget::new(config.clone(), twitch_oauth, event_tx.clone());
         let switcher_count = None;
 
         Self {
             config,
+            event_tx,
             storage,
             channel_input,
             following,
@@ -86,6 +91,7 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
+    #[allow(clippy::unused_self)]
     fn render_dashboard_title_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let w = Paragraph::new(
             DASHBOARD_TITLE
@@ -113,7 +119,7 @@ impl DashboardWidget {
         let current_channel_selection = Paragraph::new(Line::from(vec![
             Span::raw("["),
             Span::styled(
-                "ENTER".to_string(),
+                get_keybind_text(&self.config.keybinds.dashboard.join),
                 Style::default().fg(Color::LightMagenta),
             ),
             Span::raw("] "),
@@ -155,7 +161,10 @@ impl DashboardWidget {
     fn render_quit_selection_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let quit_option = Paragraph::new(Line::from(vec![
             Span::raw("["),
-            Span::styled("q", Style::default().fg(Color::LightMagenta)),
+            Span::styled(
+                get_keybind_text(&self.config.keybinds.dashboard.quit),
+                Style::default().fg(Color::LightMagenta),
+            ),
             Span::raw("] "),
             Span::raw("Quit"),
         ]));
@@ -166,17 +175,17 @@ impl DashboardWidget {
 
 impl Component for DashboardWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
+        let r = area.unwrap_or_else(|| f.area());
 
         let favorite_channels_len = {
-            let l = self.config.borrow().frontend.favorite_channels.len() as u16;
+            let l = self.config.frontend.favorite_channels.len() as u16;
 
             if l == 0 { 2 } else { l + 1 }
         };
 
         let recent_channels_len = {
             let current_len = self.storage.borrow().get("channels").len() as u16;
-            let recent_channel_config_count = self.config.borrow().frontend.recent_channel_count;
+            let recent_channel_config_count = self.config.frontend.recent_channel_count;
 
             if current_len == 0 {
                 2
@@ -214,8 +223,8 @@ impl Component for DashboardWidget {
         self.render_channel_selection_widget(
             f,
             &mut v_chunks,
-            self.config.borrow().twitch.channel.clone(),
-            &self.config.borrow().frontend.favorite_channels.clone(),
+            self.config.twitch.channel.clone(),
+            &self.config.frontend.favorite_channels.clone(),
         );
 
         self.render_quit_selection_widget(f, &mut v_chunks);
@@ -227,7 +236,7 @@ impl Component for DashboardWidget {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
             if self.channel_input.is_focused() {
                 return self.channel_input.event(event).await;
@@ -235,22 +244,35 @@ impl Component for DashboardWidget {
                 return self.following.event(event).await;
             }
 
+            let keybinds = &self.config.keybinds.dashboard;
             match key {
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::Char('q') => return Some(TerminalAction::Quit),
-                Key::Char('s') => self.channel_input.toggle_focus(),
-                Key::Char('f') => self.following.toggle_focus().await,
-                Key::Enter => {
-                    let action = TerminalAction::Enter(TwitchAction::JoinChannel(
-                        self.config.borrow().twitch.channel.clone(),
-                    ));
-
-                    return Some(action);
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
                 }
-                Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
+                key if keybinds.recent_channels_search.contains(key) => {
+                    self.channel_input.toggle_focus();
+                }
+                key if keybinds.followed_channels_search.contains(key) => {
+                    self.following.toggle_focus().await;
+                }
+                key if keybinds.join.contains(key) => {
+                    let configured_channel = self.config.twitch.channel.clone();
+                    self.event_tx
+                        .send(Event::Twitch(TwitchEvent::Action(
+                            TwitchAction::JoinChannel(configured_channel),
+                        )))
+                        .await?;
+                }
+                key if keybinds.help.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::SwitchState(State::Help)))
+                        .await?;
+                }
                 Key::Char(c) => {
                     if let Some(digit) = c.to_digit(10) {
-                        let mut channels = self.config.borrow().frontend.favorite_channels.clone();
+                        let mut channels = self.config.frontend.favorite_channels.clone();
                         let mut selected_channels = self.storage.borrow().get("channels");
                         selected_channels.reverse();
 
@@ -266,19 +288,18 @@ impl Component for DashboardWidget {
                             } as usize;
 
                         if let Some(channel) = channels.get(selection) {
-                            self.config.borrow_mut().twitch.channel = channel.to_string();
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", channel.to_string());
+                            self.storage.borrow_mut().add("channels", channel.clone());
                             if selection != 0 && selection * 10 <= channels.len() {
-                                return None;
+                                return Ok(());
                             }
                             self.channel_selection = None;
-                            let action = TerminalAction::Enter(TwitchAction::JoinChannel(
-                                channel.to_string(),
-                            ));
+                            self.event_tx
+                                .send(Event::Twitch(TwitchEvent::Action(
+                                    TwitchAction::JoinChannel(channel.clone()),
+                                )))
+                                .await?;
 
-                            return Some(action);
+                            return Ok(());
                         }
                         self.channel_selection = None;
                     }
@@ -287,6 +308,6 @@ impl Component for DashboardWidget {
             }
         }
 
-        None
+        Ok(())
     }
 }

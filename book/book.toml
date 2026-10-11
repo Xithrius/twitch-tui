@@ -1,6 +1,5 @@
 [book]
 authors = ["Xithrius", "Nadhem"]
 language = "en"
-multilingual = false
 src = "src"
 title = "twitch-tui"

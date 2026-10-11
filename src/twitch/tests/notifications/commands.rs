@@ -13,7 +13,7 @@ use crate::{
 
 #[test]
 fn test_deserialize_clear_command() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&CLEAR_COMMAND)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(CLEAR_COMMAND)?;
 
     let raw_subscription_type = raw
         .pointer("/subscription/type")
@@ -36,7 +36,7 @@ fn test_deserialize_clear_command() -> Result<()> {
 
 #[test]
 fn test_deserialize_and_parse_me_command() -> Result<()> {
-    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(&ME_COMMAND)?;
+    let (raw, message) = load_data::<ReceivedTwitchMessagePayload>(ME_COMMAND)?;
 
     let raw_message_text = raw
         .pointer("/event/message/text")

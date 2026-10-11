@@ -1,18 +1,16 @@
 use std::fmt::Display;
 
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{Frame, layout::Rect};
 
 use crate::{
+    config::SharedCoreConfig,
     emotes::SharedEmotes,
-    handlers::{
-        config::SharedCoreConfig,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
-    twitch::TwitchAction,
+    events::{Event, InternalEvent, TwitchAction, TwitchEvent},
+    handlers::storage::SharedStorage,
     ui::{
-        components::{Component, emote_picker::EmotePickerWidget, utils::InputWidget},
+        components::{Component, EmotePickerWidget, utils::InputWidget},
         statics::{SUPPORTED_COMMANDS, TWITCH_MESSAGE_LIMIT},
     },
     utils::text::first_similarity,
@@ -20,13 +18,19 @@ use crate::{
 
 pub struct ChatInputWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     storage: SharedStorage,
     input: InputWidget<SharedStorage>,
     emote_picker: EmotePickerWidget,
 }
 
 impl ChatInputWidget {
-    pub fn new(config: SharedCoreConfig, storage: SharedStorage, emotes: SharedEmotes) -> Self {
+    pub fn new(
+        config: SharedCoreConfig,
+        event_tx: Sender<Event>,
+        storage: SharedStorage,
+        emotes: SharedEmotes,
+    ) -> Self {
         let input_validator = Box::new(|_, s: String| -> bool {
             {
                 if !s.is_empty() && s.len() < TWITCH_MESSAGE_LIMIT {
@@ -63,7 +67,9 @@ impl ChatInputWidget {
                     }
                     '@' => {
                         let possible_suggestion =
-                            first_similarity(&storage.borrow().get("mentions"), &s[1..]);
+                            first_similarity(&storage.borrow().get("mentions"), &s[1..]).or_else(
+                                || first_similarity(&storage.borrow().get("chatters"), &s[1..]),
+                            );
 
                         let default_suggestion = possible_suggestion.clone();
 
@@ -73,18 +79,20 @@ impl ChatInputWidget {
                 })
         });
 
-        let input = InputWidget::new(
-            config.clone(),
-            "Chat",
-            Some((storage.clone(), input_validator)),
-            Some(visual_indicator),
-            Some((storage.clone(), input_suggester)),
-        );
+        let input = InputWidget::builder()
+            .config(config.clone())
+            .event_tx(event_tx.clone())
+            .title("Chat")
+            .input_validator((storage.clone(), input_validator))
+            .visual_indicator(visual_indicator)
+            .input_suggester((storage.clone(), input_suggester))
+            .build();
 
-        let emote_picker = EmotePickerWidget::new(config.clone(), emotes);
+        let emote_picker = EmotePickerWidget::new(config.clone(), event_tx.clone(), emotes);
 
         Self {
             config,
+            event_tx,
             storage,
             input,
             emote_picker,
@@ -119,50 +127,54 @@ impl Component for ChatInputWidget {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
+        if let Event::Internal(InternalEvent::SelectEmote(emote)) = event {
+            self.input.insert(emote);
+            self.input.insert(" ");
+        }
+
         if self.emote_picker.is_focused() {
-            if let Some(TerminalAction::Enter(TwitchAction::Message(emote))) =
-                self.emote_picker.event(event).await
-            {
-                self.input.insert(&emote);
-                self.input.insert(" ");
-            }
-        } else if let Event::Input(key) = event {
+            return self.emote_picker.event(event).await;
+        }
+
+        if let Event::Input(key) = event {
+            let keybinds = &self.config.keybinds.insert;
             match key {
-                Key::Enter => {
+                key if keybinds.confirm_text_input.contains(key) => {
                     if self.input.is_valid() {
                         let current_input = self.input.to_string();
-
-                        let action =
-                            TerminalAction::Enter(TwitchAction::Message(current_input.clone()));
 
                         self.input.clear();
 
                         if let Some(message) = current_input.strip_prefix('@') {
-                            if self.config.borrow().storage.mentions {
+                            if self.config.storage.mentions {
                                 self.storage
                                     .borrow_mut()
                                     .add("mentions", message.to_string());
                             }
                         }
 
-                        return Some(action);
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(TwitchAction::Message(
+                                current_input,
+                            ))))
+                            .await?;
                     }
                 }
-                Key::Alt('e') => {
-                    if self.config.borrow().frontend.is_emotes_enabled() {
+                key if keybinds.toggle_emote_picker.contains(key) => {
+                    if self.config.frontend.is_emotes_enabled() {
                         self.emote_picker.toggle_focus();
                     }
                 }
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     self.input.toggle_focus();
                 }
                 _ => {
-                    self.input.event(event).await;
+                    self.input.event(event).await?;
                 }
             }
         }
 
-        None
+        Ok(())
     }
 }

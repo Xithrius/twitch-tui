@@ -1,10 +1,10 @@
 use std::{
     fmt,
-    io::{Stdout, Write, stdout},
+    io::{Write, stdout},
 };
 
 use tui::{
-    Terminal,
+    DefaultTerminal, Terminal,
     backend::CrosstermBackend,
     crossterm::{
         Command,
@@ -15,7 +15,7 @@ use tui::{
     },
 };
 
-use crate::handlers::config::{CursorType, FrontendConfig};
+use crate::config::{CursorType, FrontendConfig};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResetCursorShape;
@@ -36,10 +36,16 @@ impl Command for ResetCursorShape {
 pub fn reset_terminal() {
     disable_raw_mode().unwrap();
 
-    execute!(stdout(), LeaveAlternateScreen, ResetCursorShape).unwrap();
+    execute!(
+        stdout(),
+        LeaveAlternateScreen,
+        DisableMouseCapture,
+        ResetCursorShape
+    )
+    .unwrap();
 }
 
-pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBackend<Stdout>> {
+pub fn init_terminal(frontend_config: &FrontendConfig) -> DefaultTerminal {
     enable_raw_mode().unwrap();
 
     let cursor_style = match frontend_config.cursor_shape {
@@ -68,19 +74,9 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Terminal<CrosstermBack
     stdout.flush().unwrap();
 
     let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend).unwrap();
 
-    Terminal::new(backend).unwrap()
-}
+    terminal.clear().unwrap();
 
-pub fn quit_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) {
-    disable_raw_mode().unwrap();
-
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture,
-    )
-    .unwrap();
-
-    terminal.show_cursor().unwrap();
+    terminal
 }

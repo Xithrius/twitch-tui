@@ -3,7 +3,7 @@ use std::{fs::File, io};
 use color_eyre::eyre::Result;
 use tracing_subscriber::{EnvFilter, fmt::writer::BoxMakeWriter};
 
-use crate::handlers::config::CoreConfig;
+use crate::config::CoreConfig;
 
 pub fn initialize_logging(config: &CoreConfig) -> Result<()> {
     let env_filter = EnvFilter::builder()

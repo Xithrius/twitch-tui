@@ -8,7 +8,8 @@ use tui::{
 };
 
 use crate::{
-    handlers::{config::SharedCoreConfig, state::State},
+    config::SharedCoreConfig,
+    handlers::state::State,
     utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 
@@ -24,6 +25,7 @@ impl StateTabsWidget {
         Self { _config: config }
     }
 
+    #[allow(clippy::unused_self)]
     pub fn draw(&self, f: &mut Frame, area: Option<Rect>, state: &State) {
         let tab_titles = TABS_TO_RENDER
             .iter()

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::collections::HashMap;
 
 use ::std::hash::BuildHasher;
 use color_eyre::{
@@ -17,15 +17,13 @@ use crate::twitch::{
 
 /// Events that should be subscribed to when the first chat room is entered.
 /// Channel chat messages are excluded since it's subscribed to on channel join.
-pub static INITIAL_EVENT_SUBSCRIPTIONS: LazyLock<Vec<Subscription>> = LazyLock::new(|| {
-    vec![
-        Subscription::Message,
-        Subscription::Notification,
-        Subscription::Clear,
-        Subscription::ClearUserMessages,
-        Subscription::MessageDelete,
-    ]
-});
+pub static INITIAL_EVENT_SUBSCRIPTIONS: &[Subscription] = &[
+    Subscription::Message,
+    Subscription::Notification,
+    Subscription::Clear,
+    Subscription::ClearUserMessages,
+    Subscription::MessageDelete,
+];
 
 /// Subscribe to a set of events, returning a hashmap of subscription types corresponding to their ID
 ///
@@ -49,13 +47,11 @@ pub async fn subscribe_to_events(
 
     let url = format!("{TWITCH_API_BASE_URL}/eventsub/subscriptions");
 
-    let mut subscription = ReceivedTwitchSubscription::new(
-        // Set to None here so we can modify otherwise in the loop
-        None,
-        channel_id,
-        oauth.user_id.clone(),
-        session_id,
-    );
+    let user_id = oauth
+        .user_id()
+        .context("Faield to get user ID from twitch OAuth context")?;
+
+    let mut subscription = ReceivedTwitchSubscription::new(channel_id, user_id, session_id);
 
     let mut subscription_map = HashMap::new();
 
@@ -84,7 +80,7 @@ pub async fn subscribe_to_events(
 
         debug!("Subscribed to event {subscription_type}");
 
-        subscription_map.insert(subscription_type, subscription_id.to_string());
+        subscription_map.insert(subscription_type, subscription_id.clone());
     }
 
     Ok(subscription_map)

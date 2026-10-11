@@ -80,7 +80,7 @@ pub fn first_similarity_iter<'a>(
         .first()
         .and_then(|result| {
             if result.len() > search.len() {
-                Some((*result).to_string())
+                Some((*result).clone())
             } else {
                 None
             }

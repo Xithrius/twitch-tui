@@ -25,7 +25,4 @@ Hitting any of the integers displayed between brackets will take you to said cha
 <tr>
 <td> f
 <td> Open the followed channel search popup
-<tr>
-<td> Ctrl + p
-<td> Manually crash the application.
 </table>

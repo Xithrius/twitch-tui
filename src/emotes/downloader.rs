@@ -1,18 +1,14 @@
 use std::{borrow::BorrowMut, collections::HashMap, path::Path};
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use futures::StreamExt;
 use reqwest::{Client, Response};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
+    config::{CoreConfig, FrontendConfig, get_cache_dir},
     emotes::DownloadedEmotes,
-    handlers::config::{CoreConfig, FrontendConfig},
-    twitch::{
-        api::channels::get_channel_id,
-        oauth::{get_twitch_client, get_twitch_client_oauth},
-    },
-    utils::pathing::cache_path,
+    twitch::{api::channels::get_channel_id, oauth::TwitchOauth},
 };
 
 // HashMap of emote name, emote filename, emote url, and if the emote is an overlay
@@ -215,7 +211,7 @@ mod seventv {
         let client = Client::new();
 
         let channel_emotes = client
-            .get(format!("https://7tv.io/v3/users/twitch/{channel_id}",))
+            .get(format!("https://7tv.io/v3/users/twitch/{channel_id}"))
             .send()
             .await?
             .error_for_status()?
@@ -318,7 +314,7 @@ mod frankerfacez {
 
         let emotes = futures::stream::iter(sets.into_iter().map(|set| async move {
             Ok(client
-                .get(format!("https://api.frankerfacez.com/v1/_set/{set}",))
+                .get(format!("https://api.frankerfacez.com/v1/_set/{set}"))
                 .send()
                 .await?
                 .error_for_status()?
@@ -374,8 +370,7 @@ async fn download_emotes(emotes: EmoteMap) -> DownloadedEmotes {
         emotes
             .into_iter()
             .map(|(x, (filename, url, o))| async move {
-                let path = cache_path(&filename);
-                let path = Path::new(&path);
+                let path = get_cache_dir().join(&filename);
 
                 if tokio::fs::metadata(&path).await.is_ok() {
                     return Ok((x, (filename, o)));
@@ -383,7 +378,7 @@ async fn download_emotes(emotes: EmoteMap) -> DownloadedEmotes {
 
                 let res = client.get(&url).send().await?.error_for_status()?;
 
-                save_emote(path, res).await?;
+                save_emote(&path, res).await?;
 
                 Ok((x, (filename, o)))
             }),
@@ -425,18 +420,22 @@ fn get_enabled_emote_providers(config: &FrontendConfig) -> Vec<EmoteProvider> {
 
 pub async fn get_emotes(
     config: &CoreConfig,
+    twitch_oauth: TwitchOauth,
     channel: &str,
 ) -> Result<(DownloadedEmotes, DownloadedEmotes)> {
-    // Reuse the same client and headers for twitch requests
-    let client_id = &get_twitch_client_oauth(config.twitch.token.as_ref()).await?;
-    let twitch_client = get_twitch_client(client_id, config.twitch.token.as_ref()).await?;
+    let user_id = twitch_oauth
+        .user_id()
+        .context("Unable to get user ID from Twitch OAuth")?;
+    let twitch_client = twitch_oauth
+        .client()
+        .context("Unable to get client from Twitch OAuth")?;
 
     let channel_id = get_channel_id(&twitch_client, channel).await?;
 
     let enabled_emotes = get_enabled_emote_providers(&config.frontend);
 
     let user_emotes = if enabled_emotes.contains(&EmoteProvider::Twitch) {
-        twitch::get_user_emotes(&twitch_client, &client_id.user_id)
+        twitch::get_user_emotes(&twitch_client, &user_id)
             .await
             .unwrap_or_default()
     } else {
@@ -472,8 +471,7 @@ pub async fn get_emotes(
 
 pub async fn get_twitch_emote(emote_id: &str) -> Result<()> {
     // Checks if emote is already downloaded.
-    let path = cache_path(emote_id);
-    let path = Path::new(&path);
+    let path = get_cache_dir().join(emote_id);
 
     if tokio::fs::metadata(&path).await.is_ok() {
         return Ok(());
@@ -494,5 +492,5 @@ pub async fn get_twitch_emote(emote_id: &str) -> Result<()> {
         res
     }?;
 
-    save_emote(path, res).await
+    save_emote(&path, res).await
 }

@@ -1,7 +1,9 @@
 use std::cmp::max;
 
+use color_eyre::Result;
 use fuzzy_matcher::FuzzyMatcher;
-use tracing::warn;
+use tokio::sync::mpsc::Sender;
+use tracing::{debug, warn};
 use tui::{
     Frame,
     layout::Rect,
@@ -12,13 +14,9 @@ use tui::{
 
 use super::utils::popup_area;
 use crate::{
+    config::SharedCoreConfig,
     emotes::{SharedEmotes, load_picker_emote},
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
-    twitch::TwitchAction,
+    events::{Event, InternalEvent},
     ui::{
         components::{Component, utils::InputWidget},
         statics::TWITCH_MESSAGE_LIMIT,
@@ -34,6 +32,7 @@ use crate::{
 
 pub struct EmotePickerWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     emotes: SharedEmotes,
     input: InputWidget<SharedEmotes>,
     search_theme: Style,
@@ -42,7 +41,7 @@ pub struct EmotePickerWidget {
 }
 
 impl EmotePickerWidget {
-    pub fn new(config: SharedCoreConfig, emotes: SharedEmotes) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>, emotes: SharedEmotes) -> Self {
         let input_validator = Box::new(|emotes: SharedEmotes, s: String| -> bool {
             !s.is_empty()
                 && s.len() < TWITCH_MESSAGE_LIMIT
@@ -61,16 +60,17 @@ impl EmotePickerWidget {
             )
         });
 
-        let input = InputWidget::new(
-            config.clone(),
-            "Emote",
-            Some((emotes.clone(), input_validator)),
-            None,
-            Some((emotes.clone(), input_suggester)),
-        );
+        let input = InputWidget::builder()
+            .config(config.clone())
+            .event_tx(event_tx.clone())
+            .title("Emote")
+            .input_validator((emotes.clone(), input_validator))
+            .input_suggester((emotes.clone(), input_suggester))
+            .build();
 
         Self {
             config,
+            event_tx,
             emotes,
             input,
             search_theme: *SEARCH_STYLE,
@@ -78,6 +78,7 @@ impl EmotePickerWidget {
             filtered_emotes: vec![],
         }
     }
+
     fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {
@@ -102,9 +103,10 @@ impl EmotePickerWidget {
         self.list_state.select(Some(i));
     }
 
-    fn unselect(&mut self) {
+    const fn unselect(&mut self) {
         self.list_state.select(None);
     }
+
     pub const fn is_focused(&self) -> bool {
         self.input.is_focused()
     }
@@ -116,7 +118,7 @@ impl EmotePickerWidget {
 
 impl Component for EmotePickerWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
+        let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         // Only load the emotes that are actually being displayed, as loading every emote is not really possible.
         // Some channels can have multiple thousands emotes and decoding all of them takes a while.
@@ -154,7 +156,7 @@ impl Component for EmotePickerWidget {
                 .collect::<Vec<_>>();
 
             // Sort them by match score
-            matched_emotes.sort_by(|a, b| b.2.0.cmp(&a.2.0));
+            matched_emotes.sort_by_key(|b| std::cmp::Reverse(b.2.0));
 
             for (name, (filename, zero_width), (_, matched_indices)) in matched_emotes {
                 if items.len() >= max_len {
@@ -222,7 +224,7 @@ impl Component for EmotePickerWidget {
                 Block::default()
                     .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .highlight_style(if *NO_COLOR {
                 Style::default()
@@ -237,7 +239,7 @@ impl Component for EmotePickerWidget {
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into());
+            .border_type(self.config.frontend.border_type.clone().into());
 
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
 
@@ -248,14 +250,14 @@ impl Component for EmotePickerWidget {
         self.input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
+            let keybinds = &self.config.keybinds.selection;
             match key {
-                Key::Esc => self.toggle_focus(),
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Enter => {
+                key if keybinds.back_to_previous_window.contains(key) => self.toggle_focus(),
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
+                key if keybinds.select.contains(key) => {
                     if let Some(idx) = self.list_state.selected() {
                         let emote = self.filtered_emotes[idx].clone();
 
@@ -264,11 +266,14 @@ impl Component for EmotePickerWidget {
                         self.unselect();
                         self.filtered_emotes.clear();
 
-                        return Some(TerminalAction::Enter(TwitchAction::Message(emote)));
+                        debug!("Emote picker output of emote {}", emote);
+                        self.event_tx
+                            .send(Event::Internal(InternalEvent::SelectEmote(emote)))
+                            .await?;
                     }
                 }
                 _ => {
-                    self.input.event(event).await;
+                    self.input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
                     match self.filtered_emotes.len() {
@@ -279,6 +284,6 @@ impl Component for EmotePickerWidget {
             }
         }
 
-        None
+        Ok(())
     }
 }

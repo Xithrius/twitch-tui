@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
+use color_eyre::Result;
 use regex::Regex;
+use tokio::sync::mpsc::Sender;
 use tracing::{debug, info};
 use tui::{
     Frame,
@@ -11,18 +13,15 @@ use tui::{
     text::{Line, Span},
     widgets::{
         Block, Borders, Clear, List, ListItem, ListState, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, block::Position,
+        ScrollbarState, TitlePosition,
     },
 };
 
+use super::utils::popup_area;
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        storage::SharedStorage,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
-    twitch::TwitchAction,
+    config::SharedCoreConfig,
+    events::{Event, TwitchAction, TwitchEvent},
+    handlers::storage::SharedStorage,
     ui::{
         components::{Component, utils::InputWidget},
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
@@ -34,10 +33,9 @@ use crate::{
     },
 };
 
-use super::utils::popup_area;
-
 pub struct ChannelSwitcherWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     focused: bool,
     storage: SharedStorage,
     search_input: InputWidget<SharedStorage>,
@@ -48,9 +46,9 @@ pub struct ChannelSwitcherWidget {
 }
 
 impl ChannelSwitcherWidget {
-    pub fn new(config: SharedCoreConfig, storage: SharedStorage) -> Self {
+    pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>, storage: SharedStorage) -> Self {
         let input_validator = Box::new(|_, s: String| -> bool {
-            Regex::new(&NAME_RESTRICTION_REGEX)
+            Regex::new(NAME_RESTRICTION_REGEX)
                 .unwrap()
                 .is_match(s.as_str())
         });
@@ -71,16 +69,18 @@ impl ChannelSwitcherWidget {
             )
         });
 
-        let search_input = InputWidget::new(
-            config.clone(),
-            "Channel switcher",
-            Some((storage.clone(), input_validator)),
-            Some(visual_indicator),
-            Some((storage.clone(), input_suggester)),
-        );
+        let search_input = InputWidget::builder()
+            .config(config.clone())
+            .event_tx(event_tx.clone())
+            .title("Channel switcher")
+            .input_validator((storage.clone(), input_validator))
+            .visual_indicator(visual_indicator)
+            .input_suggester((storage.clone(), input_suggester))
+            .build();
 
         Self {
             config,
+            event_tx,
             focused: false,
             storage,
             search_input,
@@ -123,7 +123,7 @@ impl ChannelSwitcherWidget {
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
     }
 
-    fn unselect(&mut self) {
+    const fn unselect(&mut self) {
         self.list_state.select(None);
     }
 
@@ -144,7 +144,7 @@ impl Display for ChannelSwitcherWidget {
 
 impl Component for ChannelSwitcherWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a);
+        let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         let channels = self.storage.borrow().get("channels");
 
@@ -196,7 +196,7 @@ impl Component for ChannelSwitcherWidget {
                 Block::default()
                     .title(title_line(&title_binding, *TITLE_STYLE))
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into()),
+                    .border_type(self.config.frontend.border_type.clone().into()),
             )
             .highlight_style(
                 Style::default()
@@ -234,9 +234,9 @@ impl Component for ChannelSwitcherWidget {
 
         let bottom_block = Block::default()
             .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .title(title_line(&title, Style::default()))
-            .title_position(Position::Bottom)
+            .title_position(TitlePosition::Bottom)
             .title_alignment(Alignment::Right);
 
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
@@ -248,10 +248,11 @@ impl Component for ChannelSwitcherWidget {
         self.search_input.draw(f, Some(input_rect));
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
+            let keybinds = &self.config.keybinds.selection;
             match key {
-                Key::Esc => {
+                key if keybinds.back_to_previous_window.contains(key) => {
                     if self.list_state.selected().is_some() {
                         self.unselect();
                     } else {
@@ -259,12 +260,10 @@ impl Component for ChannelSwitcherWidget {
                         self.search_input.clear();
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::ScrollDown | Key::Down => self.next(),
-                Key::ScrollUp | Key::Up => self.previous(),
-                Key::Ctrl('d') => {
+                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.prev_item.contains(key) => self.previous(),
+                key if keybinds.delete_item.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
-                        // TODO: Make this just two if lets
                         if let Some(filtered) = self.filtered_channels.clone() {
                             if let Some(value) = filtered.get(index) {
                                 self.storage
@@ -279,7 +278,7 @@ impl Component for ChannelSwitcherWidget {
                         }
                     }
                 }
-                Key::Enter => {
+                key if keybinds.select.contains(key) => {
                     // TODO: Reduce code duplication
                     if let Some(i) = self.list_state.selected() {
                         self.toggle_focus();
@@ -292,7 +291,7 @@ impl Component for ChannelSwitcherWidget {
                                 let selected_channel = self.search_input.to_string();
 
                                 if !selected_channel.is_empty() {
-                                    if self.config.borrow().storage.channels {
+                                    if self.config.storage.channels {
                                         self.storage
                                             .borrow_mut()
                                             .add("channels", selected_channel.clone());
@@ -300,15 +299,11 @@ impl Component for ChannelSwitcherWidget {
 
                                     self.search_input.clear();
 
-                                    self.config
-                                        .borrow_mut()
-                                        .twitch
-                                        .channel
-                                        .clone_from(&selected_channel);
-
-                                    return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
-                                        selected_channel,
-                                    )));
+                                    self.event_tx
+                                        .send(Event::Twitch(TwitchEvent::Action(
+                                            TwitchAction::JoinChannel(selected_channel),
+                                        )))
+                                        .await?;
                                 }
                             }
 
@@ -317,7 +312,7 @@ impl Component for ChannelSwitcherWidget {
                             channels.get(i).unwrap()
                         };
 
-                        if self.config.borrow().storage.channels {
+                        if self.config.storage.channels {
                             self.storage
                                 .borrow_mut()
                                 .add("channels", selected_channel.clone());
@@ -325,27 +320,23 @@ impl Component for ChannelSwitcherWidget {
 
                         self.search_input.clear();
 
-                        self.config
-                            .borrow_mut()
-                            .twitch
-                            .channel
-                            .clone_from(selected_channel);
-
                         debug!(
                             "Joining previously joined channel {:?}",
-                            selected_channel.to_string()
+                            selected_channel.clone()
                         );
 
-                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
-                            selected_channel.to_string(),
-                        )));
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(
+                                TwitchAction::JoinChannel(selected_channel.clone()),
+                            )))
+                            .await?;
                     } else if self.search_input.is_valid() {
                         self.toggle_focus();
                         self.unselect();
 
                         let selected_channel = self.search_input.to_string();
 
-                        if self.config.borrow().storage.channels {
+                        if self.config.storage.channels {
                             self.storage
                                 .borrow_mut()
                                 .add("channels", selected_channel.clone());
@@ -353,21 +344,17 @@ impl Component for ChannelSwitcherWidget {
 
                         self.search_input.clear();
 
-                        self.config
-                            .borrow_mut()
-                            .twitch
-                            .channel
-                            .clone_from(&selected_channel);
-
                         info!("Joining new channel {selected_channel:?}");
 
-                        return Some(TerminalAction::Enter(TwitchAction::JoinChannel(
-                            selected_channel,
-                        )));
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(
+                                TwitchAction::JoinChannel(selected_channel),
+                            )))
+                            .await?;
                     }
                 }
                 _ => {
-                    self.search_input.event(event).await;
+                    self.search_input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
                     if let Some(v) = &self.filtered_channels {
@@ -379,6 +366,6 @@ impl Component for ChannelSwitcherWidget {
             }
         }
 
-        None
+        Ok(())
     }
 }

@@ -30,6 +30,10 @@ channels = false
 # If enabled, the chat input box will search previously mentioned users, given that
 # the first character in the input box is `@`.
 mentions = false
+# If previous users in chat should be tracked
+# If enabled, the chat input box will search chatters previously seen, given that
+# the first character in the input box is '@'
+chatters = false
 
 [filters]
 # If filters should be enabled.
@@ -43,6 +47,10 @@ enabled = false
 reversed = false
 
 [frontend]
+# The command and its args that should be used to view the stream (eg. mpv, streamlink)
+view_command = []
+# Whether to automatically start view_command when changing to a new stream
+autostart_view_command = false
 # If the time and date is to be shown in the chat window.
 show_datetimes = true
 # The format of string that will show up in the terminal.
@@ -99,3 +107,107 @@ right_align_usernames = false
 show_unsupported_screen_size = true
 # The following widget will only contain channels that are currently live
 only_get_live_followed_channels = false
+
+[keybinds]
+# Open the debug window
+toggle_debug_focus = ["Ctrl+d"]
+
+[keybinds.dashboard]
+# Join the selected channel
+join = ["Enter"]
+# Open the recent channel search popup
+recent_channels_search = ["s"]
+# Open the followed channel search popup
+followed_channels_search = ["f"]
+# Have the keybinds popup window appear
+help = ["?", "h"]
+# Quit the application
+quit = ["q"]
+
+[keybinds.normal]
+# Enter message (chat) mode for sending messages
+enter_insert = ["i", "c"]
+# Messaging mode with mention symbol
+enter_insert_with_mention = ["@"]
+# Messaging mode with command symbol
+enter_insert_with_command = ["/"]
+# Go to the dashboard screen (start screen)
+enter_dashboard = ["S"]
+# Search messages
+search_messages = ["Ctrl+f"]
+# Toggle filters
+toggle_filters = ["Ctrl+t"]
+# Reverse filters
+reverse_filters = ["Ctrl+r"]
+# Go back to the previous window
+back_to_previous_window = ["Esc"]
+# Scroll chat down
+scroll_down = ["ScrollDown", "Down", "j"]
+# Scroll chat up
+scroll_up = ["ScrollUp", "Up", "k"]
+# Scroll chat to top
+scroll_to_end = ["G"]
+# Scroll chat to bottom
+scroll_to_start = ["g"]
+# Open current stream in view_command, or browser if not set
+open_in_player = ["o"]
+# Open the recent channel search widget
+recent_channels_search = ["s"]
+# Open the followed channel search widget
+followed_channels_search = ["f"]
+# Have the keybinds popup window appear
+help = ["?", "h"]
+# Quit the application
+quit = ["q"]
+
+[keybinds.insert]
+# Fill in suggestion, if available
+fill_suggestion = ["Tab"]
+# Confirm the input text to go through
+confirm_text_input = ["Enter"]
+# Go back to the previous window
+back_to_previous_window = ["Esc"]
+# Move cursor to the right
+move_cursor_right = ["Right", "Ctrl+f"]
+# Move cursor to the left
+move_cursor_left = ["Left", "Ctrl+b"]
+# Move cursor to the start
+move_cursor_start = ["Home", "Ctrl+a"]
+# Move cursor to the end
+move_cursor_end = ["End", "Ctrl+e"]
+# Swap previous item with current item
+swap_previous_item_with_current = ["Ctrl+t"]
+# Remove everything after the cursor
+remove_after_cursor = ["Ctrl+k"]
+# Remove everything before the cursor
+remove_before_cursor = ["Ctrl+u"]
+# Remove the previous word
+remove_previous_word = ["Ctrl+w"]
+# Remove item to the right
+remove_item_to_right = ["Delete", "Ctrl+d"]
+# Toggle the filter
+toggle_filters = ["Ctrl+t"]
+# Reverse the filter
+reverse_filters = ["Ctrl+r"]
+# Move to the end of the next word
+end_of_next_word = ["Alt+f"]
+# Move to the start of the previous word
+start_of_previous_word = ["Alt+b"]
+# Swap previous word with current word
+swap_previous_word_with_current = ["Alt+t"]
+# Toggle emote picker
+toggle_emote_picker = ["Alt+e"]
+# Quit the application
+quit = ["Ctrl+q"]
+
+[keybinds.selection]
+# Move selection to next item
+next_item = ["ScrollDown", "Down"]
+# Move selection to previous item
+prev_item = ["ScrollUp", "Up"]
+# Delete the currently selected item
+delete_item = ["Ctrl+d"]
+# Confirm the currently selected item
+select = ["Enter"]
+# Go back to the previous window
+back_to_previous_window = ["Esc"]

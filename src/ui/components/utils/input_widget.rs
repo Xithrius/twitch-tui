@@ -1,24 +1,24 @@
 use std::fmt::Display;
 
+use bon::bon;
+use color_eyre::Result;
 use rustyline::{
     At, Word,
     line_buffer::{ChangeListener, DeleteListener, LineBuffer},
 };
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Position as LayoutPosition, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, Paragraph, block::Position as BlockPosition},
+    widgets::{Block, Borders, Clear, Paragraph, TitlePosition},
 };
 
 use super::popup_area;
 use crate::{
-    handlers::{
-        config::SharedCoreConfig,
-        user_input::events::{Event, Key},
-    },
-    terminal::TerminalAction,
+    config::SharedCoreConfig,
+    events::{Event, InternalEvent, Key},
     ui::{components::Component, statics::LINE_BUFFER_CAPACITY},
     utils::{
         styles::NO_COLOR,
@@ -45,6 +45,7 @@ impl DeleteListener for InputListener {
 
 pub struct InputWidget<T: Clone> {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     input: LineBuffer,
     title: String,
     focused: bool,
@@ -55,9 +56,12 @@ pub struct InputWidget<T: Clone> {
     suggestion: Option<String>,
 }
 
+#[bon]
 impl<T: Clone> InputWidget<T> {
+    #[builder]
     pub fn new(
         config: SharedCoreConfig,
+        event_tx: Sender<Event>,
         title: &str,
         input_validator: Option<(T, InputValidator<T>)>,
         visual_indicator: Option<VisualValidator>,
@@ -65,6 +69,7 @@ impl<T: Clone> InputWidget<T> {
     ) -> Self {
         Self {
             config,
+            event_tx,
             input: LineBuffer::with_capacity(LINE_BUFFER_CAPACITY),
             title: title.to_string(),
             focused: false,
@@ -146,7 +151,7 @@ impl<T: Clone> Component for InputWidget<T> {
 
         let block = Block::default()
             .borders(Borders::ALL)
-            .border_type(self.config.borrow().frontend.border_type.clone().into())
+            .border_type(self.config.frontend.border_type.clone().into())
             .border_style(Style::default().fg(status_color))
             .title(title_line(
                 &binding,
@@ -198,9 +203,9 @@ impl<T: Clone> Component for InputWidget<T> {
                             .add_modifier(Modifier::BOLD)
                     },
                 ))
-                .title_position(BlockPosition::Bottom)
+                .title_position(TitlePosition::Bottom)
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-                .border_type(self.config.borrow().frontend.border_type.clone().into());
+                .border_type(self.config.frontend.border_type.clone().into());
 
             // This is only supposed to render on the very bottom line of the area.
             // If some rendering breaks for input boxes, this is a possible source.
@@ -209,10 +214,11 @@ impl<T: Clone> Component for InputWidget<T> {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Input(key) = event {
+            let keybinds = &self.config.keybinds.insert;
             match key {
-                Key::Ctrl('f') | Key::Right => {
+                key if keybinds.move_cursor_right.contains(key) => {
                     if self.input.next_pos(1).is_none() {
                         self.accept_suggestion();
                         self.input.move_end();
@@ -220,51 +226,54 @@ impl<T: Clone> Component for InputWidget<T> {
                         self.input.move_forward(1);
                     }
                 }
-                Key::Ctrl('b') | Key::Left => {
+                key if keybinds.move_cursor_left.contains(key) => {
                     self.input.move_backward(1);
                 }
-                Key::Ctrl('a') | Key::Home => {
+                key if keybinds.move_cursor_start.contains(key) => {
                     self.input.move_home();
                 }
-                Key::Ctrl('e') | Key::End => {
+                key if keybinds.move_cursor_end.contains(key) => {
                     self.input.move_end();
                 }
-                Key::Alt('f') => {
+                key if keybinds.end_of_next_word.contains(key) => {
                     self.input.move_to_next_word(At::AfterEnd, Word::Emacs, 1);
                 }
-                Key::Alt('b') => {
+                key if keybinds.start_of_previous_word.contains(key) => {
                     self.input.move_to_prev_word(Word::Emacs, 1);
                 }
-                Key::Ctrl('t') => {
+                key if keybinds.swap_previous_item_with_current.contains(key) => {
                     self.input.transpose_chars(&mut self.input_listener);
                 }
-                Key::Alt('t') => {
+                key if keybinds.swap_previous_word_with_current.contains(key) => {
                     self.input.transpose_words(1, &mut self.input_listener);
                 }
-                Key::Ctrl('u') => {
+                key if keybinds.remove_before_cursor.contains(key) => {
                     self.input.discard_line(&mut self.input_listener);
                 }
-                Key::Ctrl('k') => {
+                key if keybinds.remove_after_cursor.contains(key) => {
                     self.input.kill_line(&mut self.input_listener);
                 }
-                Key::Ctrl('w') => {
+                key if keybinds.remove_previous_word.contains(key) => {
                     self.input
                         .delete_prev_word(Word::Emacs, 1, &mut self.input_listener);
                 }
-                Key::Ctrl('d') | Key::Delete => {
+                key if keybinds.remove_item_to_right.contains(key) => {
                     self.input.delete(1, &mut self.input_listener);
                 }
                 Key::Backspace => {
                     self.input.backspace(1, &mut self.input_listener);
                 }
-                Key::Tab => {
+                key if keybinds.fill_suggestion.contains(key) => {
                     if let Some(suggestion) = &self.suggestion {
                         self.input
                             .update(suggestion, suggestion.len(), &mut self.input_listener);
                     }
                 }
-                Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                Key::Ctrl('q') => return Some(TerminalAction::Quit),
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
                 Key::Char(c) => {
                     self.input.insert(*c, 1, &mut self.input_listener);
                 }
@@ -272,6 +281,6 @@ impl<T: Clone> Component for InputWidget<T> {
             }
         }
 
-        None
+        Ok(())
     }
 }

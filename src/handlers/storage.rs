@@ -1,18 +1,18 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
-    fs::{File, read_to_string},
+    fs::{File, create_dir_all, read_to_string},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
-    sync::LazyLock,
 };
 
 use serde::{Deserialize, Serialize};
 
-use crate::{handlers::config::StorageConfig, utils::pathing::config_path};
+use crate::config::{SharedCoreConfig, get_data_dir};
 
-static ITEM_KEYS: LazyLock<Vec<&str>> = LazyLock::new(|| vec!["channels", "mentions"]);
+static ITEM_KEYS: &[&str] = &["channels", "mentions", "chatters"];
+const DEFAULT_STORAGE_FILE_NAME: &str = "storage.json";
 
 pub type SharedStorage = Rc<RefCell<Storage>>;
 type StorageMap = HashMap<String, StorageItem>;
@@ -20,7 +20,7 @@ type StorageMap = HashMap<String, StorageItem>;
 #[derive(Debug)]
 pub struct Storage {
     items: StorageMap,
-    file_path: String,
+    file_path: PathBuf,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -30,42 +30,59 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(file: &str, config: &StorageConfig) -> Self {
-        let file_path = config_path(file);
+    pub fn new(config: &SharedCoreConfig) -> Self {
+        let twitch_channel = &config.twitch.channel;
+        let storage_config = config.storage.clone();
+        let storage_parent_path = get_data_dir();
+        if !storage_parent_path.exists() {
+            create_dir_all(&storage_parent_path).unwrap();
+        }
+        let storage_path = storage_parent_path.join(DEFAULT_STORAGE_FILE_NAME);
 
-        if !Path::new(&file_path).exists() {
-            let mut items = StorageMap::new();
+        if Path::new(&storage_path).exists() {
+            let file_content = read_to_string(&storage_path).unwrap();
 
-            for item_key in ITEM_KEYS.iter() {
-                let enabled = match *item_key {
-                    "channels" => config.channels,
-                    "mentions" => config.mentions,
-                    _ => panic!("Invalid storage key {item_key}."),
-                };
+            let items: StorageMap = serde_json::from_str(&file_content).unwrap();
 
-                items.insert(
-                    (*item_key).to_string(),
-                    StorageItem {
-                        content: vec![],
-                        enabled,
-                    },
-                );
-            }
-
-            let storage_str = serde_json::to_string(&items).unwrap();
-
-            let mut file = File::create(&file_path).unwrap();
-
-            file.write_all(storage_str.as_bytes()).unwrap();
-
-            return Self { items, file_path };
+            return Self {
+                items,
+                file_path: storage_path,
+            };
         }
 
-        let file_content = read_to_string(&file_path).unwrap();
+        let mut items = StorageMap::new();
 
-        let items: StorageMap = serde_json::from_str(&file_content).unwrap();
+        for item_key in ITEM_KEYS {
+            let enabled = match *item_key {
+                "channels" => storage_config.channels,
+                "mentions" => storage_config.mentions,
+                "chatters" => storage_config.chatters,
+                _ => panic!("Invalid storage key {item_key}."),
+            };
 
-        Self { items, file_path }
+            items.insert(
+                (*item_key).to_string(),
+                StorageItem {
+                    content: vec![],
+                    enabled,
+                },
+            );
+        }
+
+        if let Some(channels) = items.get_mut("channels") {
+            if !channels.content.contains(twitch_channel) {
+                channels.content.push(twitch_channel.clone());
+            }
+        }
+
+        let storage_str = serde_json::to_string(&items).unwrap();
+        let mut file = File::create(&storage_path).unwrap();
+        file.write_all(storage_str.as_bytes()).unwrap();
+
+        Self {
+            items,
+            file_path: storage_path,
+        }
     }
 
     pub fn dump_data(&self) {
@@ -115,10 +132,6 @@ impl Storage {
         }
 
         out
-    }
-
-    pub fn contains(&self, key: &str, value: &str) -> bool {
-        self.get(key).contains(&value.to_string())
     }
 
     pub fn remove_inner_with(&mut self, key: &str, value: &str) -> String {

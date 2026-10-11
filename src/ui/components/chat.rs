@@ -1,32 +1,26 @@
 use std::{collections::VecDeque, slice::Iter};
 
 use chrono::Local;
+use color_eyre::Result;
+use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, block::Position},
+    widgets::{Block, Borders, List, ListItem, TitlePosition},
 };
 
 use crate::{
+    app::SharedMessages,
+    config::SharedCoreConfig,
     emotes::SharedEmotes,
-    handlers::{
-        config::SharedCoreConfig,
-        context::SharedMessages,
-        data::MessageData,
-        filters::SharedFilters,
-        state::State,
-        storage::SharedStorage,
-        user_input::{
-            events::{Event, Key},
-            scrolling::Scrolling,
-        },
-    },
-    terminal::TerminalAction,
+    events::{Event, InternalEvent, TwitchAction, TwitchEvent},
+    handlers::{data::MessageData, filters::SharedFilters, state::State, storage::SharedStorage},
+    twitch::oauth::TwitchOauth,
     ui::components::{
-        ChannelSwitcherWidget, ChatInputWidget, Component, MessageSearchWidget,
-        following::FollowingWidget,
+        ChannelSwitcherWidget, ChatInputWidget, Component, FollowingWidget, MessageSearchWidget,
+        utils::Scrolling,
     },
     utils::{
         styles::{NO_COLOR, TEXT_DARK_STYLE, TITLE_STYLE},
@@ -36,6 +30,7 @@ use crate::{
 
 pub struct ChatWidget {
     config: SharedCoreConfig,
+    event_tx: Sender<Event>,
     messages: SharedMessages,
     chat_input: ChatInputWidget,
     channel_input: ChannelSwitcherWidget,
@@ -43,26 +38,38 @@ pub struct ChatWidget {
     following: FollowingWidget,
     filters: SharedFilters,
     pub scroll_offset: Scrolling,
+    current_channel_name: String,
     // theme: Theme,
 }
 
 impl ChatWidget {
     pub fn new(
         config: SharedCoreConfig,
+        twitch_oauth: TwitchOauth,
+        event_tx: Sender<Event>,
         messages: SharedMessages,
         storage: &SharedStorage,
         emotes: &SharedEmotes,
         filters: SharedFilters,
     ) -> Self {
-        let chat_input = ChatInputWidget::new(config.clone(), storage.clone(), emotes.clone());
-        let channel_input = ChannelSwitcherWidget::new(config.clone(), storage.clone());
-        let search_input = MessageSearchWidget::new(config.clone());
-        let following = FollowingWidget::new(config.clone());
+        let current_channel_name = config.twitch.channel.clone();
 
-        let scroll_offset = Scrolling::new(config.borrow().frontend.inverted_scrolling);
+        let chat_input: ChatInputWidget = ChatInputWidget::new(
+            config.clone(),
+            event_tx.clone(),
+            storage.clone(),
+            emotes.clone(),
+        );
+        let channel_input =
+            ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
+        let search_input = MessageSearchWidget::new(config.clone(), event_tx.clone());
+        let following = FollowingWidget::new(config.clone(), twitch_oauth, event_tx.clone());
+
+        let scroll_offset = Scrolling::new(config.frontend.inverted_scrolling);
 
         Self {
             config,
+            event_tx,
             messages,
             chat_input,
             channel_input,
@@ -70,13 +77,25 @@ impl ChatWidget {
             following,
             filters,
             scroll_offset,
+            current_channel_name,
         }
     }
 
-    pub fn open_in_browser(&self) {
-        webbrowser::open(format!(
-            "https://player.twitch.tv/?channel={}&enableExtensions=true&parent=twitch.tv&quality=chunked",
-            self.config.borrow().twitch.channel).as_str()).unwrap();
+    pub async fn open_in_player(&self) -> Result<()> {
+        let channel_name = self.current_channel_name.as_str();
+        if self.config.frontend.view_command.is_empty() {
+            webbrowser::open(format!(
+            "https://player.twitch.tv/?channel={channel_name}&enableExtensions=true&parent=twitch.tv&quality=chunked",
+            ).as_str())?;
+        } else {
+            self.event_tx
+                .send(Event::Internal(InternalEvent::OpenStream(
+                    channel_name.to_string(),
+                )))
+                .await?;
+        }
+
+        Ok(())
     }
 
     pub fn get_messages<'a>(
@@ -92,7 +111,7 @@ impl ChatWidget {
         let mut messages = VecDeque::new();
 
         let mut general_chunk_height = area.height as usize;
-        if !self.config.borrow().frontend.hide_chat_border {
+        if !self.config.frontend.hide_chat_border {
             general_chunk_height -= 2;
         }
 
@@ -106,14 +125,12 @@ impl ChatWidget {
 
         let message_chunk_width = h_chunk[0].width as usize;
 
-        let config = self.config.borrow();
-
         'outer: for data in messages_data {
-            if self
-                .filters
-                .borrow()
-                .contaminated(data.payload.clone().as_str())
-            {
+            let filters = self.filters.borrow();
+            let contaminated_message = filters.message.contaminated(&data.payload);
+            let contaminated_username = filters.username.contaminated(&data.author.clone());
+
+            if contaminated_message || contaminated_username {
                 continue;
             }
 
@@ -124,8 +141,8 @@ impl ChatWidget {
                 continue;
             }
 
-            let username_highlight: Option<&str> = if config.frontend.username_highlight {
-                Some(config.twitch.username.as_str())
+            let username_highlight: Option<&str> = if self.config.frontend.username_highlight {
+                Some(self.config.twitch.username.as_str())
             } else {
                 None
             };
@@ -133,7 +150,7 @@ impl ChatWidget {
             let search = self.search_input.to_string();
 
             let lines = data.to_vec(
-                &self.config.borrow().frontend,
+                &self.config.frontend,
                 message_chunk_width,
                 if self.search_input.is_focused() {
                     Some(&search)
@@ -166,9 +183,7 @@ impl ChatWidget {
 
 impl Component for ChatWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let r = area.map_or_else(|| f.area(), |a| a);
-
-        let config = self.config.borrow();
+        let r = area.unwrap_or_else(|| f.area());
 
         let mut v_constraints = vec![Constraint::Min(1)];
 
@@ -178,7 +193,7 @@ impl Component for ChatWidget {
 
         let v_chunks_binding = Layout::default()
             .direction(Direction::Vertical)
-            .margin(self.config.borrow().frontend.margin)
+            .margin(self.config.frontend.margin)
             .constraints(v_constraints)
             .split(r);
 
@@ -186,10 +201,10 @@ impl Component for ChatWidget {
 
         let first_v_chunk = v_chunks.next().unwrap();
 
-        if self.messages.borrow().len() > self.config.borrow().terminal.maximum_messages {
+        if self.messages.borrow().len() > self.config.terminal.maximum_messages {
             self.messages
                 .borrow_mut()
-                .truncate(self.config.borrow().terminal.maximum_messages);
+                .truncate(self.config.terminal.maximum_messages);
         }
 
         let messages_data = self.messages.borrow();
@@ -197,33 +212,33 @@ impl Component for ChatWidget {
         let messages = self.get_messages(f, *first_v_chunk, &messages_data);
 
         let current_time = Local::now()
-            .format(&config.frontend.datetime_format)
+            .format(&self.config.frontend.datetime_format)
             .to_string();
+
+        let filters = self.filters.borrow();
+        let reversed_filters = filters.message.is_reversed() || filters.username.is_reversed();
+        let enabled_filters = filters.message.is_enabled() || filters.username.is_enabled();
 
         let spans = [
             TitleStyle::Combined("Time", &current_time),
-            TitleStyle::Combined("Channel", config.twitch.channel.as_str()),
+            TitleStyle::Combined("Channel", self.current_channel_name.as_str()),
             TitleStyle::Custom(Span::styled(
-                if self.filters.borrow().reversed() {
-                    "retliF"
-                } else {
-                    "Filter"
-                },
+                if reversed_filters { "retliF" } else { "Filter" },
                 if *NO_COLOR {
                     Style::default()
                 } else {
-                    Style::default().add_modifier(Modifier::BOLD).fg(
-                        if self.filters.borrow().enabled() {
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .fg(if enabled_filters {
                             Color::Green
                         } else {
                             Color::Red
-                        },
-                    )
+                        })
                 },
             )),
         ];
 
-        let chat_title = if self.config.borrow().frontend.title_shown {
+        let chat_title = if self.config.frontend.title_shown {
             Line::from(title_line(&spans, *TITLE_STYLE))
         } else {
             Line::default()
@@ -235,13 +250,13 @@ impl Component for ChatWidget {
             final_messages.push(ListItem::new(Text::from(item)));
         }
 
-        let list = if self.config.borrow().frontend.hide_chat_border {
+        let list = if self.config.frontend.hide_chat_border {
             List::new(final_messages)
         } else {
             List::new(final_messages).block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_type(self.config.borrow().frontend.border_type.clone().into())
+                    .border_type(self.config.frontend.border_type.clone().into())
                     .title(chat_title),
             )
         }
@@ -249,7 +264,7 @@ impl Component for ChatWidget {
 
         f.render_widget(list, *first_v_chunk);
 
-        if self.config.borrow().frontend.show_scroll_offset {
+        if self.config.frontend.show_scroll_offset {
             // Cannot scroll past the first message
             let message_amount = messages_data.len().saturating_sub(1);
 
@@ -263,9 +278,9 @@ impl Component for ChatWidget {
 
             let bottom_block = Block::default()
                 .borders(Borders::BOTTOM | Borders::LEFT | Borders::RIGHT)
-                .border_type(self.config.borrow().frontend.border_type.clone().into())
+                .border_type(self.config.frontend.border_type.clone().into())
                 .title(title_line(&title, Style::default()))
-                .title_position(Position::Bottom)
+                .title_position(TitlePosition::Bottom)
                 .title_alignment(Alignment::Right);
 
             let rect = Rect::new(
@@ -289,71 +304,110 @@ impl Component for ChatWidget {
         }
     }
 
-    async fn event(&mut self, event: &Event) -> Option<TerminalAction> {
+    async fn event(&mut self, event: &Event) -> Result<()> {
+        if let Event::Twitch(TwitchEvent::Action(TwitchAction::JoinChannel(channel))) = event {
+            self.current_channel_name.clone_from(channel);
+        }
+
+        if self.chat_input.is_focused() {
+            return self.chat_input.event(event).await;
+        } else if self.channel_input.is_focused() {
+            return self.channel_input.event(event).await;
+        } else if self.search_input.is_focused() {
+            return self.search_input.event(event).await;
+        } else if self.following.is_focused() {
+            return self.following.event(event).await;
+        }
+
         if let Event::Input(key) = event {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
-            if self.chat_input.is_focused() {
-                self.chat_input.event(event).await
-            } else if self.channel_input.is_focused() {
-                self.channel_input.event(event).await
-            } else if self.search_input.is_focused() {
-                self.search_input.event(event).await
-            } else if self.following.is_focused() {
-                self.following.event(event).await
-            } else {
-                match key {
-                    Key::Char('i' | 'c') => self.chat_input.toggle_focus(),
-                    Key::Char('@') => self.chat_input.toggle_focus_with("@"),
-                    Key::Char('/') => self.chat_input.toggle_focus_with("/"),
-                    Key::Char('s') => self.channel_input.toggle_focus(),
-                    Key::Ctrl('f') => self.search_input.toggle_focus(),
-                    Key::Char('f') => self.following.toggle_focus().await,
-                    Key::Ctrl('t') => self.filters.borrow_mut().toggle(),
-                    Key::Ctrl('r') => self.filters.borrow_mut().reverse(),
-                    Key::Char('S') => return Some(TerminalAction::SwitchState(State::Dashboard)),
-                    Key::Char('?' | 'h') => return Some(TerminalAction::SwitchState(State::Help)),
-                    Key::Char('q') => return Some(TerminalAction::Quit),
-                    Key::Char('o') => self.open_in_browser(),
-                    Key::Char('G') => {
-                        self.scroll_offset.jump_to(0);
+            let keybinds = &self.config.keybinds.normal;
+            match key {
+                key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
+                key if keybinds.enter_insert_with_mention.contains(key) => {
+                    self.chat_input.toggle_focus_with("@");
+                }
+                key if keybinds.enter_insert_with_command.contains(key) => {
+                    self.chat_input.toggle_focus_with("/");
+                }
+                key if keybinds.recent_channels_search.contains(key) => {
+                    self.channel_input.toggle_focus();
+                }
+                key if keybinds.search_messages.contains(key) => {
+                    self.search_input.toggle_focus();
+                }
+                key if keybinds.followed_channels_search.contains(key) => {
+                    self.following.toggle_focus().await;
+                }
+                key if keybinds.toggle_filters.contains(key) => {
+                    let mut filters = self.filters.borrow_mut();
+                    filters.message.toggle();
+                    filters.username.toggle();
+                }
+                key if keybinds.reverse_filters.contains(key) => {
+                    let mut filters = self.filters.borrow_mut();
+                    // TODO: Find a better way to interact with these filters
+                    filters.message.reverse();
+                    filters.username.reverse();
+                }
+                key if keybinds.enter_dashboard.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::SwitchState(
+                            State::Dashboard,
+                        )))
+                        .await?;
+                }
+                key if keybinds.help.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::SwitchState(State::Help)))
+                        .await?;
+                }
+                key if keybinds.quit.contains(key) => {
+                    self.event_tx
+                        .send(Event::Internal(InternalEvent::Quit))
+                        .await?;
+                }
+                key if keybinds.open_in_player.contains(key) => {
+                    self.open_in_player().await?;
+                }
+                key if keybinds.scroll_to_end.contains(key) => {
+                    self.scroll_offset.jump_to(0);
+                }
+                key if keybinds.scroll_to_start.contains(key) => {
+                    // TODO: Make this not jump to nothingness
+                    self.scroll_offset.jump_to(self.messages.borrow().len());
+                }
+                key if keybinds.back_to_previous_window.contains(key) => {
+                    if self.scroll_offset.get_offset() == 0 {
+                        self.event_tx
+                            .send(Event::Internal(InternalEvent::BackOneLayer))
+                            .await?;
                     }
-                    Key::Char('g') => {
-                        // TODO: Make this not jump to nothingness
-                        self.scroll_offset.jump_to(self.messages.borrow().len());
-                    }
-                    Key::Esc => {
-                        if self.scroll_offset.get_offset() == 0 {
-                            return Some(TerminalAction::BackOneLayer);
-                        }
 
-                        self.scroll_offset.jump_to(0);
+                    self.scroll_offset.jump_to(0);
+                }
+                key if keybinds.scroll_up.contains(key) => {
+                    if limit {
+                        self.scroll_offset.up();
+                    } else if self.scroll_offset.is_inverted() {
+                        self.scroll_offset.down();
                     }
-                    Key::Ctrl('p') => panic!("Manual panic triggered by user."),
-                    Key::ScrollUp => {
+                }
+                key if keybinds.scroll_down.contains(key) => {
+                    if self.scroll_offset.is_inverted() {
                         if limit {
                             self.scroll_offset.up();
-                        } else if self.scroll_offset.is_inverted() {
-                            self.scroll_offset.down();
                         }
+                    } else {
+                        self.scroll_offset.down();
                     }
-                    Key::ScrollDown => {
-                        if self.scroll_offset.is_inverted() {
-                            if limit {
-                                self.scroll_offset.up();
-                            }
-                        } else {
-                            self.scroll_offset.down();
-                        }
-                    }
-                    _ => {}
                 }
-
-                None
+                _ => {}
             }
-        } else {
-            None
         }
+
+        Ok(())
     }
 }

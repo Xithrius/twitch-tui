@@ -2,7 +2,7 @@ use color_eyre::{Result, eyre::ContextCompat};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use super::TWITCH_API_BASE_URL;
+use super::{ModeratorQuery, ResponseList, TWITCH_API_BASE_URL};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TwitchChatSettingsResponse {
@@ -44,11 +44,6 @@ impl TwitchChatSettingsResponse {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-struct TwitchChatSettingsResponseList {
-    data: Vec<TwitchChatSettingsResponse>,
-}
-
 /// Get the settings of the given broadcaster's chat
 ///
 /// <https://dev.twitch.tv/docs/api/reference/#get-chat-settings>
@@ -66,7 +61,7 @@ pub async fn get_chat_settings(
         .send()
         .await?
         .error_for_status()?
-        .json::<TwitchChatSettingsResponseList>()
+        .json::<ResponseList<TwitchChatSettingsResponse>>()
         .await?
         .data
         .first()
@@ -74,19 +69,6 @@ pub async fn get_chat_settings(
         .clone();
 
     Ok(response_data)
-}
-
-pub struct UpdateTwitchChatSettingsQuery {
-    broadcaster_id: String,
-    moderator_id: String,
-}
-impl UpdateTwitchChatSettingsQuery {
-    pub const fn new(broadcaster_id: String, moderator_id: String) -> Self {
-        Self {
-            broadcaster_id,
-            moderator_id,
-        }
-    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -143,27 +125,23 @@ impl UpdateTwitchChatSettingsPayload {
 /// <https://dev.twitch.tv/docs/api/reference/#update-chat-settings>
 pub async fn update_chat_settings(
     client: &Client,
-    query: UpdateTwitchChatSettingsQuery,
+    query: ModeratorQuery,
     payload: UpdateTwitchChatSettingsPayload,
 ) -> Result<TwitchChatSettingsResponse> {
-    let settings_query = &[
-        ("broadcaster_id", query.broadcaster_id),
-        ("moderator_id", query.moderator_id),
-    ];
     let url = format!("{TWITCH_API_BASE_URL}/chat/settings");
 
     let response_data = client
         .patch(url)
-        .query(settings_query)
+        .query(&query)
         .json(&payload)
         .send()
         .await?
         .error_for_status()?
-        .json::<TwitchChatSettingsResponseList>()
+        .json::<ResponseList<TwitchChatSettingsResponse>>()
         .await?
         .data
         .first()
-        .context("Failed to get chat settings response")?
+        .context("Failed to get update chat settings response")?
         .clone();
     Ok(response_data)
 }
