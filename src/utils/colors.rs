@@ -13,15 +13,12 @@ pub fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> [u8; 3] {
 
     // Convert to rgb based on color wheel section
     let (mut red, mut green, mut blue) = match hue.round() as i32 {
-        0..=60 => (chroma, x, 0.),
         61..=120 => (x, chroma, 0.),
         121..=180 => (0., chroma, x),
         181..=240 => (0., x, chroma),
         241..=300 => (x, 0., chroma),
         301..=360 => (chroma, 0., x),
-        _ => {
-            panic!("Invalid hue!");
-        }
+        _ => (chroma, x, 0.),
     };
 
     // Add amount to each channel to match lightness
