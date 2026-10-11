@@ -91,8 +91,7 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
-    #[allow(clippy::unused_self)]
-    fn render_dashboard_title_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
+    fn render_dashboard_title_widget(frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
         let w = Paragraph::new(
             DASHBOARD_TITLE
                 .iter()
@@ -218,7 +217,7 @@ impl Component for DashboardWidget {
 
         let mut v_chunks = v_chunk_binding.iter();
 
-        self.render_dashboard_title_widget(f, &mut v_chunks);
+        Self::render_dashboard_title_widget(f, &mut v_chunks);
 
         self.render_channel_selection_widget(
             f,

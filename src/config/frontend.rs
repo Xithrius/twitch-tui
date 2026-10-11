@@ -7,6 +7,10 @@ use tui::widgets::BorderType;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Frontend config has no need to be split into multiple structs"
+)]
 pub struct FrontendConfig {
     /// The command and arguments that should be used to view the stream
     pub view_command: Vec<String>,
@@ -212,9 +216,6 @@ pub enum Theme {
     #[default]
     Dark,
     Light,
-
-    #[allow(dead_code)]
-    Custom,
 }
 
 impl FromStr for Theme {

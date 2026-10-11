@@ -94,7 +94,7 @@ pub fn merge_args_into_config(config: &mut CoreConfig, args: Cli) {
     }
 
     if args.verbose.is_some_and(|verbose| verbose) {
-        config.terminal.log_level = LogLevel::DEBUG;
+        config.terminal.log_level = LogLevel::Debug;
     }
 
     if let Some(delay) = args.delay {

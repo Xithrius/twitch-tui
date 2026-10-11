@@ -29,6 +29,10 @@ use crate::{
     },
 };
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "Command handler is long, does not currently need multiple functions"
+)]
 pub async fn handle_command_message(
     context: &TwitchWebsocketContext,
     event_tx: &Sender<Event>,

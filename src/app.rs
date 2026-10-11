@@ -210,7 +210,7 @@ impl App {
                 self.event(&event).await?;
             }
 
-            terminal.draw(|f| self.draw(f, Some(f.area()))).unwrap();
+            terminal.draw(|f| self.draw(f, Some(f.area())))?;
         }
 
         self.cleanup();

@@ -33,11 +33,6 @@ impl UnicodePlaceholder {
         Self(width)
     }
 
-    #[allow(unused)]
-    pub const fn len(&self) -> usize {
-        PRIVATE_USE_UNICODE.len_utf8() * self.0
-    }
-
     pub fn iter(&'_ self) -> impl Iterator<Item = char> + '_ {
         let mut count = 0;
         iter::from_fn(move || {
@@ -51,7 +46,10 @@ impl UnicodePlaceholder {
         })
     }
 
-    #[allow(unused)]
+    pub const fn len(&self) -> usize {
+        PRIVATE_USE_UNICODE.len_utf8() * self.0
+    }
+
     pub fn string(&self) -> String {
         let mut s = String::with_capacity(self.len());
 

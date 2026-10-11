@@ -75,68 +75,74 @@ lto = true
 opt-level = "s"
 strip = true
 
-# [lints.clippy]
-# pedantic = { level = "deny", priority = -1 }
-# nursery = { level = "deny", priority = -1 }
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
 
-# # Don't Panic - prevent panics from unwraps and unsafe slicing or indexing
-# string_slice = "warn"
-# indexing_slicing = "warn"
-# unwrap_used = "warn"
-# panic = "warn"
-# todo = "warn"
-# unimplemented = "warn"
-# unreachable = "warn"
-# get_unwrap = "warn"
-# unwrap_in_result = "warn"
-# unchecked_time_subtraction = "warn"
-# panic_in_result_fn = "warn"
-# # expect_used = "warn"
-# # arithmetic_side_effects = "warn"
-# # exit = "deny"
+# Don't Panic - prevent panics from unwraps and unsafe slicing or indexing
+string_slice = "warn"
+indexing_slicing = "warn"
+unwrap_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+unreachable = "warn"
+get_unwrap = "warn"
+unwrap_in_result = "warn"
+unchecked_time_subtraction = "warn"
+panic_in_result_fn = "warn"
+# expect_used = "warn"
+# arithmetic_side_effects = "warn"
+# exit = "deny"
 
-# # Don't Fail Silently - prevent dropped futures and swallowed errors
-# let_underscore_future = "warn"
-# let_underscore_must_use = "warn"
-# unused_result_ok = "warn"
-# map_err_ignore = "warn"
-# assertions_on_result_states = "warn"
+# Don't Fail Silently - prevent dropped futures and swallowed errors
+let_underscore_future = "warn"
+let_underscore_must_use = "warn"
+unused_result_ok = "warn"
+map_err_ignore = "warn"
+assertions_on_result_states = "warn"
 
-# # Don't do bad async stuff - prevent deadlocks and concurrency bugs
-# await_holding_lock = "warn"
-# await_holding_refcell_ref = "warn"
-# large_futures = "warn"
-# # only relevant on editions before 2024
-# # if_let_mutex = "warn"
+# Don't do bad async stuff - prevent deadlocks and concurrency bugs
+await_holding_lock = "warn"
+await_holding_refcell_ref = "warn"
+large_futures = "warn"
+# only relevant on editions before 2024
+# if_let_mutex = "warn"
 
-# # Don't do unsafe things with memory
-# mem_forget = "warn"
-# undocumented_unsafe_blocks = "warn"
-# multiple_unsafe_ops_per_block = "warn"
-# unnecessary_safety_doc = "warn"
-# unnecessary_safety_comment = "warn"
+# Don't do unsafe things with memory
+mem_forget = "warn"
+undocumented_unsafe_blocks = "warn"
+multiple_unsafe_ops_per_block = "warn"
+unnecessary_safety_doc = "warn"
+unnecessary_safety_comment = "warn"
 
-# # Don't do potentially incorrect things with numbers
-# float_cmp = "warn"
-# float_cmp_const = "warn"
-# lossy_float_literal = "warn"
-# cast_sign_loss = "warn"
-# invalid_upcast_comparisons = "warn"
-# # Optional - these effectively force you to document numeric invariants
-# # cast_possible_wrap = "warn"
-# # cast_precision_loss = "warn"
-# # cast_possible_truncation = "warn"
-# # as_conversions = "deny"
+# Don't do potentially incorrect things with numbers
+float_cmp = "warn"
+float_cmp_const = "warn"
+lossy_float_literal = "warn"
+# Change to warn later
+cast_sign_loss = "allow"
+invalid_upcast_comparisons = "warn"
+# Optional - these effectively force you to document numeric invariants
+# cast_possible_wrap = "warn"
+# Change to warn later
+cast_precision_loss = "allow"
+# Change to warn later
+cast_possible_truncation = "allow"
+# as_conversions = "deny"
 
-# # Don't do bad things that are easy to avoid
-# rc_mutex = "warn"
-# debug_assert_with_mut_call = "warn"
-# iter_not_returning_iterator = "warn"
-# expl_impl_clone_on_copy = "warn"
-# infallible_try_from = "warn"
-# dbg_macro = "warn"
+# Don't do bad things that are easy to avoid
+rc_mutex = "warn"
+debug_assert_with_mut_call = "warn"
+iter_not_returning_iterator = "warn"
+expl_impl_clone_on_copy = "warn"
+infallible_try_from = "warn"
+dbg_macro = "warn"
 
-# # Don't `allow` your way around these lints - every suppression must be
-# # a deliberate #[expect(..., reason = "…")] rather than a silent #[allow]
-# allow_attributes = "warn"
-# allow_attributes_without_reason = "warn"
+# Don't `allow` your way around these lints - every suppression must be
+# a deliberate #[expect(..., reason = "…")] rather than a silent #[allow]
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+# Change to warn later
+struct_field_names = "allow"

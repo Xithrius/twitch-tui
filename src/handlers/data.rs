@@ -303,7 +303,6 @@ impl MessageData {
         content: impl Into<Cow<'s, str>>,
         emotes: &mut &[(Color, Color)],
     ) -> Span<'s> {
-        #[allow(unused_variables)]
         if let Some(&(id, pid)) = emotes.first() {
             *emotes = &emotes[1..];
 
@@ -413,6 +412,11 @@ impl MessageData {
         }
     }
 
+    // TODO: Split into multiple functions
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MessageData::to_vec is long, will later split into multiple functions"
+    )]
     pub fn to_vec(
         &self,
         frontend_config: &FrontendConfig,
@@ -430,7 +434,7 @@ impl MessageData {
         };
         let username_theme = match frontend_config.theme {
             Theme::Dark => *HIGHLIGHT_NAME_DARK_STYLE,
-            _ => *HIGHLIGHT_NAME_LIGHT_STYLE,
+            Theme::Light => *HIGHLIGHT_NAME_LIGHT_STYLE,
         };
         let author_theme = if self.system {
             *SYSTEM_CHAT_STYLE
@@ -439,7 +443,7 @@ impl MessageData {
         };
         let datetime_theme = match frontend_config.theme {
             Theme::Dark => *DATETIME_DARK_STYLE,
-            _ => *DATETIME_LIGHT_STYLE,
+            Theme::Light => *DATETIME_LIGHT_STYLE,
         };
 
         // All indices to highlight of the username in the message, case insensitive
@@ -543,8 +547,8 @@ impl MessageData {
 
         let mut next_index = 0;
 
-        // Unwrapping is safe because of the empty check above
-        let mut first_line = lines.next().unwrap();
+        // Unwrapping to default is safe because of the empty check above
+        let mut first_line = lines.next().unwrap_or_default();
         let first_line_msg = split_cow_in_place(&mut first_line, prefix_len);
 
         // Find all spaces in `self.payload`, to increment `next_index` when a space at the end of a line
