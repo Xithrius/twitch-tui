@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Context};
 use tokio::sync::mpsc::Sender;
 use tui::{Frame, layout::Rect};
 
@@ -153,7 +153,8 @@ impl Component for ChatInputWidget {
                             if self.config.storage.mentions {
                                 self.storage
                                     .borrow_mut()
-                                    .add("mentions", message.to_string());
+                                    .add("mentions", message.to_string())
+                                    .context("Failed to add mention")?;
                             }
                         }
 

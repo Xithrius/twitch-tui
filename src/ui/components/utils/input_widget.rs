@@ -171,7 +171,10 @@ impl<T: Clone> Component for InputWidget<T> {
                     .as_ref()
                     .map_or_else(String::new, |suggestion_buffer| {
                         if suggestion_buffer.len() > current_input.len() {
-                            suggestion_buffer[current_input.len()..].to_string()
+                            suggestion_buffer
+                                .get(current_input.len()..)
+                                .unwrap_or_default()
+                                .to_string()
                         } else {
                             String::new()
                         }

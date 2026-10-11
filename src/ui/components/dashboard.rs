@@ -320,10 +320,15 @@ impl Component for DashboardWidget {
                             } as usize;
 
                         if let Some(channel) = channels.get(selection) {
-                            self.storage.borrow_mut().add("channels", channel.clone());
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", channel.clone())
+                                .context(format!("Failed to add channel {channel} to storage"))?;
+
                             if selection != 0 && selection * 10 <= channels.len() {
                                 return Ok(());
                             }
+
                             self.channel_selection = None;
                             self.event_tx
                                 .send(Event::Twitch(TwitchEvent::Action(

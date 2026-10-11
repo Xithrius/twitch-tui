@@ -1,6 +1,6 @@
 use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
@@ -92,19 +92,25 @@ where
         }
     }
 
-    fn next(&mut self) {
+    fn next(&mut self) -> Result<()> {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if let Some(filtered) = &self.filtered_items {
                     if i >= filtered.len().saturating_sub(1) {
                         filtered.len().saturating_sub(1)
                     } else {
-                        i + 1
+                        i.saturating_add(1)
                     }
-                } else if i >= self.items.as_ref().unwrap().len().saturating_sub(1) {
-                    self.items.as_ref().unwrap().len().saturating_sub(1)
                 } else {
-                    i + 1
+                    let max = self
+                        .items
+                        .as_ref()
+                        .ok()
+                        .context("Failed to get items")?
+                        .len()
+                        .saturating_sub(1);
+
+                    if i >= max { max } else { i.saturating_add(1) }
                 }
             }
             None => 0,
@@ -114,13 +120,15 @@ where
 
         self.vertical_scroll = self.vertical_scroll.saturating_add(1);
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
+
+        Ok(())
     }
 
     fn previous(&mut self) {
         let i = self
             .list_state
             .selected()
-            .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
+            .map_or(0, |i| if i == 0 { 0 } else { i.saturating_sub(1) });
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
@@ -145,6 +153,35 @@ where
         }
 
         self.focused = !self.focused;
+    }
+
+    async fn select(&mut self) -> Result<()> {
+        if let Some(i) = self.list_state.selected() {
+            let selected_item = if let Some(v) = self.filtered_items.clone() {
+                if v.is_empty() {
+                    return Ok(());
+                }
+
+                v.get(i).unwrap().to_string()
+            } else {
+                self.items.as_ref().unwrap().get(i).unwrap().to_string()
+            }
+            .to_lowercase();
+
+            self.toggle_focus().await;
+
+            self.unselect();
+
+            let selected_channel_trimmed = clean_channel_name(&selected_item);
+
+            self.event_tx
+                .send(Event::Twitch(TwitchEvent::Action(
+                    TwitchAction::JoinChannel(selected_channel_trimmed),
+                )))
+                .await?;
+        }
+
+        Ok(())
     }
 }
 
@@ -285,33 +322,10 @@ where
                         self.toggle_focus().await;
                     }
                 }
-                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.next_item.contains(key) => self.next()?,
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.select.contains(key) => {
-                    if let Some(i) = self.list_state.selected() {
-                        let selected_item = if let Some(v) = self.filtered_items.clone() {
-                            if v.is_empty() {
-                                return Ok(());
-                            }
-
-                            v.get(i).unwrap().to_string()
-                        } else {
-                            self.items.as_ref().unwrap().get(i).unwrap().to_string()
-                        }
-                        .to_lowercase();
-
-                        self.toggle_focus().await;
-
-                        self.unselect();
-
-                        let selected_channel_trimmed = clean_channel_name(&selected_item);
-
-                        self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(
-                                TwitchAction::JoinChannel(selected_channel_trimmed),
-                            )))
-                            .await?;
-                    }
+                    self.select().await?;
                 }
                 _ => {
                     self.search_input.event(event).await?;

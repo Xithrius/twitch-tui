@@ -6,7 +6,10 @@ use std::{
 };
 
 use bon::bon;
-use color_eyre::Result;
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use tokio::sync::{
     mpsc::{Receiver, Sender},
     oneshot::Receiver as OSReceiver,
@@ -123,8 +126,8 @@ impl App {
         })
     }
 
-    fn open_stream(&mut self, channel: &str) {
-        self.close_current_stream();
+    fn open_stream(&mut self, channel: &str) -> Result<()> {
+        self.close_current_stream()?;
         let view_command = &self.config.frontend.view_command;
 
         if let Some((command, args)) = view_command.split_first() {
@@ -142,21 +145,27 @@ impl App {
                     Some,
                 );
         }
+
+        Ok(())
     }
 
-    fn close_current_stream(&mut self) {
+    fn close_current_stream(&mut self) -> Result<()> {
         if let Some(process) = self.running_stream.as_mut() {
-            _ = process
+            process
                 .kill()
-                .inspect_err(|err| error!("failed to kill view process: {err}"));
+                .inspect_err(|err| error!("failed to kill view process: {err}"))?;
         }
         self.running_stream = None;
+
+        Ok(())
     }
 
-    fn cleanup(&mut self) {
-        self.close_current_stream();
-        self.storage.borrow().dump_data();
+    fn cleanup(&mut self) -> Result<()> {
+        self.close_current_stream()?;
+        self.storage.borrow().dump_data()?;
         self.emotes.unload();
+
+        Ok(())
     }
 
     fn clear_messages(&mut self) {
@@ -177,7 +186,7 @@ impl App {
         self.messages.replace(messages);
     }
 
-    fn remove_message_with(&self, message_id: &str) {
+    fn remove_message_with(&self, message_id: &str) -> Result<()> {
         let index = self
             .messages
             .borrow_mut()
@@ -185,8 +194,12 @@ impl App {
             .position(|f| f.message_id.clone().is_some_and(|id| id == message_id));
 
         if let Some(i) = index {
-            self.messages.borrow_mut().remove(i).unwrap();
+            self.messages.borrow_mut().remove(i).context(format!(
+                "Failed to remove message with ID {message_id} at index {i}"
+            ))?;
         }
+
+        Ok(())
     }
 
     fn get_previous_state(&self) -> Option<State> {
@@ -217,7 +230,7 @@ impl App {
             draw_result?;
         }
 
-        self.cleanup();
+        self.cleanup()?;
 
         Ok(())
     }
@@ -255,7 +268,7 @@ impl App {
         }
     }
 
-    fn handle_internal_event(&mut self, internal_event: &InternalEvent) {
+    fn handle_internal_event(&mut self, internal_event: &InternalEvent) -> Result<()> {
         match internal_event {
             InternalEvent::Quit => self.running = false,
             InternalEvent::BackOneLayer => {
@@ -273,10 +286,12 @@ impl App {
                 self.set_state(state.clone());
             }
             InternalEvent::OpenStream(channel) => {
-                self.open_stream(channel);
+                self.open_stream(channel)?;
             }
             InternalEvent::SelectEmote(_) => {}
         }
+
+        Ok(())
     }
 
     async fn handle_twitch_action(&mut self, twitch_action: &TwitchAction) -> Result<()> {
@@ -291,7 +306,7 @@ impl App {
                     .await?;
 
                 if self.config.frontend.autostart_view_command {
-                    self.open_stream(&channel);
+                    self.open_stream(&channel)?;
                 }
                 self.emotes_rx = query_emotes(&self.config, self.twitch_oauth.clone(), channel);
                 self.set_state(State::Normal);
@@ -306,7 +321,10 @@ impl App {
         Ok(())
     }
 
-    fn handle_twitch_notification(&mut self, twitch_notification: &TwitchNotification) {
+    fn handle_twitch_notification(
+        &mut self,
+        twitch_notification: &TwitchNotification,
+    ) -> Result<()> {
         match twitch_notification {
             TwitchNotification::Message(m) => {
                 let message_data = MessageData::from_twitch_message(m.clone(), &self.emotes);
@@ -315,7 +333,11 @@ impl App {
                 {
                     self.storage
                         .borrow_mut()
-                        .add("chatters", message_data.author.clone());
+                        .add("chatters", message_data.author.clone())
+                        .context(format!(
+                            "Failed to add chatter {} to storage",
+                            message_data.author
+                        ))?;
                 }
                 self.messages.borrow_mut().push_front(message_data);
 
@@ -332,9 +354,11 @@ impl App {
                 }
             }
             TwitchNotification::DeleteMessage(message_id) => {
-                self.remove_message_with(message_id.as_str());
+                self.remove_message_with(message_id.as_str())?;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -348,9 +372,10 @@ impl Component for App {
                 .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
                 .split(f.area());
 
-            size = layout[0];
+            size = *layout.first().context("Failed to get state tabs area")?;
 
-            StateTabsWidget::draw(f, Some(layout[1]), &self.state);
+            let rect = layout.last().context("Failed to get state tabs area")?;
+            StateTabsWidget::draw(f, Some(*rect), &self.state);
         }
 
         if (size.height < 10 || size.width < 60)
@@ -368,12 +393,13 @@ impl Component for App {
         if self.components.debug.is_focused() {
             let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
 
-            let rect = Layout::default()
+            let rects = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .split(new_rect)[1];
+                .split(new_rect);
+            let rect = rects.get(1).context("Failed to get debug area")?;
 
-            self.components.debug.draw(f, Some(rect))?;
+            self.components.debug.draw(f, Some(*rect))?;
         }
 
         Ok(())
@@ -382,14 +408,14 @@ impl Component for App {
     async fn event(&mut self, event: &Event) -> Result<()> {
         match event {
             Event::Internal(internal_event) => {
-                self.handle_internal_event(internal_event);
+                self.handle_internal_event(internal_event)?;
             }
             Event::Twitch(twitch_event) => match twitch_event {
                 TwitchEvent::Action(twitch_action) => {
                     self.handle_twitch_action(twitch_action).await?;
                 }
                 TwitchEvent::Notification(twitch_notification) => {
-                    self.handle_twitch_notification(twitch_notification);
+                    self.handle_twitch_notification(twitch_notification)?;
                 }
             },
             Event::Input(key) => {

@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use color_eyre::{Result, eyre::ContextCompat};
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, info};
 use tui::{
@@ -150,7 +153,10 @@ impl ChannelSwitcherWidget {
                         if self.config.storage.channels {
                             self.storage
                                 .borrow_mut()
-                                .add("channels", selected_channel.clone());
+                                .add("channels", selected_channel.clone())
+                                .context(format!(
+                                    "Failed to add channel {selected_channel} to storage"
+                                ))?;
                         }
 
                         self.search_input.clear();
@@ -171,7 +177,10 @@ impl ChannelSwitcherWidget {
             if self.config.storage.channels {
                 self.storage
                     .borrow_mut()
-                    .add("channels", selected_channel.clone());
+                    .add("channels", selected_channel.clone())
+                    .context(format!(
+                        "Failed to add channel {selected_channel} to storage"
+                    ))?;
             }
 
             self.search_input.clear();
@@ -195,7 +204,10 @@ impl ChannelSwitcherWidget {
             if self.config.storage.channels {
                 self.storage
                     .borrow_mut()
-                    .add("channels", selected_channel.clone());
+                    .add("channels", selected_channel.clone())
+                    .context(format!(
+                        "Failed to add channel {selected_channel} to storage"
+                    ))?;
             }
 
             self.search_input.clear();
@@ -347,14 +359,20 @@ impl Component for ChannelSwitcherWidget {
                             if let Some(value) = filtered.get(index) {
                                 self.storage
                                     .borrow_mut()
-                                    .remove_inner_with("channels", value);
+                                    .remove_inner_with("channels", value)
+                                    .context(format!(
+                                        "Failed to remove channel {value} from storage"
+                                    ))?;
                             }
                         } else if let Some(value) =
                             self.storage.borrow().get("channels")?.get(index)
                         {
                             self.storage
                                 .borrow_mut()
-                                .remove_inner_with("channels", value);
+                                .remove_inner_with("channels", value)
+                                .context(format!(
+                                    "Failed to remove channel {value} from storage"
+                                ))?;
                         }
                     }
                 }

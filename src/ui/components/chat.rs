@@ -1,7 +1,7 @@
-use std::{collections::VecDeque, slice::Iter};
+use std::{borrow::ToOwned, collections::VecDeque, slice::Iter};
 
 use chrono::Local;
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
@@ -123,7 +123,10 @@ impl ChatWidget {
             .constraints([Constraint::Min(1)])
             .split(frame.area());
 
-        let message_chunk_width = h_chunk[0].width as usize;
+        let message_chunk_width = h_chunk
+            .first()
+            .map_or_else(Rect::default, ToOwned::to_owned)
+            .width as usize;
 
         'outer: for data in messages_data {
             let filters = self.filters.borrow();
@@ -199,7 +202,9 @@ impl Component for ChatWidget {
 
         let mut v_chunks: Iter<Rect> = v_chunks_binding.iter();
 
-        let first_v_chunk = v_chunks.next().unwrap();
+        let first_v_chunk = v_chunks
+            .next()
+            .context("Failed to get first vertical chunk")?;
 
         if self.messages.borrow().len() > self.config.terminal.maximum_messages {
             self.messages
