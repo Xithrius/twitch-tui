@@ -119,7 +119,7 @@ impl Command for DecodedEmote {
             width = width,
             height = height,
             path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_err| fmt::Error)?)
-        )?;
+        ))?;
 
         if self.images.len() == 1 {
             return Ok(());
@@ -148,7 +148,7 @@ impl Command for DecodedEmote {
                 height = height,
                 delay = delay,
                 path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_err| fmt::Error)?)
-            )?;
+            ))?;
         }
 
         // s=3: Start animation, v=1: Loop infinitely
