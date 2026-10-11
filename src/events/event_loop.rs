@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Context};
 use tokio::{
     sync::mpsc::{Receiver, Sender},
     time::Instant,
@@ -49,15 +49,15 @@ impl EventsThread {
                 .checked_sub(last_tick.elapsed())
                 .unwrap_or_else(|| Duration::from_secs(0));
 
-            if event::poll(timeout).unwrap() {
+            if event::poll(timeout)? {
                 match event::read() {
                     Ok(CEvent::Key(KeyEvent {
                         code,
                         kind: KeyEventKind::Press,
                         modifiers,
                         state: _,
-                    })) => self.translate_key_event(code, modifiers).await,
-                    Ok(CEvent::Mouse(key)) => self.translate_mouse_event(key).await,
+                    })) => self.translate_key_event(code, modifiers).await?,
+                    Ok(CEvent::Mouse(key)) => self.translate_mouse_event(key).await?,
                     _ => (),
                 }
             }
@@ -69,7 +69,7 @@ impl EventsThread {
         }
     }
 
-    async fn translate_key_event(&self, code: KeyCode, modifiers: KeyModifiers) {
+    async fn translate_key_event(&self, code: KeyCode, modifiers: KeyModifiers) -> Result<()> {
         let key = match code {
             KeyCode::Backspace => Key::Backspace,
             KeyCode::Esc => Key::Esc,
@@ -87,27 +87,29 @@ impl EventsThread {
                 KeyModifiers::NONE | KeyModifiers::SHIFT => Key::Char(c),
                 KeyModifiers::CONTROL => Key::Ctrl(c),
                 KeyModifiers::ALT => Key::Alt(c),
-                _ => return,
+                _ => return Ok(()),
             },
-            _ => return,
+            _ => return Ok(()),
         };
 
-        self.send(Event::Input(key)).await;
+        self.send(Event::Input(key)).await?;
+
+        Ok(())
     }
 
-    async fn translate_mouse_event(&self, key: MouseEvent) {
+    async fn translate_mouse_event(&self, key: MouseEvent) -> Result<()> {
         let key = match key.kind {
             MouseEventKind::ScrollDown => Key::ScrollDown,
             MouseEventKind::ScrollUp => Key::ScrollUp,
-            _ => return,
+            _ => return Ok(()),
         };
 
-        self.send(Event::Input(key)).await;
+        self.send(Event::Input(key)).await?;
+
+        Ok(())
     }
 
-    async fn send(&self, event: Event) {
-        // Ignores the result because shutting down the app drops the receiver, which causes the send
-        // operation to fail. This is expected behavior and should not panic.
-        let _ = self.tx.send(event).await;
+    async fn send(&self, event: Event) -> Result<()> {
+        self.tx.send(event).await.context("Failed to send event")
     }
 }
