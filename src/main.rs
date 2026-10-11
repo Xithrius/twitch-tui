@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
         .twitch_tx(twitch_tx)
         .emotes(context_emotes)
         .maybe_decoded_emotes_rx(decoded_emotes_rx)
-        .build();
+        .build()?;
 
     TwitchWebsocket::new(config.clone(), twitch_oauth, event_tx.clone(), twitch_rx);
 

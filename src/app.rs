@@ -85,11 +85,11 @@ impl App {
         twitch_tx: Sender<TwitchAction>,
         emotes: Rc<Emotes>,
         decoded_emotes_rx: Option<Receiver<Result<DecodedEmote, String>>>,
-    ) -> Self {
+    ) -> Result<Self> {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
 
-        let storage = shared!(Storage::new(&config));
+        let storage = shared!(Storage::new(&config)?);
         let filters = shared!(Filters::new(&config));
         let messages = shared!(VecDeque::with_capacity(maximum_messages));
 
@@ -105,7 +105,7 @@ impl App {
 
         let emotes_rx = query_emotes(&config, twitch_oauth.clone(), config.twitch.channel.clone());
 
-        Self {
+        Ok(Self {
             running: true,
             components,
             config,
@@ -120,7 +120,7 @@ impl App {
             emotes_rx,
             decoded_emotes_rx,
             running_stream: None,
-        }
+        })
     }
 
     fn open_stream(&mut self, channel: &str) {
