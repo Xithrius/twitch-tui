@@ -153,7 +153,7 @@ impl Component for ChannelSwitcherWidget {
 
         if current_input.is_empty() {
             for channel in channels.clone() {
-                items.push(ListItem::new(channel.clone()));
+                items.push(ListItem::new(channel));
             }
 
             self.filtered_channels = None;

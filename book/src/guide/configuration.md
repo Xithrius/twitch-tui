@@ -43,11 +43,13 @@ The environment variable will be used first, even if a token exists in `config.t
 
 ## Emotes
 
-Currently, only the [graphics protocol for kitty]() is supported, so any other terminal without it won't be able to render emotes.
+Currently, only the [graphics protocol for kitty](https://sw.kovidgoyal.net/kitty/graphics-protocol/) is supported, so any other terminal without it won't be able to render emotes.
 
 Enable the emotes by setting `twitch_emotes`, `betterttv_emotes` and/or `seventv_emotes` to `true`.
 
 The emotes will be downloaded to `~/.cache/twt/` on Linux/MacOs and `%appdata%\twt\cache\` on Windows.
+
+If you're running tmux in kitty, run either `set -p allow-passthrough on`, or set `set -g allow-passthrough on` in your tmux config for emotes to be shown.
 
 ## Run it
 

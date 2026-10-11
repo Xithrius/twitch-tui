@@ -6,7 +6,6 @@ edition = "2024"
 rust-version = "1.85.0"
 description = "Twitch chat in the terminal."
 documentation = "https://github.com/Xithrius/twitch-tui"
-homepage = "https://github.com/Xithrius/twitch-tui"
 repository = "https://github.com/Xithrius/twitch-tui"
 license = "MIT OR Apache-2.0"
 keywords = ["tui", "twitch"]
