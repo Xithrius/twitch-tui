@@ -162,9 +162,15 @@ where
                     return Ok(());
                 }
 
-                v.get(i).unwrap().to_string()
+                v.get(i).context("Failed to get selected item")?.to_string()
             } else {
-                self.items.as_ref().unwrap().get(i).unwrap().to_string()
+                self.items
+                    .as_ref()
+                    .ok()
+                    .context("Failed to get items")?
+                    .get(i)
+                    .context("Failed to get selected item")?
+                    .to_string()
             }
             .to_lowercase();
 
@@ -197,8 +203,11 @@ where
             return self.error_widget.draw(f, Some(r));
         }
 
-        let mut items = vec![];
-        let current_items = &self.items.as_ref().map_or(vec![], Clone::clone);
+        let mut items = Vec::default();
+        let current_items = &self
+            .items
+            .as_ref()
+            .map_or_else(|_| Vec::default(), Clone::clone);
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
@@ -211,7 +220,7 @@ where
             let item_filter =
                 |choice: String| -> Vec<usize> { fuzzy_pattern_match(&current_input, &choice) };
 
-            let mut matched = vec![];
+            let mut matched = Vec::default();
 
             for item in current_items.clone() {
                 let matched_indices = item_filter(item.to_string());
