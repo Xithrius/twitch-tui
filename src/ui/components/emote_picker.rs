@@ -117,6 +117,10 @@ impl EmotePickerWidget {
 }
 
 impl Component for EmotePickerWidget {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Method will be broken into multiple methods"
+    )]
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 

@@ -142,7 +142,7 @@ impl Storage {
         let mut out = if items.len() <= n {
             items
         } else {
-            items[items.len() - n..].to_vec()
+            items.get(items.len() - n..).unwrap_or_default().to_vec()
         };
 
         if reverse {
