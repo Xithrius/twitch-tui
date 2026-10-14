@@ -15,7 +15,7 @@ use crate::{
     utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 
-const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help];
+const STATE_TABS: [State; 3] = [State::Dashboard, State::Normal, State::Help];
 
 #[derive(Debug, Clone, Default)]
 pub struct StateTabsWidget {
@@ -30,7 +30,7 @@ impl StateTabsWidget {
     }
 
     fn get_state_index(state: &State) -> usize {
-        TABS_TO_RENDER
+        STATE_TABS
             .iter()
             .position(|s| s == state)
             .unwrap_or_default()
@@ -45,7 +45,7 @@ impl Component for StateTabsWidget {
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
-        let tab_titles = TABS_TO_RENDER
+        let tab_titles = STATE_TABS
             .iter()
             .map(|t| Line::from(capitalize_first_char(&t.to_string())))
             .collect::<Vec<Line>>();
