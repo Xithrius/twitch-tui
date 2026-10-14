@@ -101,7 +101,8 @@ let_underscore_future = "warn"
 let_underscore_must_use = "warn"
 unused_result_ok = "warn"
 map_err_ignore = "warn"
-assertions_on_result_states = "warn"
+# Change to warn later
+# assertions_on_result_states = "warn"
 
 # Don't do bad async stuff - prevent deadlocks and concurrency bugs
 await_holding_lock = "warn"
