@@ -216,7 +216,7 @@ impl MessageData {
                     payload.push_str(&s);
                 }
                 Word::Emote(v) => {
-                    // Unwrapping here is fine as v is never empty.
+                    // Unwrapping here is fine as the emotes vector is never empty.
                     let max_width = v
                         .iter()
                         .max_by_key(|e| e.width)
@@ -226,7 +226,9 @@ impl MessageData {
 
                     let mut iter = v.into_iter();
 
-                    let EmoteData { id, pid, width } = iter.next().unwrap();
+                    // Fine to unwrap here as well since the emotes vector is never empty.
+                    let EmoteData { id, pid, width } =
+                        iter.next().expect("Emotes should never be empty");
 
                     let (_, col_offset) = get_emote_offset(width as u16, cell_size.0 as u16, cols);
 
