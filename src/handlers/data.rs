@@ -306,7 +306,7 @@ impl MessageData {
         emotes: &mut &[(Color, Color)],
     ) -> Span<'s> {
         if let Some(&(id, pid)) = emotes.first() {
-            *emotes = &emotes[1..];
+            *emotes = emotes.get(1..).unwrap_or_default();
 
             #[cfg(not(target_os = "windows"))]
             {
@@ -330,12 +330,12 @@ impl MessageData {
         (search_highlight, search_theme): Highlight,
         (username_highlight, username_theme): Highlight,
     ) -> Vec<Span<'s>> {
-        const HAS_NO_HIGHLIGHTS: fn(&[usize], &usize, &usize) -> bool =
-            |highlight: &[usize], start: &usize, end: &usize| {
-                highlight.is_empty()
-                    || start > highlight.last().unwrap()
-                    || end < highlight.first().unwrap()
-            };
+        const HAS_NO_HIGHLIGHTS: fn(&[usize], &usize, &usize) -> bool = |highlight, start, end| {
+            highlight
+                .first()
+                .zip(highlight.last())
+                .is_none_or(|(first, last)| start > last || end < first)
+        };
 
         let offset = *start_index;
         *start_index += line.len();
