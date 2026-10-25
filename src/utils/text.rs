@@ -19,6 +19,11 @@ pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
 pub fn split_cow_in_place<'a>(cow: &mut Cow<'a, str>, mid: usize) -> Cow<'a, str> {
     match *cow {
         Cow::Owned(ref mut s) => {
+            // TODO: Remove string slicing
+            #[expect(
+                clippy::string_slice,
+                reason = "Safe string slicing for now, will be fixed in the future"
+            )]
             let s2 = s[mid..].to_string();
             s.truncate(mid);
             Cow::Owned(s2)
@@ -103,6 +108,11 @@ pub fn parse_message_action(msg: &str) -> (&str, bool) {
     const IRC_CTCP_ACTION: &str = "\u{1}ACTION ";
 
     // Extract the message from the irc ctcp action
+    // TODO: Remove string slicing
+    #[expect(
+        clippy::string_slice,
+        reason = "Safe string slicing for now, will be fixed in the future"
+    )]
     msg.strip_prefix(IRC_CTCP_ACTION)
         .map_or_else(|| (msg, false), |msg| (&msg[..msg.len() - 1], true))
 }
@@ -136,10 +146,20 @@ pub fn clean_message(msg: &str) -> Result<String, FromUtf8Error> {
     let mut last_match = 0;
 
     for idx in matches {
+        // TODO: Remove index slicing
+        #[expect(
+            clippy::indexing_slicing,
+            reason = "Safe index slicing for now, will be fixed in the future"
+        )]
         output.extend_from_slice(&bytes[last_match..idx]);
         last_match = idx + U_E0000_LEN;
     }
 
+    // TODO: Remove index slicing
+    #[expect(
+        clippy::indexing_slicing,
+        reason = "Safe index slicing for now, will be fixed in the future"
+    )]
     output.extend_from_slice(&bytes[last_match..]);
 
     // Unwrapping here is safe as the input is already valid utf8, and we only remove `U_E0000` from the string.
