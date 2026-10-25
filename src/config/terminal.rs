@@ -25,7 +25,7 @@ impl Default for TerminalConfig {
             delay: 30,
             maximum_messages: 500,
             log_file: None,
-            log_level: LogLevel::INFO,
+            log_level: LogLevel::Info,
             first_state: State::default(),
         }
     }

@@ -1,20 +1,4 @@
 #![forbid(unsafe_code)]
-#![warn(clippy::nursery, clippy::pedantic)]
-#![allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_precision_loss,
-    clippy::module_name_repetitions,
-    clippy::struct_excessive_bools,
-    clippy::future_not_send,
-    clippy::suboptimal_flops,
-    clippy::too_many_lines,
-    clippy::missing_errors_doc,
-    clippy::missing_panics_doc,
-    clippy::must_use_candidate,
-    clippy::struct_field_names,
-    clippy::too_many_arguments
-)]
 
 use std::{rc::Rc, sync::Arc};
 
@@ -22,7 +6,7 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use logging::initialize_logging;
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::{
     app::App,
@@ -76,22 +60,22 @@ async fn main() -> Result<()> {
         None
     };
 
-    let app = App::new(
-        config.clone(),
-        twitch_oauth.clone(),
-        events,
-        event_tx.clone(),
-        twitch_tx,
-        context_emotes,
-        decoded_emotes_rx,
-    );
+    let app = App::builder()
+        .config(config.clone())
+        .twitch_oauth(twitch_oauth.clone())
+        .events(events)
+        .event_tx(event_tx.clone())
+        .twitch_tx(twitch_tx)
+        .emotes(context_emotes)
+        .maybe_decoded_emotes_rx(decoded_emotes_rx)
+        .build()?;
 
     TwitchWebsocket::new(config.clone(), twitch_oauth, event_tx.clone(), twitch_rx);
 
-    let terminal = init_terminal(&config.frontend);
+    let terminal = init_terminal(&config.frontend)?;
     app.run(terminal).await?;
 
-    reset_terminal();
+    reset_terminal()?;
 
     std::process::exit(0)
 }

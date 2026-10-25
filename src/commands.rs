@@ -3,6 +3,7 @@ use std::{
     io::{Write, stdout},
 };
 
+use color_eyre::Result;
 use tui::{
     DefaultTerminal, Terminal,
     backend::CrosstermBackend,
@@ -33,20 +34,21 @@ impl Command for ResetCursorShape {
     }
 }
 
-pub fn reset_terminal() {
-    disable_raw_mode().unwrap();
+pub fn reset_terminal() -> Result<()> {
+    disable_raw_mode()?;
 
     execute!(
         stdout(),
         LeaveAlternateScreen,
         DisableMouseCapture,
         ResetCursorShape
-    )
-    .unwrap();
+    )?;
+
+    Ok(())
 }
 
-pub fn init_terminal(frontend_config: &FrontendConfig) -> DefaultTerminal {
-    enable_raw_mode().unwrap();
+pub fn init_terminal(frontend_config: &FrontendConfig) -> Result<DefaultTerminal> {
+    enable_raw_mode()?;
 
     let cursor_style = match frontend_config.cursor_shape {
         CursorType::Line => SetCursorStyle::BlinkingBar,
@@ -62,21 +64,20 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> DefaultTerminal {
         EnterAlternateScreen,
         EnableMouseCapture,
         cursor_style,
-    )
-    .unwrap();
+    )?;
 
     if frontend_config.blinking_cursor {
-        queue!(stdout, EnableBlinking).unwrap();
+        queue!(stdout, EnableBlinking)?;
     } else {
-        queue!(stdout, DisableBlinking).unwrap();
+        queue!(stdout, DisableBlinking)?;
     }
 
-    stdout.flush().unwrap();
+    stdout.flush()?;
 
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).unwrap();
+    let mut terminal = Terminal::new(backend)?;
 
-    terminal.clear().unwrap();
+    terminal.clear()?;
 
-    terminal
+    Ok(terminal)
 }

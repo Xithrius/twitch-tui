@@ -1,3 +1,4 @@
+use color_eyre::Result;
 use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
@@ -46,7 +47,7 @@ impl ErrorWidget {
 }
 
 impl Component for ErrorWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let paragraph = Paragraph::new(
@@ -70,6 +71,8 @@ impl Component for ErrorWidget {
 
         f.render_widget(Clear, r);
         f.render_widget(paragraph, r);
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> color_eyre::Result<()> {

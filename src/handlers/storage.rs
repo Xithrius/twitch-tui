@@ -7,6 +7,10 @@ use std::{
     rc::Rc,
 };
 
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat, bail},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::config::{SharedCoreConfig, get_data_dir};
@@ -30,24 +34,28 @@ pub struct StorageItem {
 }
 
 impl Storage {
-    pub fn new(config: &SharedCoreConfig) -> Self {
+    pub fn new(config: &SharedCoreConfig) -> Result<Self> {
         let twitch_channel = &config.twitch.channel;
         let storage_config = config.storage.clone();
         let storage_parent_path = get_data_dir();
+
         if !storage_parent_path.exists() {
-            create_dir_all(&storage_parent_path).unwrap();
+            create_dir_all(&storage_parent_path).context("Failed to create storage directory")?;
         }
+
         let storage_path = storage_parent_path.join(DEFAULT_STORAGE_FILE_NAME);
 
         if Path::new(&storage_path).exists() {
-            let file_content = read_to_string(&storage_path).unwrap();
+            let file_content =
+                read_to_string(&storage_path).context("Failed to read storage file")?;
 
-            let items: StorageMap = serde_json::from_str(&file_content).unwrap();
+            let items: StorageMap =
+                serde_json::from_str(&file_content).context("Failed to parse storage file")?;
 
-            return Self {
+            return Ok(Self {
                 items,
                 file_path: storage_path,
-            };
+            });
         }
 
         let mut items = StorageMap::new();
@@ -57,7 +65,7 @@ impl Storage {
                 "channels" => storage_config.channels,
                 "mentions" => storage_config.mentions,
                 "chatters" => storage_config.chatters,
-                _ => panic!("Invalid storage key {item_key}."),
+                _ => bail!("Invalid storage key {item_key}."),
             };
 
             items.insert(
@@ -75,25 +83,31 @@ impl Storage {
             }
         }
 
-        let storage_str = serde_json::to_string(&items).unwrap();
-        let mut file = File::create(&storage_path).unwrap();
-        file.write_all(storage_str.as_bytes()).unwrap();
+        let storage_str =
+            serde_json::to_string(&items).context("Failed to serialize storage items")?;
+        let mut file = File::create(&storage_path).context("Failed to create storage file")?;
+        file.write_all(storage_str.as_bytes())
+            .context("Failed to write storage to file")?;
 
-        Self {
+        Ok(Self {
             items,
             file_path: storage_path,
-        }
+        })
     }
 
-    pub fn dump_data(&self) {
-        let storage_str = serde_json::to_string(&self.items).unwrap();
+    pub fn dump_data(&self) -> Result<()> {
+        let storage_str =
+            serde_json::to_string(&self.items).context("Failed to serialize storage items")?;
 
-        let mut file = File::create(&self.file_path).unwrap();
+        let mut file = File::create(&self.file_path).context("Failed to create storage file")?;
 
-        file.write_all(storage_str.as_bytes()).unwrap();
+        file.write_all(storage_str.as_bytes())
+            .context("Failed to write storage to file")?;
+
+        Ok(())
     }
 
-    pub fn add(&mut self, key: &str, value: String) {
+    pub fn add(&mut self, key: &str, value: String) -> Result<()> {
         if ITEM_KEYS.contains(&key) {
             if let Some(item) = self.items.get_mut(key) {
                 if item.enabled {
@@ -104,47 +118,54 @@ impl Storage {
                 }
             }
         } else {
-            panic!("Attempted to add value with key {key} to JSON storage.");
+            bail!("Attempted to add value with key {key} to JSON storage.");
         }
+
+        Ok(())
     }
 
-    pub fn get(&self, key: &str) -> Vec<String> {
+    pub fn get(&self, key: &str) -> Result<Vec<String>> {
         if ITEM_KEYS.contains(&key) {
-            self.items
+            let items = self
+                .items
                 .get(key)
-                .map_or_else(Vec::new, |item| item.content.clone())
+                .map_or_else(Vec::default, |item| item.content.clone());
+            Ok(items)
         } else {
-            panic!("Attempted to get key {key} from JSON storage.");
+            bail!("Attempted to get key {key} from JSON storage.");
         }
     }
 
-    pub fn get_last_n(&self, key: &str, n: usize, reverse: bool) -> Vec<String> {
-        let items = self.get(key);
+    pub fn get_last_n(&self, key: &str, n: usize, reverse: bool) -> Result<Vec<String>> {
+        let items = self.get(key)?;
 
         let mut out = if items.len() <= n {
             items
         } else {
-            items[items.len() - n..].to_vec()
+            items.get(items.len() - n..).unwrap_or_default().to_vec()
         };
 
         if reverse {
             out.reverse();
         }
 
-        out
+        Ok(out)
     }
 
-    pub fn remove_inner_with(&mut self, key: &str, value: &str) -> String {
-        if ITEM_KEYS.contains(&key) {
-            let item = self.items.get_mut(key).unwrap();
-
-            if let Some(position) = item.content.iter().position(|x| x == value) {
-                item.content.remove(position)
-            } else {
-                panic!("Item {value} could not be found within {key}");
-            }
-        } else {
-            panic!("Attempted to add value with key {key} to JSON storage.");
+    pub fn remove_inner_with(&mut self, key: &str, value: &str) -> Result<Option<String>> {
+        if !ITEM_KEYS.contains(&key) {
+            bail!("Key {key} is not a valid storage key.");
         }
+
+        let item = self
+            .items
+            .get_mut(key)
+            .context(format!("Item {value} could not be found within key {key}"))?;
+
+        let Some(position) = item.content.iter().position(|x| x == value) else {
+            return Ok(None);
+        };
+
+        Ok(Some(item.content.remove(position)))
     }
 }

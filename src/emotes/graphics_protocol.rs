@@ -110,7 +110,7 @@ impl Command for DecodedEmote {
             delay,
             width,
             height,
-        } = frames.next().unwrap();
+        } = frames.next().ok_or(fmt::Error)?;
 
         f.write_str(&gp!(
             *IS_TMUX,
@@ -118,7 +118,7 @@ impl Command for DecodedEmote {
             id = self.id,
             width = width,
             height = height,
-            path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
+            path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_err| fmt::Error)?)
         ))?;
 
         if self.images.len() == 1 {
@@ -147,7 +147,7 @@ impl Command for DecodedEmote {
                 width = width,
                 height = height,
                 delay = delay,
-                path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_| fmt::Error)?)
+                path = STANDARD.encode(pathbuf_try_to_string(path).map_err(|_err| fmt::Error)?)
             ))?;
         }
 

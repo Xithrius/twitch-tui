@@ -153,7 +153,7 @@ pub fn decoder(mut rx: Receiver<Image>, tx: &Sender<Result<DecodedEmote, String>
     while let Some(emote) = rx.blocking_recv() {
         let name = emote.name.clone();
 
-        let decoded = emote.decode().map_err(|_| name);
+        let decoded = emote.decode().map_err(|_err| name);
 
         if tx.blocking_send(decoded).is_err() {
             error!("Unable to send decoded emote to main thread.");
@@ -289,12 +289,13 @@ pub fn overlay_emote(
     .apply()
 }
 
+type DecodedEmoteReceiver = Receiver<Result<DecodedEmote, String>>;
+
 /// Initialize the emote decoder if emotes are enabled.
 /// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
-#[allow(clippy::type_complexity)]
 pub fn initialize_emote_decoder(
     config: &mut CoreConfig,
-) -> Option<(mpsc::Receiver<Result<DecodedEmote, String>>, (f32, f32))> {
+) -> Option<(DecodedEmoteReceiver, (f32, f32))> {
     if !config.frontend.is_emotes_enabled() {
         return None;
     }

@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use color_eyre::eyre::{Error, Result, bail};
+use color_eyre::eyre::{ContextCompat, Error, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -47,21 +47,23 @@ impl CoreConfig {
     pub fn new(cli: Cli) -> Result<Self, Error> {
         let cache_path = get_cache_dir();
         if !cache_path.exists() {
-            create_dir_all(cache_path).unwrap();
+            create_dir_all(cache_path)?;
         }
 
         let config_path = get_config_dir().join("config.toml");
         if !config_path.exists() {
-            create_dir_all(config_path.parent().unwrap()).unwrap();
+            create_dir_all(
+                config_path
+                    .parent()
+                    .context("Failed to get config parent directory")?,
+            )?;
 
             if let Some(config) = interactive_config() {
                 persist_config(&config_path, &config)?;
                 Ok(config)
             } else {
-                persist_default_config(&config_path);
-                bail!(
-                    "Default configuration was generated at {config_path:?}, please fill it out with necessary information."
-                )
+                persist_default_config(&config_path)?;
+                bail!("Config not found. Generated default configuration at {config_path:?}")
             }
         } else if let Ok(file_content) = read_to_string(config_path) {
             let mut config: Self = match toml::from_str(&file_content) {

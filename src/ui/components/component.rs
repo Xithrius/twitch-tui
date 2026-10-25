@@ -21,7 +21,7 @@ static WINDOW_SIZE_TOO_SMALL_ERROR: &[&str] = &[
 ];
 
 pub trait Component {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> color_eyre::Result<()>;
 
     async fn event(&mut self, event: &Event) -> color_eyre::Result<()> {
         let _ = event;
@@ -30,8 +30,8 @@ pub trait Component {
 }
 
 pub struct Components {
+    pub state_tabs: StateTabsWidget,
     // Partial window widgets
-    pub tabs: StateTabsWidget,
     pub debug: DebugWidget,
 
     // Full window widgets
@@ -62,7 +62,8 @@ impl Components {
         );
 
         Self {
-            tabs: StateTabsWidget::new(config.clone()),
+            state_tabs: StateTabsWidget::new(config),
+
             debug: DebugWidget::new(config.clone(), event_tx.clone()),
 
             chat: ChatWidget::new(

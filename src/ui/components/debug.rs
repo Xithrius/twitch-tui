@@ -77,7 +77,7 @@ impl DebugWidget {
 }
 
 impl Component for DebugWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let configs = self.get_config_values();
@@ -132,6 +132,8 @@ impl Component for DebugWidget {
         let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
 
         f.render_widget(bottom_block, rect);
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

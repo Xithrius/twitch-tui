@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use fuzzy_matcher::FuzzyMatcher;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, warn};
@@ -117,7 +117,11 @@ impl EmotePickerWidget {
 }
 
 impl Component for EmotePickerWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Method will be broken into multiple methods"
+    )]
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         // Only load the emotes that are actually being displayed, as loading every emote is not really possible.
@@ -247,7 +251,9 @@ impl Component for EmotePickerWidget {
 
         let input_rect = Rect::new(r.x, r.bottom(), r.width, 3);
 
-        self.input.draw(f, Some(input_rect));
+        self.input.draw(f, Some(input_rect))?;
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -259,7 +265,13 @@ impl Component for EmotePickerWidget {
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.select.contains(key) => {
                     if let Some(idx) = self.list_state.selected() {
-                        let emote = self.filtered_emotes[idx].clone();
+                        let emote = self
+                            .filtered_emotes
+                            .get(idx)
+                            .context(format!(
+                                "Failed to get emote from filtered emotes at index {idx}."
+                            ))?
+                            .clone();
 
                         self.toggle_focus();
                         self.input.clear();

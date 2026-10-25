@@ -1,3 +1,4 @@
+use color_eyre::Result;
 use tui::{
     Frame,
     layout::Rect,
@@ -10,24 +11,41 @@ use tui::{
 use crate::{
     config::SharedCoreConfig,
     handlers::state::State,
+    ui::components::Component,
     utils::{styles::STATE_TABS_STYLE, text::capitalize_first_char},
 };
 
-const TABS_TO_RENDER: [State; 3] = [State::Dashboard, State::Normal, State::Help];
+const STATE_TABS: [State; 3] = [State::Dashboard, State::Normal, State::Help];
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StateTabsWidget {
-    _config: SharedCoreConfig,
+    selected_tab: usize,
 }
 
 impl StateTabsWidget {
-    pub const fn new(config: SharedCoreConfig) -> Self {
-        Self { _config: config }
+    pub fn new(config: &SharedCoreConfig) -> Self {
+        let selected_tab = Self::get_state_index(&config.terminal.first_state);
+
+        Self { selected_tab }
     }
 
-    #[allow(clippy::unused_self)]
-    pub fn draw(&self, f: &mut Frame, area: Option<Rect>, state: &State) {
-        let tab_titles = TABS_TO_RENDER
+    fn get_state_index(state: &State) -> usize {
+        STATE_TABS
+            .iter()
+            .position(|s| s == state)
+            .unwrap_or_default()
+    }
+
+    pub fn select(&mut self, state: &State) {
+        self.selected_tab = Self::get_state_index(state);
+    }
+}
+
+impl Component for StateTabsWidget {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
+        let r = area.unwrap_or_else(|| f.area());
+
+        let tab_titles = STATE_TABS
             .iter()
             .map(|t| Line::from(capitalize_first_char(&t.to_string())))
             .collect::<Vec<Line>>();
@@ -42,8 +60,10 @@ impl StateTabsWidget {
                     .add_modifier(Modifier::UNDERLINED),
             )
             .divider(DOT)
-            .select(TABS_TO_RENDER.iter().position(|s| s == state).unwrap());
+            .select(self.selected_tab);
 
-        f.render_widget(tabs, area.unwrap());
+        f.render_widget(tabs, r);
+
+        Ok(())
     }
 }

@@ -216,7 +216,7 @@ impl MessageData {
                     payload.push_str(&s);
                 }
                 Word::Emote(v) => {
-                    // Unwrapping here is fine as v is never empty.
+                    // Unwrapping here is fine as the emotes vector is never empty.
                     let max_width = v
                         .iter()
                         .max_by_key(|e| e.width)
@@ -226,7 +226,9 @@ impl MessageData {
 
                     let mut iter = v.into_iter();
 
-                    let EmoteData { id, pid, width } = iter.next().unwrap();
+                    // Fine to unwrap here as well since the emotes vector is never empty.
+                    let EmoteData { id, pid, width } =
+                        iter.next().expect("Emotes should never be empty");
 
                     let (_, col_offset) = get_emote_offset(width as u16, cell_size.0 as u16, cols);
 
@@ -303,9 +305,8 @@ impl MessageData {
         content: impl Into<Cow<'s, str>>,
         emotes: &mut &[(Color, Color)],
     ) -> Span<'s> {
-        #[allow(unused_variables)]
         if let Some(&(id, pid)) = emotes.first() {
-            *emotes = &emotes[1..];
+            *emotes = emotes.get(1..).unwrap_or_default();
 
             #[cfg(not(target_os = "windows"))]
             {
@@ -329,12 +330,12 @@ impl MessageData {
         (search_highlight, search_theme): Highlight,
         (username_highlight, username_theme): Highlight,
     ) -> Vec<Span<'s>> {
-        const HAS_NO_HIGHLIGHTS: fn(&[usize], &usize, &usize) -> bool =
-            |highlight: &[usize], start: &usize, end: &usize| {
-                highlight.is_empty()
-                    || start > highlight.last().unwrap()
-                    || end < highlight.first().unwrap()
-            };
+        const HAS_NO_HIGHLIGHTS: fn(&[usize], &usize, &usize) -> bool = |highlight, start, end| {
+            highlight
+                .first()
+                .zip(highlight.last())
+                .is_none_or(|(first, last)| start > last || end < first)
+        };
 
         let offset = *start_index;
         *start_index += line.len();
@@ -413,6 +414,11 @@ impl MessageData {
         }
     }
 
+    // TODO: Split into multiple functions
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MessageData::to_vec is long, will later split into multiple functions"
+    )]
     pub fn to_vec(
         &self,
         frontend_config: &FrontendConfig,
@@ -430,7 +436,7 @@ impl MessageData {
         };
         let username_theme = match frontend_config.theme {
             Theme::Dark => *HIGHLIGHT_NAME_DARK_STYLE,
-            _ => *HIGHLIGHT_NAME_LIGHT_STYLE,
+            Theme::Light => *HIGHLIGHT_NAME_LIGHT_STYLE,
         };
         let author_theme = if self.system {
             *SYSTEM_CHAT_STYLE
@@ -439,7 +445,7 @@ impl MessageData {
         };
         let datetime_theme = match frontend_config.theme {
             Theme::Dark => *DATETIME_DARK_STYLE,
-            _ => *DATETIME_LIGHT_STYLE,
+            Theme::Light => *DATETIME_LIGHT_STYLE,
         };
 
         // All indices to highlight of the username in the message, case insensitive
@@ -543,8 +549,8 @@ impl MessageData {
 
         let mut next_index = 0;
 
-        // Unwrapping is safe because of the empty check above
-        let mut first_line = lines.next().unwrap();
+        // Unwrapping to default is safe because of the empty check above
+        let mut first_line = lines.next().unwrap_or_default();
         let first_line_msg = split_cow_in_place(&mut first_line, prefix_len);
 
         // Find all spaces in `self.payload`, to increment `next_index` when a space at the end of a line

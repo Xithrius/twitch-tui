@@ -1,4 +1,7 @@
-use color_eyre::{Result, eyre::ContextCompat};
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use futures::StreamExt;
 use tokio::sync::mpsc::Sender;
 
@@ -157,7 +160,7 @@ pub async fn handle_incoming_message(
     let chatter_user_id = event
         .chatter_user_id()
         .context("could not find chatter user ID")?;
-    let cleaned_message = clean_message(msg);
+    let cleaned_message = clean_message(msg).context("Failed to clean message")?;
     let message_id = event
         .message_id()
         .context("Could not find message ID")?

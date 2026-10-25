@@ -124,7 +124,7 @@ impl<T: Clone> Display for InputWidget<T> {
 }
 
 impl<T: Clone> Component for InputWidget<T> {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.map_or_else(|| popup_area(f.area(), 60, 60), |a| a.clamp(f.area()));
 
         let cursor_pos = get_cursor_position(&self.input);
@@ -171,7 +171,10 @@ impl<T: Clone> Component for InputWidget<T> {
                     .as_ref()
                     .map_or_else(String::new, |suggestion_buffer| {
                         if suggestion_buffer.len() > current_input.len() {
-                            suggestion_buffer[current_input.len()..].to_string()
+                            suggestion_buffer
+                                .get(current_input.len()..)
+                                .unwrap_or_default()
+                                .to_string()
                         } else {
                             String::new()
                         }
@@ -212,6 +215,8 @@ impl<T: Clone> Component for InputWidget<T> {
             let rect = Rect::new(r.x, r.bottom() - 1, r.width, 1);
             f.render_widget(bottom_block, rect);
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

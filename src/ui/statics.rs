@@ -1,3 +1,7 @@
+use std::sync::LazyLock;
+
+use regex::{Regex, regex};
+
 pub static HELP_COLUMN_TITLES: &[&str] = &["State", "Keybind", "Description"];
 
 // https://help.twitch.tv/s/article/chat-commands?language=en_US
@@ -53,4 +57,6 @@ pub static TWITCH_MESSAGE_LIMIT: usize = 500;
 // This thread is from 8 years ago, so this regex match may be outdated.
 // It is now possible to have channel names be 3 characters, such as "ppy".
 pub static NAME_MAX_CHARACTERS: usize = 25;
-pub static NAME_RESTRICTION_REGEX: &str = "^[a-zA-Z0-9_]{3,25}$";
+
+pub static NAME_RESTRICTION_REGEX: LazyLock<&'static Regex> =
+    LazyLock::new(|| regex!("^[a-zA-Z0-9_]{3,25}$"));

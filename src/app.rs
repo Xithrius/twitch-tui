@@ -5,7 +5,11 @@ use std::{
     rc::Rc,
 };
 
-use color_eyre::Result;
+use bon::bon;
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use tokio::sync::{
     mpsc::{Receiver, Sender},
     oneshot::Receiver as OSReceiver,
@@ -73,7 +77,9 @@ macro_rules! shared {
     };
 }
 
+#[bon]
 impl App {
+    #[builder]
     pub fn new(
         config: SharedCoreConfig,
         twitch_oauth: TwitchOauth,
@@ -82,11 +88,11 @@ impl App {
         twitch_tx: Sender<TwitchAction>,
         emotes: Rc<Emotes>,
         decoded_emotes_rx: Option<Receiver<Result<DecodedEmote, String>>>,
-    ) -> Self {
+    ) -> Result<Self> {
         let maximum_messages = config.terminal.maximum_messages;
         let first_state = config.terminal.first_state.clone();
 
-        let storage = shared!(Storage::new(&config));
+        let storage = shared!(Storage::new(&config)?);
         let filters = shared!(Filters::new(&config));
         let messages = shared!(VecDeque::with_capacity(maximum_messages));
 
@@ -102,7 +108,7 @@ impl App {
 
         let emotes_rx = query_emotes(&config, twitch_oauth.clone(), config.twitch.channel.clone());
 
-        Self {
+        Ok(Self {
             running: true,
             components,
             config,
@@ -117,11 +123,11 @@ impl App {
             emotes_rx,
             decoded_emotes_rx,
             running_stream: None,
-        }
+        })
     }
 
-    fn open_stream(&mut self, channel: &str) {
-        self.close_current_stream();
+    fn open_stream(&mut self, channel: &str) -> Result<()> {
+        self.close_current_stream()?;
         let view_command = &self.config.frontend.view_command;
 
         if let Some((command, args)) = view_command.split_first() {
@@ -139,21 +145,27 @@ impl App {
                     Some,
                 );
         }
+
+        Ok(())
     }
 
-    fn close_current_stream(&mut self) {
+    fn close_current_stream(&mut self) -> Result<()> {
         if let Some(process) = self.running_stream.as_mut() {
-            _ = process
+            process
                 .kill()
-                .inspect_err(|err| error!("failed to kill view process: {err}"));
+                .inspect_err(|err| error!("failed to kill view process: {err}"))?;
         }
         self.running_stream = None;
+
+        Ok(())
     }
 
-    fn cleanup(&mut self) {
-        self.close_current_stream();
-        self.storage.borrow().dump_data();
+    fn cleanup(&mut self) -> Result<()> {
+        self.close_current_stream()?;
+        self.storage.borrow().dump_data()?;
         self.emotes.unload();
+
+        Ok(())
     }
 
     fn clear_messages(&mut self) {
@@ -174,7 +186,7 @@ impl App {
         self.messages.replace(messages);
     }
 
-    fn remove_message_with(&self, message_id: &str) {
+    fn remove_message_with(&self, message_id: &str) -> Result<()> {
         let index = self
             .messages
             .borrow_mut()
@@ -182,8 +194,12 @@ impl App {
             .position(|f| f.message_id.clone().is_some_and(|id| id == message_id));
 
         if let Some(i) = index {
-            self.messages.borrow_mut().remove(i).unwrap();
+            self.messages.borrow_mut().remove(i).context(format!(
+                "Failed to remove message with ID {message_id} at index {i}"
+            ))?;
         }
+
+        Ok(())
     }
 
     fn get_previous_state(&self) -> Option<State> {
@@ -193,6 +209,8 @@ impl App {
     fn set_state(&mut self, other: State) {
         self.previous_state = Some(self.state.clone());
         self.state = other;
+
+        self.components.state_tabs.select(&self.state);
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
@@ -207,10 +225,14 @@ impl App {
                 self.event(&event).await?;
             }
 
-            terminal.draw(|f| self.draw(f, Some(f.area()))).unwrap();
+            let mut draw_result = Ok(());
+            terminal.draw(|f| {
+                draw_result = self.draw(f, Some(f.area()));
+            })?;
+            draw_result?;
         }
 
-        self.cleanup();
+        self.cleanup()?;
 
         Ok(())
     }
@@ -248,7 +270,7 @@ impl App {
         }
     }
 
-    fn handle_internal_event(&mut self, internal_event: &InternalEvent) {
+    fn handle_internal_event(&mut self, internal_event: &InternalEvent) -> Result<()> {
         match internal_event {
             InternalEvent::Quit => self.running = false,
             InternalEvent::BackOneLayer => {
@@ -266,10 +288,12 @@ impl App {
                 self.set_state(state.clone());
             }
             InternalEvent::OpenStream(channel) => {
-                self.open_stream(channel);
+                self.open_stream(channel)?;
             }
             InternalEvent::SelectEmote(_) => {}
         }
+
+        Ok(())
     }
 
     async fn handle_twitch_action(&mut self, twitch_action: &TwitchAction) -> Result<()> {
@@ -284,7 +308,7 @@ impl App {
                     .await?;
 
                 if self.config.frontend.autostart_view_command {
-                    self.open_stream(&channel);
+                    self.open_stream(&channel)?;
                 }
                 self.emotes_rx = query_emotes(&self.config, self.twitch_oauth.clone(), channel);
                 self.set_state(State::Normal);
@@ -299,7 +323,10 @@ impl App {
         Ok(())
     }
 
-    fn handle_twitch_notification(&mut self, twitch_notification: &TwitchNotification) {
+    fn handle_twitch_notification(
+        &mut self,
+        twitch_notification: &TwitchNotification,
+    ) -> Result<()> {
         match twitch_notification {
             TwitchNotification::Message(m) => {
                 let message_data = MessageData::from_twitch_message(m.clone(), &self.emotes);
@@ -308,7 +335,11 @@ impl App {
                 {
                     self.storage
                         .borrow_mut()
-                        .add("chatters", message_data.author.clone());
+                        .add("chatters", message_data.author.clone())
+                        .context(format!(
+                            "Failed to add chatter {} to storage",
+                            message_data.author
+                        ))?;
                 }
                 self.messages.borrow_mut().push_front(message_data);
 
@@ -325,62 +356,68 @@ impl App {
                 }
             }
             TwitchNotification::DeleteMessage(message_id) => {
-                self.remove_message_with(message_id.as_str());
+                self.remove_message_with(message_id.as_str())?;
             }
         }
+
+        Ok(())
     }
 }
 
 impl Component for App {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        let mut size = area.unwrap_or_else(|| f.area());
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
+        let mut area = area.unwrap_or_else(|| f.area());
 
         if self.config.frontend.state_tabs {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Length(size.height - 1), Constraint::Length(1)])
+                .constraints([Constraint::Length(area.height - 1), Constraint::Length(1)])
                 .split(f.area());
 
-            size = layout[0];
+            area = *layout.first().context("Failed to get state tabs area")?;
 
-            self.components.tabs.draw(f, Some(layout[1]), &self.state);
+            let rect = layout.last().context("Failed to get state tabs area")?;
+            self.components.state_tabs.draw(f, Some(*rect))?;
         }
 
-        if (size.height < 10 || size.width < 60)
+        if (area.height < 10 || area.width < 60)
             && self.config.frontend.show_unsupported_screen_size
         {
-            self.components.window_size_error.draw(f, Some(f.area()));
+            self.components.window_size_error.draw(f, Some(f.area()))?;
         } else {
             match self.state {
-                State::Dashboard => self.components.dashboard.draw(f, None),
-                State::Normal => self.components.chat.draw(f, None),
-                State::Help => self.components.help.draw(f, None),
+                State::Dashboard => self.components.dashboard.draw(f, Some(area))?,
+                State::Normal => self.components.chat.draw(f, Some(area))?,
+                State::Help => self.components.help.draw(f, Some(area))?,
             }
         }
 
         if self.components.debug.is_focused() {
-            let new_rect = Rect::new(size.x, size.y + 1, size.width - 1, size.height - 2);
+            let new_rect = Rect::new(area.x, area.y + 1, area.width - 1, area.height - 2);
 
-            let rect = Layout::default()
+            let rects = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .split(new_rect)[1];
+                .split(new_rect);
+            let rect = rects.get(1).context("Failed to get debug area")?;
 
-            self.components.debug.draw(f, Some(rect));
+            self.components.debug.draw(f, Some(*rect))?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
         match event {
             Event::Internal(internal_event) => {
-                self.handle_internal_event(internal_event);
+                self.handle_internal_event(internal_event)?;
             }
             Event::Twitch(twitch_event) => match twitch_event {
                 TwitchEvent::Action(twitch_action) => {
                     self.handle_twitch_action(twitch_action).await?;
                 }
                 TwitchEvent::Notification(twitch_notification) => {
-                    self.handle_twitch_notification(twitch_notification);
+                    self.handle_twitch_notification(twitch_notification)?;
                 }
             },
             Event::Input(key) => {

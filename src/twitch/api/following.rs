@@ -57,16 +57,17 @@ impl From<StreamingUser> for FollowingUser {
 
 #[derive(Deserialize, Debug, Clone, Default)]
 struct Pagination {
-    #[allow(unused)]
+    #[expect(unused, reason = "Followed user pagination is not used yet")]
     cursor: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
 pub struct FollowingChannelList {
-    #[allow(unused)]
-    pub total: u64,
     pub data: Vec<FollowingUser>,
-    #[allow(unused)]
+
+    #[expect(unused, reason = "Followed user pagination is not used yet")]
+    pub total: u64,
+    #[expect(unused, reason = "Followed user pagination is not used yet")]
     pagination: Pagination,
 }
 
@@ -90,16 +91,13 @@ impl From<LiveChannelList> for FollowingChannelList {
 pub struct Following {
     pub config: SharedCoreConfig,
     pub twitch_oauth: TwitchOauth,
-    #[allow(unused)]
-    list: FollowingChannelList,
 }
 
 impl Following {
-    pub fn new(config: SharedCoreConfig, twitch_oauth: TwitchOauth) -> Self {
+    pub const fn new(config: SharedCoreConfig, twitch_oauth: TwitchOauth) -> Self {
         Self {
             config,
             twitch_oauth,
-            list: FollowingChannelList::default(),
         }
     }
 }

@@ -27,6 +27,11 @@ impl HelpWidget {
     pub const fn new(config: SharedCoreConfig, event_tx: Sender<Event>) -> Self {
         Self { config, event_tx }
     }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "We have a lot of keybinds to display"
+    )]
     fn get_help_keybinds(&self) -> Vec<(&'static str, Vec<(String, &'static str)>)> {
         let keybinds = &self.config.keybinds;
         let dashboard_keybinds = vec![
@@ -228,7 +233,7 @@ impl HelpWidget {
 }
 
 impl Component for HelpWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let mut rows = vec![];
@@ -261,6 +266,8 @@ impl Component for HelpWidget {
             .column_spacing(2);
 
         f.render_widget(help_table, r);
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

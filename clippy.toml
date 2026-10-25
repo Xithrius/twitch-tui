@@ -1,0 +1,10 @@
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-dbg-in-tests = true
+
+# disallowed-methods = [
+#     { path = "std::cell::RefCell::borrow", reason = "runtime borrow checking is forbidden" },
+#     { path = "std::cell::RefCell::borrow_mut", reason = "runtime borrow checking is forbidden" },
+# ]

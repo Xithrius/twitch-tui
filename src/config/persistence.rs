@@ -75,20 +75,16 @@ pub fn persist_config(path: &Path, config: &CoreConfig) -> Result<()> {
 const RAW_DEFAULT_CONFIG_URL: &str =
     "https://raw.githubusercontent.com/Xithrius/twitch-tui/main/default-config.toml";
 
-pub fn persist_default_config(path: &Path) {
+pub fn persist_default_config(path: &Path) -> Result<()> {
     let default_config = task::block_in_place(move || {
-        Handle::current().block_on(async move {
-            reqwest::get(RAW_DEFAULT_CONFIG_URL)
-                .await
-                .unwrap()
-                .text()
-                .await
-                .unwrap()
-        })
-    });
+        Handle::current()
+            .block_on(async move { reqwest::get(RAW_DEFAULT_CONFIG_URL).await?.text().await })
+    })?;
 
-    let mut file = File::create(path).unwrap();
+    let mut file = File::create(path)?;
 
-    file.write_all(default_config.as_bytes()).unwrap();
+    file.write_all(default_config.as_bytes())?;
     drop(file);
+
+    Ok(())
 }

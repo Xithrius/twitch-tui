@@ -35,6 +35,7 @@ impl FollowingWidget {
             config,
             event_tx,
             item_getter,
+            "Following",
             INCORRECT_SCOPES_ERROR_MESSAGE.to_vec(),
         );
 
@@ -51,8 +52,8 @@ impl FollowingWidget {
 }
 
 impl Component for FollowingWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        self.search_widget.draw(f, area);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
+        self.search_widget.draw(f, area)
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {

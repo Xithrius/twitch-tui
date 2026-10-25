@@ -1,6 +1,6 @@
 use std::{clone::Clone, convert::From, iter::Iterator, vec::Vec};
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::ContextCompat};
 use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
@@ -65,13 +65,16 @@ where
         config: SharedCoreConfig,
         event_tx: Sender<Event>,
         item_getter: U,
+        title: &str,
         error_message: Vec<&'static str>,
     ) -> Self {
         let search_input = InputWidget::builder()
             .config(config.clone())
             .event_tx(event_tx.clone())
-            .title("Search")
+            .title(title)
             .build();
+
+        // TODO: Only one error widget should exist throughout the entire application
         let error_widget = ErrorWidget::new(config.clone(), event_tx.clone(), error_message);
 
         Self {
@@ -79,7 +82,7 @@ where
             event_tx,
             focused: false,
             item_getter,
-            items: Ok(vec![]),
+            items: Ok(Vec::default()),
             filtered_items: None,
             list_state: ListState::default(),
             search_input,
@@ -89,19 +92,25 @@ where
         }
     }
 
-    fn next(&mut self) {
+    fn next(&mut self) -> Result<()> {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if let Some(filtered) = &self.filtered_items {
                     if i >= filtered.len().saturating_sub(1) {
                         filtered.len().saturating_sub(1)
                     } else {
-                        i + 1
+                        i.saturating_add(1)
                     }
-                } else if i >= self.items.as_ref().unwrap().len().saturating_sub(1) {
-                    self.items.as_ref().unwrap().len().saturating_sub(1)
                 } else {
-                    i + 1
+                    let max = self
+                        .items
+                        .as_ref()
+                        .ok()
+                        .context("Failed to get items")?
+                        .len()
+                        .saturating_sub(1);
+
+                    if i >= max { max } else { i.saturating_add(1) }
                 }
             }
             None => 0,
@@ -111,13 +120,15 @@ where
 
         self.vertical_scroll = self.vertical_scroll.saturating_add(1);
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
+
+        Ok(())
     }
 
     fn previous(&mut self) {
         let i = self
             .list_state
             .selected()
-            .map_or(0, |i| if i == 0 { 0 } else { i - 1 });
+            .map_or(0, |i| if i == 0 { 0 } else { i.saturating_sub(1) });
         self.list_state.select(Some(i));
 
         self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
@@ -143,6 +154,41 @@ where
 
         self.focused = !self.focused;
     }
+
+    async fn select(&mut self) -> Result<()> {
+        if let Some(i) = self.list_state.selected() {
+            let selected_item = if let Some(v) = self.filtered_items.clone() {
+                if v.is_empty() {
+                    return Ok(());
+                }
+
+                v.get(i).context("Failed to get selected item")?.to_string()
+            } else {
+                self.items
+                    .as_ref()
+                    .ok()
+                    .context("Failed to get items")?
+                    .get(i)
+                    .context("Failed to get selected item")?
+                    .to_string()
+            }
+            .to_lowercase();
+
+            self.toggle_focus().await;
+
+            self.unselect();
+
+            let selected_channel_trimmed = clean_channel_name(&selected_item);
+
+            self.event_tx
+                .send(Event::Twitch(TwitchEvent::Action(
+                    TwitchAction::JoinChannel(selected_channel_trimmed),
+                )))
+                .await?;
+        }
+
+        Ok(())
+    }
 }
 
 impl<T, U> Component for SearchWidget<T, U>
@@ -150,17 +196,18 @@ where
     T: ToString + Clone,
     U: SearchItemGetter<T>,
 {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
         if self.error_widget.is_focused() {
-            self.error_widget.draw(f, Some(r));
-
-            return;
+            return self.error_widget.draw(f, Some(r));
         }
 
-        let mut items = vec![];
-        let current_items = &self.items.as_ref().map_or(vec![], Clone::clone);
+        let mut items = Vec::default();
+        let current_items = &self
+            .items
+            .as_ref()
+            .map_or_else(|_| Vec::default(), Clone::clone);
         let current_input = self.search_input.to_string();
 
         if current_input.is_empty() {
@@ -173,7 +220,7 @@ where
             let item_filter =
                 |choice: String| -> Vec<usize> { fuzzy_pattern_match(&current_input, &choice) };
 
-            let mut matched = vec![];
+            let mut matched = Vec::default();
 
             for item in current_items.clone() {
                 let matched_indices = item_filter(item.to_string());
@@ -261,7 +308,9 @@ where
 
         let input_rect = Rect::new(rect.x, rect.bottom(), rect.width, 3);
 
-        self.search_input.draw(f, Some(input_rect));
+        self.search_input.draw(f, Some(input_rect))?;
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -282,33 +331,10 @@ where
                         self.toggle_focus().await;
                     }
                 }
-                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.next_item.contains(key) => self.next()?,
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.select.contains(key) => {
-                    if let Some(i) = self.list_state.selected() {
-                        let selected_channel = if let Some(v) = self.filtered_items.clone() {
-                            if v.is_empty() {
-                                return Ok(());
-                            }
-
-                            v.get(i).unwrap().to_string()
-                        } else {
-                            self.items.as_ref().unwrap().get(i).unwrap().to_string()
-                        }
-                        .to_lowercase();
-
-                        self.toggle_focus().await;
-
-                        self.unselect();
-
-                        let selected_channel_trimmed = clean_channel_name(&selected_channel);
-
-                        self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(
-                                TwitchAction::JoinChannel(selected_channel_trimmed),
-                            )))
-                            .await?;
-                    }
+                    self.select().await?;
                 }
                 _ => {
                     self.search_input.event(event).await?;

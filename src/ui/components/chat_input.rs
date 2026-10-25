@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Context};
 use tokio::sync::mpsc::Sender;
 use tui::{Frame, layout::Rect};
 
@@ -49,34 +49,35 @@ impl ChatInputWidget {
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), TWITCH_MESSAGE_LIMIT) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
-            s.chars()
-                .next()
-                .and_then(|start_character| match start_character {
-                    '/' => {
-                        let possible_suggestion = first_similarity(
-                            &SUPPORTED_COMMANDS
-                                .iter()
-                                .map(ToString::to_string)
-                                .collect::<Vec<String>>(),
-                            &s[1..],
-                        );
+            let (command_str, command) = s.split_at_checked(1)?;
 
-                        let default_suggestion = possible_suggestion.clone();
+            match command_str {
+                "/" => {
+                    let possible_suggestion = first_similarity(
+                        &SUPPORTED_COMMANDS
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        command,
+                    );
 
-                        possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
-                    }
-                    '@' => {
-                        let possible_suggestion =
-                            first_similarity(&storage.borrow().get("mentions"), &s[1..]).or_else(
-                                || first_similarity(&storage.borrow().get("chatters"), &s[1..]),
-                            );
+                    let default_suggestion = possible_suggestion.clone();
 
-                        let default_suggestion = possible_suggestion.clone();
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("/{s}")))
+                }
+                "@" => {
+                    let mentions = storage.borrow().get("mentions").ok()?;
+                    let channels = storage.borrow().get("channels").ok()?;
 
-                        possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
-                    }
-                    _ => None,
-                })
+                    let possible_suggestion = first_similarity(&mentions, command)
+                        .or_else(|| first_similarity(&channels, command));
+
+                    let default_suggestion = possible_suggestion.clone();
+
+                    possible_suggestion.map_or(default_suggestion, |s| Some(format!("@{s}")))
+                }
+                _ => None,
+            }
         });
 
         let input = InputWidget::builder()
@@ -119,12 +120,14 @@ impl Display for ChatInputWidget {
 }
 
 impl Component for ChatInputWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
-        self.input.draw(f, area);
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
+        self.input.draw(f, area)?;
 
         if self.emote_picker.is_focused() {
-            self.emote_picker.draw(f, None);
+            self.emote_picker.draw(f, None)?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -150,7 +153,8 @@ impl Component for ChatInputWidget {
                             if self.config.storage.mentions {
                                 self.storage
                                     .borrow_mut()
-                                    .add("mentions", message.to_string());
+                                    .add("mentions", message.to_string())
+                                    .context("Failed to add mention")?;
                             }
                         }
 

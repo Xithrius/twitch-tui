@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 use super::{ModeratorQuery, ResponseList, TWITCH_API_BASE_URL};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Easier to read if not split into multiple flattened structs"
+)]
 pub struct TwitchChatSettingsResponse {
     broadcaster_id: String,
     slow_mode: bool,

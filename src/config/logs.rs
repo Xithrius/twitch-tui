@@ -2,14 +2,13 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
-    DEBUG,
-    INFO,
-    WARN,
-    ERROR,
+    Debug,
+    Info,
+    Warn,
+    Error,
 }
 
 impl fmt::Display for LogLevel {
@@ -18,10 +17,10 @@ impl fmt::Display for LogLevel {
             f,
             "{}",
             match self {
-                Self::DEBUG => "debug",
-                Self::INFO => "info",
-                Self::WARN => "warn",
-                Self::ERROR => "error",
+                Self::Debug => "debug",
+                Self::Info => "info",
+                Self::Warn => "warn",
+                Self::Error => "error",
             }
         )
     }

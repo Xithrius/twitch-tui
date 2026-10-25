@@ -1,7 +1,9 @@
 use std::fmt::Display;
 
-use color_eyre::Result;
-use regex::Regex;
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, info};
 use tui::{
@@ -17,13 +19,15 @@ use tui::{
     },
 };
 
-use super::utils::popup_area;
 use crate::{
     config::SharedCoreConfig,
     events::{Event, TwitchAction, TwitchEvent},
     handlers::storage::SharedStorage,
     ui::{
-        components::{Component, utils::InputWidget},
+        components::{
+            Component,
+            utils::{InputWidget, popup_area},
+        },
         statics::{NAME_MAX_CHARACTERS, NAME_RESTRICTION_REGEX},
     },
     utils::{
@@ -47,26 +51,23 @@ pub struct ChannelSwitcherWidget {
 
 impl ChannelSwitcherWidget {
     pub fn new(config: SharedCoreConfig, event_tx: Sender<Event>, storage: SharedStorage) -> Self {
-        let input_validator = Box::new(|_, s: String| -> bool {
-            Regex::new(NAME_RESTRICTION_REGEX)
-                .unwrap()
-                .is_match(s.as_str())
-        });
+        let input_validator =
+            Box::new(|_, s: String| -> bool { NAME_RESTRICTION_REGEX.is_match(s.as_str()) });
 
         // Intuitively, a user will hit the username length limit rather than not hitting 4 characters.
         let visual_indicator =
             Box::new(|s: String| -> String { format!("{} / {}", s.len(), NAME_MAX_CHARACTERS) });
 
         let input_suggester = Box::new(|storage: SharedStorage, s: String| -> Option<String> {
-            first_similarity(
-                &storage
-                    .borrow()
-                    .get("channels")
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<String>>(),
-                &s,
-            )
+            let channels = storage
+                .borrow()
+                .get("channels")
+                .ok()?
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<String>>();
+
+            first_similarity(&channels, &s)
         });
 
         let search_input = InputWidget::builder()
@@ -91,10 +92,10 @@ impl ChannelSwitcherWidget {
         }
     }
 
-    fn next(&mut self) {
+    fn next(&mut self) -> Result<()> {
         let i = match self.list_state.selected() {
             Some(i) => {
-                let items = self.storage.borrow().get("channels");
+                let items = self.storage.borrow().get("channels")?;
 
                 if i >= items.len() - 1 {
                     items.len() - 1
@@ -109,6 +110,8 @@ impl ChannelSwitcherWidget {
 
         self.vertical_scroll = self.vertical_scroll.saturating_add(1);
         self.vertical_scroll_state = self.vertical_scroll_state.position(self.vertical_scroll);
+
+        Ok(())
     }
 
     fn previous(&mut self) {
@@ -134,6 +137,92 @@ impl ChannelSwitcherWidget {
     pub const fn toggle_focus(&mut self) {
         self.focused = !self.focused;
     }
+
+    async fn join_channel(&mut self) -> Result<()> {
+        if let Some(i) = self.list_state.selected() {
+            self.toggle_focus();
+            self.unselect();
+
+            let channels = self.storage.borrow().get("channels")?;
+
+            let selected_channel = if let Some(v) = &self.filtered_channels {
+                if v.is_empty() {
+                    let selected_channel = self.search_input.to_string();
+
+                    if !selected_channel.is_empty() {
+                        if self.config.storage.channels {
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", selected_channel.clone())
+                                .context(format!(
+                                    "Failed to add channel {selected_channel} to storage"
+                                ))?;
+                        }
+
+                        self.search_input.clear();
+
+                        self.event_tx
+                            .send(Event::Twitch(TwitchEvent::Action(
+                                TwitchAction::JoinChannel(selected_channel),
+                            )))
+                            .await?;
+                    }
+                }
+
+                v.get(i).context("Selected channel not found")?
+            } else {
+                channels.get(i).context("Selected channel not found")?
+            };
+
+            if self.config.storage.channels {
+                self.storage
+                    .borrow_mut()
+                    .add("channels", selected_channel.clone())
+                    .context(format!(
+                        "Failed to add channel {selected_channel} to storage"
+                    ))?;
+            }
+
+            self.search_input.clear();
+
+            debug!(
+                "Joining previously joined channel {:?}",
+                selected_channel.clone()
+            );
+
+            self.event_tx
+                .send(Event::Twitch(TwitchEvent::Action(
+                    TwitchAction::JoinChannel(selected_channel.clone()),
+                )))
+                .await?;
+        } else if self.search_input.is_valid() {
+            self.toggle_focus();
+            self.unselect();
+
+            let selected_channel = self.search_input.to_string();
+
+            if self.config.storage.channels {
+                self.storage
+                    .borrow_mut()
+                    .add("channels", selected_channel.clone())
+                    .context(format!(
+                        "Failed to add channel {selected_channel} to storage"
+                    ))?;
+            }
+
+            self.search_input.clear();
+
+            info!("Joining new channel {selected_channel:?}");
+
+            self.event_tx
+                .send(Event::Twitch(TwitchEvent::Action(
+                    TwitchAction::JoinChannel(selected_channel),
+                )))
+                .await?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Display for ChannelSwitcherWidget {
@@ -143,10 +232,10 @@ impl Display for ChannelSwitcherWidget {
 }
 
 impl Component for ChannelSwitcherWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
-        let channels = self.storage.borrow().get("channels");
+        let channels = self.storage.borrow().get("channels")?;
 
         let mut items = vec![];
         let current_input = self.search_input.to_string();
@@ -245,7 +334,9 @@ impl Component for ChannelSwitcherWidget {
 
         let input_rect = Rect::new(r.x, r.bottom(), r.width, 3);
 
-        self.search_input.draw(f, Some(input_rect));
+        self.search_input.draw(f, Some(input_rect))?;
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -260,7 +351,7 @@ impl Component for ChannelSwitcherWidget {
                         self.search_input.clear();
                     }
                 }
-                key if keybinds.next_item.contains(key) => self.next(),
+                key if keybinds.next_item.contains(key) => self.next()?,
                 key if keybinds.prev_item.contains(key) => self.previous(),
                 key if keybinds.delete_item.contains(key) => {
                     if let Some(index) = self.list_state.selected() {
@@ -268,91 +359,24 @@ impl Component for ChannelSwitcherWidget {
                             if let Some(value) = filtered.get(index) {
                                 self.storage
                                     .borrow_mut()
-                                    .remove_inner_with("channels", value);
+                                    .remove_inner_with("channels", value)
+                                    .context(format!(
+                                        "Failed to remove channel {value} from storage"
+                                    ))?;
                             }
-                        } else if let Some(value) = self.storage.borrow().get("channels").get(index)
+                        } else if let Some(value) =
+                            self.storage.borrow().get("channels")?.get(index)
                         {
                             self.storage
                                 .borrow_mut()
-                                .remove_inner_with("channels", value);
+                                .remove_inner_with("channels", value)
+                                .context(format!(
+                                    "Failed to remove channel {value} from storage"
+                                ))?;
                         }
                     }
                 }
-                key if keybinds.select.contains(key) => {
-                    // TODO: Reduce code duplication
-                    if let Some(i) = self.list_state.selected() {
-                        self.toggle_focus();
-                        self.unselect();
-
-                        let channels = self.storage.borrow().get("channels");
-
-                        let selected_channel = if let Some(v) = &self.filtered_channels {
-                            if v.is_empty() {
-                                let selected_channel = self.search_input.to_string();
-
-                                if !selected_channel.is_empty() {
-                                    if self.config.storage.channels {
-                                        self.storage
-                                            .borrow_mut()
-                                            .add("channels", selected_channel.clone());
-                                    }
-
-                                    self.search_input.clear();
-
-                                    self.event_tx
-                                        .send(Event::Twitch(TwitchEvent::Action(
-                                            TwitchAction::JoinChannel(selected_channel),
-                                        )))
-                                        .await?;
-                                }
-                            }
-
-                            v.get(i).unwrap()
-                        } else {
-                            channels.get(i).unwrap()
-                        };
-
-                        if self.config.storage.channels {
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", selected_channel.clone());
-                        }
-
-                        self.search_input.clear();
-
-                        debug!(
-                            "Joining previously joined channel {:?}",
-                            selected_channel.clone()
-                        );
-
-                        self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(
-                                TwitchAction::JoinChannel(selected_channel.clone()),
-                            )))
-                            .await?;
-                    } else if self.search_input.is_valid() {
-                        self.toggle_focus();
-                        self.unselect();
-
-                        let selected_channel = self.search_input.to_string();
-
-                        if self.config.storage.channels {
-                            self.storage
-                                .borrow_mut()
-                                .add("channels", selected_channel.clone());
-                        }
-
-                        self.search_input.clear();
-
-                        info!("Joining new channel {selected_channel:?}");
-
-                        self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(
-                                TwitchAction::JoinChannel(selected_channel),
-                            )))
-                            .await?;
-                    }
-                }
+                key if keybinds.select.contains(key) => self.join_channel().await?,
                 _ => {
                     self.search_input.event(event).await?;
 

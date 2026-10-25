@@ -1,6 +1,9 @@
 use std::slice::Iter;
 
-use color_eyre::Result;
+use color_eyre::{
+    Result,
+    eyre::{Context, ContextCompat},
+};
 use tokio::sync::mpsc::Sender;
 use tui::{
     Frame,
@@ -46,7 +49,6 @@ impl DashboardWidget {
         let channel_input =
             ChannelSwitcherWidget::new(config.clone(), event_tx.clone(), storage.clone());
         let following = FollowingWidget::new(config.clone(), twitch_oauth, event_tx.clone());
-        let switcher_count = None;
 
         Self {
             config,
@@ -54,7 +56,7 @@ impl DashboardWidget {
             storage,
             channel_input,
             following,
-            channel_selection: switcher_count,
+            channel_selection: None,
         }
     }
 
@@ -76,11 +78,17 @@ impl DashboardWidget {
             ListItem::new(Line::from(vec![
                 Span::raw("["),
                 Span::styled(
-                    index_offset_str[0..selection_offset].to_string(),
+                    index_offset_str
+                        .get(0..selection_offset)
+                        .unwrap_or_default()
+                        .to_string(),
                     Style::default().fg(Color::Red).bold(),
                 ),
                 Span::styled(
-                    index_offset_str[selection_offset..].to_string(),
+                    index_offset_str
+                        .get(selection_offset..)
+                        .unwrap_or_default()
+                        .to_string(),
                     Style::default().fg(Color::LightMagenta),
                 ),
                 Span::raw("] "),
@@ -91,8 +99,7 @@ impl DashboardWidget {
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
     }
 
-    #[allow(clippy::unused_self)]
-    fn render_dashboard_title_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
+    fn render_dashboard_title_widget(frame: &mut Frame, chunk: Rect) {
         let w = Paragraph::new(
             DASHBOARD_TITLE
                 .iter()
@@ -101,7 +108,7 @@ impl DashboardWidget {
         )
         .style(*DASHBOARD_TITLE_COLOR_STYLE);
 
-        frame.render_widget(w, *v_chunks.next().unwrap());
+        frame.render_widget(w, chunk);
     }
 
     fn render_channel_selection_widget(
@@ -110,10 +117,36 @@ impl DashboardWidget {
         v_chunks: &mut Iter<Rect>,
         current_channel: String,
         default_channels: &[String],
-    ) {
+    ) -> Result<()> {
+        // use try_from_fn once it's stable with #![feature(array_try_from_fn)]
+        // let [
+        //     selected_title_chunk,
+        //     selected_content_chunk,
+        //     favorite_title_chunk,
+        //     favorite_content_chunk,
+        //     recent_title_chunk,
+        //     recent_content_chunk,
+        // ] = std::array::try_from_fn(|_| {
+        //     v_chunks
+        //         .next()
+        //         .context("Failed to get all dashboard vertical chunks for channel selection")
+        // })?;
+
+        let mut next_chunk = || {
+            v_chunks
+                .next()
+                .context("Failed to get next dashboard vertical chunk for channel selection")
+        };
+        let selected_title_chunk = next_chunk()?;
+        let selected_content_chunk = next_chunk()?;
+        let favorite_title_chunk = next_chunk()?;
+        let favorite_content_chunk = next_chunk()?;
+        let recent_title_chunk = next_chunk()?;
+        let recent_content_chunk = next_chunk()?;
+
         frame.render_widget(
             Paragraph::new("Currently selected channel").style(*DASHBOARD_SECTION_STYLE),
-            *v_chunks.next().unwrap(),
+            *selected_title_chunk,
         );
 
         let current_channel_selection = Paragraph::new(Line::from(vec![
@@ -126,40 +159,46 @@ impl DashboardWidget {
             Span::raw(current_channel),
         ]));
 
-        frame.render_widget(current_channel_selection, *v_chunks.next().unwrap());
+        frame.render_widget(current_channel_selection, *selected_content_chunk);
 
         frame.render_widget(
             Paragraph::new("Favorite channels").style(*DASHBOARD_SECTION_STYLE),
-            *v_chunks.next().unwrap(),
+            *favorite_title_chunk,
         );
 
         if default_channels.is_empty() {
-            frame.render_widget(Paragraph::new("None"), *v_chunks.next().unwrap());
+            frame.render_widget(Paragraph::new("None"), *favorite_content_chunk);
         } else {
             let default_channels_widget = self.create_interactive_list_widget(default_channels, 0);
 
-            frame.render_widget(default_channels_widget, *v_chunks.next().unwrap());
+            frame.render_widget(default_channels_widget, *favorite_content_chunk);
         }
 
         frame.render_widget(
             Paragraph::new("Most recent channels").style(*DASHBOARD_SECTION_STYLE),
-            *v_chunks.next().unwrap(),
+            *recent_title_chunk,
         );
 
-        let recent_channels = self.storage.borrow().get_last_n("channels", 5, true);
+        let recent_channels = self
+            .storage
+            .borrow()
+            .get_last_n("channels", 5, true)
+            .context("Failed to get recent channels")?;
 
         if recent_channels.is_empty() {
-            frame.render_widget(Paragraph::new("None"), *v_chunks.next().unwrap());
+            frame.render_widget(Paragraph::new("None"), *recent_content_chunk);
         } else {
             let recent_channels_widget =
                 self.create_interactive_list_widget(&recent_channels, default_channels.len());
 
-            frame.render_widget(recent_channels_widget, *v_chunks.next().unwrap());
+            frame.render_widget(recent_channels_widget, *recent_content_chunk);
         }
+
+        Ok(())
     }
 
-    fn render_quit_selection_widget(&self, frame: &mut Frame, v_chunks: &mut Iter<Rect>) {
-        let quit_option = Paragraph::new(Line::from(vec![
+    fn render_quit_selection_widget(&self, frame: &mut Frame, chunk: Rect) {
+        let spans = vec![
             Span::raw("["),
             Span::styled(
                 get_keybind_text(&self.config.keybinds.dashboard.quit),
@@ -167,14 +206,16 @@ impl DashboardWidget {
             ),
             Span::raw("] "),
             Span::raw("Quit"),
-        ]));
+        ];
 
-        frame.render_widget(quit_option, *v_chunks.next().unwrap());
+        let quit_option = Paragraph::new(Line::from(spans));
+
+        frame.render_widget(quit_option, chunk);
     }
 }
 
 impl Component for DashboardWidget {
-    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) {
+    fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
         let favorite_channels_len = {
@@ -184,7 +225,7 @@ impl Component for DashboardWidget {
         };
 
         let recent_channels_len = {
-            let current_len = self.storage.borrow().get("channels").len() as u16;
+            let current_len = self.storage.borrow().get("channels")?.len() as u16;
             let recent_channel_config_count = self.config.frontend.recent_channel_count;
 
             if current_len == 0 {
@@ -218,22 +259,26 @@ impl Component for DashboardWidget {
 
         let mut v_chunks = v_chunk_binding.iter();
 
-        self.render_dashboard_title_widget(f, &mut v_chunks);
+        let title_chunk = v_chunks.next().context("Failed to get title chunk")?;
+        Self::render_dashboard_title_widget(f, *title_chunk);
 
         self.render_channel_selection_widget(
             f,
             &mut v_chunks,
             self.config.twitch.channel.clone(),
             &self.config.frontend.favorite_channels.clone(),
-        );
+        )?;
 
-        self.render_quit_selection_widget(f, &mut v_chunks);
+        let quit_chunk = v_chunks.next().context("Failed to get quit chunk")?;
+        self.render_quit_selection_widget(f, *quit_chunk);
 
         if self.channel_input.is_focused() {
-            self.channel_input.draw(f, None);
+            self.channel_input.draw(f, None)?;
         } else if self.following.is_focused() {
-            self.following.draw(f, None);
+            self.following.draw(f, None)?;
         }
+
+        Ok(())
     }
 
     async fn event(&mut self, event: &Event) -> Result<()> {
@@ -273,7 +318,7 @@ impl Component for DashboardWidget {
                 Key::Char(c) => {
                     if let Some(digit) = c.to_digit(10) {
                         let mut channels = self.config.frontend.favorite_channels.clone();
-                        let mut selected_channels = self.storage.borrow().get("channels");
+                        let mut selected_channels = self.storage.borrow().get("channels")?;
                         selected_channels.reverse();
 
                         channels.extend(selected_channels);
@@ -288,10 +333,15 @@ impl Component for DashboardWidget {
                             } as usize;
 
                         if let Some(channel) = channels.get(selection) {
-                            self.storage.borrow_mut().add("channels", channel.clone());
+                            self.storage
+                                .borrow_mut()
+                                .add("channels", channel.clone())
+                                .context(format!("Failed to add channel {channel} to storage"))?;
+
                             if selection != 0 && selection * 10 <= channels.len() {
                                 return Ok(());
                             }
+
                             self.channel_selection = None;
                             self.event_tx
                                 .send(Event::Twitch(TwitchEvent::Action(
