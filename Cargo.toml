@@ -108,8 +108,6 @@ map_err_ignore = "warn"
 await_holding_lock = "warn"
 await_holding_refcell_ref = "warn"
 large_futures = "warn"
-# only relevant on editions before 2024
-# if_let_mutex = "warn"
 
 # Don't do unsafe things with memory
 mem_forget = "warn"
