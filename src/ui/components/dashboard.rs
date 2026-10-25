@@ -118,18 +118,31 @@ impl DashboardWidget {
         current_channel: String,
         default_channels: &[String],
     ) -> Result<()> {
-        let [
-            selected_title_chunk,
-            selected_content_chunk,
-            favorite_title_chunk,
-            favorite_content_chunk,
-            recent_title_chunk,
-            recent_content_chunk,
-        ] = std::array::try_from_fn(|_| {
+        // use try_from_fn once it's stable with #![feature(array_try_from_fn)]
+        // let [
+        //     selected_title_chunk,
+        //     selected_content_chunk,
+        //     favorite_title_chunk,
+        //     favorite_content_chunk,
+        //     recent_title_chunk,
+        //     recent_content_chunk,
+        // ] = std::array::try_from_fn(|_| {
+        //     v_chunks
+        //         .next()
+        //         .context("Failed to get all dashboard vertical chunks for channel selection")
+        // })?;
+
+        let mut next_chunk = || {
             v_chunks
                 .next()
-                .context("Failed to get all dashboard vertical chunks for channel selection")
-        })?;
+                .context("Failed to get next dashboard vertical chunk for channel selection")
+        };
+        let selected_title_chunk = next_chunk()?;
+        let selected_content_chunk = next_chunk()?;
+        let favorite_title_chunk = next_chunk()?;
+        let favorite_content_chunk = next_chunk()?;
+        let recent_title_chunk = next_chunk()?;
+        let recent_content_chunk = next_chunk()?;
 
         frame.render_widget(
             Paragraph::new("Currently selected channel").style(*DASHBOARD_SECTION_STYLE),
