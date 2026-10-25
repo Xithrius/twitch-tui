@@ -289,7 +289,7 @@ pub fn overlay_emote(
     .apply()
 }
 
-type DecodedEmoteReceiver = Receiver<std::prelude::v1::Result<DecodedEmote, String>>;
+type DecodedEmoteReceiver = Receiver<Result<DecodedEmote, String>>;
 
 /// Initialize the emote decoder if emotes are enabled.
 /// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
