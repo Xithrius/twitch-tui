@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::LazyLock};
+use std::{borrow::Cow, string::FromUtf8Error, sync::LazyLock};
 
 use memchr::memmem::Finder;
 use rustyline::line_buffer::LineBuffer;
@@ -115,7 +115,7 @@ pub fn parse_message_action(msg: &str) -> (&str, bool) {
 /// This creates rendering issues in terminals that correctly avoid rendering this character.
 ///
 /// As it is not meant to be rendered, we can just remove this character from the message.
-pub fn clean_message(msg: &str) -> String {
+pub fn clean_message(msg: &str) -> Result<String, FromUtf8Error> {
     const U_E0000: char = '\u{e0000}';
     const U_E0000_LEN: usize = U_E0000.len_utf8();
     const U_E0000_STR: &str = "\u{e0000}";
@@ -127,7 +127,7 @@ pub fn clean_message(msg: &str) -> String {
     let matches = FINDER.find_iter(bytes).collect::<Vec<_>>();
 
     if matches.is_empty() {
-        return msg.to_string();
+        return Ok(msg.to_string());
     }
 
     // For the unlikely (but possible) case where this character appears in the middle of the message, remove it.
@@ -143,7 +143,7 @@ pub fn clean_message(msg: &str) -> String {
     output.extend_from_slice(&bytes[last_match..]);
 
     // Unwrapping here is safe as the input is already valid utf8, and we only remove `U_E0000` from the string.
-    String::from_utf8(output).unwrap()
+    String::from_utf8(output)
 }
 
 #[cfg(test)]
@@ -230,21 +230,21 @@ mod tests {
 
     #[test]
     fn clean_message_end() {
-        let output = clean_message("foo \u{e0000}");
+        let output = clean_message("foo \u{e0000}").unwrap();
 
         assert_eq!(output, "foo");
     }
 
     #[test]
     fn clean_message_multiple_end() {
-        let output = clean_message("foo \u{e0000} \u{e0000} \u{e0000}");
+        let output = clean_message("foo \u{e0000} \u{e0000} \u{e0000}").unwrap();
 
         assert_eq!(output, "foo");
     }
 
     #[test]
     fn clean_message_middle() {
-        let output = clean_message("foo\u{e0000}bar \u{e0000} baz \u{e0000}");
+        let output = clean_message("foo\u{e0000}bar \u{e0000} baz \u{e0000}").unwrap();
 
         assert_eq!(output, "foobar  baz");
     }
@@ -277,7 +277,7 @@ mod tests {
     fn parse_clean_message_action() {
         let (msg, highlight) =
             parse_message_action("\u{1}ACTION foo\u{e0000}bar \u{e0000} baz \u{1}");
-        let output = clean_message(msg);
+        let output = clean_message(msg).unwrap();
 
         assert_eq!(output, "foobar  baz");
         assert!(highlight);
