@@ -114,7 +114,7 @@ pub fn parse_message_action(msg: &str) -> (&str, bool) {
         reason = "Safe string slicing for now, will be fixed in the future"
     )]
     msg.strip_prefix(IRC_CTCP_ACTION)
-        .map_or_else(|| (msg, false), |msg| (&msg[..msg.len() - 1], true))
+        .map_or((msg, false), |msg| (&msg[..msg.len() - 1], true))
 }
 
 /// Some twitch clients bypass the 30s timeout for duplicate messages by appending a space followed
