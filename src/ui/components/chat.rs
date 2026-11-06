@@ -388,6 +388,11 @@ impl Component for ChatWidget {
             self.selecting = false;
         }
 
+        // Show the latest messages, where the reply will appear.
+        if let Event::Twitch(TwitchEvent::Action(TwitchAction::Reply { .. })) = event {
+            self.scroll_offset.jump_to(0);
+        }
+
         if self.chat_input.is_focused() {
             return self.chat_input.event(event).await;
         } else if self.channel_input.is_focused() {
@@ -626,6 +631,27 @@ mod tests {
                 message: "hello".to_string(),
             }))]
         );
+    }
+
+    #[tokio::test]
+    async fn sending_reply_jumps_to_latest_message() {
+        let mut h = Harness::new(buffer());
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Up).await;
+        h.press(Key::Up).await;
+        assert_eq!(h.chat.scroll_offset.get_offset(), 2);
+
+        h.press(Key::Char('r')).await;
+        h.type_text("hello").await;
+        h.press(Key::Enter).await;
+
+        // The app hands every sent action back to the chat widget.
+        for event in h.sent() {
+            h.chat.event(&event).await.unwrap();
+        }
+        assert_eq!(h.chat.scroll_offset.get_offset(), 0);
     }
 
     #[tokio::test]
