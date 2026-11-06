@@ -1,0 +1,77 @@
+{
+  "subscription": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "status": "enabled",
+    "type": "channel.chat.message",
+    "version": "1",
+    "condition": {
+      "broadcaster_user_id": "1111",
+      "user_id": "2222"
+    },
+    "transport": {
+      "method": "websocket",
+      "session_id": "session"
+    },
+    "created_at": "2026-01-01T00:00:00.000000000Z",
+    "cost": 0
+  },
+  "event": {
+    "broadcaster_user_id": "1111",
+    "broadcaster_user_login": "broadcaster",
+    "broadcaster_user_name": "Broadcaster",
+    "source_broadcaster_user_id": "3333",
+    "source_broadcaster_user_login": "source_channel",
+    "source_broadcaster_user_name": "Source_Channel",
+    "chatter_user_id": "4444",
+    "chatter_user_login": "chatter",
+    "chatter_user_name": "Chatter",
+    "message_id": "aaaaaaaa-0000-0000-0000-000000000000",
+    "source_message_id": "aaaaaaaa-0000-0000-0000-000000000000",
+    "is_source_only": false,
+    "message": {
+      "text": "hello Kappa",
+      "fragments": [
+        {
+          "type": "text",
+          "text": "hello ",
+          "cheermote": null,
+          "emote": null,
+          "mention": null
+        },
+        {
+          "type": "emote",
+          "text": "Kappa",
+          "cheermote": null,
+          "emote": {
+            "id": "25",
+            "emote_set_id": "0",
+            "owner_id": "0",
+            "format": [
+              "static"
+            ]
+          },
+          "mention": null
+        }
+      ]
+    },
+    "color": "#FF0000",
+    "badges": [],
+    "source_badges": [
+      {
+        "set_id": "subscriber",
+        "id": "12",
+        "info": "14"
+      },
+      {
+        "set_id": "premium",
+        "id": "1",
+        "info": ""
+      }
+    ],
+    "message_type": "text",
+    "cheer": null,
+    "reply": null,
+    "channel_points_custom_reward_id": null,
+    "channel_points_animation_id": null
+  }
+}
