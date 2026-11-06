@@ -22,6 +22,8 @@ pub struct ChatInputWidget {
     storage: SharedStorage,
     input: InputWidget<SharedStorage>,
     emote_picker: EmotePickerWidget,
+    /// Message ID being replied to
+    reply_to: Option<String>,
 }
 
 impl ChatInputWidget {
@@ -95,6 +97,7 @@ impl ChatInputWidget {
             storage,
             input,
             emote_picker,
+            reply_to: None,
         }
     }
 
@@ -108,6 +111,17 @@ impl ChatInputWidget {
 
     pub fn toggle_focus_with(&mut self, s: &str) {
         self.input.toggle_focus_with(s);
+    }
+
+    pub fn toggle_focus_reply(&mut self, parent_id: String, author: &str) {
+        self.reply_to = Some(parent_id);
+        self.input.set_title(&format!("Reply to {author}"));
+        self.input.toggle_focus();
+    }
+
+    fn clear_reply(&mut self) {
+        self.reply_to = None;
+        self.input.set_title("Chat");
     }
 }
 
@@ -156,10 +170,20 @@ impl Component for ChatInputWidget {
                             }
                         }
 
+                        // Commands still run as commands while replying.
+                        let action = match self.reply_to.take() {
+                            Some(parent_id) if !current_input.starts_with('/') => {
+                                TwitchAction::Reply {
+                                    parent_id,
+                                    message: current_input,
+                                }
+                            }
+                            _ => TwitchAction::Message(current_input),
+                        };
+                        self.clear_reply();
+
                         self.event_tx
-                            .send(Event::Twitch(TwitchEvent::Action(TwitchAction::Message(
-                                current_input,
-                            ))))
+                            .send(Event::Twitch(TwitchEvent::Action(action)))
                             .await?;
                     }
                 }
@@ -169,6 +193,7 @@ impl Component for ChatInputWidget {
                     }
                 }
                 key if keybinds.back_to_previous_window.contains(key) => {
+                    self.clear_reply();
                     self.input.toggle_focus();
                 }
                 _ => {

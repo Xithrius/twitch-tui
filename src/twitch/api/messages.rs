@@ -11,14 +11,22 @@ pub struct NewTwitchMessage {
     #[serde(rename = "sender_id")]
     user_id: String,
     message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply_parent_message_id: Option<String>,
 }
 
 impl NewTwitchMessage {
-    pub const fn new(broadcaster_id: String, user_id: String, message: String) -> Self {
+    pub const fn new(
+        broadcaster_id: String,
+        user_id: String,
+        message: String,
+        reply_parent_message_id: Option<String>,
+    ) -> Self {
         Self {
             channel_id: broadcaster_id,
             user_id,
             message,
+            reply_parent_message_id,
         }
     }
 }
@@ -57,4 +65,26 @@ pub async fn send_twitch_message(
         .clone();
 
     Ok(response_data)
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::NewTwitchMessage;
+
+    #[test]
+    fn reply_parent_only_serialized_when_replying() {
+        let plain = NewTwitchMessage::new("b".into(), "u".into(), "hi".into(), None);
+        assert_eq!(
+            serde_json::to_value(plain).unwrap(),
+            json!({"broadcaster_id": "b", "sender_id": "u", "message": "hi"})
+        );
+
+        let reply = NewTwitchMessage::new("b".into(), "u".into(), "hi".into(), Some("p".into()));
+        assert_eq!(
+            serde_json::to_value(reply).unwrap(),
+            json!({"broadcaster_id": "b", "sender_id": "u", "message": "hi", "reply_parent_message_id": "p"})
+        );
+    }
 }

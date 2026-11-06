@@ -15,7 +15,7 @@ use crate::{
     app::SharedMessages,
     config::SharedCoreConfig,
     emotes::SharedEmotes,
-    events::{Event, InternalEvent, TwitchAction, TwitchEvent},
+    events::{Event, InternalEvent, Key, TwitchAction, TwitchEvent, get_keybind_text},
     handlers::{data::MessageData, filters::SharedFilters, state::State, storage::SharedStorage},
     twitch::oauth::TwitchOauth,
     ui::components::{
@@ -39,6 +39,10 @@ pub struct ChatWidget {
     filters: SharedFilters,
     pub scroll_offset: Scrolling,
     current_channel_name: String,
+    /// In selection mode the selected message is the bottom-most visible one, so scrolling moves it.
+    selecting: bool,
+    /// (message ID, author) of the bottom-most visible message, refreshed on every draw.
+    selected: Option<(String, String)>,
     // theme: Theme,
 }
 
@@ -78,6 +82,36 @@ impl ChatWidget {
             filters,
             scroll_offset,
             current_channel_name,
+            selecting: false,
+            selected: None,
+        }
+    }
+
+    pub const fn is_selecting(&self) -> bool {
+        self.selecting
+    }
+
+    /// Returns true if the key was consumed by selection mode.
+    /// Scroll and quit keys fall through to normal handling; every other key is ignored.
+    fn handle_selection_key(&mut self, key: Key) -> bool {
+        let keybinds = &self.config.keybinds.normal;
+        match key {
+            key if keybinds.reply.contains(&key) => {
+                if let Some((parent_id, author)) = self.selected.clone() {
+                    self.selecting = false;
+                    self.chat_input.toggle_focus_reply(parent_id, &author);
+                }
+                true
+            }
+            key if keybinds.back_to_previous_window.contains(&key) => {
+                self.selecting = false;
+                true
+            }
+            key => {
+                !(keybinds.scroll_up.contains(&key)
+                    || keybinds.scroll_down.contains(&key)
+                    || keybinds.quit.contains(&key))
+            }
         }
     }
 
@@ -103,7 +137,7 @@ impl ChatWidget {
         frame: &Frame,
         area: Rect,
         messages_data: &'a VecDeque<MessageData>,
-    ) -> VecDeque<Line<'a>> {
+    ) -> (VecDeque<Line<'a>>, Option<&'a MessageData>) {
         // Accounting for not all heights of rows to be the same due to text wrapping,
         // so extra space needs to be used in order to scroll correctly.
         let mut total_row_height: usize = 0;
@@ -116,6 +150,8 @@ impl ChatWidget {
         }
 
         let mut scroll = self.scroll_offset.get_offset();
+
+        let mut selected = None;
 
         // Horizontal chunks represents the list within the main chat window.
         let h_chunk = Layout::default()
@@ -163,9 +199,24 @@ impl ChatWidget {
                 username_highlight,
             );
 
+            // Background only: emotes are encoded in the foreground and underline colors.
+            let selection_style = if self.selecting && selected.is_none() {
+                Some(if *NO_COLOR {
+                    Style::default().add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().bg(Color::DarkGray)
+                })
+            } else {
+                None
+            };
+            selected.get_or_insert(data);
+
             for span in lines.into_iter().rev() {
                 if total_row_height < general_chunk_height {
-                    messages.push_front(span);
+                    messages.push_front(match selection_style {
+                        Some(style) => span.patch_style(style),
+                        None => span,
+                    });
                     total_row_height += 1;
                 } else {
                     break 'outer;
@@ -180,11 +231,15 @@ impl ChatWidget {
             }
         }
 
-        messages
+        (messages, selected)
     }
 }
 
 impl Component for ChatWidget {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Chat drawing is long, does not currently need multiple functions"
+    )]
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| f.area());
 
@@ -214,7 +269,9 @@ impl Component for ChatWidget {
 
         let messages_data = self.messages.borrow();
 
-        let messages = self.get_messages(f, *first_v_chunk, &messages_data);
+        let (messages, selected) = self.get_messages(f, *first_v_chunk, &messages_data);
+        self.selected =
+            selected.and_then(|m| m.message_id.clone().map(|id| (id, m.author.clone())));
 
         let current_time = Local::now()
             .format(&self.config.frontend.datetime_format)
@@ -224,7 +281,13 @@ impl Component for ChatWidget {
         let reversed_filters = filters.message.is_reversed() || filters.username.is_reversed();
         let enabled_filters = filters.message.is_enabled() || filters.username.is_enabled();
 
-        let spans = [
+        let selection_hint = format!(
+            "{} reply, {} cancel",
+            get_keybind_text(&self.config.keybinds.normal.reply),
+            get_keybind_text(&self.config.keybinds.normal.back_to_previous_window),
+        );
+
+        let mut spans = vec![
             TitleStyle::Combined("Time", &current_time),
             TitleStyle::Combined("Channel", self.current_channel_name.as_str()),
             TitleStyle::Custom(Span::styled(
@@ -242,6 +305,10 @@ impl Component for ChatWidget {
                 },
             )),
         ];
+
+        if self.selecting {
+            spans.push(TitleStyle::Combined("Select", &selection_hint));
+        }
 
         let chat_title = if self.config.frontend.title_shown {
             Line::from(title_line(&spans, *TITLE_STYLE))
@@ -311,9 +378,14 @@ impl Component for ChatWidget {
         Ok(())
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keybind handling is long, does not currently need multiple functions"
+    )]
     async fn event(&mut self, event: &Event) -> Result<()> {
         if let Event::Twitch(TwitchEvent::Action(TwitchAction::JoinChannel(channel))) = event {
             self.current_channel_name.clone_from(channel);
+            self.selecting = false;
         }
 
         if self.chat_input.is_focused() {
@@ -330,8 +402,13 @@ impl Component for ChatWidget {
             let limit =
                 self.scroll_offset.get_offset() < self.messages.borrow().len().saturating_sub(1);
 
+            if self.selecting && self.handle_selection_key(*key) {
+                return Ok(());
+            }
+
             let keybinds = &self.config.keybinds.normal;
             match key {
+                key if keybinds.select_message.contains(key) => self.selecting = true,
                 key if keybinds.enter_insert.contains(key) => self.chat_input.toggle_focus(),
                 key if keybinds.enter_insert_with_mention.contains(key) => {
                     self.chat_input.toggle_focus_with("@");
@@ -416,5 +493,227 @@ impl Component for ChatWidget {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, collections::VecDeque, rc::Rc, sync::Arc};
+
+    use chrono::Local;
+    use tokio::sync::mpsc::{self, Receiver};
+    use tui::{Terminal, backend::TestBackend};
+
+    use super::ChatWidget;
+    use crate::{
+        config::CoreConfig,
+        emotes::Emotes,
+        events::{Event, InternalEvent, Key, TwitchAction, TwitchEvent},
+        handlers::{data::MessageData, filters::Filters, storage::Storage},
+        twitch::oauth::TwitchOauth,
+        ui::components::Component,
+    };
+
+    fn message(author: &str, id: Option<&str>) -> MessageData {
+        MessageData {
+            time_sent: Local::now(),
+            author: author.to_string(),
+            user_id: None,
+            system: id.is_none(),
+            payload: format!("{author} says hi"),
+            emotes: vec![],
+            message_id: id.map(ToString::to_string),
+            highlight: false,
+            badges: None,
+        }
+    }
+
+    struct Harness {
+        chat: ChatWidget,
+        rx: Receiver<Event>,
+        terminal: Terminal<TestBackend>,
+    }
+
+    impl Harness {
+        /// Newest message first, like the app's buffer.
+        fn new(messages: Vec<MessageData>) -> Self {
+            let config = Arc::new(CoreConfig::default());
+            let (tx, rx) = mpsc::channel(100);
+            let storage = Rc::new(RefCell::new(Storage::new(&config).unwrap()));
+            let filters = Rc::new(RefCell::new(Filters::new(&config)));
+            let emotes = Rc::new(Emotes::new(false));
+            let chat = ChatWidget::new(
+                config,
+                TwitchOauth::default(),
+                tx,
+                Rc::new(RefCell::new(VecDeque::from(messages))),
+                &storage,
+                &emotes,
+                filters,
+            );
+            let terminal = Terminal::new(TestBackend::new(80, 20)).unwrap();
+            Self { chat, rx, terminal }
+        }
+
+        // Draw after every key, as the app loop does; selection is computed while drawing.
+        async fn press(&mut self, key: Key) {
+            self.chat.event(&Event::Input(key)).await.unwrap();
+            self.draw();
+        }
+
+        async fn type_text(&mut self, text: &str) {
+            for c in text.chars() {
+                self.press(Key::Char(c)).await;
+            }
+        }
+
+        fn draw(&mut self) {
+            let chat = &mut self.chat;
+            self.terminal.draw(|f| chat.draw(f, None).unwrap()).unwrap();
+        }
+
+        fn screen(&self) -> String {
+            let buffer = self.terminal.backend().buffer();
+            buffer
+                .content()
+                .iter()
+                .map(tui::buffer::Cell::symbol)
+                .collect()
+        }
+
+        fn sent(&mut self) -> Vec<Event> {
+            std::iter::from_fn(|| self.rx.try_recv().ok()).collect()
+        }
+    }
+
+    fn buffer() -> Vec<MessageData> {
+        vec![
+            message("carol", Some("id-carol")),
+            message("bob", Some("id-bob")),
+            message("alice", Some("id-alice")),
+        ]
+    }
+
+    #[tokio::test]
+    async fn reply_to_selected_message_sends_parent_id() {
+        let mut h = Harness::new(buffer());
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Up).await;
+        let highlighted: String = h
+            .terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .filter(|c| c.bg == tui::style::Color::DarkGray)
+            .map(tui::buffer::Cell::symbol)
+            .collect();
+        assert!(highlighted.contains("bob says hi"), "{highlighted}");
+        assert!(!highlighted.contains("carol"), "{highlighted}");
+
+        h.press(Key::Char('r')).await;
+        assert!(h.screen().contains("Reply to bob"), "{}", h.screen());
+
+        h.type_text("hello").await;
+        h.press(Key::Enter).await;
+
+        assert_eq!(
+            h.sent(),
+            vec![Event::Twitch(TwitchEvent::Action(TwitchAction::Reply {
+                parent_id: "id-bob".to_string(),
+                message: "hello".to_string(),
+            }))]
+        );
+    }
+
+    #[tokio::test]
+    async fn message_without_id_cannot_be_replied_to() {
+        let mut h = Harness::new(vec![
+            message("system", None),
+            message("bob", Some("id-bob")),
+        ]);
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Char('r')).await;
+        h.type_text("x").await;
+
+        assert!(!h.screen().contains("Reply to"));
+        assert_eq!(h.sent(), vec![]);
+    }
+
+    #[tokio::test]
+    async fn esc_leaves_selection_without_going_back() {
+        let mut h = Harness::new(buffer());
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Esc).await;
+        assert_eq!(h.sent(), vec![]);
+
+        // Back in normal mode: `r` is not bound there, `i` sends a plain message.
+        h.press(Key::Char('i')).await;
+        h.type_text("plain").await;
+        h.press(Key::Enter).await;
+        assert_eq!(
+            h.sent(),
+            vec![Event::Twitch(TwitchEvent::Action(TwitchAction::Message(
+                "plain".to_string()
+            )))]
+        );
+    }
+
+    #[tokio::test]
+    async fn other_keys_ignored_while_selecting() {
+        let mut h = Harness::new(buffer());
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Char('i')).await;
+        h.press(Key::Char('q')).await;
+
+        assert!(!h.chat.chat_input.is_focused());
+        assert_eq!(h.sent(), vec![Event::Internal(InternalEvent::Quit)]);
+    }
+
+    #[tokio::test]
+    async fn command_typed_in_reply_mode_runs_as_command() {
+        let mut h = Harness::new(buffer());
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Char('r')).await;
+        h.type_text("/clear").await;
+        h.press(Key::Enter).await;
+
+        assert_eq!(
+            h.sent(),
+            vec![Event::Twitch(TwitchEvent::Action(TwitchAction::Message(
+                "/clear".to_string()
+            )))]
+        );
+    }
+
+    #[tokio::test]
+    async fn cancelled_reply_does_not_leak_into_next_message() {
+        let mut h = Harness::new(buffer());
+        h.draw();
+
+        h.press(Key::Char('v')).await;
+        h.press(Key::Char('r')).await;
+        h.press(Key::Esc).await;
+
+        h.press(Key::Char('i')).await;
+        assert!(!h.screen().contains("Reply to"));
+        h.type_text("plain").await;
+        h.press(Key::Enter).await;
+        assert_eq!(
+            h.sent(),
+            vec![Event::Twitch(TwitchEvent::Action(TwitchAction::Message(
+                "plain".to_string()
+            )))]
+        );
     }
 }

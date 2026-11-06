@@ -149,6 +149,10 @@ scroll_up = ["ScrollUp", "Up", "k"]
 scroll_to_end = ["G"]
 # Scroll chat to bottom
 scroll_to_start = ["g"]
+# Enter message selection mode (scroll keys move the selection)
+select_message = ["v"]
+# Reply to the selected message
+reply = ["r"]
 # Open current stream in view_command, or browser if not set
 open_in_player = ["o"]
 # Open the recent channel search widget
