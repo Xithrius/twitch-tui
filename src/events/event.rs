@@ -13,6 +13,8 @@ pub enum Event {
     Tick,
     /// Crossterm events translated to internal key type events
     Input(Key),
+    /// Text pasted into the terminal in one go (bracketed paste)
+    Paste(String),
     /// Events cause by user interactions
     Internal(InternalEvent),
     /// Either events to be sent to the websocket handler or notifications that come from said handler

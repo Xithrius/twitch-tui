@@ -138,6 +138,19 @@ impl ChannelSwitcherWidget {
         self.focused = !self.focused;
     }
 
+    async fn input_event(&mut self, event: &Event) -> Result<()> {
+        self.search_input.event(event).await?;
+
+        // Assuming that the user inputted something that modified the input
+        if let Some(v) = &self.filtered_channels
+            && !v.is_empty()
+        {
+            self.list_state.select(Some(0));
+        }
+
+        Ok(())
+    }
+
     async fn join_channel(&mut self) -> Result<()> {
         if let Some(i) = self.list_state.selected() {
             self.toggle_focus();
@@ -377,17 +390,10 @@ impl Component for ChannelSwitcherWidget {
                     }
                 }
                 key if keybinds.select.contains(key) => self.join_channel().await?,
-                _ => {
-                    self.search_input.event(event).await?;
-
-                    // Assuming that the user inputted something that modified the input
-                    if let Some(v) = &self.filtered_channels {
-                        if !v.is_empty() {
-                            self.list_state.select(Some(0));
-                        }
-                    }
-                }
+                _ => self.input_event(event).await?,
             }
+        } else if matches!(event, Event::Paste(_)) {
+            self.input_event(event).await?;
         }
 
         Ok(())

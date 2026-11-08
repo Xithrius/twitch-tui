@@ -182,6 +182,8 @@ impl Component for ChatInputWidget {
                     self.input.event(event).await?;
                 }
             }
+        } else if matches!(event, Event::Paste(_)) {
+            self.input.event(event).await?;
         }
 
         Ok(())

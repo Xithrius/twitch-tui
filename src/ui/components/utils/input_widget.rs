@@ -420,6 +420,10 @@ impl<T: Clone> Component for InputWidget<T> {
                 }
                 _ => {}
             }
+        } else if let Event::Paste(text) = event {
+            // Twitch messages are single-line, so join pasted lines with spaces
+            self.input
+                .insert_str(text.replace("\r\n", " ").replace(['\r', '\n'], " "));
         }
 
         Ok(())
