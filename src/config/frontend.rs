@@ -1,6 +1,7 @@
 use std::{str::FromStr, vec};
 
 use color_eyre::eyre::{Error, Result, bail};
+use ratatui_textarea::WrapMode;
 use serde::{Deserialize, Serialize};
 use serde_with::DeserializeFromStr;
 use tui::widgets::BorderType;
@@ -40,6 +41,8 @@ pub struct FrontendConfig {
     pub cursor_shape: CursorType,
     /// If the cursor should be blinking.
     pub blinking_cursor: bool,
+    /// How long messages wrap in the chat input box.
+    pub input_wrap: InputWrap,
     /// If the scrolling should be inverted.
     pub inverted_scrolling: bool,
     /// If scroll offset integer should be shown.
@@ -94,6 +97,7 @@ impl Default for FrontendConfig {
             state_tabs: false,
             cursor_shape: CursorType::default(),
             blinking_cursor: false,
+            input_wrap: InputWrap::default(),
             inverted_scrolling: false,
             show_scroll_offset: false,
             twitch_emotes: false,
@@ -251,6 +255,42 @@ impl FromStr for CursorType {
             "underscore" => Ok(Self::UnderScore),
             "block" => Ok(Self::Block),
             _ => bail!("Cursor type of '{}' cannot be deserialized", s),
+        }
+    }
+}
+
+#[derive(Serialize, DeserializeFromStr, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+#[derive(Default)]
+pub enum InputWrap {
+    /// Break at spaces, splitting a word only when it's wider than the box.
+    #[default]
+    Word,
+    /// Break at any character.
+    Character,
+    /// Scroll the line sideways.
+    None,
+}
+
+impl FromStr for InputWrap {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "word" => Ok(Self::Word),
+            "character" => Ok(Self::Character),
+            "none" => Ok(Self::None),
+            _ => bail!("Input wrap '{}' cannot be deserialized", s),
+        }
+    }
+}
+
+impl From<InputWrap> for WrapMode {
+    fn from(val: InputWrap) -> Self {
+        match val {
+            InputWrap::Word => Self::WordOrGlyph,
+            InputWrap::Character => Self::Glyph,
+            InputWrap::None => Self::None,
         }
     }
 }

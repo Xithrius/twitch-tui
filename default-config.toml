@@ -78,6 +78,9 @@ state_tabs = false
 cursor_shape = "block"
 # If the cursor should be blinking.
 blinking_cursor = false
+# How long messages wrap in the chat input box.
+# Options: word (break at spaces), character (break at any character), and none (scroll sideways).
+input_wrap = "word"
 # If mouse scrolling should be inverted.
 inverted_scrolling = false
 # If scroll offset integer should be shown.

@@ -61,14 +61,15 @@ impl<T: Clone> InputWidget<T> {
         input_validator: Option<(T, InputValidator<T>)>,
         visual_indicator: Option<VisualValidator>,
         input_suggester: Option<(T, InputSuggester<T>)>,
-        /// Rows the input may grow to before it scrolls. Above 1, long input soft-wraps.
+        /// Rows the input may grow to before it scrolls. Above 1, long input soft-wraps
+        /// according to `frontend.input_wrap`.
         #[builder(default = 1)]
         max_lines: u16,
     ) -> Self {
         let mut input = TextArea::default();
         input.set_cursor_line_style(Style::default());
         if max_lines > 1 {
-            input.set_wrap_mode(WrapMode::WordOrGlyph);
+            input.set_wrap_mode(config.frontend.input_wrap.clone().into());
         }
 
         Self {
@@ -89,7 +90,7 @@ impl<T: Clone> InputWidget<T> {
     /// growing with the wrapped input up to `max_lines` rows.
     pub fn height(&self, width: u16) -> u16 {
         let inner_width = width.saturating_sub(2);
-        if self.max_lines <= 1 || inner_width == 0 {
+        if self.max_lines <= 1 || self.input.wrap_mode() == WrapMode::None || inner_width == 0 {
             return 3;
         }
 
