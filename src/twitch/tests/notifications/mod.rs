@@ -5,6 +5,7 @@ mod commands;
 mod emotes;
 mod message_fragments;
 mod reply;
+mod shared_chat;
 
 // Badges
 static BADGES: &str = include_str!("data/badges.json");
@@ -25,6 +26,9 @@ static ME_COMMAND: &str = include_str!("data/me_command.json");
 
 // Replies
 static REPLY: &str = include_str!("data/reply.json");
+
+// Shared chat (message from another channel in a shared chat session)
+static SHARED_CHAT: &str = include_str!("data/shared_chat.json");
 
 // Bans (permanent/non-permanent timeouts)
 static USER_BAN: &str = include_str!("data/user_ban.json");

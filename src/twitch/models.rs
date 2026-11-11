@@ -147,7 +147,7 @@ pub struct ReceivedTwitchEvent {
     source_broadcaster_user_login: Option<String>,
     source_broadcaster_user_name: Option<String>,
     source_message_id: Option<String>,
-    source_badges: Option<String>,
+    source_badges: Option<Vec<ReceivedTwitchEventBadges>>,
     target_user_id: Option<String>,
     target_user_name: Option<String>,
     target_user_login: Option<String>,
