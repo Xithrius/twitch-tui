@@ -2,6 +2,8 @@ use std::vec;
 
 use serde::{Deserialize, Serialize};
 
+pub static DEFAULT_WEBSOCKET_SERVER: &str = "wss://eventsub.wss.twitch.tv/ws";
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct TwitchConfig {
@@ -13,8 +15,10 @@ pub struct TwitchConfig {
     pub server: String,
     /// The authentication token for the websocket server.
     pub token: Option<String>,
-    /// Keepalive timeout
+    /// Keepalive timeout.
     pub keepalive_timeout_seconds: usize,
+    /// Bypass sanitization error for invalid websocket server, try to connect anyway.
+    pub bypass_invalid_websocket_server: bool,
 }
 
 impl TwitchConfig {
@@ -32,9 +36,10 @@ impl Default for TwitchConfig {
         Self {
             username: String::new(),
             channel: String::new(),
-            server: "wss://eventsub.wss.twitch.tv/ws".to_string(),
+            server: DEFAULT_WEBSOCKET_SERVER.to_string(),
             token: None,
             keepalive_timeout_seconds: 30,
+            bypass_invalid_websocket_server: false,
         }
     }
 }

@@ -19,10 +19,27 @@ use crate::{
         persistence::{get_cache_dir, get_config_dir, persist_config, persist_default_config},
         storage::StorageConfig,
         terminal::TerminalConfig,
-        twitch::TwitchConfig,
+        twitch::{DEFAULT_WEBSOCKET_SERVER, TwitchConfig},
     },
     emotes::support_graphics_protocol,
+    ui::statics::WEBSOCKET_SERVER_PREFIX,
+    utils::sanitization::is_valid_websocket_server,
 };
+
+fn invalid_websocket_server_config_error() -> String {
+    format!(
+        "Websocket server config at 'twitch.server' is not valid. \
+    If you've upgraded from an older version of twitch-tui, you may still have an IRC server configured. \
+    If 'irc.chat.twitch.tv' is set as your server, try changing it to '{DEFAULT_WEBSOCKET_SERVER}'. \
+    Given that you'd like to bypass this error and attempt connecting to your specified server, \
+    either set 'config.twitch.bypass_invalid_websocket_server' to true or pass the --bypass-invalid-websocket-server CLI flag. \
+    Otherwise, if you're trying to connect to a different websocket server than the default, \
+    make sure '{WEBSOCKET_SERVER_PREFIX}' is at the start of the value for 'twitch.server'. \
+    If all else fails, please submit a ticket through {}/issues/new/choose.
+    ",
+    env!("CARGO_PKG_REPOSITORY")
+    )
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(default)]
@@ -72,6 +89,12 @@ impl CoreConfig {
             };
 
             merge_args_into_config(&mut config, cli);
+
+            if !config.twitch.bypass_invalid_websocket_server
+                && !is_valid_websocket_server(&config.twitch.server)
+            {
+                bail!("{}", invalid_websocket_server_config_error());
+            }
 
             let token = env::var("TWT_TOKEN").ok();
             if let Some(env_token) = token {

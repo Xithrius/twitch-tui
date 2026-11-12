@@ -2,6 +2,8 @@ use std::sync::LazyLock;
 
 use regex::{Regex, regex};
 
+pub static WEBSOCKET_SERVER_PREFIX: &str = "wss://";
+
 pub static HELP_COLUMN_TITLES: &[&str] = &["State", "Keybind", "Description"];
 
 // https://help.twitch.tv/s/article/chat-commands?language=en_US

@@ -58,6 +58,7 @@ pub fn interactive_config() -> Option<CoreConfig> {
             server,
             token: Some(token),
             keepalive_timeout_seconds,
+            bypass_invalid_websocket_server: false,
         },
         ..Default::default()
     })

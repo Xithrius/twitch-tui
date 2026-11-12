@@ -47,6 +47,10 @@ impl ValueEnum for State {
     }
 }
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Easier to read if not split into multiple flattened structs"
+)]
 #[derive(Parser, Debug)]
 #[clap(rename_all = "kebab-case")]
 #[clap(author, version, about)]
@@ -85,6 +89,9 @@ pub struct Cli {
     /// Show a warning if the screen size is too small
     #[arg(short, long)]
     pub unsupported_screen_size: bool,
+    /// Bypass invalid websocket server error
+    #[arg(long)]
+    pub bypass_invalid_websocket_server: bool,
 }
 
 pub fn merge_args_into_config(config: &mut CoreConfig, args: Cli) {
@@ -110,6 +117,10 @@ pub fn merge_args_into_config(config: &mut CoreConfig, args: Cli) {
     // Twitch arguments
     if let Some(channel) = args.channel {
         config.twitch.channel = channel;
+    }
+
+    if args.bypass_invalid_websocket_server {
+        config.twitch.bypass_invalid_websocket_server = true;
     }
 
     // Frontend arguments
