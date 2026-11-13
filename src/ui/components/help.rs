@@ -110,6 +110,14 @@ impl HelpWidget {
                 "Open current stream in player",
             ),
             (
+                get_keybind_text(&keybinds.normal.select_message),
+                "Select a message (scroll keys move the selection)",
+            ),
+            (
+                get_keybind_text(&keybinds.normal.reply),
+                "Reply to the selected message",
+            ),
+            (
                 get_keybind_text(&keybinds.normal.recent_channels_search),
                 "Open the recent channel search widget",
             ),

@@ -16,6 +16,12 @@ Can be the start state by configuring `first_state` in the config to either `"no
 <td> /
 <td> Enter insert (chat) mode with the command symbol `/` already existing.
 <tr>
+<td> v
+<td> Enter message selection mode. The scroll keys move the selection. Exit this mode with `Esc`.
+<tr>
+<td> r
+<td> Reply to the selected message (in message selection mode).
+<tr>
 <td> ? or h
 <td> Have the keybinds popup window appear.
 <tr>

@@ -313,10 +313,8 @@ impl App {
                 self.emotes_rx = query_emotes(&self.config, self.twitch_oauth.clone(), channel);
                 self.set_state(State::Normal);
             }
-            TwitchAction::Message(message) => {
-                self.twitch_tx
-                    .send(TwitchAction::Message(message.clone()))
-                    .await?;
+            TwitchAction::Message(_) | TwitchAction::Reply { .. } => {
+                self.twitch_tx.send(twitch_action.clone()).await?;
             }
         }
 
@@ -343,8 +341,10 @@ impl App {
                 }
                 self.messages.borrow_mut().push_front(message_data);
 
-                // If scrolling is enabled, pad for more messages.
-                if self.components.chat.scroll_offset.get_offset() > 0 {
+                // If scrolling (or selecting a message), pad for more messages so the view stays put.
+                if self.components.chat.scroll_offset.get_offset() > 0
+                    || self.components.chat.is_selecting()
+                {
                     self.components.chat.scroll_offset.up();
                 }
             }
