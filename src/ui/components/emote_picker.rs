@@ -114,6 +114,18 @@ impl EmotePickerWidget {
     pub const fn toggle_focus(&mut self) {
         self.input.toggle_focus();
     }
+
+    async fn input_event(&mut self, event: &Event) -> Result<()> {
+        self.input.event(event).await?;
+
+        // Assuming that the user inputted something that modified the input
+        match self.filtered_emotes.len() {
+            0 => self.unselect(),
+            _ => self.list_state.select(Some(0)),
+        }
+
+        Ok(())
+    }
 }
 
 impl Component for EmotePickerWidget {
@@ -284,16 +296,10 @@ impl Component for EmotePickerWidget {
                             .await?;
                     }
                 }
-                _ => {
-                    self.input.event(event).await?;
-
-                    // Assuming that the user inputted something that modified the input
-                    match self.filtered_emotes.len() {
-                        0 => self.unselect(),
-                        _ => self.list_state.select(Some(0)),
-                    }
-                }
+                _ => self.input_event(event).await?,
             }
+        } else if matches!(event, Event::Paste(_)) {
+            self.input_event(event).await?;
         }
 
         Ok(())

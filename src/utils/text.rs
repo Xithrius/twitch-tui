@@ -1,20 +1,7 @@
 use std::{borrow::Cow, string::FromUtf8Error, sync::LazyLock};
 
 use memchr::memmem::Finder;
-use rustyline::line_buffer::LineBuffer;
 use tui::{style::Style, text::Span};
-use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
-
-/// Acquiring the horizontal position of the cursor so it can be rendered visually.
-pub fn get_cursor_position(line_buffer: &LineBuffer) -> usize {
-    line_buffer
-        .as_str()
-        .grapheme_indices(true)
-        .take_while(|(offset, _)| *offset != line_buffer.pos())
-        .map(|(_, cluster)| cluster.width())
-        .sum()
-}
 
 pub fn split_cow_in_place<'a>(cow: &mut Cow<'a, str>, mid: usize) -> Cow<'a, str> {
     match *cow {
@@ -174,35 +161,6 @@ mod tests {
     };
 
     use super::*;
-    use crate::ui::components::utils::InputListener;
-
-    #[test]
-    fn test_get_cursor_position_with_single_byte_graphemes() {
-        let text = "never gonna give you up";
-        let mut line_buffer = LineBuffer::with_capacity(25);
-        let mut input_listener = InputListener;
-        line_buffer.insert_str(0, text, &mut input_listener);
-
-        assert_eq!(get_cursor_position(&line_buffer), 0);
-        line_buffer.move_forward(1);
-        assert_eq!(get_cursor_position(&line_buffer), 1);
-        line_buffer.move_forward(2);
-        assert_eq!(get_cursor_position(&line_buffer), 3);
-    }
-
-    #[test]
-    fn test_get_cursor_position_with_three_byte_graphemes() {
-        let text = "绝对不会放弃你";
-        let mut line_buffer = LineBuffer::with_capacity(25);
-        let mut input_listener = InputListener;
-        line_buffer.insert_str(0, text, &mut input_listener);
-
-        assert_eq!(get_cursor_position(&line_buffer), 0);
-        line_buffer.move_forward(1);
-        assert_eq!(get_cursor_position(&line_buffer), 2);
-        line_buffer.move_forward(2);
-        assert_eq!(get_cursor_position(&line_buffer), 6);
-    }
 
     #[test]
     fn test_2_dimensional_vector_to_line() {

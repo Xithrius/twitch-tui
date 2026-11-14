@@ -4,13 +4,16 @@ use std::{
 };
 
 use color_eyre::Result;
+use tracing::warn;
 use tui::{
     DefaultTerminal, Terminal,
     backend::CrosstermBackend,
     crossterm::{
         Command,
         cursor::{DisableBlinking, EnableBlinking, SetCursorStyle},
-        event::{DisableMouseCapture, EnableMouseCapture},
+        event::{
+            DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+        },
         execute, queue,
         terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
     },
@@ -36,6 +39,10 @@ impl Command for ResetCursorShape {
 
 pub fn reset_terminal() -> Result<()> {
     disable_raw_mode()?;
+
+    if let Err(err) = execute!(stdout(), DisableBracketedPaste) {
+        warn!("Failed to disable bracketed paste: {err}");
+    }
 
     execute!(
         stdout(),
@@ -65,6 +72,10 @@ pub fn init_terminal(frontend_config: &FrontendConfig) -> Result<DefaultTerminal
         EnableMouseCapture,
         cursor_style,
     )?;
+
+    if let Err(err) = queue!(stdout, EnableBracketedPaste) {
+        warn!("Bracketed paste is not supported by this terminal: {err}");
+    }
 
     if frontend_config.blinking_cursor {
         queue!(stdout, EnableBlinking)?;

@@ -429,7 +429,7 @@ impl Component for App {
                     self.components.debug.toggle_focus();
                 }
             }
-            Event::Tick => {}
+            Event::Tick | Event::Paste(_) => {}
         }
 
         match self.state {

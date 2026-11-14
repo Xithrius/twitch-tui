@@ -50,8 +50,6 @@ pub static SUPPORTED_COMMANDS: &[&str] = &[
     "category",
 ];
 
-pub static LINE_BUFFER_CAPACITY: usize = 4096;
-
 // https://discuss.dev.twitch.tv/t/irc-bot-and-message-lengths/23327/4
 pub static TWITCH_MESSAGE_LIMIT: usize = 500;
 

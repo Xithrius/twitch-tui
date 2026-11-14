@@ -155,6 +155,19 @@ where
         self.focused = !self.focused;
     }
 
+    async fn input_event(&mut self, event: &Event) -> Result<()> {
+        self.search_input.event(event).await?;
+
+        // Assuming that the user inputted something that modified the input
+        if let Some(v) = &self.filtered_items
+            && !v.is_empty()
+        {
+            self.list_state.select(Some(0));
+        }
+
+        Ok(())
+    }
+
     async fn select(&mut self) -> Result<()> {
         if let Some(i) = self.list_state.selected() {
             let selected_item = if let Some(v) = self.filtered_items.clone() {
@@ -336,17 +349,10 @@ where
                 key if keybinds.select.contains(key) => {
                     self.select().await?;
                 }
-                _ => {
-                    self.search_input.event(event).await?;
-
-                    // Assuming that the user inputted something that modified the input
-                    if let Some(v) = &self.filtered_items {
-                        if !v.is_empty() {
-                            self.list_state.select(Some(0));
-                        }
-                    }
-                }
+                _ => self.input_event(event).await?,
             }
+        } else if matches!(event, Event::Paste(_)) {
+            self.input_event(event).await?;
         }
 
         Ok(())

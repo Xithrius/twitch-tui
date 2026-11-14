@@ -190,7 +190,9 @@ impl Component for ChatWidget {
 
         let mut v_constraints = vec![Constraint::Min(1)];
 
-        if self.chat_input.is_focused() || self.search_input.is_focused() {
+        if self.chat_input.is_focused() {
+            v_constraints.push(Constraint::Length(self.chat_input.height(r.width)));
+        } else if self.search_input.is_focused() {
             v_constraints.push(Constraint::Length(3));
         }
 

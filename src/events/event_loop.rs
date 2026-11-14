@@ -58,6 +58,7 @@ impl EventsThread {
                         state: _,
                     })) => self.translate_key_event(code, modifiers).await?,
                     Ok(CEvent::Mouse(key)) => self.translate_mouse_event(key).await?,
+                    Ok(CEvent::Paste(text)) => self.send(Event::Paste(text)).await?,
                     _ => (),
                 }
             }
