@@ -81,6 +81,10 @@ impl<T: Clone> InputWidget<T> {
         }
     }
 
+    pub fn set_title(&mut self, title: &str) {
+        title.clone_into(&mut self.title);
+    }
+
     pub fn clear(&mut self) {
         self.input.update("", 0, &mut self.input_listener);
     }
