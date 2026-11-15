@@ -2,7 +2,7 @@
 
 Thanks for taking interest in contributing to this project!
 
-This document is under development, and will be expanded upon in the future.
+Please reference the [AI Policy](./AI_POLICY.md) if you are to use any LLMs/AI to assist you with contributing to this project.
 
 ## Twitch websocket/API reference links
 
