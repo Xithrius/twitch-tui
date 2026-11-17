@@ -437,7 +437,7 @@ fn query_terminal(command: &[u8]) -> Result<String> {
     Ok(response)
 }
 
-const SUPPORTED_TERMINALS: [&str; 2] = ["xterm-kitty", "xterm-ghostty"];
+const SUPPORTED_TERMINALS: [&str; 3] = ["xterm-kitty", "xterm-ghostty", "xterm-rex"];
 
 static IS_TMUX: LazyLock<bool> = LazyLock::new(|| env::var("TMUX").is_ok());
 
