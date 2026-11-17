@@ -117,10 +117,6 @@ impl EmotePickerWidget {
 }
 
 impl Component for EmotePickerWidget {
-    #[expect(
-        clippy::too_many_lines,
-        reason = "Method will be broken into multiple methods"
-    )]
     fn draw(&mut self, f: &mut Frame, area: Option<Rect>) -> Result<()> {
         let r = area.unwrap_or_else(|| popup_area(f.area(), 60, 60));
 
@@ -135,11 +131,10 @@ impl Component for EmotePickerWidget {
 
         let current_input = self.input.to_string();
 
-        let cell_size = *self
-            .emotes
-            .cell_size
-            .get()
-            .expect("Terminal cell size should be set when emotes are enabled.");
+        // Emote images cannot be shown until the terminal reports its cell size.
+        let Some(cell_size) = self.emotes.cell_size() else {
+            return Ok(());
+        };
 
         // Enter a new scope to drop the user/global emotes borrow when we don't need them anymore.
         {

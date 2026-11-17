@@ -5,6 +5,11 @@ pub const ZERO_WIDTH_SPACE: char = '\u{200B}';
 pub const ZERO_WIDTH_SPACE_STR: &str = "\u{200B}";
 
 pub const fn get_emote_offset(width: u16, cell_width: u16, cols: u16) -> (u16, u16) {
+    // An unknown cell width means no offset can be computed; avoid dividing by zero.
+    if cell_width == 0 {
+        return (0, 0);
+    }
+
     let w = (width + if cols % 2 == 0 { 0 } else { cell_width }).div_ceil(2);
 
     let (pxo, co) = (w % cell_width, w / cell_width);
@@ -62,6 +67,14 @@ impl UnicodePlaceholder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn emote_offset_zero_cell_width_does_not_panic() {
+        // Terminals can report a pixel size of 0 (e.g. a pane that has not been
+        // displayed yet), which makes the computed cell width 0.
+        assert_eq!(get_emote_offset(28, 0, 1), (0, 0));
+        assert_eq!(get_emote_offset(28, 0, 2), (0, 0));
+    }
 
     #[test]
     fn emote_offset_1_col() {

@@ -158,14 +158,14 @@ impl MessageData {
             return (payload, vec![]);
         }
 
-        let cell_size = *emotes
-            .cell_size
-            .get()
-            .expect("Terminal cell_size must be defined when emotes are enabled");
-
         if emotes_set1.is_empty() && emotes_set2.is_empty() {
             return (payload, vec![]);
         }
+
+        // Show emotes as text until the terminal reports its cell size.
+        let Some(cell_size) = emotes.cell_size() else {
+            return (payload, vec![]);
+        };
 
         let mut words = Vec::new();
 
@@ -961,7 +961,7 @@ mod tests {
             .maybe_badges(None)
             .build();
 
-        let emotes = Rc::new(Emotes::new(false));
+        let emotes = Rc::new(Emotes::new(false, None));
         let data = MessageData::from_twitch_message(raw_message, &emotes);
 
         let frontendconfig = FrontendConfig {

@@ -1,5 +1,5 @@
 use std::{
-    cell::{OnceCell, RefCell},
+    cell::{Cell, RefCell},
     collections::{BTreeMap, HashMap, hash_map::DefaultHasher},
     hash::{Hash, Hasher},
     rc::Rc,
@@ -60,8 +60,9 @@ pub struct Emotes {
     pub global_emotes: RefCell<DownloadedEmotes>,
     /// Info about loaded emotes
     pub info: RefCell<HashMap<String, LoadedEmote>>,
-    /// Terminal cell size in pixels: (width, height)
-    pub cell_size: OnceCell<(f32, f32)>,
+    /// Terminal cell size in pixels: (width, height).
+    /// `None` until the terminal reports a usable pixel size, see [`Emotes::cell_size`].
+    cell_size: Cell<Option<(f32, f32)>>,
     /// Are emotes enabled?
     pub enabled: bool,
 }
@@ -77,14 +78,32 @@ impl Drop for Emotes {
 }
 
 impl Emotes {
-    pub fn new(enabled: bool) -> Self {
+    pub fn new(enabled: bool, cell_size: Option<(f32, f32)>) -> Self {
         Self {
             user_emotes: RefCell::default(),
             global_emotes: RefCell::default(),
             info: RefCell::default(),
-            cell_size: OnceCell::default(),
+            cell_size: Cell::new(cell_size),
             enabled,
         }
+    }
+
+    /// Terminal cell size in pixels: (width, height).
+    ///
+    /// Some terminals report a pixel size of 0 until the terminal has been displayed
+    /// (for example a multiplexer pane in a background tab).
+    /// Until a usable size is reported this returns `None` and emotes are shown as text,
+    /// the size is queried again on the next call.
+    pub fn cell_size(&self) -> Option<(f32, f32)> {
+        if let Some(cell_size) = self.cell_size.get() {
+            return Some(cell_size);
+        }
+
+        let cell_size = query_cell_size()?;
+        info!("Terminal reported its cell size, enabling emote images: {cell_size:?}");
+        self.cell_size.set(Some(cell_size));
+
+        Some(cell_size)
     }
 
     pub fn unload(&self) {
@@ -289,13 +308,37 @@ pub fn overlay_emote(
     .apply()
 }
 
+/// Computes the cell size in pixels from a terminal window size.
+/// Returns `None` if any dimension is 0 or the cell would be less than 1 pixel.
+fn cell_size_from_window_size(size: &tui::crossterm::terminal::WindowSize) -> Option<(f32, f32)> {
+    if size.columns == 0 || size.rows == 0 {
+        return None;
+    }
+
+    let cell_width = size.width / size.columns;
+    let cell_height = size.height / size.rows;
+
+    if cell_width == 0 || cell_height == 0 {
+        return None;
+    }
+
+    Some((f32::from(cell_width), f32::from(cell_height)))
+}
+
+fn query_cell_size() -> Option<(f32, f32)> {
+    tui::crossterm::terminal::window_size()
+        .ok()
+        .and_then(|size| cell_size_from_window_size(&size))
+}
+
 type DecodedEmoteReceiver = Receiver<Result<DecodedEmote, String>>;
 
 /// Initialize the emote decoder if emotes are enabled.
-/// Returns a receiver for decoded emotes, or None if emotes are disabled or initialization failed.
+/// Returns a receiver for decoded emotes and the cell size if the terminal already reports one,
+/// or None if emotes are disabled or initialization failed.
 pub fn initialize_emote_decoder(
     config: &mut CoreConfig,
-) -> Option<(DecodedEmoteReceiver, (f32, f32))> {
+) -> Option<(DecodedEmoteReceiver, Option<(f32, f32)>)> {
     if !config.frontend.is_emotes_enabled() {
         return None;
     }
@@ -304,10 +347,13 @@ pub fn initialize_emote_decoder(
     // as writing on stdout on a different thread can interfere.
     match tui::crossterm::terminal::window_size() {
         Ok(size) => {
-            let cell_size = (
-                f32::from(size.width / size.columns),
-                f32::from(size.height / size.rows),
-            );
+            let cell_size = cell_size_from_window_size(&size);
+
+            if cell_size.is_none() {
+                info!(
+                    "Terminal did not report its pixel size ({size:?}), showing emotes as text until it does."
+                );
+            }
 
             let (decoder_tx, decoder_rx) = mpsc::channel(100);
             DECODE_EMOTE_SENDER.get_or_init(|| decoder_tx);
@@ -328,5 +374,47 @@ pub fn initialize_emote_decoder(
             warn!("Unable to query terminal for it's dimensions, disabling emotes. {e}");
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tui::crossterm::terminal::WindowSize;
+
+    use super::*;
+
+    const fn window_size(columns: u16, rows: u16, width: u16, height: u16) -> WindowSize {
+        WindowSize {
+            rows,
+            columns,
+            width,
+            height,
+        }
+    }
+
+    #[test]
+    fn cell_size_from_reported_pixel_size() {
+        assert_eq!(
+            cell_size_from_window_size(&window_size(80, 24, 640, 384)),
+            Some((8.0, 16.0))
+        );
+    }
+
+    #[test]
+    fn cell_size_unknown_when_pixel_size_not_reported() {
+        // A pane that has not been displayed yet reports rows/cols but no pixels.
+        assert_eq!(cell_size_from_window_size(&window_size(80, 24, 0, 0)), None);
+        assert_eq!(
+            cell_size_from_window_size(&window_size(80, 24, 640, 0)),
+            None
+        );
+        assert_eq!(
+            cell_size_from_window_size(&window_size(80, 24, 40, 384)),
+            None
+        );
+        assert_eq!(
+            cell_size_from_window_size(&window_size(0, 0, 640, 384)),
+            None
+        );
     }
 }

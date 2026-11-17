@@ -437,9 +437,21 @@ fn query_terminal(command: &[u8]) -> Result<String> {
     Ok(response)
 }
 
-const SUPPORTED_TERMINALS: [&str; 2] = ["xterm-kitty", "xterm-ghostty"];
+const SUPPORTED_TERMINALS: [&str; 3] = ["xterm-kitty", "xterm-ghostty", "xterm-rex"];
 
 static IS_TMUX: LazyLock<bool> = LazyLock::new(|| env::var("TMUX").is_ok());
+
+/// A 1×1 RGB image used to query Kitty graphics support. RGB24 requires exactly
+/// three bytes; terminals such as current Ghostty reject an oversized payload.
+const GRAPHICS_PROTOCOL_QUERY_PIXEL: [u8; 3] = [0, 0, 0];
+
+fn graphics_protocol_query() -> String {
+    gp!(
+        false,
+        "i=31,s=1,v=1,a=q,t=d,f=24;{payload}",
+        payload = STANDARD.encode(GRAPHICS_PROTOCOL_QUERY_PIXEL)
+    ) + csi!("c")
+}
 
 /// First check if the terminal is `kitty`, this is the only terminal that supports the graphics protocol using unicode placeholders as of 2023-07-13.
 /// Then check that it supports the graphics protocol using temporary files, by sending a graphics protocol request followed by a request for terminal attributes.
@@ -447,15 +459,7 @@ static IS_TMUX: LazyLock<bool> = LazyLock::new(|| env::var("TMUX").is_ok());
 pub fn support_graphics_protocol() -> Result<bool> {
     Ok(*IS_TMUX
         || (env::var("TERM").is_ok_and(|term| SUPPORTED_TERMINALS.contains(&term.as_str()))
-            && query_terminal(
-                (gp!(
-                    false,
-                    "i=31,s=1,v=1,a=q,t=d,f=24;{payload}",
-                    payload = STANDARD.encode("AAAA")
-                ) + csi!("c"))
-                .as_bytes(),
-            )?
-            .contains("OK")))
+            && query_terminal(graphics_protocol_query().as_bytes())?.contains("OK")))
 }
 
 #[cfg(test)]
@@ -573,5 +577,14 @@ mod tests {
             .unwrap();
 
         assert_eq!(s, gp!(false, "a=p,i=1,p=2,P=3,Q=4,z=1,H=1,X=4,q=2;"));
+    }
+
+    #[test]
+    fn graphics_protocol_query_uses_exactly_one_rgb_pixel() {
+        assert_eq!(GRAPHICS_PROTOCOL_QUERY_PIXEL.len(), 3);
+        assert_eq!(
+            graphics_protocol_query(),
+            "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[c"
+        );
     }
 }

@@ -49,16 +49,11 @@ async fn main() -> Result<()> {
 
     let twitch_oauth = TwitchOauth::default().init(config.clone()).await?;
     let emotes_enabled = config.frontend.is_emotes_enabled();
-    let context_emotes = Rc::new(Emotes::new(emotes_enabled));
+    let (decoded_emotes_rx, cell_size) =
+        emotes.map_or((None, None), |(rx, cell_size)| (Some(rx), cell_size));
+    let context_emotes = Rc::new(Emotes::new(emotes_enabled, cell_size));
 
     let events = Events::new(config.terminal.delay, event_tx.clone(), event_rx);
-
-    let decoded_emotes_rx = if let Some((rx, cell_size)) = emotes {
-        context_emotes.cell_size.get_or_init(|| cell_size);
-        Some(rx)
-    } else {
-        None
-    };
 
     let app = App::builder()
         .config(config.clone())
