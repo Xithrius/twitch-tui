@@ -94,23 +94,22 @@ pub async fn handle_incoming_message(
     received_message: ReceivedTwitchMessage,
 ) -> Result<()> {
     // Don't allow messages from other channels go through
-    if let Some(condition) = received_message.subscription_condition() {
-        if context
+    if let Some(condition) = received_message.subscription_condition()
+        && context
             .channel_id()
             .is_some_and(|channel_id| channel_id != condition.broadcaster_user_id())
-        {
-            return Ok(());
-        }
+    {
+        return Ok(());
     }
 
     let Some(event) = received_message.event() else {
         return Ok(());
     };
 
-    if let Some(subscription_type) = received_message.subscription_type() {
-        if subscription_type != Subscription::Message {
-            return handle_chat_notification(event_tx, event, subscription_type).await;
-        }
+    if let Some(subscription_type) = received_message.subscription_type()
+        && subscription_type != Subscription::Message
+    {
+        return handle_chat_notification(event_tx, event, subscription_type).await;
     }
 
     let message_text = event

@@ -77,10 +77,10 @@ impl Storage {
             );
         }
 
-        if let Some(channels) = items.get_mut("channels") {
-            if !channels.content.contains(twitch_channel) {
-                channels.content.push(twitch_channel.clone());
-            }
+        if let Some(channels) = items.get_mut("channels")
+            && !channels.content.contains(twitch_channel)
+        {
+            channels.content.push(twitch_channel.clone());
         }
 
         let storage_str =
@@ -109,13 +109,13 @@ impl Storage {
 
     pub fn add(&mut self, key: &str, value: String) -> Result<()> {
         if ITEM_KEYS.contains(&key) {
-            if let Some(item) = self.items.get_mut(key) {
-                if item.enabled {
-                    if let Some(position) = item.content.iter().position(|x| x == &value) {
-                        item.content.remove(position);
-                    }
-                    item.content.push(value);
+            if let Some(item) = self.items.get_mut(key)
+                && item.enabled
+            {
+                if let Some(position) = item.content.iter().position(|x| x == &value) {
+                    item.content.remove(position);
                 }
+                item.content.push(value);
             }
         } else {
             bail!("Attempted to add value with key {key} to JSON storage.");

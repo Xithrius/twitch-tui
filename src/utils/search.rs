@@ -7,6 +7,5 @@ pub static FUZZY_FINDER: LazyLock<SkimMatcherV2> = LazyLock::new(SkimMatcherV2::
 pub fn fuzzy_pattern_match(pattern: &str, choice: &str) -> Vec<usize> {
     FUZZY_FINDER
         .fuzzy_indices(choice, pattern)
-        .map(|(_, indices)| indices)
-        .unwrap_or_default()
+        .map_or_default(|(_, indices)| indices)
 }

@@ -10,7 +10,13 @@ pub const fn get_emote_offset(width: u16, cell_width: u16, cols: u16) -> (u16, u
         return (0, 0);
     }
 
-    let w = (width + if cols % 2 == 0 { 0 } else { cell_width }).div_ceil(2);
+    let w = (width
+        + if cols.is_multiple_of(2) {
+            0
+        } else {
+            cell_width
+        })
+    .div_ceil(2);
 
     let (pxo, co) = (w % cell_width, w / cell_width);
 

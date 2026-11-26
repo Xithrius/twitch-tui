@@ -147,13 +147,13 @@ impl Component for ChatInputWidget {
 
                         self.input.clear();
 
-                        if let Some(message) = current_input.strip_prefix('@') {
-                            if self.config.storage.mentions {
-                                self.storage
-                                    .borrow_mut()
-                                    .add("mentions", message.to_string())
-                                    .context("Failed to add mention")?;
-                            }
+                        if let Some(message) = current_input.strip_prefix('@')
+                            && self.config.storage.mentions
+                        {
+                            self.storage
+                                .borrow_mut()
+                                .add("mentions", message.to_string())
+                                .context("Failed to add mention")?;
                         }
 
                         self.event_tx

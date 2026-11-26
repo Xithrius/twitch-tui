@@ -79,7 +79,7 @@ impl EmotePickerWidget {
         }
     }
 
-    fn next(&mut self) {
+    const fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i >= self.filtered_emotes.len() - 1 {

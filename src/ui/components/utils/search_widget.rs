@@ -340,10 +340,10 @@ where
                     self.search_input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
-                    if let Some(v) = &self.filtered_items {
-                        if !v.is_empty() {
-                            self.list_state.select(Some(0));
-                        }
+                    if let Some(v) = &self.filtered_items
+                        && !v.is_empty()
+                    {
+                        self.list_state.select(Some(0));
                     }
                 }
             }

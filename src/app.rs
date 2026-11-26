@@ -249,22 +249,22 @@ impl App {
         }
 
         // Check if we need to load a decoded emote
-        if let Some(rx) = &mut self.decoded_emotes_rx {
-            if let Ok(r) = rx.try_recv() {
-                match r {
-                    Ok(d) => {
-                        if let Err(e) = d.apply() {
-                            warn!("Unable to send command to load emote. {e}");
-                        } else if let Err(e) = display_emote(d.id(), 1, d.cols()) {
-                            warn!("Unable to send command to display emote. {e}");
-                        }
+        if let Some(rx) = &mut self.decoded_emotes_rx
+            && let Ok(r) = rx.try_recv()
+        {
+            match r {
+                Ok(d) => {
+                    if let Err(e) = d.apply() {
+                        warn!("Unable to send command to load emote. {e}");
+                    } else if let Err(e) = display_emote(d.id(), 1, d.cols()) {
+                        warn!("Unable to send command to display emote. {e}");
                     }
-                    Err(name) => {
-                        warn!("Unable to load emote: {name}.");
-                        self.emotes.user_emotes.borrow_mut().remove(&name);
-                        self.emotes.global_emotes.borrow_mut().remove(&name);
-                        self.emotes.info.borrow_mut().remove(&name);
-                    }
+                }
+                Err(name) => {
+                    warn!("Unable to load emote: {name}.");
+                    self.emotes.user_emotes.borrow_mut().remove(&name);
+                    self.emotes.global_emotes.borrow_mut().remove(&name);
+                    self.emotes.info.borrow_mut().remove(&name);
                 }
             }
         }

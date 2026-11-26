@@ -381,10 +381,10 @@ impl Component for ChannelSwitcherWidget {
                     self.search_input.event(event).await?;
 
                     // Assuming that the user inputted something that modified the input
-                    if let Some(v) = &self.filtered_channels {
-                        if !v.is_empty() {
-                            self.list_state.select(Some(0));
-                        }
+                    if let Some(v) = &self.filtered_channels
+                        && !v.is_empty()
+                    {
+                        self.list_state.select(Some(0));
                     }
                 }
             }
