@@ -180,8 +180,11 @@ impl TwitchWebsocketThread {
                         return Err(err);
                     }
                 } else {
-                    handle_send_message(&self.context, message).await?;
+                    handle_send_message(&self.context, message, None).await?;
                 }
+            }
+            TwitchAction::Reply { parent_id, message } => {
+                handle_send_message(&self.context, message, Some(parent_id)).await?;
             }
             TwitchAction::JoinChannel(channel_name) => {
                 handle_channel_join(&mut self.context, &self.event_tx, channel_name, false).await?;

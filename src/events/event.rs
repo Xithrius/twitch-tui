@@ -37,6 +37,7 @@ pub enum TwitchEvent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TwitchAction {
     Message(String),
+    Reply { parent_id: String, message: String },
     JoinChannel(String),
 }
 
